@@ -19,7 +19,9 @@ import {
   Settings,
   Menu,
   Wrench,
-  X
+  X,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import BottomNav from "./components/navigation/BottomNav";
 
@@ -255,6 +257,7 @@ export default function Layout({ children }) {
           <div className="flex-1 overflow-y-auto p-2">
             {navigationItems.map((item) => {
               if (item.subItems) {
+                const isOpen = openSections[item.title];
                 return (
                   <div key={item.title} className="mb-2">
                     <button
@@ -263,8 +266,13 @@ export default function Layout({ children }) {
                     >
                       <item.icon className={`w-4 h-4 ${item.color}`} />
                       <span className="font-semibold flex-1 text-left">{item.title}</span>
+                      {isOpen ? (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-500" />
+                      )}
                     </button>
-                    {openSections[item.title] && (
+                    {isOpen && (
                       <div className="ml-4 mt-1">
                         {item.subItems.map((subItem) => (
                           <Link
@@ -343,6 +351,7 @@ export default function Layout({ children }) {
           <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 80px)' }}>
             {navigationItems.map((item) => {
               if (item.subItems) {
+                const isOpen = openSections[item.title];
                 return (
                   <div key={item.title} className="mb-4">
                     <button
@@ -352,8 +361,13 @@ export default function Layout({ children }) {
                     >
                       <item.icon className={`w-5 h-5 ${item.color}`} />
                       <span className="font-semibold flex-1 text-left text-lg">{item.title}</span>
+                      {isOpen ? (
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-500" />
+                      )}
                     </button>
-                    {openSections[item.title] && (
+                    {isOpen && (
                       <div className="ml-2 mt-2 space-y-1">
                         {item.subItems.map((subItem) => (
                           <Link
