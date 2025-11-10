@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -48,10 +47,10 @@ export default function IssueDocumentation({ area, inspection, property, relevan
   const [photos, setPhotos] = React.useState([]);
   const [uploading, setUploading] = React.useState(false);
   const [severity, setSeverity] = React.useState('Flag');
-  const [isQuickFix, setIsQuickFix] = React.useState(null); // null means not answered yet
+  const [isQuickFix, setIsQuickFix] = React.useState(null);
   const [estimatedCost, setEstimatedCost] = React.useState('');
   const [whoWillFix, setWhoWillFix] = React.useState('not_sure');
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false); // New state
+  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -86,7 +85,6 @@ export default function IssueDocumentation({ area, inspection, property, relevan
 
   const selectedSystemData = relevantSystems.find(s => s.id === selectedSystem);
 
-  // Construct currentIssueData for rendering and eventual saving
   const currentIssueData = {
     area: area.name,
     area_id: area.id,
@@ -99,13 +97,10 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     estimated_cost: estimatedCost,
     who_will_fix: whoWillFix,
     found_date: new Date().toISOString().split('T')[0],
-    status: 'Identified' // Default status. If it was a quick fix, it's just a candidate, not necessarily fixed yet.
+    status: 'Identified'
   };
 
   const handleSave = async () => {
-    // Only create a MaintenanceTask if it's explicitly NOT a quick fix,
-    // or if `isQuickFix` is true but the user wants to add it to the queue (this option is removed from UI, so assume `isQuickFix` = true means no task initially)
-    // If it's a quick fix (`isQuickFix === true`), we assume it's handled or user can request service separately.
     if (currentIssueData.is_quick_fix === false) {
       const cascadeRiskScores = {
         'Urgent': 9,
@@ -151,31 +146,37 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     description: `${currentIssueData.area}: ${currentIssueData.description}`,
     urgency: currentIssueData.severity === 'Urgent' ? 'Emergency' : 'High',
     photo_urls: currentIssueData.photo_urls,
-    notes: currentIssueData.description // Using description as notes for the service request
+    notes: currentIssueData.description
   };
 
+  const isFormValid = description && isQuickFix !== null && (isQuickFix === true || estimatedCost);
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+    <div className="min-h-screen bg-white pb-24">
+      <div className="mobile-container md:max-w-4xl md:mx-auto">
         <Button
           variant="ghost"
           onClick={onCancel}
+          className="mb-4"
+          style={{ minHeight: '44px' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
 
-        <div>
-          <h1 className="text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>Document Issue - {area.name}</h1>
+        <div className="mb-6">
+          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px', lineHeight: '1.2' }}>
+            Document Issue - {area.name}
+          </h1>
         </div>
 
         {/* System Selection */}
         {relevantSystems.length > 1 && (
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-6">
+          <Card className="border-none shadow-sm mobile-card">
+            <CardContent className="p-4">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Which system?</label>
               <Select value={selectedSystem} onValueChange={setSelectedSystem}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
                   <SelectValue placeholder="Select system" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -193,40 +194,41 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         )}
 
         {relevantSystems.length === 1 && (
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-6">
+          <Card className="border-none shadow-sm mobile-card">
+            <CardContent className="p-4">
               <p className="text-sm font-medium text-gray-700 mb-1">System:</p>
-              <p className="text-lg font-semibold" style={{ color: '#1B365D' }}>
+              <p className="font-semibold" style={{ color: '#1B365D', fontSize: '18px' }}>
                 {selectedSystemData?.nickname || selectedSystemData?.system_type}
               </p>
             </CardContent>
           </Card>
         )}
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* Description */}
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-6">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">What did you find?</label>
-            <p className="text-sm text-gray-600 mb-3">(Description - be specific)</p>
+        <Card className="border-none shadow-sm mobile-card">
+          <CardContent className="p-4">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">What did you find? *</label>
+            <p className="text-sm text-gray-600 mb-3">Be specific about what you observed</p>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., Filter extremely dirty, not changed in 6+ months based on color. Airflow noticeably reduced from vents in living room and master bedroom."
               rows={4}
               className="w-full"
+              style={{ minHeight: '120px', fontSize: '16px' }}
             />
           </CardContent>
         </Card>
 
         {/* Photos */}
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-6">
+        <Card className="border-none shadow-sm mobile-card">
+          <CardContent className="p-4">
             <label className="text-sm font-medium text-gray-700 mb-3 block">
               📷 Add Photos (Recommended)
             </label>
-            <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+            <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors" style={{ minHeight: '56px' }}>
               <input
                 type="file"
                 multiple
@@ -246,6 +248,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                       type="button"
                       onClick={() => removePhoto(idx)}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ minHeight: '28px', minWidth: '28px' }}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -256,12 +259,14 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </CardContent>
         </Card>
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* Severity Rating */}
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-6 space-y-4">
-            <h2 className="text-xl font-bold" style={{ color: '#1B365D' }}>⚡ SEVERITY RATING:</h2>
+        <Card className="border-none shadow-sm mobile-card">
+          <CardContent className="p-4 space-y-3">
+            <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
+              ⚡ SEVERITY RATING:
+            </h2>
             
             {Object.entries(SEVERITY_INFO).map(([level, info]) => (
               <label
@@ -269,7 +274,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                 className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
                   severity === level ? 'border-current shadow-md' : 'border-gray-200'
                 }`}
-                style={severity === level ? { borderColor: info.color, backgroundColor: `${info.color}10` } : {}}
+                style={severity === level ? { borderColor: info.color, backgroundColor: `${info.color}10`, minHeight: '56px' } : { minHeight: '56px' }}
               >
                 <input
                   type="radio"
@@ -277,11 +282,12 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                   checked={severity === level}
                   onChange={(e) => setSeverity(e.target.value)}
                   className="mt-1"
+                  style={{ minWidth: '18px', minHeight: '18px' }}
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">{info.icon}</span>
-                    <span className="font-bold text-lg" style={{ color: info.color }}>{level.toUpperCase()}</span>
+                    <span className="font-bold" style={{ color: info.color, fontSize: '16px' }}>{level.toUpperCase()}</span>
                   </div>
                   <p className="text-sm font-medium text-gray-700 mb-1">{info.description}</p>
                   <p className="text-xs text-gray-600">Examples: {info.examples}</p>
@@ -293,13 +299,13 @@ export default function IssueDocumentation({ area, inspection, property, relevan
 
         {/* Quick Fix Question */}
         {isQuickFix === null && (
-          <Card className="border-2" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
-            <CardContent className="p-6 space-y-4">
-              <h2 className="text-xl font-bold" style={{ color: '#1B365D' }}>
+          <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
+            <CardContent className="p-4 space-y-4">
+              <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
                 ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS?
               </h2>
-              <p className="text-gray-700 leading-relaxed">
-                This is critical. Quick fixes (5 min or less) should be done immediately during inspection. Longer tasks go to your Priority Queue to schedule when time allows.
+              <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue.
               </p>
               
               <div className="space-y-3">
@@ -307,10 +313,11 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                   onClick={() => setIsQuickFix(true)}
                   className="w-full justify-start text-left p-4 h-auto"
                   variant="outline"
+                  style={{ minHeight: '56px' }}
                 >
                   <div>
-                    <p className="font-semibold mb-1">○ Yes - I can fix this now (Quick Fix)</p>
-                    <p className="text-sm text-gray-600">→ Filter replacement, tightening loose screws, testing detectors, etc.</p>
+                    <p className="font-semibold mb-1">○ Yes - I can fix this now</p>
+                    <p className="text-sm text-gray-600">Filter replacement, tightening screws, testing detectors</p>
                   </div>
                 </Button>
                 
@@ -318,10 +325,11 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                   onClick={() => setIsQuickFix(false)}
                   className="w-full justify-start text-left p-4 h-auto"
                   variant="outline"
+                  style={{ minHeight: '56px' }}
                 >
                   <div>
-                    <p className="font-semibold mb-1">● No - Needs more time or help (Add to Priority Queue)</p>
-                    <p className="text-sm text-gray-600">→ Research needed, special tools, technical work, hire professional</p>
+                    <p className="font-semibold mb-1">● No - Needs more time/help</p>
+                    <p className="text-sm text-gray-600">Add to Priority Queue for scheduling</p>
                   </div>
                 </Button>
               </div>
@@ -332,15 +340,17 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         {/* Estimated Cost & Who Will Fix - Only if not a quick fix */}
         {isQuickFix === false && (
           <>
-            <Card className="border-none shadow-sm">
-              <CardContent className="p-6 space-y-4">
+            <Card className="border-none shadow-sm mobile-card">
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-6 h-6" style={{ color: '#1B365D' }} />
-                  <h2 className="text-xl font-bold" style={{ color: '#1B365D' }}>💰 ESTIMATED COST TO FIX:</h2>
+                  <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
+                    💰 ESTIMATED COST:
+                  </h2>
                 </div>
                 
                 <Select value={estimatedCost} onValueChange={setEstimatedCost}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
                     <SelectValue placeholder="Select cost range" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
@@ -354,40 +364,45 @@ export default function IssueDocumentation({ area, inspection, property, relevan
               </CardContent>
             </Card>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 my-6" />
 
             {/* Who Will Fix */}
-            <Card className="border-none shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <h2 className="text-xl font-bold" style={{ color: '#1B365D' }}>📋 ACTION PLAN:</h2>
+            <Card className="border-none shadow-sm mobile-card">
+              <CardContent className="p-4 space-y-4">
+                <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
+                  📋 ACTION PLAN:
+                </h2>
                 
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-3 block">Who will fix this?</label>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
                       <input
                         type="radio"
                         value="diy"
                         checked={whoWillFix === 'diy'}
                         onChange={(e) => setWhoWillFix(e.target.value)}
+                        style={{ minWidth: '18px', minHeight: '18px' }}
                       />
                       <span>I'll do it myself (DIY)</span>
                     </label>
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
                       <input
                         type="radio"
                         value="professional"
                         checked={whoWillFix === 'professional'}
                         onChange={(e) => setWhoWillFix(e.target.value)}
+                        style={{ minWidth: '18px', minHeight: '18px' }}
                       />
                       <span>Hire a professional</span>
                     </label>
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
                       <input
                         type="radio"
                         value="not_sure"
                         checked={whoWillFix === 'not_sure'}
                         onChange={(e) => setWhoWillFix(e.target.value)}
+                        style={{ minWidth: '18px', minHeight: '18px' }}
                       />
                       <span>Not sure yet</span>
                     </label>
@@ -402,20 +417,15 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         <div className="flex flex-col gap-3 pt-6 border-t">
           <Button
             onClick={handleSave}
-            disabled={
-                !currentIssueData.description || // Description is required
-                currentIssueData.is_quick_fix === null || // Must have made a quick fix decision
-                (currentIssueData.is_quick_fix === false && !currentIssueData.estimated_cost) || // If not quick fix, estimated cost is required
-                createTaskMutation.isPending // Disable during save operation
-            }
-            className="w-full h-14 text-lg font-bold"
-            style={{ backgroundColor: '#28A745' }}
+            disabled={!isFormValid || createTaskMutation.isPending}
+            className="w-full font-bold"
+            style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
           >
             {createTaskMutation.isPending ? 'Saving...' : 'Save Issue & Continue Inspection'}
           </Button>
 
           {/* Professional Service Option */}
-          {((currentIssueData.severity === 'Urgent' || currentIssueData.severity === 'Flag') && (currentIssueData.description && currentIssueData.is_quick_fix !== null)) && (
+          {((severity === 'Urgent' || severity === 'Flag') && description && isQuickFix !== null) && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm font-medium text-blue-900 mb-2">
                 Can't or don't want to fix this yourself?
@@ -424,9 +434,9 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                 onClick={() => setShowServiceDialog(true)}
                 variant="outline"
                 className="w-full"
-                style={{ borderColor: '#28A745', color: '#28A745' }}
+                style={{ borderColor: '#28A745', color: '#28A745', minHeight: '48px' }}
               >
-                Request Professional Service for This Issue
+                Request Professional Service
               </Button>
             </div>
           )}
@@ -435,6 +445,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
             onClick={onCancel}
             variant="ghost"
             className="w-full"
+            style={{ minHeight: '48px' }}
           >
             Cancel
           </Button>
