@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, AlertTriangle, Lightbulb, Info, Clock, Trophy, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { enrichTaskWithBaselineData } from "@/utils/inspectionTaskGenerator";
+
+// Inline enrichment function
+function enrichTaskWithBaselineData(task, system) {
+  if (!system) return task;
+
+  const currentYear = new Date().getFullYear();
+  const systemAge = system.installation_year ? currentYear - system.installation_year : null;
+  const isOld = systemAge && systemAge >= 10;
+
+  return {
+    ...task,
+    enrichedData: {
+      brand: system.brand_model,
+      installed: system.installation_year,
+      age: systemAge,
+      lastService: system.last_service_date,
+      filterSize: system.key_components?.filter_size,
+      isOld,
+      ageWarning: isOld ? `Your ${system.system_type} is ${systemAge} years old. Proper maintenance is increasingly critical.` : null
+    }
+  };
+}
 
 export default function InspectionDialog({ open, onClose, inspection, propertyId, baselineSystems }) {
   const queryClient = useQueryClient();

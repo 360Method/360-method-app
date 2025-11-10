@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,9 +8,161 @@ import { Badge } from "@/components/ui/badge";
 import { ClipboardCheck, Calendar, AlertCircle, Home } from "lucide-react";
 import InspectionCard from "../components/inspect/InspectionCard";
 import InspectionDialog from "../components/inspect/InspectionDialog";
-import { generateInspectionTasksFromBaseline } from "@/utils/inspectionTaskGenerator";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
+
+// Inline task generation function
+function generateInspectionTasksFromBaseline(systems, season) {
+  if (!systems || systems.length === 0) {
+    return [];
+  }
+
+  const SEASONAL_TASKS = {
+    Spring: {
+      "HVAC System": [
+        {
+          name: "Change HVAC Filter",
+          duration: 15,
+          points: 25,
+          why: "Dirty filters reduce efficiency 15%, increase bills, strain system causing early failure.",
+          howTo: "1. Turn off system\n2. Remove old filter\n3. Insert new filter with arrow toward furnace\n4. Write date on filter frame"
+        }
+      ],
+      "Plumbing System": [
+        {
+          name: "Check for Leaks",
+          duration: 30,
+          points: 50,
+          why: "Small leaks cause major water damage, mold, and structural problems.",
+          howTo: "Check under sinks, around toilets, water heater, washing machine. Look for water stains or pooling."
+        }
+      ]
+    },
+    Summer: {
+      "HVAC System": [
+        {
+          name: "Clean Condenser Coils",
+          duration: 45,
+          points: 50,
+          why: "Dirty coils reduce cooling efficiency and can lead to system breakdown.",
+          howTo: "1. Turn off power to outdoor unit.\n2. Gently brush off debris from coils.\n3. Spray coils with a hose (avoiding electrical components)."
+        }
+      ],
+      "Roofing": [
+        {
+          name: "Inspect Roof for Damage",
+          duration: 60,
+          points: 75,
+          why: "Heat and storms can damage roofing, leading to leaks and structural issues.",
+          howTo: "Inspect shingles for cracks, buckling, or missing pieces. Check gutters for debris and proper drainage."
+        }
+      ]
+    },
+    Fall: {
+      "HVAC System": [
+        {
+          name: "Test Heating System",
+          duration: 20,
+          points: 30,
+          why: "Ensures heating system is ready for colder weather, preventing unexpected breakdowns.",
+          howTo: "1. Turn on thermostat to heat mode and set temperature higher than ambient.\n2. Listen for normal operation.\n3. Check vents for warm airflow."
+        }
+      ],
+      "Plumbing System": [
+        {
+          name: "Drain Outdoor Faucets",
+          duration: 15,
+          points: 20,
+          why: "Prevents pipes from freezing and bursting in cold weather.",
+          howTo: "1. Turn off water supply to outdoor faucets from inside.\n2. Open outdoor faucets to drain remaining water.\n3. Disconnect hoses."
+        }
+      ],
+      "Yard & Garden": [
+        {
+          name: "Clear Gutters and Downspouts",
+          duration: 60,
+          points: 50,
+          why: "Clogged gutters can cause water damage to roof, fascia, and foundation.",
+          howTo: "1. Use a ladder to safely access gutters.\n2. Remove leaves and debris by hand or with a scoop.\n3. Flush with water to ensure clear flow."
+        }
+      ]
+    },
+    Winter: {
+      "Safety Systems": [
+        {
+          name: "Test Smoke and CO Detectors",
+          duration: 10,
+          points: 15,
+          why: "Ensures detectors are functioning correctly, critical for fire and carbon monoxide safety.",
+          howTo: "1. Press and hold the test button on each detector until it alarms.\n2. Replace batteries if low or not sounding."
+        }
+      ],
+      "HVAC System": [
+        {
+          name: "Check for Drafts Around Windows/Doors",
+          duration: 30,
+          points: 25,
+          why: "Drafts increase heating costs and reduce indoor comfort.",
+          howTo: "Feel for cold air around window and door frames. Add weatherstripping or caulk as needed."
+        }
+      ]
+    }
+  };
+
+  const seasonalTasks = SEASONAL_TASKS[season] || {};
+  const generatedTasks = [];
+  
+  const systemsByType = systems.reduce((acc, system) => {
+    if (!acc[system.system_type]) acc[system.system_type] = [];
+    acc[system.system_type].push(system);
+    return acc;
+  }, {});
+
+  Object.entries(systemsByType).forEach(([systemType, systemInstances]) => {
+    const tasksForType = seasonalTasks[systemType] || [];
+    
+    tasksForType.forEach(taskTemplate => {
+      if (systemInstances.length > 1) {
+        systemInstances.forEach(instance => {
+          generatedTasks.push({
+            ...taskTemplate,
+            name: `${taskTemplate.name} (${instance.nickname || instance.system_type})`,
+            systemId: instance.id,
+            systemType: instance.system_type,
+            enrichedData: {
+              systemName: instance.nickname,
+              systemBrand: instance.brand,
+              systemModel: instance.model,
+              systemAge: instance.installation_date ? new Date().getFullYear() - new Date(instance.installation_date).getFullYear() : 'N/A',
+              systemFilterSize: instance.filter_size,
+              systemSerialNumber: instance.serial_number,
+              systemNotes: instance.notes
+            }
+          });
+        });
+      } else if (systemInstances.length === 1) {
+        const instance = systemInstances[0];
+        generatedTasks.push({
+          ...taskTemplate,
+          name: `${taskTemplate.name} ${instance.nickname ? `(${instance.nickname})` : ''}`,
+          systemId: instance.id,
+          systemType: instance.system_type,
+          enrichedData: {
+            systemName: instance.nickname,
+            systemBrand: instance.brand,
+            systemModel: instance.model,
+            systemAge: instance.installation_date ? new Date().getFullYear() - new Date(instance.installation_date).getFullYear() : 'N/A',
+            systemFilterSize: instance.filter_size,
+            systemSerialNumber: instance.serial_number,
+            systemNotes: instance.notes
+          }
+        });
+      }
+    });
+  });
+
+  return generatedTasks;
+}
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
