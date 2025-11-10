@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                         <>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Filter condition - dirty/clogged/clean?
+                            <span>Filter condition - Dirty/clogged/clean?
                               {system.key_components?.filter_size && (
                                 <span className="text-sm text-gray-600"> (Size: {system.key_components.filter_size})</span>
                               )}
@@ -141,19 +142,19 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Airflow from vents - strong/weak?</span>
+                            <span>Airflow from vents - Strong/weak?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Unusual sounds - grinding/squealing/rattling?</span>
+                            <span>Unusual sounds - Grinding/squealing/rattling?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Turn on AC - does it cool properly?</span>
+                            <span>Turn on AC - Does it cool properly?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Outdoor unit - debris around it?</span>
+                            <span>Outdoor unit - Debris around it?</span>
                           </li>
                         </>
                       )}
@@ -161,19 +162,19 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                         <>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Water heater - any leaks at base?</span>
+                            <span>Water heater - Any leaks at base?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Under sinks - any moisture or water stains?</span>
+                            <span>Under sinks - Any moisture or water stains?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Washing machine hoses - rubber or braided stainless?</span>
+                            <span>Washing machine hoses - Rubber or braided stainless?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Supply line shut-off valves - do they turn smoothly?</span>
+                            <span>Supply line shut-off valves - Do they turn smoothly?</span>
                           </li>
                         </>
                       )}
@@ -181,7 +182,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                         <>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Test smoke detector - does it alarm?</span>
+                            <span>Test smoke detector - Does it alarm?</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
@@ -189,7 +190,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                           </li>
                           <li className="flex items-start gap-2">
                             <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                            <span>Check detector age (replace after 10 years)</span>
+                            <span>Check detector age (Replace after 10 years)</span>
                           </li>
                         </>
                       )}
@@ -204,7 +205,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                   {area.whatToCheck.split(',').map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
-                      <span>{item.trim()}</span>
+                      <span>{item.trim().charAt(0).toUpperCase() + item.trim().slice(1)}</span>
                     </li>
                   ))}
                 </ul>
