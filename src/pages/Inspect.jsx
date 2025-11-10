@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench } from "lucide-react";
+import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight } from "lucide-react";
 import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
@@ -18,7 +17,7 @@ export default function Inspect() {
   const propertyIdFromUrl = urlParams.get('property');
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [currentView, setCurrentView] = React.useState('history'); // 'history' | 'setup' | 'walkthrough' | 'complete' | 'report'
+  const [currentView, setCurrentView] = React.useState('history');
   const [activeInspection, setActiveInspection] = React.useState(null);
   const [viewingReport, setViewingReport] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
@@ -91,10 +90,10 @@ export default function Inspect() {
 
   if (!selectedProperty) {
     return (
-      <div className="min-h-screen bg-white p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-white p-4">
+        <div className="max-w-2xl mx-auto pt-8">
           <Card className="border-none shadow-sm">
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-8 text-center">
               <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2" style={{ color: '#1B365D' }}>No Property Selected</h3>
               <p className="text-gray-600">Please select a property to start inspections</p>
@@ -135,7 +134,6 @@ export default function Inspect() {
         property={currentProperty}
         onViewPriorityQueue={() => {
           handleBackToHistory();
-          // TODO: Navigate to ACT → Prioritize
         }}
         onViewReport={() => {
           setViewingReport(activeInspection);
@@ -157,23 +155,26 @@ export default function Inspect() {
     );
   }
 
-  // Main history view
+  // Main history view - Mobile first
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>AWARE → INSPECT</h1>
-          <p className="text-xl text-gray-600">Visual Property Walkthrough</p>
-          <p className="text-gray-600 mt-1">Catch problems when they're small, cheap, and easy to fix</p>
+    <div className="min-h-screen bg-white pb-4">
+      <div className="mobile-container md:max-w-4xl md:mx-auto">
+        {/* Header - Mobile optimized */}
+        <div className="mb-6">
+          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+            INSPECT
+          </h1>
+          <p className="text-gray-600" style={{ fontSize: '16px', lineHeight: '1.5' }}>
+            Visual Property Walkthrough
+          </p>
         </div>
 
-        {/* Property Selector */}
-        <Card className="border-none shadow-sm">
-          <CardContent className="p-6">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
+        {/* Property Selector - Full width on mobile */}
+        <Card className="border-none shadow-sm mobile-card">
+          <CardContent className="p-4">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
             <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-              <SelectTrigger className="w-full md:w-96">
+              <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -187,12 +188,12 @@ export default function Inspect() {
           </CardContent>
         </Card>
 
-        {/* Start New Inspection Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 justify-center">
+        {/* Action Buttons - Stacked on mobile, side-by-side on desktop */}
+        <div className="space-y-3 mb-6 md:flex md:gap-4 md:space-y-0">
           <Button
             onClick={handleStartInspection}
-            className="h-16 px-12 text-lg font-bold"
-            style={{ backgroundColor: '#28A745' }}
+            className="w-full font-bold text-base"
+            style={{ backgroundColor: '#28A745', minHeight: '56px' }}
             disabled={baselineSystems.length === 0}
           >
             <Plus className="w-6 h-6 mr-2" />
@@ -201,23 +202,26 @@ export default function Inspect() {
           <Button
             onClick={() => setShowServiceDialog(true)}
             variant="outline"
-            className="h-16 px-12 text-lg font-bold"
-            style={{ borderColor: '#28A745', color: '#28A745' }}
+            className="w-full font-bold text-base"
+            style={{ borderColor: '#28A745', color: '#28A745', minHeight: '56px' }}
           >
             <Wrench className="w-6 h-6 mr-2" />
-            Schedule Professional Inspection
+            Get Professional Help
           </Button>
         </div>
 
+        {/* Baseline Warning - Mobile optimized */}
         {baselineSystems.length === 0 && (
-          <Card className="border-2" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <AlertTriangle className="w-8 h-8 flex-shrink-0" style={{ color: '#FF6B35' }} />
+          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FF6B35' }} />
                 <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>Complete Baseline First</h3>
-                  <p className="text-gray-700">
-                    Document your property systems in the Baseline module first. This personalizes your inspection walkthrough based on the systems you actually have.
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '18px' }}>
+                    Complete Baseline First
+                  </h3>
+                  <p className="text-gray-700 mb-0" style={{ fontSize: '16px', lineHeight: '1.5' }}>
+                    Document your property systems in the Baseline module first. This personalizes your inspection walkthrough.
                   </p>
                 </div>
               </div>
@@ -225,15 +229,17 @@ export default function Inspect() {
           </Card>
         )}
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* Inspection History */}
         <div>
-          <h2 className="text-2xl font-bold mb-6" style={{ color: '#1B365D' }}>INSPECTION HISTORY:</h2>
+          <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+            Inspection History
+          </h2>
           
           {sortedInspections.length === 0 ? (
             <Card className="border-none shadow-sm">
-              <CardContent className="p-12 text-center">
+              <CardContent className="p-8 text-center">
                 <Eye className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-xl font-semibold mb-2 text-gray-700">No Inspections Yet</h3>
                 <p className="text-gray-600">Start your first inspection to begin tracking your property's condition</p>
@@ -248,88 +254,75 @@ export default function Inspect() {
                 const flagCount = (inspection.checklist_items || []).filter(item => 
                   item.severity === 'Flag' || item.condition_rating === 'Poor'
                 ).length;
-                const monitorCount = (inspection.checklist_items || []).filter(item => 
-                  item.severity === 'Monitor' || item.condition_rating === 'Fair'
-                ).length;
                 const completedTasks = (inspection.checklist_items || []).filter(item => 
                   item.completed || item.status === 'Completed'
                 ).length;
                 const totalTasks = (inspection.checklist_items || []).length;
 
                 return (
-                  <Card key={inspection.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-bold" style={{ color: '#1B365D' }}>
+                  <Card 
+                    key={inspection.id} 
+                    className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleViewReport(inspection)}
+                    style={{ minHeight: '80px' }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
                               {inspection.season} {inspection.year}
                             </h3>
                             {inspection.status === 'Completed' && (
-                              <Badge className="bg-green-100 text-green-800">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Complete
+                              <Badge className="bg-green-100 text-green-800 flex items-center gap-1" style={{ minHeight: '24px' }}>
+                                <CheckCircle className="w-3 h-3" />
+                                <span style={{ fontSize: '12px' }}>Complete</span>
                               </Badge>
                             )}
                             {inspection.status === 'In Progress' && (
-                              <Badge className="bg-blue-100 text-blue-800">
-                                <Clock className="w-3 h-3 mr-1" />
-                                In Progress
+                              <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1" style={{ minHeight: '24px' }}>
+                                <Clock className="w-3 h-3" />
+                                <span style={{ fontSize: '12px' }}>In Progress</span>
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">
+                          
+                          <p className="text-sm text-gray-600 mb-2" style={{ fontSize: '14px' }}>
                             {inspection.inspection_date 
                               ? new Date(inspection.inspection_date).toLocaleDateString('en-US', { 
-                                  month: 'long', 
+                                  month: 'short', 
                                   day: 'numeric', 
                                   year: 'numeric' 
                                 })
                               : 'Date not recorded'}
                           </p>
-                          <div className="flex flex-wrap gap-3">
-                            {urgentCount > 0 && (
-                              <span className="text-sm">
-                                🚨 <strong>{urgentCount}</strong> urgent
-                              </span>
-                            )}
-                            {flagCount > 0 && (
-                              <span className="text-sm">
-                                ⚠️ <strong>{flagCount}</strong> flag
-                              </span>
-                            )}
-                            {monitorCount > 0 && (
-                              <span className="text-sm">
-                                ✅ <strong>{monitorCount}</strong> monitor
+                          
+                          <div className="flex flex-wrap gap-3 text-sm" style={{ fontSize: '14px' }}>
+                            {urgentCount > 0 && <span>🚨 <strong>{urgentCount}</strong> urgent</span>}
+                            {flagCount > 0 && <span>⚠️ <strong>{flagCount}</strong> flag</span>}
+                            {totalTasks > 0 && (
+                              <span className="text-gray-600">
+                                {completedTasks}/{totalTasks} addressed
                               </span>
                             )}
                           </div>
-                          {totalTasks > 0 && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              <strong>Status:</strong> {completedTasks} of {totalTasks} addressed
-                              {completedTasks === totalTasks && " ✓"}
-                            </p>
-                          )}
                         </div>
-                        <div className="flex gap-2">
-                          {inspection.status === 'In Progress' && (
-                            <Button
-                              onClick={() => handleContinueInspection(inspection)}
-                              style={{ backgroundColor: '#28A745' }}
-                              className="whitespace-nowrap"
-                            >
-                              Continue Inspection
-                            </Button>
-                          )}
-                          <Button
-                            onClick={() => handleViewReport(inspection)}
-                            variant="outline"
-                            className="whitespace-nowrap"
-                          >
-                            View Report
-                          </Button>
-                        </div>
+                        
+                        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
                       </div>
+                      
+                      {inspection.status === 'In Progress' && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleContinueInspection(inspection);
+                          }}
+                          className="w-full mt-3"
+                          style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                        >
+                          Continue Inspection
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 );

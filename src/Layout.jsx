@@ -18,27 +18,10 @@ import {
   Building2,
   Settings,
   Menu,
-  Wrench
+  Wrench,
+  X
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import BottomNav from "./components/navigation/BottomNav";
 
 const navigationItems = [
   {
@@ -95,6 +78,7 @@ const navigationItems = [
 
 export default function Layout({ children }) {
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
     AWARE: true,
     ACT: true,
@@ -109,7 +93,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <SidebarProvider>
+    <>
       <style>{`
         :root {
           --primary: #1B365D;
@@ -119,49 +103,81 @@ export default function Layout({ children }) {
           --background: #FAFAF9;
         }
         
-        /* CRITICAL: Solid background styling for all modals and popups */
-        /* Applied system-wide to ensure readability and proper visual hierarchy */
+        /* Mobile-first base styles */
+        * {
+          -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
+        }
         
-        /* Modal Overlay - Dark semi-opaque background */
+        html {
+          font-size: 16px;
+          -webkit-text-size-adjust: 100%;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          line-height: 1.5;
+        }
+        
+        /* Typography mobile-first */
+        h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }
+        h2 { font-size: 22px; font-weight: 600; line-height: 1.3; }
+        h3 { font-size: 18px; font-weight: 600; line-height: 1.4; }
+        p, div { font-size: 16px; line-height: 1.5; }
+        small { font-size: 14px; line-height: 1.4; }
+        
+        /* Touch targets minimum 44px */
+        button, a, [role="button"] {
+          min-height: 44px;
+          min-width: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Form elements minimum 48px */
+        input, textarea, select {
+          min-height: 48px;
+          font-size: 16px;
+        }
+        
+        /* Disable zoom on input focus iOS */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+          select, textarea, input {
+            font-size: 16px;
+          }
+        }
+        
+        /* CRITICAL: Solid background styling for all modals and popups */
         [data-radix-dialog-overlay] {
           background-color: rgba(0, 0, 0, 0.75) !important;
           backdrop-filter: none !important;
         }
         
-        /* Modal Content Card - Solid white background */
         [data-radix-dialog-content] {
           background-color: #FFFFFF !important;
           opacity: 1 !important;
           border-radius: 8px !important;
           box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
-          padding: 24px !important;
+          padding: 16px !important;
+          width: calc(100vw - 32px) !important;
+          max-height: 85vh !important;
+          overflow-y: auto !important;
         }
         
-        /* Ensure all dialog headers are solid white */
-        [data-radix-dialog-content] [role="dialog"] > div:first-child,
-        .dialog-header,
-        [class*="DialogHeader"] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
+        @media (min-width: 768px) {
+          [data-radix-dialog-content] {
+            padding: 24px !important;
+            width: auto !important;
+            max-width: 600px !important;
+          }
         }
         
-        /* Dialog title styling */
-        [data-radix-dialog-title],
-        .dialog-title,
-        [class*="DialogTitle"] {
+        [data-radix-dialog-title] {
           color: #1B365D !important;
-          font-size: 24px !important;
+          font-size: 22px !important;
           font-weight: 700 !important;
-          background-color: transparent !important;
         }
         
-        /* Dialog body content */
-        [data-radix-dialog-content] > div {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-        }
-        
-        /* Form inputs in dialogs */
         [data-radix-dialog-content] input,
         [data-radix-dialog-content] textarea,
         [data-radix-dialog-content] select {
@@ -169,6 +185,7 @@ export default function Layout({ children }) {
           border: 1px solid #CCCCCC !important;
           color: #333333 !important;
           opacity: 1 !important;
+          min-height: 48px !important;
         }
         
         [data-radix-dialog-content] input:focus,
@@ -178,28 +195,8 @@ export default function Layout({ children }) {
           outline: none !important;
         }
         
-        /* Buttons in dialogs */
-        [data-radix-dialog-content] button {
-          opacity: 1 !important;
-        }
-        
-        /* Select dropdowns */
-        [data-radix-select-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-          border-radius: 8px !important;
-          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
-        }
-        
-        /* Popover content */
-        [data-radix-popover-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-          border-radius: 8px !important;
-          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
-        }
-        
-        /* Dropdown menu content */
+        [data-radix-select-content],
+        [data-radix-popover-content],
         [data-radix-dropdown-menu-content] {
           background-color: #FFFFFF !important;
           opacity: 1 !important;
@@ -207,51 +204,43 @@ export default function Layout({ children }) {
           box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
         }
         
-        /* Sheet/Sidebar overlays */
-        [data-radix-sheet-overlay] {
-          background-color: rgba(0, 0, 0, 0.75) !important;
+        /* Mobile spacing */
+        @media (max-width: 767px) {
+          .mobile-container {
+            padding: 16px;
+          }
+          
+          .mobile-section {
+            margin-bottom: 24px;
+          }
+          
+          .mobile-card {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+          }
         }
         
-        [data-radix-sheet-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
         }
         
-        /* Cards used as modals */
-        .modal-card,
-        .popup-card,
-        .form-card {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-          border-radius: 8px !important;
-          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
+        /* Hide scrollbar but keep functionality */
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         
-        /* Ensure no transparency on any modal/popup backgrounds */
-        [role="dialog"],
-        [role="alertdialog"],
-        [data-state="open"][data-radix-dialog-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-        }
-        
-        /* Fix any glass morphism or backdrop blur */
-        .backdrop-blur,
-        [class*="backdrop-blur"] {
-          backdrop-filter: none !important;
-        }
-        
-        /* Ensure solid backgrounds for all form sections */
-        form > div,
-        .form-section,
-        .form-group {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
+      
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
-        <Sidebar className="border-r border-gray-200">
-          <SidebarHeader className="border-b border-gray-200 p-4">
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
+          <div className="border-b border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
                 <Home className="w-6 h-6 text-white" />
@@ -261,93 +250,175 @@ export default function Layout({ children }) {
                 <p className="text-xs text-gray-500">Home Maintenance</p>
               </div>
             </div>
-          </SidebarHeader>
+          </div>
           
-          <SidebarContent className="p-2">
-            <SidebarGroup>
-              <SidebarMenu>
-                {navigationItems.map((item) => {
-                  if (item.subItems) {
-                    return (
-                      <Collapsible 
-                        key={item.title}
-                        open={openSections[item.title]}
-                        onOpenChange={() => toggleSection(item.title)}
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton className="hover:bg-gray-100 transition-colors rounded-lg mb-1">
-                              <item.icon className={`w-4 h-4 ${item.color}`} />
-                              <span className="font-semibold">{item.title}</span>
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenu className="ml-4 mt-1">
-                              {item.subItems.map((subItem) => (
-                                <SidebarMenuItem key={subItem.title}>
-                                  <SidebarMenuButton 
-                                    asChild
-                                    className={`hover:bg-gray-100 transition-colors rounded-lg ${
-                                      location.pathname === subItem.url ? 'bg-gray-100 font-medium' : ''
-                                    }`}
-                                  >
-                                    <Link to={subItem.url} className="flex items-center gap-2 px-3 py-2">
-                                      <subItem.icon className="w-4 h-4 text-gray-500" />
-                                      <span className="text-sm">{subItem.title}</span>
-                                    </Link>
-                                  </SidebarMenuButton>
-                                </SidebarMenuItem>
-                              ))}
-                            </SidebarMenu>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    );
-                  }
-                  
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={`hover:bg-gray-100 transition-colors rounded-lg mb-1 ${
-                          location.pathname === item.url ? 'bg-gray-100 font-medium' : ''
-                        }`}
-                      >
-                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2">
-                          <item.icon className="w-4 h-4 text-gray-600" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
+          <div className="flex-1 overflow-y-auto p-2">
+            {navigationItems.map((item) => {
+              if (item.subItems) {
+                return (
+                  <div key={item.title} className="mb-2">
+                    <button
+                      onClick={() => toggleSection(item.title)}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <item.icon className={`w-4 h-4 ${item.color}`} />
+                      <span className="font-semibold flex-1 text-left">{item.title}</span>
+                    </button>
+                    {openSections[item.title] && (
+                      <div className="ml-4 mt-1">
+                        {item.subItems.map((subItem) => (
+                          <Link
+                            key={subItem.title}
+                            to={subItem.url}
+                            className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors ${
+                              location.pathname === subItem.url ? 'bg-gray-100 font-medium' : ''
+                            }`}
+                          >
+                            <subItem.icon className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">{subItem.title}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              return (
+                <Link
+                  key={item.title}
+                  to={item.url}
+                  className={`flex items-center gap-3 px-3 py-2 mb-1 hover:bg-gray-100 rounded-lg transition-colors ${
+                    location.pathname === item.url ? 'bg-gray-100 font-medium' : ''
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 text-gray-600" />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
 
-          <SidebarFooter className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200 p-4">
             <div className="text-xs text-gray-500 text-center">
               <p className="font-medium text-gray-700 mb-1">Prevent Disasters</p>
               <p>Turn $50 problems into savings, not $15K emergencies</p>
             </div>
-          </SidebarFooter>
-        </Sidebar>
+          </div>
+        </aside>
 
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/75 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Mobile Slide-out Menu */}
+        <div 
+          className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-50 transform transition-transform duration-300 ${
+            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
+                <Home className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900">360° Method</h2>
+                <p className="text-xs text-gray-500">Home Maintenance</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+              style={{ minHeight: '44px', minWidth: '44px' }}
+            >
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+          
+          <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 80px)' }}>
+            {navigationItems.map((item) => {
+              if (item.subItems) {
+                return (
+                  <div key={item.title} className="mb-4">
+                    <button
+                      onClick={() => toggleSection(item.title)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
+                      style={{ minHeight: '48px' }}
+                    >
+                      <item.icon className={`w-5 h-5 ${item.color}`} />
+                      <span className="font-semibold flex-1 text-left text-lg">{item.title}</span>
+                    </button>
+                    {openSections[item.title] && (
+                      <div className="ml-2 mt-2 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <Link
+                            key={subItem.title}
+                            to={subItem.url}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors ${
+                              location.pathname === subItem.url ? 'bg-gray-100 font-medium' : ''
+                            }`}
+                            style={{ minHeight: '48px' }}
+                          >
+                            <subItem.icon className="w-5 h-5 text-gray-500" />
+                            <span className="text-base">{subItem.title}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              return (
+                <Link
+                  key={item.title}
+                  to={item.url}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 p-3 mb-2 hover:bg-gray-100 rounded-lg transition-colors ${
+                    location.pathname === item.url ? 'bg-gray-100 font-medium' : ''
+                  }`}
+                  style={{ minHeight: '48px' }}
+                >
+                  <item.icon className="w-5 h-5 text-gray-600" />
+                  <span className="text-lg">{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
         <main className="flex-1 flex flex-col">
-          <header className="bg-white border-b border-gray-200 px-6 py-4 md:hidden">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors">
-                <Menu className="w-5 h-5" />
-              </SidebarTrigger>
-              <h1 className="text-lg font-semibold">360° Method</h1>
+          {/* Mobile Top Header */}
+          <header className="md:hidden sticky top-0 bg-white border-b border-gray-200 z-30" style={{ height: '56px' }}>
+            <div className="flex items-center justify-between h-full px-4">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                style={{ minHeight: '44px', minWidth: '44px' }}
+              >
+                <Menu className="w-6 h-6 text-gray-900" />
+              </button>
+              <h1 className="text-lg font-semibold text-gray-900">360° Method</h1>
+              <div style={{ width: '44px' }} /> {/* Spacer for centering */}
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">
+          {/* Content Area with mobile padding for bottom nav */}
+          <div className="flex-1 overflow-auto pb-16 md:pb-0">
             {children}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <BottomNav />
       </div>
-    </SidebarProvider>
+    </>
   );
 }
