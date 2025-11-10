@@ -1,63 +1,48 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { ChevronRight } from "lucide-react";
 
-export default function PhaseProgressCard({ phase, icon: Icon, color, progress, description, linkText, linkUrl }) {
-  const colorClasses = {
-    blue: {
-      bg: "bg-blue-50",
-      border: "border-blue-200",
-      icon: "text-blue-600",
-      button: "bg-blue-600 hover:bg-blue-700",
-      progress: "[&>div]:bg-blue-600"
-    },
-    orange: {
-      bg: "bg-orange-50",
-      border: "border-orange-200",
-      icon: "text-orange-600",
-      button: "bg-orange-600 hover:bg-orange-700",
-      progress: "[&>div]:bg-orange-600"
-    },
-    green: {
-      bg: "bg-green-50",
-      border: "border-green-200",
-      icon: "text-green-600",
-      button: "bg-green-600 hover:bg-green-700",
-      progress: "[&>div]:bg-green-600"
-    }
-  };
-
-  const colors = colorClasses[color];
-
+export default function PhaseProgressCard({ phase, icon: Icon, color, progress, description, action, actionUrl }) {
   return (
-    <Card className={`border-2 ${colors.border} shadow-lg hover:shadow-xl transition-shadow`}>
-      <CardHeader className={`${colors.bg} border-b-2 ${colors.border}`}>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className={`w-6 h-6 ${colors.icon}`} />
-          <span className="text-xl font-bold">{phase}</span>
+    <Card className="border-none shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2" style={{ fontSize: '18px' }}>
+          <Icon className="w-5 h-5" style={{ color }} />
+          <span>{phase}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 space-y-4">
-        <p className="text-gray-600 text-sm">{description}</p>
-        <div>
+      <CardContent>
+        <p className="text-gray-600 mb-4" style={{ fontSize: '14px', lineHeight: '1.4' }}>
+          {description}
+        </p>
+        <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-600">Progress</span>
             <span className="font-semibold text-gray-900">{progress}%</span>
           </div>
-          <Progress value={progress} className={`h-2 ${colors.progress}`} />
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="h-2 rounded-full transition-all"
+              style={{ 
+                width: `${progress}%`,
+                backgroundColor: color
+              }}
+            />
+          </div>
         </div>
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Link to={linkUrl} className="w-full">
-          <Button className={`w-full gap-2 ${colors.button}`}>
-            {linkText}
+        <Button
+          asChild
+          className="w-full"
+          style={{ backgroundColor: color, minHeight: '44px' }}
+        >
+          <Link to={actionUrl} className="flex items-center justify-center gap-2">
+            {action}
             <ChevronRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </CardFooter>
+          </Link>
+        </Button>
+      </CardContent>
     </Card>
   );
 }
