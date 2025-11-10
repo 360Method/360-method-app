@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClipboardCheck, Calendar, AlertCircle, Home } from "lucide-react";
 import InspectionCard from "../components/inspect/InspectionCard";
 import InspectionDialog from "../components/inspect/InspectionDialog";
-import { generateInspectionTasksFromBaseline } from "../utils/inspectionTaskGenerator";
+import { generateInspectionTasksFromBaseline } from "@/utils/inspectionTaskGenerator";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 
