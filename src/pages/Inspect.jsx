@@ -6,10 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock } from "lucide-react";
-import InspectionSetup from "../components/inspect/InspectionSetup";
-import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
-import InspectionComplete from "../components/inspect/InspectionComplete";
-import InspectionReport from "../components/inspect/InspectionReport";
+import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
+import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
+import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
+import InspectionReport from "../components/inspect/InspectionReport.jsx";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
