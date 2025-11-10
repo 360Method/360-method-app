@@ -73,6 +73,11 @@ export default function Inspect() {
     setCurrentView('report');
   };
 
+  const handleContinueInspection = (inspection) => {
+    setActiveInspection(inspection);
+    setCurrentView('walkthrough');
+  };
+
   const handleBackToHistory = () => {
     setCurrentView('history');
     setActiveInspection(null);
@@ -294,13 +299,24 @@ export default function Inspect() {
                             </p>
                           )}
                         </div>
-                        <Button
-                          onClick={() => handleViewReport(inspection)}
-                          variant="outline"
-                          className="whitespace-nowrap"
-                        >
-                          View Report
-                        </Button>
+                        <div className="flex gap-2">
+                          {inspection.status === 'In Progress' && (
+                            <Button
+                              onClick={() => handleContinueInspection(inspection)}
+                              style={{ backgroundColor: '#28A745' }}
+                              className="whitespace-nowrap"
+                            >
+                              Continue Inspection
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => handleViewReport(inspection)}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            View Report
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
