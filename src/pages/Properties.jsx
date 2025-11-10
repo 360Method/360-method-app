@@ -13,7 +13,7 @@ import { Home, Plus, MapPin, Calendar, Maximize, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
-import { CLIMATE_ZONES, detectClimateZone } from "../utils/climateZones.js";
+import { CLIMATE_ZONES, detectClimateZone } from "@/utils/climateZones";
 
 export default function Properties() {
   const [showDialog, setShowDialog] = React.useState(false);
