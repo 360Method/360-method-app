@@ -5,15 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, Clock } from "lucide-react";
+import { CLIMATE_ZONES } from "../../utils/climateZones";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
-
-const SEASON_FOCUS = {
-  Spring: "Post-winter damage assessment, drainage prep for spring rains, AC testing before summer heat, pest prevention, growth season prep",
-  Summer: "AC system performance, outdoor maintenance in good weather, heat-related stress on systems, prepare for fall",
-  Fall: "Heating system testing before winter, gutter cleaning before rain season, weatherproofing, storm preparation",
-  Winter: "Heating system monitoring, freeze protection, indoor air quality, ice dam prevention, safety systems check"
-};
 
 const SEASON_ICONS = {
   Spring: "🌸",
@@ -31,6 +25,9 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
     if (month >= 8 && month <= 10) return "Fall";
     return "Winter";
   });
+
+  const climateZone = property.climate_zone ? CLIMATE_ZONES[property.climate_zone] : null;
+  const seasonData = climateZone?.seasonalWindows[selectedSeason];
 
   const createInspectionMutation = useMutation({
     mutationFn: async () => {
@@ -69,6 +66,12 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
 
         <div>
           <h1 className="text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>New Inspection</h1>
+          {climateZone && (
+            <p className="text-gray-600 flex items-center gap-2">
+              <span className="text-xl">{climateZone.icon}</span>
+              {climateZone.name}
+            </p>
+          )}
         </div>
 
         {/* Property Selection */}
@@ -138,51 +141,97 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
               <label className="text-sm font-medium text-gray-700 block">Season:</label>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {SEASONS.map((season) => (
-                  <button
-                    key={season}
-                    onClick={() => setSelectedSeason(season)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      selectedSeason === season
-                        ? 'border-current shadow-md'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    style={selectedSeason === season ? { 
-                      borderColor: '#1B365D', 
-                      backgroundColor: '#F0F4F8' 
-                    } : {}}
-                  >
-                    <div className="text-3xl mb-2">{SEASON_ICONS[season]}</div>
-                    <div className="font-semibold" style={selectedSeason === season ? { color: '#1B365D' } : {}}>
-                      {season}
-                    </div>
-                    {season === selectedSeason && (
-                      <Badge className="mt-2 bg-green-100 text-green-800 text-xs">
-                        Current
-                      </Badge>
-                    )}
-                  </button>
-                ))}
+                {SEASONS.map((season) => {
+                  const isCurrentSeason = season === selectedSeason;
+                  const seasonInfo = climateZone?.seasonalWindows[season];
+                  
+                  return (
+                    <button
+                      key={season}
+                      onClick={() => setSelectedSeason(season)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        isCurrentSeason
+                          ? 'border-current shadow-md'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={isCurrentSeason ? { 
+                        borderColor: '#1B365D', 
+                        backgroundColor: '#F0F4F8' 
+                      } : {}}
+                    >
+                      <div className="text-3xl mb-2">{SEASON_ICONS[season]}</div>
+                      <div className="font-semibold" style={isCurrentSeason ? { color: '#1B365D' } : {}}>
+                        {season}
+                      </div>
+                      {seasonInfo?.urgencyLevel === 'HIGH' && (
+                        <Badge className="mt-2 bg-orange-600 text-white text-xs">
+                          High Priority
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Season Focus (only for seasonal) */}
-        {inspectionType === 'seasonal' && (
+        {/* Season Focus (only for seasonal with climate data) */}
+        {inspectionType === 'seasonal' && seasonData && (
           <Card className="border-2" style={{ borderColor: '#FFC107', backgroundColor: '#FFFBF0' }}>
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
                 <Lightbulb className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FFC107' }} />
                 <div>
                   <h3 className="text-lg font-bold mb-2" style={{ color: '#1B365D' }}>
-                    💡 {selectedSeason.toUpperCase()} FOCUS:
+                    💡 {selectedSeason.toUpperCase()} FOCUS FOR {climateZone.name.split('(')[0].trim().toUpperCase()}:
                   </h3>
-                  <p className="text-gray-800 leading-relaxed">
-                    {SEASON_FOCUS[selectedSeason]}
+                  <p className="text-gray-800 leading-relaxed mb-3">
+                    {seasonData.focus}
                   </p>
+                  
+                  {seasonData.urgencyNote && (
+                    <div className={`p-3 rounded-lg mt-3 ${seasonData.urgencyLevel === 'HIGH' ? 'bg-orange-100 border border-orange-300' : 'bg-blue-100 border border-blue-300'}`}>
+                      <p className="text-sm font-medium" style={{ color: seasonData.urgencyLevel === 'HIGH' ? '#DC3545' : '#1B365D' }}>
+                        ⚠️ {seasonData.urgencyNote}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {seasonData.criticalTasks && seasonData.criticalTasks.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">Critical Priority Tasks:</p>
+                      <ul className="text-sm text-gray-700 space-y-1">
+                        {seasonData.criticalTasks.map((task, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span className="text-orange-600">•</span>
+                            {task.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Regional Climate Profile */}
+        {inspectionType === 'seasonal' && climateZone && (
+          <Card className="border-2 border-blue-200 bg-blue-50">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold mb-3" style={{ color: '#1B365D' }}>
+                {climateZone.icon} Regional Climate Considerations:
+              </h3>
+              <ul className="text-sm text-gray-700 space-y-2">
+                {climateZone.profile.keyConcerns.map((concern, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    {concern}
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}
