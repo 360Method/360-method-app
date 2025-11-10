@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ import { Home, Plus, MapPin, Calendar, Maximize, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
-import { CLIMATE_ZONES, detectClimateZone } from "../utils/climateZones";
+import { CLIMATE_ZONES, detectClimateZone } from "../utils/climateZones.js";
 
 export default function Properties() {
   const [showDialog, setShowDialog] = React.useState(false);

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.j
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
 import InspectionReport from "../components/inspect/InspectionReport.jsx";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
-import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "../utils/climateZones";
+import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "../utils/climateZones.js";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);

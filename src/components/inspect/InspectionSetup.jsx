@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, Clock } from "lucide-react";
-import { CLIMATE_ZONES } from "../../utils/climateZones";
+import { CLIMATE_ZONES } from "../../utils/climateZones.js";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 
@@ -253,7 +253,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           className="w-full h-14 text-lg font-bold"
           style={{ backgroundColor: '#28A745' }}
         >
-          {createInspectionMutation.isPending ? 'Starting..' : 'Begin Walkthrough'}
+          {createInspectionMutation.isPending ? 'Starting...' : 'Begin Walkthrough'}
         </Button>
       </div>
     </div>
