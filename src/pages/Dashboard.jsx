@@ -30,43 +30,43 @@ export default function Dashboard() {
   const { data: allSystems = [] } = useQuery({
     queryKey: ['allSystems'],
     queryFn: async () => {
-      if (properties.length === 0) return [];
+      if (!properties || properties.length === 0) return [];
       const systemPromises = properties.map(p => 
         base44.entities.SystemBaseline.filter({ property_id: p.id })
       );
       const results = await Promise.all(systemPromises);
       return results.flat();
     },
-    enabled: properties.length > 0,
+    enabled: !!properties && properties.length > 0,
   });
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['allTasks'],
     queryFn: async () => {
-      if (properties.length === 0) return [];
+      if (!properties || properties.length === 0) return [];
       const taskPromises = properties.map(p => 
         base44.entities.MaintenanceTask.filter({ property_id: p.id })
       );
       const results = await Promise.all(taskPromises);
       return results.flat();
     },
-    enabled: properties.length > 0,
+    enabled: !!properties && properties.length > 0,
   });
 
-  const avgHealthScore = properties.length > 0
+  const avgHealthScore = properties && properties.length > 0
     ? Math.round(properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length)
     : 0;
 
-  const avgBaselineCompletion = properties.length > 0
+  const avgBaselineCompletion = properties && properties.length > 0
     ? Math.round(properties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / properties.length)
     : 0;
 
-  const activeTasks = allTasks.filter(t => t.status !== 'Completed');
+  const activeTasks = (allTasks || []).filter(t => t.status !== 'Completed');
   const highPriorityTasks = activeTasks.filter(t => t.priority === 'High');
-  const scheduledTasks = allTasks.filter(t => t.status === 'Scheduled' || t.status === 'In Progress');
+  const scheduledTasks = (allTasks || []).filter(t => t.status === 'Scheduled' || t.status === 'In Progress');
 
-  const totalSpent = properties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
-  const totalPrevented = properties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
+  const totalSpent = (properties || []).reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
+  const totalPrevented = (properties || []).reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
 
   // Today's Mission - Check Smoke Detector Batteries
   const todaysMission = {
@@ -85,7 +85,7 @@ export default function Dashboard() {
           <p className="text-gray-600 mt-1">Your property portfolio at a glance</p>
         </div>
 
-        {properties.length === 0 ? (
+        {!properties || properties.length === 0 ? (
           <Card className="border-none shadow-lg">
             <CardContent className="p-12 text-center">
               <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
