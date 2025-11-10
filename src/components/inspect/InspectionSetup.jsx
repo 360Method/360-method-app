@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, Clock } from "lucide-react";
-import { CLIMATE_ZONES } from "../../utils/climateZones";
+import { CLIMATE_ZONES } from "@/utils/climateZones";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 
@@ -74,7 +75,6 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           )}
         </div>
 
-        {/* Property Selection */}
         <Card className="border-none shadow-sm">
           <CardContent className="p-6">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Property:</label>
@@ -82,7 +82,6 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           </CardContent>
         </Card>
 
-        {/* Inspection Type */}
         <Card className="border-none shadow-sm">
           <CardContent className="p-6 space-y-4">
             <label className="text-sm font-medium text-gray-700 block">Inspection Type:</label>
@@ -134,7 +133,6 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           </CardContent>
         </Card>
 
-        {/* Season Selection (only for seasonal) */}
         {inspectionType === 'seasonal' && (
           <Card className="border-none shadow-sm">
             <CardContent className="p-6 space-y-4">
@@ -176,67 +174,64 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           </Card>
         )}
 
-        {/* Season Focus (only for seasonal with climate data) */}
         {inspectionType === 'seasonal' && seasonData && (
-          <Card className="border-2" style={{ borderColor: '#FFC107', backgroundColor: '#FFFBF0' }}>
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FFC107' }} />
-                <div>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: '#1B365D' }}>
-                    💡 {selectedSeason.toUpperCase()} FOCUS FOR {climateZone.name.split('(')[0].trim().toUpperCase()}:
-                  </h3>
-                  <p className="text-gray-800 leading-relaxed mb-3">
-                    {seasonData.focus}
-                  </p>
-                  
-                  {seasonData.urgencyNote && (
-                    <div className={`p-3 rounded-lg mt-3 ${seasonData.urgencyLevel === 'HIGH' ? 'bg-orange-100 border border-orange-300' : 'bg-blue-100 border border-blue-300'}`}>
-                      <p className="text-sm font-medium" style={{ color: seasonData.urgencyLevel === 'HIGH' ? '#DC3545' : '#1B365D' }}>
-                        ⚠️ {seasonData.urgencyNote}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {seasonData.criticalTasks && seasonData.criticalTasks.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm font-semibold text-gray-900 mb-2">Critical Priority Tasks:</p>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        {seasonData.criticalTasks.map((task, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <span className="text-orange-600">•</span>
-                            {task.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+          <>
+            <Card className="border-2" style={{ borderColor: '#FFC107', backgroundColor: '#FFFBF0' }}>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FFC107' }} />
+                  <div>
+                    <h3 className="text-lg font-bold mb-2" style={{ color: '#1B365D' }}>
+                      💡 {selectedSeason.toUpperCase()} FOCUS FOR {climateZone.name.split('(')[0].trim().toUpperCase()}:
+                    </h3>
+                    <p className="text-gray-800 leading-relaxed mb-3">
+                      {seasonData.focus}
+                    </p>
+                    
+                    {seasonData.urgencyNote && (
+                      <div className={`p-3 rounded-lg mt-3 ${seasonData.urgencyLevel === 'HIGH' ? 'bg-orange-100 border border-orange-300' : 'bg-blue-100 border border-blue-300'}`}>
+                        <p className="text-sm font-medium" style={{ color: seasonData.urgencyLevel === 'HIGH' ? '#DC3545' : '#1B365D' }}>
+                          ⚠️ {seasonData.urgencyNote}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {seasonData.criticalTasks && seasonData.criticalTasks.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-semibold text-gray-900 mb-2">Critical Priority Tasks:</p>
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {seasonData.criticalTasks.map((task, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-orange-600">•</span>
+                              {task.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-3" style={{ color: '#1B365D' }}>
+                  {climateZone.icon} Regional Climate Considerations:
+                </h3>
+                <ul className="text-sm text-gray-700 space-y-2">
+                  {climateZone.profile.keyConcerns.map((concern, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold">•</span>
+                      {concern}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </>
         )}
 
-        {/* Regional Climate Profile */}
-        {inspectionType === 'seasonal' && climateZone && (
-          <Card className="border-2 border-blue-200 bg-blue-50">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-bold mb-3" style={{ color: '#1B365D' }}>
-                {climateZone.icon} Regional Climate Considerations:
-              </h3>
-              <ul className="text-sm text-gray-700 space-y-2">
-                {climateZone.profile.keyConcerns.map((concern, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold">•</span>
-                    {concern}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Time Estimate */}
         <Card className="border-none shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
@@ -253,7 +248,6 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           </CardContent>
         </Card>
 
-        {/* Begin Button */}
         <Button
           onClick={handleBeginWalkthrough}
           disabled={createInspectionMutation.isPending}

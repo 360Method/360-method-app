@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.j
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
 import InspectionReport from "../components/inspect/InspectionReport.jsx";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
-import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "../utils/climateZones";
+import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "@/utils/climateZones";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -197,7 +198,6 @@ export default function Inspect() {
   return (
     <div className="min-h-screen bg-white pb-4">
       <div className="mobile-container md:max-w-4xl md:mx-auto">
-        {/* Header - Mobile optimized */}
         <div className="mb-6">
           <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
             INSPECT
@@ -207,7 +207,6 @@ export default function Inspect() {
           </p>
         </div>
 
-        {/* Property Selector - Full width on mobile */}
         <Card className="border-none shadow-sm mobile-card">
           <CardContent className="p-4">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
@@ -226,7 +225,6 @@ export default function Inspect() {
           </CardContent>
         </Card>
 
-        {/* Climate Zone Display */}
         {climateZone && (
           <Card className="border-none shadow-sm mobile-card">
             <CardContent className="p-4">
@@ -238,7 +236,6 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* Current Season Status */}
         {currentSeasonData && climateZone && (
           <Card 
             className="border-2 mobile-card" 
@@ -302,7 +299,6 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* Action Buttons - Stacked on mobile, side-by-side on desktop */}
         <div className="space-y-3 mb-6 md:flex md:gap-4 md:space-y-0">
           <Button
             onClick={handleStartInspection}
@@ -324,7 +320,6 @@ export default function Inspect() {
           </Button>
         </div>
 
-        {/* Baseline Warning - Mobile optimized */}
         {baselineSystems.length === 0 && (
           <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
             <CardContent className="p-4">
@@ -345,7 +340,6 @@ export default function Inspect() {
 
         <hr className="border-gray-200 my-6" />
 
-        {/* Inspection History */}
         <div>
           <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
             Inspection History
