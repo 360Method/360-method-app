@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -149,7 +150,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     notes: currentIssueData.description
   };
 
-  const isFormValid = description && isQuickFix !== null && (isQuickFix === true || estimatedCost);
+  const isFormValid = description.trim() && isQuickFix !== null && (isQuickFix === true || estimatedCost);
 
   return (
     <div className="min-h-screen bg-white pb-24">
@@ -302,7 +303,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
             <CardContent className="p-4 space-y-4">
               <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS?
+                ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS? *
               </h2>
               <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
                 Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue.
@@ -345,7 +346,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-6 h-6" style={{ color: '#1B365D' }} />
                   <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                    💰 ESTIMATED COST:
+                    💰 ESTIMATED COST: *
                   </h2>
                 </div>
                 
@@ -413,13 +414,39 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </>
         )}
 
+        {/* Validation Message */}
+        {!isFormValid && (
+          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1">Complete Required Fields:</p>
+                  <ul className="text-sm text-gray-700 space-y-1 pl-5 list-disc">
+                    {!description.trim() && <li>Enter a description of the issue</li>}
+                    {isQuickFix === null && <li>Answer if this is a quick fix (5 min or less)</li>}
+                    {isQuickFix === false && !estimatedCost && <li>Select estimated cost range</li>}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 pt-6 border-t">
           <Button
             onClick={handleSave}
             disabled={!isFormValid || createTaskMutation.isPending}
             className="w-full font-bold"
-            style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+            style={{ 
+              backgroundColor: isFormValid && !createTaskMutation.isPending ? '#28A745' : '#CCCCCC',
+              color: isFormValid && !createTaskMutation.isPending ? '#FFFFFF' : '#666666',
+              minHeight: '56px', 
+              fontSize: '16px',
+              cursor: isFormValid && !createTaskMutation.isPending ? 'pointer' : 'not-allowed',
+              opacity: isFormValid && !createTaskMutation.isPending ? 1 : 0.6
+            }}
           >
             {createTaskMutation.isPending ? 'Saving...' : 'Save Issue & Continue Inspection'}
           </Button>
