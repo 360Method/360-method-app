@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,16 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, CheckCircle, Info, Upload, X } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Plus, Upload, X } from "lucide-react";
 
-export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription }) {
+export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription, allowsMultiple }) {
   const [formData, setFormData] = React.useState({
     system_type: "",
+    nickname: "",
     brand_model: "",
     installation_year: "",
     warranty_info: "",
     last_service_date: "",
     next_service_date: "",
+    last_battery_change: "",
+    last_test_date: "",
     condition: "Good",
     condition_notes: "",
     warning_signs_present: [],
@@ -30,6 +34,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [photos, setPhotos] = React.useState([]);
   const [uploading, setUploading] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
+  const [showAddAnother, setShowAddAnother] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -37,11 +42,14 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     if (editingSystem) {
       setFormData({
         system_type: editingSystem.system_type || "",
+        nickname: editingSystem.nickname || "",
         brand_model: editingSystem.brand_model || "",
         installation_year: editingSystem.installation_year || "",
         warranty_info: editingSystem.warranty_info || "",
         last_service_date: editingSystem.last_service_date || "",
         next_service_date: editingSystem.next_service_date || "",
+        last_battery_change: editingSystem.last_battery_change || "",
+        last_test_date: editingSystem.last_test_date || "",
         condition: editingSystem.condition || "Good",
         condition_notes: editingSystem.condition_notes || "",
         warning_signs_present: editingSystem.warning_signs_present || [],
@@ -76,15 +84,15 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     // Plumbing warnings
     if (formData.system_type === "Plumbing System") {
       if (components.washing_machine_hoses === "rubber") {
-        newWarnings.push({ 
-          level: "danger", 
-          message: "⚠️ REPLACE IMMEDIATELY - Rubber hoses are the #1 cause of home flood damage. Switch to braided stainless steel hoses ($20 at hardware store). This is urgent." 
+        newWarnings.push({
+          level: "danger",
+          message: "⚠️ REPLACE IMMEDIATELY - Rubber hoses are the #1 cause of home flood damage. Switch to braided stainless steel hoses ($20 at hardware store). This is urgent."
         });
       }
       if (!components.main_shutoff_known) {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "FIND THIS NOW - Knowing your main water shutoff location is critical for emergencies" 
+        newWarnings.push({
+          level: "warning",
+          message: "FIND THIS NOW - Knowing your main water shutoff location is critical for emergencies"
         });
       }
       const heaterAge = components.water_heater_year ? new Date().getFullYear() - components.water_heater_year : 0;
@@ -96,15 +104,15 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     // Electrical warnings
     if (formData.system_type === "Electrical System") {
       if (components.wiring_type === "knob_tube") {
-        newWarnings.push({ 
-          level: "danger", 
-          message: "🔥 SAFETY HAZARD - Knob and tube wiring is dangerous. Schedule electrician evaluation immediately. Many insurers won't cover homes with this wiring." 
+        newWarnings.push({
+          level: "danger",
+          message: "🔥 SAFETY HAZARD - Knob and tube wiring is dangerous. Schedule electrician evaluation immediately. Many insurers won't cover homes with this wiring."
         });
       }
       if (components.wiring_type === "aluminum") {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "⚠️ Aluminum wiring needs professional evaluation - can be fire hazard" 
+        newWarnings.push({
+          level: "warning",
+          message: "⚠️ Aluminum wiring needs professional evaluation - can be fire hazard"
         });
       }
     }
@@ -117,9 +125,9 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         newWarnings.push({ level: "warning", message: "Roof is approaching end of expected lifespan - budget for replacement" });
       }
       if (components.multiple_layers) {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "Multiple layers = problems. Cannot add another layer. Full tear-off required at next replacement." 
+        newWarnings.push({
+          level: "warning",
+          message: "Multiple layers = problems. Cannot add another layer. Full tear-off required at next replacement."
         });
       }
     }
@@ -147,7 +155,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-      onClose();
+
+      if (!editingSystem?.id && allowsMultiple) {
+        setShowAddAnother(true);
+      } else {
+        onClose();
+      }
     },
   });
 
@@ -156,7 +169,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     setUploading(true);
 
     try {
-      const uploadPromises = files.map(file => 
+      const uploadPromises = files.map(file =>
         base44.integrations.Core.UploadFile({ file })
       );
       const results = await Promise.all(uploadPromises);
@@ -176,6 +189,29 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const handleSubmit = (e) => {
     e.preventDefault();
     saveMutation.mutate(formData);
+  };
+
+  const handleAddAnother = () => {
+    setShowAddAnother(false);
+    setFormData({
+      system_type: formData.system_type,
+      nickname: "",
+      brand_model: "",
+      installation_year: "",
+      warranty_info: "",
+      last_service_date: "",
+      next_service_date: "",
+      last_battery_change: "",
+      last_test_date: "",
+      condition: "Good",
+      condition_notes: "",
+      warning_signs_present: [],
+      photo_urls: [],
+      estimated_lifespan_years: "",
+      replacement_cost_estimate: "",
+      key_components: {}
+    });
+    setPhotos([]);
   };
 
   const updateComponent = (key, value) => {
@@ -649,14 +685,54 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     }
   };
 
+  if (showAddAnother) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              ✓ {formData.system_type} Documented!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-6 py-6">
+            <div className="text-5xl">🎉</div>
+            <p className="text-lg text-gray-700">
+              +10 PP
+            </p>
+            <p className="text-gray-600">
+              Do you have another {formData.system_type}?
+            </p>
+            <div className="space-y-3">
+              <Button
+                onClick={handleAddAnother}
+                className="w-full gap-2"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Another {formData.system_type}
+              </Button>
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="w-full"
+              >
+                Back to Baseline
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-            Let's Document Your {formData.system_type}
+            {editingSystem?.id ? 'Update' : "Let's Document Your"} {formData.system_type}
           </DialogTitle>
-          {systemDescription && (
+          {systemDescription && !editingSystem?.id && (
             <p className="text-gray-600 mt-2">{systemDescription.what}</p>
           )}
         </DialogHeader>
@@ -696,6 +772,25 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                   </p>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Nickname Field for Multi-Instance Systems */}
+          {allowsMultiple && (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+              <Label className="text-blue-900 font-bold text-lg">
+                Nickname / Location {!editingSystem?.id && "(Required)"}
+              </Label>
+              <Input
+                value={formData.nickname}
+                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                placeholder="e.g., Main Floor Unit, Upstairs Zone, Unit A, Master Bedroom"
+                className="mt-2"
+                required={allowsMultiple && !editingSystem?.id}
+              />
+              <p className="text-sm text-blue-800 mt-2">
+                Give this a name so you can tell them apart
+              </p>
             </div>
           )}
 
@@ -778,21 +873,16 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
               className="w-full h-14 text-lg font-semibold"
               style={{ backgroundColor: 'var(--accent)' }}
             >
-              {saveMutation.isPending ? 'Saving...' : `Save ${formData.system_type}`}
+              {saveMutation.isPending ? 'Saving...' : editingSystem?.id ? `Update ${formData.system_type}` : `Save ${formData.system_type}`}
             </Button>
             <button
               type="button"
               onClick={onClose}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
-              Skip for Now
+              {editingSystem?.id ? 'Cancel' : 'Skip for Now'}
             </button>
           </div>
-
-          {/* Progress Indicator */}
-          <p className="text-center text-sm text-gray-500">
-            System {editingSystem?.system_type ? 'Update' : 'Documentation'}
-          </p>
         </form>
       </DialogContent>
     </Dialog>

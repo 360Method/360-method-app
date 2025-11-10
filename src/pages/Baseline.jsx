@@ -1,13 +1,12 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tantml:react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy } from "lucide-react";
-import SystemCard from "../components/baseline/SystemCard";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2 } from "lucide-react";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 
 const REQUIRED_SYSTEMS = [
@@ -24,11 +23,35 @@ const RECOMMENDED_SYSTEMS = [
   "Windows & Doors",
   "Gutters & Downspouts",
   "Landscaping & Grading",
-  "Major Appliances",
   "Attic & Insulation",
   "Basement/Crawlspace",
+  "Garage & Overhead Door"
+];
+
+const APPLIANCE_TYPES = [
+  "Refrigerator",
+  "Range/Oven",
+  "Dishwasher",
+  "Washing Machine",
+  "Dryer",
+  "Microwave",
+  "Garbage Disposal"
+];
+
+const SAFETY_TYPES = [
+  "Smoke Detector",
+  "CO Detector",
+  "Fire Extinguisher",
+  "Radon Test",
+  "Security System"
+];
+
+const MULTI_INSTANCE_SYSTEMS = [
+  "HVAC System",
   "Garage & Overhead Door",
-  "Safety Systems"
+  "Basement/Crawlspace",
+  ...APPLIANCE_TYPES,
+  ...SAFETY_TYPES
 ];
 
 const SYSTEM_DESCRIPTIONS = {
@@ -82,11 +105,6 @@ const SYSTEM_DESCRIPTIONS = {
     why: "Poor grading = water toward foundation = flooding + cracks + structural damage = $15K-50K+.",
     lifespan: "Ongoing"
   },
-  "Major Appliances": {
-    what: "Refrigerator, range, dishwasher, washer, dryer, and other large appliances",
-    why: "Washing machine hose failure = flood = water damage + mold = $8K-15K repair.",
-    lifespan: "9-15 years"
-  },
   "Attic & Insulation": {
     what: "Space between ceiling and roof with insulation and ventilation",
     why: "Poor ventilation = moisture + mold + rotted roof deck = premature roof failure = $20K+.",
@@ -101,11 +119,6 @@ const SYSTEM_DESCRIPTIONS = {
     what: "Garage structure, overhead door system, and opener",
     why: "Broken spring = door falls = crushed vehicle/injury + emergency repair at 3X cost.",
     lifespan: "10-30 years"
-  },
-  "Safety Systems": {
-    what: "Smoke/CO detectors, fire extinguishers, radon detection, security",
-    why: "Life safety equipment - dead batteries = useless system. These systems save lives.",
-    lifespan: "5-10 years"
   }
 };
 
@@ -139,18 +152,59 @@ export default function Baseline() {
     }
   }, [properties, selectedProperty]);
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.SystemBaseline.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+    },
+  });
+
+  const handleDeleteSystem = (system) => {
+    const instanceCount = systems.filter(s => s.system_type === system.system_type).length;
+    const isRequired = REQUIRED_SYSTEMS.includes(system.system_type);
+    
+    let message = `Are you sure you want to delete '${system.nickname || system.system_type}'? This cannot be undone.`;
+    
+    if (isRequired && instanceCount === 1) {
+      message += "\n\n⚠️ This is a required system. Deleting it will affect your baseline completion.";
+    }
+    
+    if (confirm(message)) {
+      deleteMutation.mutate(system.id);
+    }
+  };
+
+  // Group systems by type
+  const systemsByType = systems.reduce((acc, system) => {
+    if (!acc[system.system_type]) {
+      acc[system.system_type] = [];
+    }
+    acc[system.system_type].push(system);
+    return acc;
+  }, {});
+
   // Calculate completion metrics
-  const requiredComplete = systems.filter(s => REQUIRED_SYSTEMS.includes(s.system_type)).length;
-  const recommendedComplete = systems.filter(s => RECOMMENDED_SYSTEMS.includes(s.system_type)).length;
-  const totalComplete = systems.length;
+  const requiredSystemTypes = REQUIRED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
+  const requiredComplete = requiredSystemTypes.length;
+  
+  const recommendedSystemTypes = RECOMMENDED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
+  const recommendedComplete = recommendedSystemTypes.length;
+  
+  const applianceTypes = APPLIANCE_TYPES.filter(type => systemsByType[type]?.length > 0);
+  const appliancesComplete = applianceTypes.length;
+  
+  const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0);
+  const safetyComplete = safetyTypes.length;
+  
+  const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
   
   const requiredPercent = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
   const recommendedPercent = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
-  const overallPercent = Math.round((totalComplete / 15) * 100);
+  const overallPercent = Math.round((totalSystemTypes / 15) * 100);
   
   const actPhaseUnlocked = requiredComplete >= 4;
   const allRequiredComplete = requiredComplete === 6;
-  const baselineBoss = totalComplete === 15;
+  const baselineBoss = totalSystemTypes >= 13;
 
   // Update property baseline_completion
   React.useEffect(() => {
@@ -165,14 +219,6 @@ export default function Baseline() {
       }
     }
   }, [overallPercent, selectedProperty, properties]);
-
-  // Check for milestone celebrations
-  React.useEffect(() => {
-    if (baselineBoss && systems.length === 15 && !showCelebration) {
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 5000);
-    }
-  }, [baselineBoss, systems.length]);
 
   const handleEditSystem = (system) => {
     setEditingSystem(system);
@@ -201,11 +247,11 @@ export default function Baseline() {
   let statusIcon = Shield;
 
   if (baselineBoss) {
-    statusMessage = "🏆 BASELINE BOSS! You have complete documentation of your entire home. This is elite-level homeownership.";
+    statusMessage = "🏆 BASELINE BOSS! You have comprehensive documentation. This is elite-level homeownership.";
     statusColor = "text-purple-600";
     statusIcon = Trophy;
-  } else if (allRequiredComplete && totalComplete < 15) {
-    statusMessage = "All essential systems documented! Want complete peace of mind? Add the 9 recommended systems.";
+  } else if (allRequiredComplete) {
+    statusMessage = "All essential systems documented! Want complete peace of mind? Add appliances and safety systems.";
     statusColor = "text-green-600";
     statusIcon = Award;
   } else if (actPhaseUnlocked) {
@@ -213,31 +259,119 @@ export default function Baseline() {
     statusColor = "text-green-600";
     statusIcon = CheckCircle2;
   } else {
-    statusMessage = `Complete ${4 - requiredComplete} more essential system${4 - requiredComplete > 1 ? 's' : ''} to unlock ACT phase and start scheduling maintenance`;
+    statusMessage = `Complete ${4 - requiredComplete} more essential system type${4 - requiredComplete > 1 ? 's' : ''} to unlock ACT phase`;
     statusColor = "text-orange-600";
     statusIcon = AlertCircle;
   }
 
   const StatusIcon = statusIcon;
 
+  const renderSystemGroup = (systemType, instances, isRequired) => {
+    const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
+    const description = SYSTEM_DESCRIPTIONS[systemType];
+    
+    if (instances.length === 0) {
+      // No instances - show add button
+      return (
+        <Card
+          key={systemType}
+          className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
+          onClick={() => handleAddSystem(systemType)}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                {systemType}
+                {isRequired && <span className="text-red-600 text-xs">*REQUIRED</span>}
+              </h3>
+              {isRequired ? (
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-blue-500" />
+              )}
+            </div>
+            {description && (
+              <p className="text-xs text-gray-600 mb-2">{description.what}</p>
+            )}
+            <Button variant="outline" size="sm" className="w-full gap-2">
+              <Plus className="w-4 h-4" />
+              Document {systemType}
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Has instances - show list
+    return (
+      <Card key={systemType} className={`border-2 shadow-lg ${isRequired ? 'border-red-200' : 'border-blue-200'}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <span className="text-base">{systemType} ({instances.length})</span>
+              {isRequired && (
+                <Badge className="bg-green-600 text-white text-xs">COMPLETE</Badge>
+              )}
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {instances.map((instance, idx) => (
+            <div key={instance.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border">
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-900">
+                  {instance.nickname || `${systemType} ${instances.length > 1 ? `#${idx + 1}` : ''}`}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {instance.brand_model && `${instance.brand_model} • `}
+                  {instance.installation_year && `Installed ${instance.installation_year}`}
+                </p>
+                {instance.last_service_date && (
+                  <p className="text-xs text-gray-500">
+                    Last service: {new Date(instance.last_service_date).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 ml-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditSystem(instance)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteSystem(instance)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {allowsMultiple && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 mt-2"
+              onClick={() => handleAddSystem(systemType)}
+            >
+              <Plus className="w-4 h-4" />
+              Add Another {systemType}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Celebration Overlay */}
-        {showCelebration && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-2xl p-12 text-center max-w-2xl animate-bounce">
-              <Trophy className="w-24 h-24 mx-auto mb-6 text-yellow-500" />
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">🏆 BASELINE BOSS! 🏆</h2>
-              <p className="text-xl text-gray-700 mb-6">
-                You've documented all 15 home systems!<br/>
-                This is elite-level homeownership.
-              </p>
-              <Badge className="text-lg px-6 py-2 bg-purple-600">+1,500 PP Earned</Badge>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -269,8 +403,8 @@ export default function Baseline() {
                 {currentProperty && (
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">Overall Progress</p>
-                      <p className="text-2xl font-bold text-gray-900">{totalComplete}/15</p>
+                      <p className="text-sm text-gray-600">System Types</p>
+                      <p className="text-2xl font-bold text-gray-900">{totalSystemTypes}/15</p>
                       <p className="text-xs text-gray-500">{overallPercent}% complete</p>
                     </div>
                   </div>
@@ -294,7 +428,7 @@ export default function Baseline() {
 
         {selectedProperty ? (
           <>
-            {/* Essential Systems (Required) */}
+            {/* Essential Systems */}
             <Card className="border-2 border-red-200 shadow-lg">
               <CardHeader className="bg-red-50">
                 <div className="flex items-center justify-between">
@@ -311,28 +445,16 @@ export default function Baseline() {
               <CardContent className="p-6">
                 <p className="text-sm text-gray-700 mb-6">
                   Complete <span className="font-bold">4 of these 6 essential systems</span> to unlock the ACT phase.
-                  These are the most critical systems that prevent major disasters.
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {REQUIRED_SYSTEMS.map((systemType) => {
-                    const existingSystem = systems.find(s => s.system_type === systemType);
-                    return (
-                      <SystemCard
-                        key={systemType}
-                        systemType={systemType}
-                        system={existingSystem}
-                        description={SYSTEM_DESCRIPTIONS[systemType]}
-                        isRequired={true}
-                        onEdit={handleEditSystem}
-                        onAdd={() => handleAddSystem(systemType)}
-                      />
-                    );
-                  })}
+                  {REQUIRED_SYSTEMS.map((systemType) => 
+                    renderSystemGroup(systemType, systemsByType[systemType] || [], true)
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Complete Protection (Recommended) */}
+            {/* Recommended Systems */}
             <Card className="border-2 border-blue-200 shadow-lg">
               <CardHeader className="bg-blue-50">
                 <div className="flex items-center justify-between">
@@ -341,31 +463,64 @@ export default function Baseline() {
                     Complete Protection (Recommended)
                   </CardTitle>
                   <Badge className="bg-blue-600 text-white">
-                    {recommendedComplete}/9 complete
+                    {recommendedComplete}/7 complete
                   </Badge>
                 </div>
                 <Progress value={recommendedPercent} className="mt-2 h-2" />
               </CardHeader>
               <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {RECOMMENDED_SYSTEMS.map((systemType) => 
+                    renderSystemGroup(systemType, systemsByType[systemType] || [], false)
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Major Appliances */}
+            <Card className="border-2 border-purple-200 shadow-lg">
+              <CardHeader className="bg-purple-50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    🔌 Major Appliances
+                  </CardTitle>
+                  <Badge className="bg-purple-600 text-white">
+                    {appliancesComplete}/7 types
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
                 <p className="text-sm text-gray-700 mb-6">
-                  These additional systems provide comprehensive protection and maximize your home's value.
-                  Each system earns you bonus points and peace of mind.
+                  Document each appliance type. You can add multiple of each (especially useful for multi-unit properties).
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {RECOMMENDED_SYSTEMS.map((systemType) => {
-                    const existingSystem = systems.find(s => s.system_type === systemType);
-                    return (
-                      <SystemCard
-                        key={systemType}
-                        systemType={systemType}
-                        system={existingSystem}
-                        description={SYSTEM_DESCRIPTIONS[systemType]}
-                        isRequired={false}
-                        onEdit={handleEditSystem}
-                        onAdd={() => handleAddSystem(systemType)}
-                      />
-                    );
-                  })}
+                  {APPLIANCE_TYPES.map((applianceType) => 
+                    renderSystemGroup(applianceType, systemsByType[applianceType] || [], false)
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Safety Systems */}
+            <Card className="border-2 border-orange-200 shadow-lg">
+              <CardHeader className="bg-orange-50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    🚨 Safety Systems
+                  </CardTitle>
+                  <Badge className="bg-orange-600 text-white">
+                    {safetyComplete}/5 types
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-sm text-gray-700 mb-6">
+                  Add detectors and extinguishers for each location. Track batteries and test dates.
+                </p>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {SAFETY_TYPES.map((safetyType) => 
+                    renderSystemGroup(safetyType, systemsByType[safetyType] || [], false)
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -376,6 +531,7 @@ export default function Baseline() {
               propertyId={selectedProperty}
               editingSystem={editingSystem}
               systemDescription={editingSystem ? SYSTEM_DESCRIPTIONS[editingSystem.system_type] : null}
+              allowsMultiple={editingSystem ? MULTI_INSTANCE_SYSTEMS.includes(editingSystem.system_type) : false}
             />
           </>
         ) : (
