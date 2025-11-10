@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
@@ -6,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, Clock } from "lucide-react";
-import { CLIMATE_ZONES } from "@/utils/climateZones";
+import { CLIMATE_ZONES } from "@/utils/climateZones.js";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 
