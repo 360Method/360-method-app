@@ -2,20 +2,25 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Calendar, AlertCircle } from "lucide-react";
+import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
 
 const getSystemIcon = (type) => {
   const icons = {
-    HVAC: "🌡️",
-    Plumbing: "🚰",
-    Electrical: "⚡",
-    Roof: "🏠",
-    Foundation: "🏗️",
-    Gutters: "💧",
-    Exterior: "🏡",
-    "Windows/Doors": "🚪",
-    Appliances: "🔌",
-    Landscaping: "🌳"
+    "HVAC System": "🌡️",
+    "Plumbing System": "🚰",
+    "Electrical System": "⚡",
+    "Roof System": "🏠",
+    "Foundation & Structure": "🏗️",
+    "Water & Sewer/Septic": "💧",
+    "Exterior Siding & Envelope": "🏡",
+    "Windows & Doors": "🚪",
+    "Gutters & Downspouts": "🌧️",
+    "Landscaping & Grading": "🌳",
+    "Major Appliances": "🔌",
+    "Attic & Insulation": "⬆️",
+    "Basement/Crawlspace": "⬇️",
+    "Garage & Overhead Door": "🚗",
+    "Safety Systems": "🚨"
   };
   return icons[type] || "📋";
 };
@@ -31,14 +36,33 @@ const getConditionColor = (condition) => {
   return colors[condition] || "bg-gray-100 text-gray-800 border-gray-200";
 };
 
-export default function SystemCard({ systemType, system, onEdit, onAdd }) {
+export default function SystemCard({ systemType, system, description, isRequired, onEdit, onAdd }) {
   if (!system) {
     return (
       <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={onAdd}>
-        <CardContent className="p-8 text-center">
-          <div className="text-4xl mb-3">{getSystemIcon(systemType)}</div>
-          <h3 className="font-semibold text-gray-900 mb-2">{systemType}</h3>
-          <Button variant="outline" size="sm" className="gap-2">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-3xl">{getSystemIcon(systemType)}</div>
+            {isRequired ? (
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            ) : (
+              <CheckCircle className="w-5 h-5 text-blue-500" />
+            )}
+          </div>
+          <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            {systemType}
+            {isRequired && <span className="text-red-600 text-xs">*REQUIRED</span>}
+          </h3>
+          {description && (
+            <div className="mb-4 space-y-2">
+              <p className="text-xs text-gray-600">{description.what}</p>
+              <div className="p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800">
+                <AlertTriangle className="w-3 h-3 inline mr-1" />
+                {description.why}
+              </div>
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="w-full gap-2">
             <Plus className="w-4 h-4" />
             Document System
           </Button>
@@ -50,12 +74,21 @@ export default function SystemCard({ systemType, system, onEdit, onAdd }) {
   const age = system.installation_year ? new Date().getFullYear() - system.installation_year : null;
 
   return (
-    <Card className="border-none shadow-lg hover:shadow-xl transition-shadow">
+    <Card className={`border-2 shadow-lg hover:shadow-xl transition-shadow ${
+      isRequired ? 'border-red-200' : 'border-blue-200'
+    }`}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{getSystemIcon(systemType)}</span>
-            <span className="text-lg">{systemType}</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base">{systemType}</span>
+                {isRequired && (
+                  <Badge className="bg-red-600 text-white text-xs">ESSENTIAL</Badge>
+                )}
+              </div>
+            </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onEdit(system)}>
             <Edit className="w-4 h-4" />
@@ -92,10 +125,26 @@ export default function SystemCard({ systemType, system, onEdit, onAdd }) {
 
         {system.estimated_lifespan_years && age && age >= system.estimated_lifespan_years * 0.8 && (
           <div className="flex items-start gap-2 p-2 bg-orange-50 rounded border border-orange-200">
-            <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-orange-800">
               Approaching end of typical lifespan ({system.estimated_lifespan_years} years)
             </p>
+          </div>
+        )}
+
+        {system.warning_signs_present && system.warning_signs_present.length > 0 && (
+          <div className="p-2 bg-red-50 border border-red-200 rounded">
+            <p className="text-xs font-semibold text-red-900 mb-1">
+              ⚠️ Warning Signs Detected:
+            </p>
+            <ul className="text-xs text-red-800 space-y-1">
+              {system.warning_signs_present.slice(0, 2).map((sign, idx) => (
+                <li key={idx}>• {sign}</li>
+              ))}
+              {system.warning_signs_present.length > 2 && (
+                <li>• +{system.warning_signs_present.length - 2} more</li>
+              )}
+            </ul>
           </div>
         )}
 
