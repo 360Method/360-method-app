@@ -39,6 +39,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import "../components/ui/dialog-styles.css";
 
 const navigationItems = [
   {
@@ -117,6 +118,16 @@ export default function Layout({ children }) {
           --accent: #28A745;
           --alert: #DC3545;
           --background: #FAFAF9;
+        }
+        
+        /* Global modal/popup styling standards */
+        .dialog-overlay {
+          background-color: rgba(0, 0, 0, 0.75) !important;
+        }
+        
+        .dialog-content {
+          background-color: #FFFFFF !important;
+          opacity: 1 !important;
         }
       `}</style>
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>

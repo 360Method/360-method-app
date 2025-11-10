@@ -1,7 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,6 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData = {}
 
   const createServiceRequestMutation = useMutation({
     mutationFn: async (data) => {
-      // Create service request in database
       const serviceRequest = await base44.entities.ServiceRequest.create({
         property_id: data.property_id,
         task_id: data.task_id,
@@ -61,7 +60,6 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData = {}
         status: 'Submitted'
       });
 
-      // Send email notification to business
       const property = properties.find(p => p.id === data.property_id);
       const availabilityText = Object.entries(data.availability)
         .filter(([_, value]) => value)
@@ -130,14 +128,15 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+      <DialogOverlay className="bg-black/75" />
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
+        <DialogHeader style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
+          <DialogTitle className="text-2xl font-bold" style={{ color: '#1B365D', backgroundColor: 'transparent' }}>
             Request Professional Service
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
           {/* Service Type */}
           <div>
             <Label>What do you need help with?</Label>
@@ -146,10 +145,10 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onValueChange={(value) => setFormData({ ...formData, service_type: value })}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}>
                 <SelectValue placeholder="Select service type..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
                 <SelectItem value="Professional Baseline Assessment">Complete Property Baseline Documentation</SelectItem>
                 <SelectItem value="Seasonal Inspection">Quarterly Property Inspection</SelectItem>
                 <SelectItem value="Specific Task Repair">Complete This Specific Task</SelectItem>
@@ -168,10 +167,10 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onValueChange={(value) => setFormData({ ...formData, property_id: value })}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}>
                 <SelectValue placeholder="Select property..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
                 {properties.map((property) => (
                   <SelectItem key={property.id} value={property.id}>
                     {property.address}
@@ -183,7 +182,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
 
           {/* Pre-filled task details if from Priority Queue */}
           {prefilledData.task_id && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4" style={{ backgroundColor: '#EFF6FF', opacity: 1 }}>
               <h4 className="font-semibold text-blue-900 mb-2">Task Details (auto-filled)</h4>
               <p className="text-sm text-gray-800 mb-2">
                 <strong>System:</strong> {prefilledData.system_type || 'General'}
@@ -208,6 +207,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               placeholder="Provide details about the work needed..."
               rows={4}
               required
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
             />
             {prefilledData.notes && (
               <p className="text-xs text-gray-600 mt-1">
@@ -220,7 +220,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
           <div>
             <Label>When do you need this done?</Label>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50" style={{ backgroundColor: formData.preferred_contact_time === "ASAP - This is urgent" ? '#F9FAFB' : '#FFFFFF' }}>
                 <input
                   type="radio"
                   name="timeline"
@@ -235,7 +235,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   <p className="text-sm text-gray-600">Emergency service</p>
                 </div>
               </label>
-              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50" style={{ backgroundColor: formData.preferred_contact_time === "Within 1 week - High priority" ? '#F9FAFB' : '#FFFFFF' }}>
                 <input
                   type="radio"
                   name="timeline"
@@ -249,7 +249,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   <p className="font-medium">Within 1 week - High priority</p>
                 </div>
               </label>
-              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50" style={{ backgroundColor: formData.preferred_contact_time === "Within 2-4 weeks - Normal priority" ? '#F9FAFB' : '#FFFFFF' }}>
                 <input
                   type="radio"
                   name="timeline"
@@ -263,7 +263,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   <p className="font-medium">Within 2-4 weeks - Normal priority</p>
                 </div>
               </label>
-              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50">
+              <label className="flex items-center gap-2 p-3 border rounded cursor-pointer hover:bg-gray-50" style={{ backgroundColor: formData.preferred_contact_time === "Flexible - When you have availability" ? '#F9FAFB' : '#FFFFFF' }}>
                 <input
                   type="radio"
                   name="timeline"
@@ -311,6 +311,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   onChange={(e) => setFormData({ ...formData, contact_value: e.target.value })}
                   placeholder="(360) 555-1234"
                   className="ml-6"
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
                 />
               )}
               <label className="flex items-center gap-2">
@@ -330,6 +331,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   onChange={(e) => setFormData({ ...formData, contact_value: e.target.value })}
                   placeholder="(360) 555-1234"
                   className="ml-6"
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
                 />
               )}
             </div>
@@ -380,11 +382,12 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
               placeholder="Gate codes, parking instructions, pet information, etc."
               rows={3}
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
             />
           </div>
 
           {/* What Happens Next */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4" style={{ backgroundColor: '#F0FDF4', opacity: 1 }}>
             <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
               What happens next:
@@ -404,6 +407,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               variant="outline"
               onClick={onClose}
               className="flex-1"
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#1B365D', color: '#1B365D' }}
             >
               Cancel
             </Button>
@@ -411,7 +415,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               type="submit"
               disabled={createServiceRequestMutation.isPending}
               className="flex-1"
-              style={{ backgroundColor: '#28A745' }}
+              style={{ backgroundColor: '#28A745', color: '#FFFFFF' }}
             >
               {createServiceRequestMutation.isPending ? 'Submitting...' : 'Submit Service Request'}
             </Button>
