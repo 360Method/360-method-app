@@ -17,7 +17,8 @@ import {
   Lightbulb,
   Building2,
   Settings,
-  Menu
+  Menu,
+  Wrench
 } from "lucide-react";
 import {
   Sidebar,
@@ -79,6 +80,11 @@ const navigationItems = [
     title: "Properties",
     url: createPageUrl("Properties"),
     icon: Home,
+  },
+  {
+    title: "Services",
+    url: createPageUrl("Services"),
+    icon: Wrench,
   },
   {
     title: "Settings",

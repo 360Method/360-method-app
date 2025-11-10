@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -5,11 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench } from "lucide-react";
 import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
 import InspectionReport from "../components/inspect/InspectionReport.jsx";
+import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -19,6 +21,7 @@ export default function Inspect() {
   const [currentView, setCurrentView] = React.useState('history'); // 'history' | 'setup' | 'walkthrough' | 'complete' | 'report'
   const [activeInspection, setActiveInspection] = React.useState(null);
   const [viewingReport, setViewingReport] = React.useState(null);
+  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -184,8 +187,8 @@ export default function Inspect() {
           </CardContent>
         </Card>
 
-        {/* Start New Inspection Button */}
-        <div className="flex justify-center">
+        {/* Start New Inspection Buttons */}
+        <div className="flex flex-col md:flex-row gap-4 justify-center">
           <Button
             onClick={handleStartInspection}
             className="h-16 px-12 text-lg font-bold"
@@ -193,7 +196,16 @@ export default function Inspect() {
             disabled={baselineSystems.length === 0}
           >
             <Plus className="w-6 h-6 mr-2" />
-            Start New Inspection
+            Start DIY Inspection
+          </Button>
+          <Button
+            onClick={() => setShowServiceDialog(true)}
+            variant="outline"
+            className="h-16 px-12 text-lg font-bold"
+            style={{ borderColor: '#28A745', color: '#28A745' }}
+          >
+            <Wrench className="w-6 h-6 mr-2" />
+            Schedule Professional Inspection
           </Button>
         </div>
 
@@ -326,6 +338,16 @@ export default function Inspect() {
           )}
         </div>
       </div>
+
+      <ServiceRequestDialog
+        open={showServiceDialog}
+        onClose={() => setShowServiceDialog(false)}
+        prefilledData={{
+          property_id: selectedProperty,
+          service_type: "Seasonal Inspection",
+          description: "I would like to schedule a professional seasonal property inspection with issue identification and reporting."
+        }}
+      />
     </div>
   );
 }

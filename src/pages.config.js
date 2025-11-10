@@ -10,6 +10,7 @@ import Preserve from './pages/Preserve';
 import Upgrade from './pages/Upgrade';
 import Scale from './pages/Scale';
 import Settings from './pages/Settings';
+import Services from './pages/Services';
 import Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Upgrade": Upgrade,
     "Scale": Scale,
     "Settings": Settings,
+    "Services": Services,
 }
 
 export const pagesConfig = {

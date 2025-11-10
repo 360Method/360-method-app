@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, X, Lightbulb, AlertTriangle, Clock, DollarSign } from "lucide-react";
+
+import ServiceRequestDialog from "../services/ServiceRequestDialog";
 
 const SEVERITY_INFO = {
   Urgent: {
@@ -45,10 +48,10 @@ export default function IssueDocumentation({ area, inspection, property, relevan
   const [photos, setPhotos] = React.useState([]);
   const [uploading, setUploading] = React.useState(false);
   const [severity, setSeverity] = React.useState('Flag');
-  const [isQuickFix, setIsQuickFix] = React.useState(null);
+  const [isQuickFix, setIsQuickFix] = React.useState(null); // null means not answered yet
   const [estimatedCost, setEstimatedCost] = React.useState('');
   const [whoWillFix, setWhoWillFix] = React.useState('not_sure');
-  const [showQuickFixDialog, setShowQuickFixDialog] = React.useState(false);
+  const [showServiceDialog, setShowServiceDialog] = React.useState(false); // New state
 
   const queryClient = useQueryClient();
 
@@ -81,26 +84,29 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    const system = relevantSystems.find(s => s.id === selectedSystem);
-    
-    const issueData = {
-      area: area.name,
-      area_id: area.id,
-      system_name: system?.nickname || system?.system_type || area.name,
-      system_id: selectedSystem || null,
-      description,
-      photo_urls: photos,
-      severity,
-      is_quick_fix: isQuickFix,
-      estimated_cost: estimatedCost,
-      who_will_fix: whoWillFix,
-      found_date: new Date().toISOString().split('T')[0],
-      status: isQuickFix && showQuickFixDialog === 'fixed' ? 'Completed' : 'Identified'
-    };
+  const selectedSystemData = relevantSystems.find(s => s.id === selectedSystem);
 
-    // If not a quick fix or user chose to add to priority queue, create maintenance task
-    if (!isQuickFix || showQuickFixDialog !== 'fixed') {
+  // Construct currentIssueData for rendering and eventual saving
+  const currentIssueData = {
+    area: area.name,
+    area_id: area.id,
+    system_name: selectedSystemData?.nickname || selectedSystemData?.system_type || area.name,
+    system_id: selectedSystem || null,
+    description,
+    photo_urls: photos,
+    severity,
+    is_quick_fix: isQuickFix,
+    estimated_cost: estimatedCost,
+    who_will_fix: whoWillFix,
+    found_date: new Date().toISOString().split('T')[0],
+    status: 'Identified' // Default status. If it was a quick fix, it's just a candidate, not necessarily fixed yet.
+  };
+
+  const handleSave = async () => {
+    // Only create a MaintenanceTask if it's explicitly NOT a quick fix,
+    // or if `isQuickFix` is true but the user wants to add it to the queue (this option is removed from UI, so assume `isQuickFix` = true means no task initially)
+    // If it's a quick fix (`isQuickFix === true`), we assume it's handled or user can request service separately.
+    if (currentIssueData.is_quick_fix === false) {
       const cascadeRiskScores = {
         'Urgent': 9,
         'Flag': 6,
@@ -117,75 +123,36 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         'unknown': { current: 500, delayed: 5000 }
       };
 
-      const costs = costEstimates[estimatedCost] || { current: 200, delayed: 2000 };
+      const costs = costEstimates[currentIssueData.estimated_cost] || { current: 200, delayed: 2000 };
 
       await createTaskMutation.mutateAsync({
         property_id: property.id,
-        title: `${area.name}: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
-        description: `Issue found during ${inspection.season} ${inspection.year} inspection.\n\n${description}`,
-        system_type: system?.system_type || 'General',
-        priority: severity === 'Urgent' ? 'High' : severity === 'Flag' ? 'Medium' : 'Low',
+        title: `${currentIssueData.area}: ${currentIssueData.description.substring(0, 50)}${currentIssueData.description.length > 50 ? '...' : ''}`,
+        description: `Issue found during ${inspection.season} ${inspection.year} inspection.\n\n${currentIssueData.description}`,
+        system_type: selectedSystemData?.system_type || 'General',
+        priority: currentIssueData.severity === 'Urgent' ? 'High' : currentIssueData.severity === 'Flag' ? 'Medium' : 'Low',
         status: 'Identified',
-        cascade_risk_score: cascadeRiskScores[severity],
+        cascade_risk_score: cascadeRiskScores[currentIssueData.severity],
         current_fix_cost: costs.current,
         delayed_fix_cost: costs.delayed,
-        urgency_timeline: severity === 'Urgent' ? 'Immediate' : severity === 'Flag' ? '30-90 days' : 'Next inspection',
-        has_cascade_alert: severity === 'Urgent',
-        photo_urls: photos,
-        execution_type: whoWillFix === 'diy' ? 'DIY' : whoWillFix === 'professional' ? 'Professional' : 'Not Decided'
+        urgency_timeline: currentIssueData.severity === 'Urgent' ? 'Immediate' : currentIssueData.severity === 'Flag' ? '30-90 days' : 'Next inspection',
+        has_cascade_alert: currentIssueData.severity === 'Urgent',
+        photo_urls: currentIssueData.photo_urls,
+        execution_type: currentIssueData.who_will_fix === 'diy' ? 'DIY' : currentIssueData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
       });
     }
 
-    onSave(issueData);
+    onSave(currentIssueData);
   };
 
-  // Quick fix decision handling
-  if (isQuickFix && showQuickFixDialog) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-2xl mx-auto p-4 md:p-8 flex items-center justify-center min-h-screen">
-          <Card className="border-2 shadow-lg w-full" style={{ borderColor: '#28A745' }}>
-            <CardContent className="p-8 text-center space-y-6">
-              <div className="text-5xl">⚡</div>
-              <h1 className="text-3xl font-bold" style={{ color: '#1B365D' }}>QUICK FIX IDENTIFIED</h1>
-              <p className="text-gray-700 leading-relaxed">
-                This can be done in 5 minutes or less.
-              </p>
-              <p className="font-semibold text-lg" style={{ color: '#1B365D' }}>
-                RECOMMENDED: Fix it right now during your inspection walkthrough. Small tasks done immediately prevent them from being forgotten.
-              </p>
-              
-              <div className="flex flex-col gap-3 pt-4">
-                <Button
-                  onClick={() => setShowQuickFixDialog('fixed')}
-                  className="w-full h-14 text-lg font-bold"
-                  style={{ backgroundColor: '#28A745' }}
-                >
-                  ✓ I Fixed It Right Now
-                </Button>
-                <Button
-                  onClick={() => setShowQuickFixDialog('queue')}
-                  variant="outline"
-                  className="w-full h-12"
-                >
-                  Add to Priority Queue Instead
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (isQuickFix !== null && showQuickFixDialog) {
-    if (showQuickFixDialog === 'fixed' || showQuickFixDialog === 'queue') {
-      handleSave();
-      return null;
-    }
-  }
-
-  const selectedSystemData = relevantSystems.find(s => s.id === selectedSystem);
+  const serviceDialogPrefilledData = {
+    property_id: property.id,
+    service_type: "Specific Task Repair",
+    description: `${currentIssueData.area}: ${currentIssueData.description}`,
+    urgency: currentIssueData.severity === 'Urgent' ? 'Emergency' : 'High',
+    photo_urls: currentIssueData.photo_urls,
+    notes: currentIssueData.description // Using description as notes for the service request
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -268,7 +235,6 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                 className="hidden"
                 disabled={uploading}
               />
-              <Upload className="w-5 h-5 mr-2 text-gray-500" />
               <span className="text-gray-600">{uploading ? 'Uploading...' : `Upload Photos (${photos.length} photos)`}</span>
             </label>
             {photos.length > 0 && (
@@ -363,7 +329,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </Card>
         )}
 
-        {/* Estimated Cost */}
+        {/* Estimated Cost & Who Will Fix - Only if not a quick fix */}
         {isQuickFix === false && (
           <>
             <Card className="border-none shadow-sm">
@@ -432,22 +398,54 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </>
         )}
 
-        {/* Save Button */}
-        <Button
-          onClick={() => {
-            if (isQuickFix === true) {
-              setShowQuickFixDialog('prompt');
-            } else {
-              handleSave();
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3 pt-6 border-t">
+          <Button
+            onClick={handleSave}
+            disabled={
+                !currentIssueData.description || // Description is required
+                currentIssueData.is_quick_fix === null || // Must have made a quick fix decision
+                (currentIssueData.is_quick_fix === false && !currentIssueData.estimated_cost) || // If not quick fix, estimated cost is required
+                createTaskMutation.isPending // Disable during save operation
             }
-          }}
-          disabled={!description || !severity || isQuickFix === null || (isQuickFix === false && !estimatedCost)}
-          className="w-full h-14 text-lg font-bold"
-          style={{ backgroundColor: '#28A745' }}
-        >
-          Save Issue
-        </Button>
+            className="w-full h-14 text-lg font-bold"
+            style={{ backgroundColor: '#28A745' }}
+          >
+            {createTaskMutation.isPending ? 'Saving...' : 'Save Issue & Continue Inspection'}
+          </Button>
+
+          {/* Professional Service Option */}
+          {((currentIssueData.severity === 'Urgent' || currentIssueData.severity === 'Flag') && (currentIssueData.description && currentIssueData.is_quick_fix !== null)) && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-medium text-blue-900 mb-2">
+                Can't or don't want to fix this yourself?
+              </p>
+              <Button
+                onClick={() => setShowServiceDialog(true)}
+                variant="outline"
+                className="w-full"
+                style={{ borderColor: '#28A745', color: '#28A745' }}
+              >
+                Request Professional Service for This Issue
+              </Button>
+            </div>
+          )}
+
+          <Button
+            onClick={onCancel}
+            variant="ghost"
+            className="w-full"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
+
+      <ServiceRequestDialog
+        open={showServiceDialog}
+        onClose={() => setShowServiceDialog(false)}
+        prefilledData={serviceDialogPrefilledData}
+      />
     </div>
   );
 }

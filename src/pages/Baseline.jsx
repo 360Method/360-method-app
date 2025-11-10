@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2 } from "lucide-react";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
+import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -129,6 +130,7 @@ export default function Baseline() {
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
+  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
   const [showCelebration, setShowCelebration] = React.useState(false);
 
@@ -199,30 +201,68 @@ export default function Baseline() {
   
   const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
   
-  const requiredPercent = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
-  const recommendedPercent = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
-  const overallPercent = Math.round((totalSystemTypes / 15) * 100);
+  const essentialProgress = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
+  const recommendedProgress = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
+  const overallProgress = Math.round((totalSystemTypes / 15) * 100);
   
   const actPhaseUnlocked = requiredComplete >= 4;
-  const allRequiredComplete = requiredComplete === 6;
+  const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
   const baselineBoss = totalSystemTypes >= 13;
+
+  // Dynamic messaging for status card
+  let statusMessage = "";
+  let statusSubtext = "";
+  let statusBorderColor = "";
+  let statusBgColor = "";
+  let statusIconElement = null;
+
+  if (baselineBoss) {
+    statusMessage = "🏆 BASELINE BOSS!";
+    statusSubtext = "You have comprehensive documentation. This is elite-level homeownership.";
+    statusBorderColor = "border-purple-300";
+    statusBgColor = "bg-purple-50";
+    statusIconElement = <Trophy className="w-8 h-8 text-purple-600" />;
+  } else if (allRequiredComplete) {
+    statusMessage = "All Essential Systems Documented!";
+    statusSubtext = "You've secured the basics. Now, build complete peace of mind by adding appliances and safety systems.";
+    statusBorderColor = "border-green-300";
+    statusBgColor = "bg-green-50";
+    statusIconElement = <Award className="w-8 h-8 text-green-600" />;
+  } else if (actPhaseUnlocked) {
+    statusMessage = "🎉 ACT Phase Unlocked!";
+    statusSubtext = "You can now prioritize and schedule maintenance. Consider completing your full baseline for maximum protection.";
+    statusBorderColor = "border-green-300";
+    statusBgColor = "bg-green-50";
+    statusIconElement = <CheckCircle2 className="w-8 h-8 text-green-600" />;
+  } else {
+    const systemsNeeded = 4 - requiredComplete;
+    statusMessage = `Complete ${systemsNeeded} more essential system type${systemsNeeded > 1 ? 's' : ''}`;
+    statusSubtext = "Unlock the ACT phase to prioritize and schedule maintenance for your home.";
+    statusBorderColor = "border-orange-300";
+    statusBgColor = "bg-orange-50";
+    statusIconElement = <AlertCircle className="w-8 h-8 text-orange-600" />;
+  }
 
   // Update property baseline_completion
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallPercent) {
+      if (property && property.baseline_completion !== overallProgress) {
         base44.entities.Property.update(selectedProperty, {
-          baseline_completion: overallPercent
+          baseline_completion: overallProgress
         }).then(() => {
           queryClient.invalidateQueries({ queryKey: ['properties'] });
         });
       }
     }
-  }, [overallPercent, selectedProperty, properties]);
+  }, [overallProgress, selectedProperty, properties, queryClient]);
 
   const handleEditSystem = (system) => {
-    setEditingSystem(system);
+    setEditingSystem({
+      ...system,
+      description: SYSTEM_DESCRIPTIONS[system.system_type],
+      allowsMultiple: MULTI_INSTANCE_SYSTEMS.includes(system.system_type)
+    });
     setShowDialog(true);
   };
 
@@ -230,7 +270,9 @@ export default function Baseline() {
     setEditingSystem({ 
       system_type: systemType, 
       property_id: selectedProperty,
-      is_required: REQUIRED_SYSTEMS.includes(systemType)
+      is_required: REQUIRED_SYSTEMS.includes(systemType),
+      description: SYSTEM_DESCRIPTIONS[systemType],
+      allowsMultiple: MULTI_INSTANCE_SYSTEMS.includes(systemType)
     });
     setShowDialog(true);
   };
@@ -241,31 +283,6 @@ export default function Baseline() {
   };
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
-
-  // Dynamic messaging
-  let statusMessage = "";
-  let statusColor = "text-blue-600";
-  let statusIcon = Shield;
-
-  if (baselineBoss) {
-    statusMessage = "🏆 BASELINE BOSS! You have comprehensive documentation. This is elite-level homeownership.";
-    statusColor = "text-purple-600";
-    statusIcon = Trophy;
-  } else if (allRequiredComplete) {
-    statusMessage = "All essential systems documented! Want complete peace of mind? Add appliances and safety systems.";
-    statusColor = "text-green-600";
-    statusIcon = Award;
-  } else if (actPhaseUnlocked) {
-    statusMessage = "🎉 ACT Phase Unlocked! You can now prioritize and schedule maintenance. Consider completing your full baseline for maximum protection.";
-    statusColor = "text-green-600";
-    statusIcon = CheckCircle2;
-  } else {
-    statusMessage = `Complete ${4 - requiredComplete} more essential system type${4 - requiredComplete > 1 ? 's' : ''} to unlock ACT phase`;
-    statusColor = "text-orange-600";
-    statusIcon = AlertCircle;
-  }
-
-  const StatusIcon = statusIcon;
 
   const renderSystemGroup = (systemType, instances, isRequired) => {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
@@ -283,7 +300,7 @@ export default function Baseline() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 {systemType}
-                {isRequired && <span className="text-red-600 text-xs">*REQUIRED</span>}
+                {isRequired && <Badge variant="secondary" className="bg-red-100 text-red-600 text-xs">REQUIRED</Badge>}
               </h3>
               {isRequired ? (
                 <AlertCircle className="w-5 h-5 text-red-600" />
@@ -371,14 +388,13 @@ export default function Baseline() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">AWARE → Baseline</h1>
-            <p className="text-gray-600 mt-1">Document your home systems to understand what you have</p>
-          </div>
+        <div>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>AWARE → BASELINE</h1>
+          <p className="text-xl text-gray-600">Document Your Property Systems</p>
+          <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
 
         {/* Property Selector */}
@@ -390,7 +406,7 @@ export default function Baseline() {
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
                   <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                     <SelectTrigger className="w-full md:w-96">
-                      <SelectValue />
+                      <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
                     <SelectContent>
                       {properties.map((property) => (
@@ -406,7 +422,7 @@ export default function Baseline() {
                     <div>
                       <p className="text-sm text-gray-600">System Types</p>
                       <p className="text-2xl font-bold text-gray-900">{totalSystemTypes}/15</p>
-                      <p className="text-xs text-gray-500">{overallPercent}% complete</p>
+                      <p className="text-xs text-gray-500">{overallProgress}% complete</p>
                     </div>
                   </div>
                 )}
@@ -415,37 +431,65 @@ export default function Baseline() {
           </Card>
         )}
 
-        {/* Status Message */}
-        {selectedProperty && (
-          <Card className={`border-2 ${actPhaseUnlocked ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <StatusIcon className={`w-8 h-8 ${statusColor} flex-shrink-0`} />
-              <div>
-                <p className={`font-semibold ${statusColor}`}>{statusMessage}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {selectedProperty ? (
           <>
+            {/* Status Message with Professional Option */}
+            <Card className={`border-2 ${statusBorderColor}`} style={{ backgroundColor: statusBgColor }}>
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="text-4xl">{statusIconElement}</div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>{statusMessage}</h3>
+                      <p className="text-gray-700">{statusSubtext}</p>
+                      
+                      {/* Professional Service CTA for incomplete baseline */}
+                      {essentialProgress < 100 && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm font-medium text-blue-900 mb-2">
+                            Feeling overwhelmed? Let us handle the documentation.
+                          </p>
+                          <p className="text-xs text-gray-700 mb-3">
+                            Our pros document everything in 2 hours, provide complete report with photos, and identify all issues. 
+                            First assessment includes system age verification and priority recommendations.
+                          </p>
+                          <Button
+                            onClick={() => setShowServiceDialog(true)}
+                            variant="outline"
+                            className="w-full md:w-auto"
+                            style={{ borderColor: '#28A745', color: '#28A745' }}
+                          >
+                            Schedule Professional Baseline Assessment
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{overallProgress}%</p>
+                    <p className="text-sm text-gray-600">Overall Complete</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Essential Systems */}
             <Card className="border-2 border-red-200 shadow-lg">
               <CardHeader className="bg-red-50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
                     <AlertCircle className="w-5 h-5 text-red-600" />
                     Essential Systems (Start Here)
                   </CardTitle>
                   <Badge className="bg-red-600 text-white">
-                    {requiredComplete}/6 complete
+                    {requiredComplete}/{REQUIRED_SYSTEMS.length} complete
                   </Badge>
                 </div>
-                <Progress value={requiredPercent} className="mt-2 h-2" />
+                <Progress value={essentialProgress} className="mt-2 h-2" />
               </CardHeader>
               <CardContent className="p-6">
                 <p className="text-sm text-gray-700 mb-6">
-                  Complete <span className="font-bold">4 of these 6 essential systems</span> to unlock the ACT phase.
+                  Complete <span className="font-bold">4 of these {REQUIRED_SYSTEMS.length} essential systems</span> to unlock the ACT phase.
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {REQUIRED_SYSTEMS.map((systemType) => 
@@ -459,15 +503,15 @@ export default function Baseline() {
             <Card className="border-2 border-blue-200 shadow-lg">
               <CardHeader className="bg-blue-50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
                     <CheckCircle2 className="w-5 h-5 text-blue-600" />
                     Complete Protection (Recommended)
                   </CardTitle>
                   <Badge className="bg-blue-600 text-white">
-                    {recommendedComplete}/7 complete
+                    {recommendedComplete}/{RECOMMENDED_SYSTEMS.length} complete
                   </Badge>
                 </div>
-                <Progress value={recommendedPercent} className="mt-2 h-2" />
+                <Progress value={recommendedProgress} className="mt-2 h-2" />
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -482,11 +526,11 @@ export default function Baseline() {
             <Card className="border-2 border-purple-200 shadow-lg">
               <CardHeader className="bg-purple-50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
                     🔌 Major Appliances
                   </CardTitle>
                   <Badge className="bg-purple-600 text-white">
-                    {appliancesComplete}/7 types
+                    {appliancesComplete}/{APPLIANCE_TYPES.length} types
                   </Badge>
                 </div>
               </CardHeader>
@@ -506,11 +550,11 @@ export default function Baseline() {
             <Card className="border-2 border-orange-200 shadow-lg">
               <CardHeader className="bg-orange-50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
                     🚨 Safety Systems
                   </CardTitle>
                   <Badge className="bg-orange-600 text-white">
-                    {safetyComplete}/5 types
+                    {safetyComplete}/{SAFETY_TYPES.length} types
                   </Badge>
                 </div>
               </CardHeader>
@@ -531,8 +575,8 @@ export default function Baseline() {
               onClose={handleCloseDialog}
               propertyId={selectedProperty}
               editingSystem={editingSystem}
-              systemDescription={editingSystem ? SYSTEM_DESCRIPTIONS[editingSystem.system_type] : null}
-              allowsMultiple={editingSystem ? MULTI_INSTANCE_SYSTEMS.includes(editingSystem.system_type) : false}
+              systemDescription={editingSystem?.description}
+              allowsMultiple={editingSystem?.allowsMultiple}
             />
           </>
         ) : (
@@ -544,6 +588,15 @@ export default function Baseline() {
             </CardContent>
           </Card>
         )}
+        <ServiceRequestDialog
+          open={showServiceDialog}
+          onClose={() => setShowServiceDialog(false)}
+          prefilledData={{
+            property_id: selectedProperty,
+            service_type: "Professional Baseline Assessment",
+            description: "I would like a professional to document all systems in my property and provide a complete baseline assessment."
+          }}
+        />
       </div>
     </div>
   );
