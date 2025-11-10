@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight } from "lucide-react";
+import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit } from "lucide-react";
 import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
@@ -76,6 +76,11 @@ export default function Inspect() {
   };
 
   const handleContinueInspection = (inspection) => {
+    setActiveInspection(inspection);
+    setCurrentView('walkthrough');
+  };
+
+  const handleEditInspection = (inspection) => {
     setActiveInspection(inspection);
     setCurrentView('walkthrough');
   };
@@ -151,6 +156,7 @@ export default function Inspect() {
         property={currentProperty}
         baselineSystems={baselineSystems}
         onBack={handleBackToHistory}
+        onEdit={() => handleEditInspection(viewingReport)}
       />
     );
   }
@@ -262,13 +268,15 @@ export default function Inspect() {
                 return (
                   <Card 
                     key={inspection.id} 
-                    className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => handleViewReport(inspection)}
+                    className="border-none shadow-sm hover:shadow-md transition-shadow"
                     style={{ minHeight: '80px' }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer" 
+                          onClick={() => handleViewReport(inspection)}
+                        >
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
                               {inspection.season} {inspection.year}
@@ -308,7 +316,25 @@ export default function Inspect() {
                           </div>
                         </div>
                         
-                        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditInspection(inspection);
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-2"
+                            style={{ minHeight: '44px', minWidth: '44px' }}
+                            title="Edit inspection"
+                          >
+                            <Edit className="w-5 h-5 text-blue-600" />
+                          </Button>
+                          <ChevronRight 
+                            className="w-5 h-5 text-gray-400 cursor-pointer" 
+                            onClick={() => handleViewReport(inspection)}
+                          />
+                        </div>
                       </div>
                       
                       {inspection.status === 'In Progress' && (
