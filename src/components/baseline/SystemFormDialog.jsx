@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,16 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus } from "lucide-react";
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
   "Plumbing System": "Water damage is the #1 homeowner insurance claim, averaging $10,000+ per incident. A burst pipe or failed water heater floods your home causing structural damage and mold. Small leaks escalate into major problems. Documentation helps you track critical components and prevent catastrophic failures.",
-  "Electrical System": "Electrical problems cause 13% of home fires. Outdated wiring, overloaded panels, and old components create fire hazards. Insurance companies may deny claims if you knew about hazards. Documentation protects your family's safety and ensures insurability.",
   "Roof System": "Your roof is your home's primary defense against weather. Small leaks rot the deck, damage insulation, and create interior water damage and mold - turning a $500 repair into a $20,000-40,000 disaster. Knowing installation date helps you plan replacement before emergency failure.",
   "Foundation & Structure": "Foundation problems make homes unsellable and cost $20,000-100,000+ to repair. Small cracks grow over time. Water intrusion causes structural failure. Early documentation lets you track changes and catch problems while they're still manageable.",
   "Water & Sewer/Septic": "Sewer line failures cause sewage backup into your home - a health hazard requiring immediate evacuation and $15,000-30,000 emergency replacement. Tree roots and aging pipes fail without warning. Septic system failure means no plumbing usage and urgent expensive repairs.",
-  "Electrical System": "Faulty wiring is a leading cause of house fires. Panel upgrades cost $2,000-4,000 planned, but electrical emergencies happen at the worst times. Knowing your system helps prevent fires and ensures adequate power for modern appliances.",
+  "Electrical System": "Electrical problems cause 13% of home fires. Outdated wiring, overloaded panels, and old components create fire hazards. Insurance companies may deny claims if you knew about hazards. Documentation protects your family's safety and ensures insurability.",
   "Exterior Siding & Envelope": "Your home's exterior shell prevents water intrusion. Failed caulking and damaged siding allow water into walls causing rot, mold, and structural damage. $500 in maintenance prevents $25,000+ in wall rebuilds. In Pacific Northwest rain, this is critical.",
   "Windows & Doors": "Failed seals cause water damage and account for 30% of heating/cooling loss. Rotted frames require complete replacement at 10X the cost of maintenance. Energy waste costs $300-800/year. Proper maintenance extends life and cuts utility bills.",
   "Gutters & Downspouts": "Clogged gutters cause foundation damage, basement flooding, and landscaping erosion. This $100 maintenance task prevents $10,000-30,000 in foundation and water damage. In Pacific Northwest, this is CRITICAL before fall rain season.",
