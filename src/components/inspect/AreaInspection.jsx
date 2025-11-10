@@ -21,7 +21,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
     return false;
   });
 
-  const handleEverythingGood = () => {
+  const handleSaveAndContinue = () => {
     onComplete(issues);
   };
 
@@ -64,21 +64,23 @@ export default function AreaInspection({ area, inspection, property, baselineSys
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+    <div className="min-h-screen bg-white pb-24">
+      <div className="mobile-container md:max-w-4xl md:mx-auto">
         <Button
           variant="ghost"
           onClick={onBack}
+          className="mb-4"
+          style={{ minHeight: '44px' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Areas
         </Button>
 
         {/* Area Header */}
-        <div>
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-4xl">{area.icon}</span>
-            <h1 className="text-3xl font-bold" style={{ color: '#1B365D' }}>
+            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '24px', lineHeight: '1.2' }}>
               INSPECTING: {area.name}
             </h1>
           </div>
@@ -86,9 +88,11 @@ export default function AreaInspection({ area, inspection, property, baselineSys
 
         {/* Documented Systems */}
         {relevantSystems.length > 0 && (
-          <Card className="border-2" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-bold mb-4" style={{ color: '#1B365D' }}>Your documented systems:</h2>
+          <Card className="border-2 mobile-card" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
+            <CardContent className="p-4">
+              <h2 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
+                Your documented systems:
+              </h2>
               <ul className="space-y-2">
                 {relevantSystems.map((system) => (
                   <li key={system.id} className="flex items-start gap-2">
@@ -107,26 +111,28 @@ export default function AreaInspection({ area, inspection, property, baselineSys
           </Card>
         )}
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* What To Look For */}
-        <Card className="border-2" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>🔍 WHAT TO LOOK FOR:</h2>
+        <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
+          <CardContent className="p-4">
+            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
+              🔍 WHAT TO LOOK FOR:
+            </h2>
             
             {relevantSystems.length > 0 ? (
               <div className="space-y-6">
                 {relevantSystems.map((system) => (
                   <div key={system.id}>
-                    <h3 className="font-semibold text-lg mb-3" style={{ color: '#1B365D' }}>
+                    <h3 className="font-semibold mb-3" style={{ color: '#1B365D', fontSize: '16px' }}>
                       {system.nickname || system.system_type}
                       {system.brand_model && <span className="text-gray-600 font-normal"> ({system.brand_model})</span>}
                     </h3>
-                    <ul className="space-y-2 text-gray-700">
+                    <ul className="space-y-2 text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
                       {area.id === 'hvac' && (
                         <>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Filter condition - dirty/clogged/clean?
                               {system.key_components?.filter_size && (
                                 <span className="text-sm text-gray-600"> (Size: {system.key_components.filter_size})</span>
@@ -134,19 +140,19 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                             </span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Airflow from vents - strong/weak?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Unusual sounds - grinding/squealing/rattling?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Turn on AC - does it cool properly?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Outdoor unit - debris around it?</span>
                           </li>
                         </>
@@ -154,19 +160,19 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                       {area.id === 'plumbing' && (
                         <>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Water heater - any leaks at base?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Under sinks - any moisture or water stains?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Washing machine hoses - rubber or braided stainless?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Supply line shut-off valves - do they turn smoothly?</span>
                           </li>
                         </>
@@ -174,15 +180,15 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                       {area.id === 'safety' && (
                         <>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Test smoke detector - does it alarm?</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Check battery installation date</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <input type="checkbox" className="mt-1" />
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                             <span>Check detector age (replace after 10 years)</span>
                           </li>
                         </>
@@ -192,12 +198,12 @@ export default function AreaInspection({ area, inspection, property, baselineSys
                 ))}
               </div>
             ) : (
-              <div className="space-y-2 text-gray-700">
+              <div className="space-y-2 text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
                 <p><strong>General inspection points for {area.name}:</strong></p>
                 <ul className="space-y-2 ml-4">
                   {area.whatToCheck.split(',').map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <input type="checkbox" className="mt-1" />
+                      <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
                       <span>{item.trim()}</span>
                     </li>
                   ))}
@@ -207,16 +213,18 @@ export default function AreaInspection({ area, inspection, property, baselineSys
           </CardContent>
         </Card>
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* Why It Matters */}
-        <Card className="border-2" style={{ borderColor: '#FFC107', backgroundColor: '#FFFBF0' }}>
-          <CardContent className="p-6">
+        <Card className="border-2 mobile-card" style={{ borderColor: '#FFC107', backgroundColor: '#FFFBF0' }}>
+          <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FFC107' }} />
               <div>
-                <h2 className="text-xl font-bold mb-3" style={{ color: '#1B365D' }}>💡 WHY THIS MATTERS:</h2>
-                <p className="text-gray-800 leading-relaxed">
+                <h2 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
+                  💡 WHY THIS MATTERS:
+                </h2>
+                <p className="text-gray-800" style={{ fontSize: '16px', lineHeight: '1.5' }}>
                   {getWhyItMatters()}
                 </p>
               </div>
@@ -224,13 +232,13 @@ export default function AreaInspection({ area, inspection, property, baselineSys
           </CardContent>
         </Card>
 
-        <hr className="border-gray-200" />
+        <hr className="border-gray-200 my-6" />
 
         {/* Issues Found So Far */}
         {issues.length > 0 && (
-          <Card className="border-2" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
-            <CardContent className="p-6">
-              <h2 className="text-lg font-bold mb-4" style={{ color: '#1B365D' }}>
+          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
+            <CardContent className="p-4">
+              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
                 Issues Found in This Area: {issues.length}
               </h2>
               <div className="space-y-2">
@@ -248,25 +256,27 @@ export default function AreaInspection({ area, inspection, property, baselineSys
         )}
 
         {/* Action Buttons */}
-        <div>
-          <h2 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>Did you find any issues?</h2>
+        <div className="mb-4">
+          <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
+            Did you find any issues?
+          </h2>
           
           <div className="flex flex-col gap-3">
             <Button
-              onClick={handleEverythingGood}
-              className="w-full h-14 text-lg font-bold"
-              style={{ backgroundColor: '#28A745' }}
-            >
-              ✓ Everything Looks Good
-            </Button>
-            
-            <Button
               onClick={() => setDocumentingIssue(true)}
-              className="w-full h-14 text-lg font-bold"
-              style={{ backgroundColor: '#FF6B35' }}
+              className="w-full font-bold"
+              style={{ backgroundColor: '#FF6B35', minHeight: '56px', fontSize: '16px' }}
             >
               <AlertTriangle className="w-5 h-5 mr-2" />
               ⚠️ Found an Issue
+            </Button>
+            
+            <Button
+              onClick={handleSaveAndContinue}
+              className="w-full font-bold"
+              style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+            >
+              ✓ Save & Continue to Next Area
             </Button>
           </div>
         </div>
