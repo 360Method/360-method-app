@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Search,
   ClipboardCheck,
-  Timeline,
+  Activity,
   ListOrdered,
   Calendar,
   CheckCircle2,
@@ -52,7 +52,7 @@ const navigationItems = [
     subItems: [
       { title: "Baseline", url: createPageUrl("Baseline"), icon: Search },
       { title: "Inspect", url: createPageUrl("Inspect"), icon: ClipboardCheck },
-      { title: "Track", url: createPageUrl("Track"), icon: Timeline },
+      { title: "Track", url: createPageUrl("Track"), icon: Activity },
     ]
   },
   {
