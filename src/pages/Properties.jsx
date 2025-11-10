@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, MapPin, Calendar, Maximize } from "lucide-react";
+import { Home, Plus, MapPin, Calendar, Maximize, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
+import { CLIMATE_ZONES, detectClimateZone } from "../utils/climateZones";
 
 export default function Properties() {
   const [showDialog, setShowDialog] = React.useState(false);
@@ -58,6 +59,22 @@ export default function Properties() {
     });
   };
 
+  // Auto-detect climate zone from address when it changes
+  React.useEffect(() => {
+    if (formData.address) {
+      const parts = formData.address.split(',');
+      if (parts.length >= 2) {
+        const stateZip = parts[parts.length - 1].trim();
+        const detectedZone = detectClimateZone(stateZip);
+        if (detectedZone !== formData.climate_zone) {
+          setFormData(prev => ({ ...prev, climate_zone: detectedZone }));
+        }
+      }
+    }
+  }, [formData.address]);
+
+  const selectedClimateZoneData = CLIMATE_ZONES[formData.climate_zone];
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -73,7 +90,7 @@ export default function Properties() {
                 Add Property
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Property</DialogTitle>
               </DialogHeader>
@@ -148,25 +165,80 @@ export default function Properties() {
                     </Select>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="climate_zone">Climate Zone</Label>
-                  <Select
-                    value={formData.climate_zone}
-                    onValueChange={(value) => setFormData({ ...formData, climate_zone: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pacific Northwest">Pacific Northwest</SelectItem>
-                      <SelectItem value="Northeast">Northeast</SelectItem>
-                      <SelectItem value="Southeast">Southeast</SelectItem>
-                      <SelectItem value="Midwest">Midwest</SelectItem>
-                      <SelectItem value="Southwest">Southwest</SelectItem>
-                      <SelectItem value="Mountain West">Mountain West</SelectItem>
-                    </SelectContent>
-                  </Select>
+                
+                <hr className="border-gray-200 my-6" />
+                
+                {/* Climate Zone Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    <Label className="text-lg font-semibold">Climate Zone</Label>
+                  </div>
+                  
+                  {formData.address && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-900 mb-2">
+                        🌍 Auto-detected from your location
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Based on your address, we've selected seasonal timing and maintenance tasks specific to your region's climate.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="climate_zone">Climate Zone *</Label>
+                    <Select
+                      value={formData.climate_zone}
+                      onValueChange={(value) => setFormData({ ...formData, climate_zone: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {Object.entries(CLIMATE_ZONES).map(([key, zone]) => (
+                          <SelectItem key={key} value={key}>
+                            {zone.icon} {zone.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {selectedClimateZoneData && (
+                    <Card className="border-2 border-blue-200 bg-blue-50">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{selectedClimateZoneData.icon}</span>
+                          <h3 className="font-bold text-gray-900">{selectedClimateZoneData.name}</h3>
+                        </div>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p><strong>Climate Profile:</strong></p>
+                          <ul className="list-disc ml-5 space-y-1">
+                            <li>{selectedClimateZoneData.profile.rainfall}</li>
+                            <li>{selectedClimateZoneData.profile.winters}</li>
+                            <li>{selectedClimateZoneData.profile.summers}</li>
+                          </ul>
+                          <p className="mt-3"><strong>Key Concerns:</strong></p>
+                          <ul className="list-disc ml-5 space-y-1">
+                            {selectedClimateZoneData.profile.keyConcerns.map((concern, idx) => (
+                              <li key={idx}>{concern}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900 mb-1">💡 Why this matters:</p>
+                    <p className="text-sm text-gray-700">
+                      Seasonal timing and maintenance priorities vary dramatically by climate. 
+                      Your inspection schedules and task lists will be tailored to {selectedClimateZoneData?.name || 'your'} conditions.
+                    </p>
+                  </div>
                 </div>
+                
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                     Cancel
@@ -190,64 +262,77 @@ export default function Properties() {
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.map((property) => (
-              <Link key={property.id} to={createPageUrl("Baseline") + `?property=${property.id}`}>
-                <Card className="border-none shadow-lg hover:shadow-xl transition-all cursor-pointer h-full">
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
-                    <CardTitle className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-normal text-gray-600">Address</span>
+            {properties.map((property) => {
+              const climateZone = CLIMATE_ZONES[property.climate_zone];
+              return (
+                <Link key={property.id} to={createPageUrl("Baseline") + `?property=${property.id}`}>
+                  <Card className="border-none shadow-lg hover:shadow-xl transition-all cursor-pointer h-full">
+                    <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
+                      <CardTitle className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-normal text-gray-600">Address</span>
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900">{property.address}</h3>
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">{property.address}</h3>
+                        <HealthScoreGauge score={property.health_score || 0} size="small" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="gap-1">
+                          <Home className="w-3 h-3" />
+                          {property.property_type}
+                        </Badge>
+                        {climateZone && (
+                          <Badge variant="outline" className="gap-1">
+                            <span>{climateZone.icon}</span>
+                            {climateZone.name.split('(')[0].trim()}
+                          </Badge>
+                        )}
+                        {property.square_footage && (
+                          <Badge variant="outline" className="gap-1">
+                            <Maximize className="w-3 h-3" />
+                            {property.square_footage.toLocaleString()} sq ft
+                          </Badge>
+                        )}
+                        {property.year_built && (
+                          <Badge variant="outline" className="gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Built {property.year_built}
+                          </Badge>
+                        )}
                       </div>
-                      <HealthScoreGauge score={property.health_score || 0} size="small" />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="gap-1">
-                        <Home className="w-3 h-3" />
-                        {property.property_type}
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Maximize className="w-3 h-3" />
-                        {property.square_footage?.toLocaleString()} sq ft
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Built {property.year_built}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Baseline Progress</span>
-                        <span className="font-semibold">{property.baseline_completion || 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${property.baseline_completion || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                          <p className="text-xs text-gray-600">Spent</p>
-                          <p className="font-semibold text-gray-900">${(property.total_maintenance_spent || 0).toLocaleString()}</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Baseline Progress</span>
+                          <span className="font-semibold">{property.baseline_completion || 0}%</span>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Saved</p>
-                          <p className="font-semibold text-green-600">${(property.estimated_disasters_prevented || 0).toLocaleString()}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${property.baseline_completion || 0}%` }}
+                          />
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                      <div className="pt-2 border-t">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                          <div>
+                            <p className="text-xs text-gray-600">Spent</p>
+                            <p className="font-semibold text-gray-900">${(property.total_maintenance_spent || 0).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Saved</p>
+                            <p className="font-semibold text-green-600">${(property.estimated_disasters_prevented || 0).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
