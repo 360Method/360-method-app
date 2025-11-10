@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -153,6 +154,7 @@ export default function Layout({ children }) {
         [data-radix-dialog-overlay] {
           background-color: rgba(0, 0, 0, 0.75) !important;
           backdrop-filter: none !important;
+          z-index: 100 !important;
         }
         
         [data-radix-dialog-content] {
@@ -164,6 +166,7 @@ export default function Layout({ children }) {
           width: calc(100vw - 32px) !important;
           max-height: 85vh !important;
           overflow-y: auto !important;
+          z-index: 101 !important;
         }
         
         @media (min-width: 768px) {
@@ -204,6 +207,7 @@ export default function Layout({ children }) {
           opacity: 1 !important;
           border-radius: 8px !important;
           box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
+          z-index: 102 !important;
         }
         
         /* Mobile spacing */
@@ -318,14 +322,14 @@ export default function Layout({ children }) {
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div 
-            className="md:hidden fixed inset-0 bg-black/75 z-40"
+            className="md:hidden fixed inset-0 bg-black/75 z-[60]"
             onClick={() => setMobileMenuOpen(false)}
           />
         )}
 
         {/* Mobile Slide-out Menu */}
         <div 
-          className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-50 transform transition-transform duration-300 ${
+          className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] transform transition-transform duration-300 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -410,7 +414,7 @@ export default function Layout({ children }) {
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col">
           {/* Mobile Top Header */}
-          <header className="md:hidden sticky top-0 bg-white border-b border-gray-200 z-30" style={{ height: '56px' }}>
+          <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
             <div className="flex items-center justify-between h-full px-4">
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -424,8 +428,8 @@ export default function Layout({ children }) {
             </div>
           </header>
 
-          {/* Content Area with mobile padding for bottom nav */}
-          <div className="flex-1 overflow-auto pb-16 md:pb-0">
+          {/* Content Area with mobile padding for both top header and bottom nav */}
+          <div className="flex-1 overflow-auto pt-[56px] pb-16 md:pt-0 md:pb-0">
             {children}
           </div>
         </main>
