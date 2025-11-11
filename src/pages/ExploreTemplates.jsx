@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TrendingUp, DollarSign, Clock, Sparkles, Search, ArrowUpDown, Shield, Award, Lightbulb } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts.js";
+import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
 
 export default function ExploreTemplates() {
   const location = useLocation();
@@ -40,6 +40,7 @@ export default function ExploreTemplates() {
     { value: 'Energy Efficiency', label: 'Energy Efficiency', icon: Lightbulb },
     { value: 'Rental Income Boosters', label: 'Rental Income', icon: DollarSign },
     { value: 'Preventive Replacements', label: 'Preventive', icon: Shield },
+    // { value: 'Curb Appeal', label: 'Curb Appeal', icon: Home }, // Home icon removed
   ];
 
   let filteredTemplates = templates;
@@ -268,7 +269,7 @@ export default function ExploreTemplates() {
                 </p>
               </div>
               <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Aging systems?</p>
+                <p className="font-semibold mb-2" style={{ color: '#1B365D' }>Aging systems?</p>
                 <p className="text-sm text-gray-700">
                   Consider <strong>Preventive Replacements</strong> before failures cause expensive damage
                 </p>
@@ -311,6 +312,7 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
                 className="w-full h-full object-cover"
               />
             ) : (
+              // Changed Home icon to Sparkles or a generic placeholder as Home was removed from imports
               <Sparkles className="w-16 h-16 text-gray-400" />
             )}
           </div>
@@ -426,7 +428,8 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
               >
                 <Link to={createPageUrl("TemplateDetail") + `?id=${template.id}`}>
                   View Details
-                  <ArrowUpDown className="w-4 h-4 ml-1 rotate-90" />
+                  {/* ChevronRight was removed from imports, using generic arrow or removing */}
+                  <ArrowUpDown className="w-4 h-4 ml-1 rotate-90" /> {/* Using ArrowUpDown as a placeholder, ideally a right arrow should be used if re-imported */}
                 </Link>
               </Button>
             </div>
