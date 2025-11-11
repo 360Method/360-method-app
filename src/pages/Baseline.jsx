@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -310,7 +311,13 @@ export default function Baseline() {
               )}
             </div>
             {description && (
-              <p className="text-xs text-gray-600 mb-2">{description.what}</p>
+              <div className="mb-3">
+                <p className="text-xs text-gray-600 mb-2">{description.what}</p>
+                <div className="bg-orange-50 border border-orange-200 rounded p-2 mt-2">
+                  <p className="text-xs font-semibold text-orange-900 mb-1">⚠️ Why Document This?</p>
+                  <p className="text-xs text-orange-800">{description.why}</p>
+                </div>
+              </div>
             )}
             <Button variant="outline" size="sm" className="w-full gap-2">
               <Plus className="w-4 h-4" />
@@ -398,74 +405,226 @@ export default function Baseline() {
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
 
-        {/* Why Baseline Matters - Educational Section */}
+        {/* Why Baseline Matters - Enhanced Educational Section */}
         {systems.length === 0 && (
           <Card className="border-2 border-blue-300 bg-blue-50">
             <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <BookOpen className="w-6 h-6 text-blue-600" />
-                Why Baseline Matters
+              <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '24px' }}>
+                <BookOpen className="w-8 h-8 text-blue-600" />
+                Why Complete Your Baseline? (The Real Story)
               </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Your baseline is your home's "birth certificate." Without it, you're flying blind:
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-red-600">❌ Without Baseline</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• 20-year-old water heater fails = $6,500 emergency</li>
-                    <li>• No maintenance history when selling</li>
-                    <li>• Can't budget for upcoming replacements</li>
-                    <li>• Always reactive, never proactive</li>
+              
+              {/* The Big Picture */}
+              <div className="bg-white p-6 rounded-lg mb-6">
+                <h4 className="font-bold mb-3 text-lg" style={{ color: '#1B365D' }}>
+                  💡 Here's What Most People Don't Know:
+                </h4>
+                <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                  Your baseline isn't just a list—it's your home's <strong>financial defense system</strong>. 
+                  Without knowing what you have, when it was installed, and how long it should last, you're 
+                  flying blind with the largest investment of your life.
+                </p>
+                <div className="border-l-4 border-orange-500 pl-4 bg-orange-50 p-3 rounded">
+                  <p className="font-semibold text-orange-900 mb-2">
+                    Real Example: The $43,000 Difference
+                  </p>
+                  <p className="text-sm text-gray-800 leading-relaxed">
+                    Homeowner A has no baseline. Their 15-year-old HVAC dies in July = $12K emergency replacement. 
+                    Unknown roof age leads to leak = $8K interior damage. Water heater fails = $4K flood cleanup. 
+                    Foundation crack ignored = $19K structural repair. <strong>Total: $43,000 in preventable disasters.</strong>
+                  </p>
+                  <p className="text-sm text-green-800 font-semibold mt-3">
+                    Homeowner B has complete baseline. Replaces HVAC at 13 years = $6K planned. Roof renewed at 18 years = 
+                    $9K scheduled. Water heater at 10 years = $1.2K no emergency. Foundation monitored = $0 caught early. 
+                    <strong>Total: $16,200 invested strategically.</strong> Saved $26,800 and avoided all disasters.
+                  </p>
+                </div>
+              </div>
+
+              {/* The Concrete Benefits */}
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white p-5 rounded-lg border-2 border-green-300">
+                  <div className="text-3xl mb-3">💰</div>
+                  <h5 className="font-bold mb-2" style={{ color: '#28A745' }}>Avoid Financial Disasters</h5>
+                  <ul className="text-sm text-gray-700 space-y-2">
+                    <li>• Budget for replacements 2-3 years ahead</li>
+                    <li>• Never caught off-guard by failures</li>
+                    <li>• Plan = save 40-60% vs. emergency</li>
+                    <li>• Prevent cascade failures ($20K-50K+)</li>
                   </ul>
                 </div>
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-green-600">✅ With Baseline</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Replace at 12 years = $1,400 planned</li>
-                    <li>• Prove maintenance to buyers (+$5-15K value)</li>
-                    <li>• Budget accurately for next 5-10 years</li>
-                    <li>• Strategic planning prevents disasters</li>
+
+                <div className="bg-white p-5 rounded-lg border-2 border-blue-300">
+                  <div className="text-3xl mb-3">🏆</div>
+                  <h5 className="font-bold mb-2" style={{ color: '#3B82F6' }}>Maximize Home Value</h5>
+                  <ul className="text-sm text-gray-700 space-y-2">
+                    <li>• Prove maintenance = +$5-15K sale price</li>
+                    <li>• Pass inspections with confidence</li>
+                    <li>• Eliminate buyer negotiation leverage</li>
+                    <li>• Show you're a serious owner</li>
+                  </ul>
+                </div>
+
+                <div className="bg-white p-5 rounded-lg border-2 border-purple-300">
+                  <div className="text-3xl mb-3">🎯</div>
+                  <h5 className="font-bold mb-2" style={{ color: '#8B5CF6' }}>Strategic Control</h5>
+                  <ul className="text-sm text-gray-700 space-y-2">
+                    <li>• Know exactly what needs attention</li>
+                    <li>• Budget accurately for 5-10 years</li>
+                    <li>• Make informed upgrade decisions</li>
+                    <li>• Sleep well knowing your home</li>
                   </ul>
                 </div>
               </div>
 
-              <div className="border-t border-blue-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
+              {/* Without vs. With Comparison */}
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-red-50 border-2 border-red-300 p-5 rounded-lg">
+                  <p className="font-bold mb-3 text-red-800 text-lg flex items-center gap-2">
+                    <span className="text-2xl">❌</span> WITHOUT BASELINE
+                  </p>
+                  <ul className="text-sm text-gray-800 space-y-2">
+                    <li><strong>→</strong> 20-year-old water heater fails unexpectedly</li>
+                    <li><strong>=</strong> $6,500 emergency + $3,000 flood damage</li>
+                    <li className="pt-2 border-t border-red-200"></li>
+                    <li><strong>→</strong> Unknown roof age, surprise leak during rain</li>
+                    <li><strong>=</strong> $8,000 interior damage + $12,000 emergency roof</li>
+                    <li className="pt-2 border-t border-red-200"></li>
+                    <li><strong>→</strong> Selling home with no maintenance records</li>
+                    <li><strong>=</strong> Buyers negotiate -$10K to -$20K discount</li>
+                    <li className="pt-2 border-t border-red-200"></li>
+                    <li><strong>→</strong> Can't budget for upcoming replacements</li>
+                    <li><strong>=</strong> Living paycheck-to-paycheck with home emergencies</li>
+                    <li className="pt-2 border-t border-red-200 mt-3"></li>
+                    <li className="font-bold text-red-900 pt-2">
+                      TOTAL COST: $39,500+ in preventable disasters over 10 years
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-green-50 border-2 border-green-300 p-5 rounded-lg">
+                  <p className="font-bold mb-3 text-green-800 text-lg flex items-center gap-2">
+                    <span className="text-2xl">✅</span> WITH COMPLETE BASELINE
+                  </p>
+                  <ul className="text-sm text-gray-800 space-y-2">
+                    <li><strong>→</strong> Know water heater is 12 years old, replace proactively</li>
+                    <li><strong>=</strong> $1,400 planned replacement, zero emergencies</li>
+                    <li className="pt-2 border-t border-green-200"></li>
+                    <li><strong>→</strong> Track roof installed 2005, budget for 2028 replacement</li>
+                    <li><strong>=</strong> $10,000 planned vs. $20,000 emergency with damage</li>
+                    <li className="pt-2 border-t border-green-200"></li>
+                    <li><strong>→</strong> Selling with complete system documentation</li>
+                    <li><strong>=</strong> Buyers confident, sell $8K-15K above asking</li>
+                    <li className="pt-2 border-t border-green-200"></li>
+                    <li><strong>→</strong> Budget spreadsheet shows exactly what's coming</li>
+                    <li><strong>=</strong> Save $200-400/month with confidence, no surprises</li>
+                    <li className="pt-2 border-t border-green-200 mt-3"></li>
+                    <li className="font-bold text-green-900 pt-2">
+                      TOTAL SAVINGS: $28,100+ avoided costs + peace of mind
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Time Investment Reality */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 p-5 rounded-lg mb-6">
+                <h4 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
+                  ⏱️ "But This Looks Like A Lot of Work..."
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-semibold mb-2 text-gray-900">Reality Check:</p>
+                    <ul className="text-sm text-gray-800 space-y-1">
+                      <li>• <strong>Essential systems (6):</strong> 2-3 hours total</li>
+                      <li>• <strong>Per system:</strong> 15-30 minutes average</li>
+                      <li>• <strong>Complete baseline (15):</strong> 4-6 hours one-time</li>
+                      <li>• <strong>After setup:</strong> 5 min updates per year</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-2 text-gray-900">Compare That To:</p>
+                    <ul className="text-sm text-gray-800 space-y-1">
+                      <li>• Researching emergency plumber at 2am: <strong>3 hours stress</strong></li>
+                      <li>• Getting insurance quotes after flood: <strong>8 hours chaos</strong></li>
+                      <li>• Negotiating with buyer over mystery systems: <strong>$10K+ loss</strong></li>
+                      <li>• Worrying about unknown home issues: <strong>Priceless anxiety</strong></li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-blue-300">
+                  <p className="text-center font-bold text-blue-900">
+                    💎 Invest 4-6 hours once = Save $25,000-50,000+ over homeownership + eliminate stress
+                  </p>
+                </div>
+              </div>
+
+              {/* Getting Started Path */}
+              <div className="bg-white p-5 rounded-lg border-2 border-green-300">
+                <h4 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
+                  🚀 Your Path: Start Small, Build Complete Protection
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded">
+                    <Badge className="bg-red-600 text-white flex-shrink-0">Step 1</Badge>
+                    <div>
+                      <p className="font-semibold text-gray-900">Document 4 Essential Systems (unlock ACT phase)</p>
+                      <p className="text-sm text-gray-700">Start with the big ones: HVAC, Plumbing, Roof, Electrical. Takes 1-2 hours.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded">
+                    <Badge className="bg-blue-600 text-white flex-shrink-0">Step 2</Badge>
+                    <div>
+                      <p className="font-semibold text-gray-900">Add Remaining Essential + Recommended (complete protection)</p>
+                      <p className="text-sm text-gray-700">Foundation, Water/Sewer, Exterior, Gutters. Another 1-2 hours.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded">
+                    <Badge className="bg-purple-600 text-white flex-shrink-0">Step 3</Badge>
+                    <div>
+                      <p className="font-semibold text-gray-900">Complete with Appliances & Safety (Baseline Boss status)</p>
+                      <p className="text-sm text-gray-700">Document all appliances and safety systems. Final 1-2 hours.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resource Links */}
+              <div className="border-t border-blue-300 pt-6 mt-6">
+                <p className="font-semibold mb-4" style={{ color: '#1B365D', fontSize: '16px' }}>
+                  📚 Still Not Convinced? Learn More:
                 </p>
                 <div className="grid md:grid-cols-3 gap-3">
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="justify-start"
+                    className="justify-start h-auto py-3"
                   >
                     <Link to={createPageUrl("ResourceGuides") + "?category=Getting Started"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Complete Baseline Guide
+                      <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="text-left">Complete Baseline Guide<br/><span className="text-xs text-gray-600">15-min read</span></span>
                     </Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="justify-start"
+                    className="justify-start h-auto py-3"
                   >
                     <Link to={createPageUrl("VideoTutorials") + "?category=Getting Started"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Video Walkthrough (23 min)
+                      <Video className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="text-left">Video Walkthrough<br/><span className="text-xs text-gray-600">23-min tutorial</span></span>
                     </Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="justify-start"
+                    className="justify-start h-auto py-3"
                   >
                     <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      System Budget Calculator
+                      <Calculator className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="text-left">Calculate Your Savings<br/><span className="text-xs text-gray-600">Interactive tool</span></span>
                     </Link>
                   </Button>
                 </div>
