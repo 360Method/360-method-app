@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles, Shield, FileText } from "lucide-react";
-import { calculateMemberSavings, getMemberTierName, isServiceMember, createPageUrl } from "@/utils/memberPricing"; // Adjusted based on previous context, original outline suggested "@/utils" but createPageUrl is likely in memberPricing based on usage
+import { calculateMemberSavings, getMemberTierName, isServiceMember, createPageUrl } from "@/utils";
 import UpgradeDocuments from "./UpgradeDocuments";
 
 export default function UpgradeProjectForm({ properties, project, templateId, onComplete, onCancel }) {
@@ -441,6 +441,7 @@ export default function UpgradeProjectForm({ properties, project, templateId, on
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              
               {/* Member Benefits Banner (if service member) */}
               {isMember && memberSavings && memberSavings.cappedSavings > 0 && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
