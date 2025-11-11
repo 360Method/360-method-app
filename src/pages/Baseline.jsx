@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
-import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
+import AddToCartDialog from "../components/cart/AddToCartDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
 
 const REQUIRED_SYSTEMS = [
@@ -133,7 +133,7 @@ export default function Baseline() {
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
   const [showCelebration, setShowCelebration] = React.useState(false);
   const [scrollPosition, setScrollPosition] = React.useState(0);
@@ -316,6 +316,10 @@ export default function Baseline() {
         behavior: 'smooth'
       });
     }, 100);
+  };
+
+  const handleRequestProService = () => {
+    setShowCartDialog(true);
   };
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
@@ -715,21 +719,45 @@ export default function Baseline() {
                       
                       {/* Professional Service CTA for incomplete baseline */}
                       {essentialProgress < 100 && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm font-medium text-blue-900 mb-2">
-                            Feeling overwhelmed? Let us handle the documentation.
-                          </p>
-                          <p className="text-xs text-gray-700 mb-3">
-                            Our pros document everything in 2 hours, provide complete report with photos, and identify all issues. 
-                            First assessment includes system age verification and priority recommendations.
-                          </p>
+                        <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
+                              💼
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-blue-900 mb-1">
+                                Feeling overwhelmed? Let us handle it.
+                              </p>
+                              <p className="text-xs text-gray-700 mb-2">
+                                Our certified technicians will document every system in your home - age, condition, photos, and maintenance recommendations. Complete baseline in 2 hours, delivered as a professional report.
+                              </p>
+                              <div className="bg-white rounded p-2 mb-3 border border-blue-200">
+                                <p className="text-xs font-semibold text-blue-900 mb-1">✅ What's Included:</p>
+                                <ul className="text-xs text-gray-700 space-y-1">
+                                  <li>• All {REQUIRED_SYSTEMS.length + RECOMMENDED_SYSTEMS.length} essential & recommended systems</li>
+                                  <li>• Age verification (permits, receipts, model numbers)</li>
+                                  <li>• Current condition assessment with photos</li>
+                                  <li>• Maintenance history documentation</li>
+                                  <li>• Priority recommendations for immediate needs</li>
+                                  <li>• Professional report + digital system portfolio</li>
+                                </ul>
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <Badge className="bg-green-600 text-white">
+                                  Fixed Price: $299
+                                </Badge>
+                                <span className="text-xs text-gray-600">2-3 hour service</span>
+                              </div>
+                            </div>
+                          </div>
                           <Button
-                            onClick={() => setShowServiceDialog(true)}
-                            variant="outline"
-                            className="w-full md:w-auto"
-                            style={{ borderColor: '#28A745', color: '#28A745' }}
+                            onClick={handleRequestProService}
+                            variant="default"
+                            className="w-full md:w-auto gap-2"
+                            style={{ backgroundColor: '#28A745', minHeight: '48px' }}
                           >
-                            Schedule Professional Baseline Assessment
+                            <ShoppingCart className="w-4 h-4" />
+                            Add Professional Baseline to Cart ($299)
                           </Button>
                         </div>
                       )}
@@ -858,13 +886,21 @@ export default function Baseline() {
             </CardContent>
           </Card>
         )}
-        <ServiceRequestDialog
-          open={showServiceDialog}
-          onClose={() => setShowServiceDialog(false)}
+
+        <AddToCartDialog
+          open={showCartDialog}
+          onClose={() => setShowCartDialog(false)}
           prefilledData={{
             property_id: selectedProperty,
-            service_type: "Professional Baseline Assessment",
-            description: "I would like a professional to document all systems in my property and provide a complete baseline assessment."
+            source_type: "custom",
+            title: "Professional Baseline Assessment",
+            description: "Complete system documentation service by certified technician. Includes:\n\n✅ All essential & recommended systems documented\n✅ Age verification (permits, receipts, model numbers)\n✅ Current condition assessment with photos\n✅ Maintenance history documentation\n✅ Priority recommendations for immediate needs\n✅ Professional report + digital system portfolio\n\n📋 Service takes 2-3 hours and provides comprehensive baseline documentation for your entire property.",
+            system_type: "General",
+            priority: "Medium",
+            estimated_hours: 2.5,
+            estimated_cost_min: 299,
+            estimated_cost_max: 299,
+            customer_notes: "Professional baseline documentation service - Fixed price $299"
           }}
         />
 
