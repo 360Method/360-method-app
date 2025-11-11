@@ -12,7 +12,7 @@ import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.j
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
 import InspectionReport from "../components/inspect/InspectionReport.jsx";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
-import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "@/utils/climateZones.js";
+import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "@/utils/climateZones";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
