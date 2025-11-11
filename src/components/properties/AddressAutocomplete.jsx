@@ -4,9 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, AlertCircle, Key } from "lucide-react";
 
-// TEMPORARY: For testing, you can add your API key here
-// In production, this should come from environment variables
-const GOOGLE_MAPS_API_KEY = ""; // Add your key here temporarily for testing
+// Google Maps API Key
+const GOOGLE_MAPS_API_KEY = "AIzaSyBvkKtZhhDgtqoGcHJOOhu2DDwx6VSNItU";
 
 export default function AddressAutocomplete({ onAddressSelect, initialValue = "" }) {
   const [inputValue, setInputValue] = React.useState(initialValue);
