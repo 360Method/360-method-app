@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2 } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 
@@ -396,6 +397,82 @@ export default function Baseline() {
           <p className="text-xl text-gray-600">Document Your Property Systems</p>
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
+
+        {/* Why Baseline Matters - Educational Section */}
+        {systems.length === 0 && (
+          <Card className="border-2 border-blue-300 bg-blue-50">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <BookOpen className="w-6 h-6 text-blue-600" />
+                Why Baseline Matters
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Your baseline is your home's "birth certificate." Without it, you're flying blind:
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-red-600">❌ Without Baseline</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• 20-year-old water heater fails = $6,500 emergency</li>
+                    <li>• No maintenance history when selling</li>
+                    <li>• Can't budget for upcoming replacements</li>
+                    <li>• Always reactive, never proactive</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-green-600">✅ With Baseline</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Replace at 12 years = $1,400 planned</li>
+                    <li>• Prove maintenance to buyers (+$5-15K value)</li>
+                    <li>• Budget accurately for next 5-10 years</li>
+                    <li>• Strategic planning prevents disasters</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-blue-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=Getting Started"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Complete Baseline Guide
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=Getting Started"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      Video Walkthrough (23 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ROICalculators")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      System Budget Calculator
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Property Selector */}
         {properties.length > 0 && (

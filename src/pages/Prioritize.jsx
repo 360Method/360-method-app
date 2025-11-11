@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, AlertTriangle, DollarSign, Clock, TrendingUp } from "lucide-react";
+import { ListOrdered, AlertTriangle, DollarSign, Clock, TrendingUp, BookOpen, Video, Calculator } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 
 const PRIORITY_COLORS = {
@@ -91,6 +93,83 @@ export default function Prioritize() {
             <p className="text-gray-600 mt-1">Smart priority queue with cascade risk analysis</p>
           </div>
         </div>
+
+        {/* Why Strategic Prioritization Matters - Educational Section */}
+        {activeTasks.length > 0 && (
+          <Card className="border-2 border-orange-300 bg-orange-50">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <ListOrdered className="w-6 h-6 text-orange-600" />
+                Why Strategic Prioritization Matters
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Not all repairs are created equal. A $150 gutter cleaning prevents $20K foundation damage. 
+                A $50 HVAC filter saves $8K system replacement. Smart prioritization = massive savings.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-red-600">❌ Wrong Priority</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Fix cosmetic issues first = $2K spent</li>
+                    <li>• Ignore small leak = cascades to $30K disaster</li>
+                    <li>• Wait until "convenient" = emergency at 3X cost</li>
+                    <li>• No budget planning = reactive spending</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-green-600">✅ Strategic Priority</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Fix cascade risks first = prevent disasters</li>
+                    <li>• Small leak caught = $200 repair vs. $30K</li>
+                    <li>• Plan timeline = no emergency pricing</li>
+                    <li>• Budget by ROI = maximize value</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-orange-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=ACT Phase"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Smart Prioritization Guide
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=ACT Phase"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      Cascade Risk Explained (12 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ROICalculators")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Cost Avoidance Calculator
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">

@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit } from "lucide-react";
+import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit, BookOpen, Video, Calculator } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
@@ -174,6 +176,82 @@ export default function Inspect() {
             Visual Property Walkthrough
           </p>
         </div>
+
+        {/* Why Seasonal Diagnostics Matter - Educational Section */}
+        {inspections.length === 0 && baselineSystems.length > 0 && (
+          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <Eye className="w-6 h-6 text-green-600" />
+                Why Seasonal Diagnostics Matter
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Your home changes with the seasons - and so do its maintenance needs. Quarterly inspections catch small problems when they're $50 fixes, not $5,000 disasters.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-red-600">❌ Reactive Approach</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Small roof leak becomes $30K disaster</li>
+                    <li>• Clogged gutters cause foundation damage</li>
+                    <li>• Missed HVAC issue = system failure in heatwave</li>
+                    <li>• No documentation for insurance claims</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-green-600">✅ Proactive Diagnostics</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Catch leak early = $200 repair</li>
+                    <li>• Gutter cleaning prevents $15K foundation fix</li>
+                    <li>• Service HVAC before failure = no emergency</li>
+                    <li>• Photo history proves maintenance to buyers</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-green-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=AWARE Phase"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Seasonal Diagnostic Guide
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=AWARE Phase"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      Inspection Walkthrough (15 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("Resources")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Download Checklist
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Property Selector - Full width on mobile */}
         <Card className="border-none shadow-sm mobile-card">

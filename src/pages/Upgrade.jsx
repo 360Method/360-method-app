@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home } from "lucide-react";
+import { Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home, BookOpen, Video, Calculator } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard.jsx";
@@ -97,6 +97,83 @@ export default function Upgrade() {
             Small investments today = Big returns tomorrow
           </p>
         </div>
+
+        {/* Why Strategic Upgrades Matter - Educational Section */}
+        {allUpgrades.length === 0 && (
+          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <TrendingUp className="w-6 h-6 text-green-600" />
+                Why Strategic Upgrades Matter
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Most homeowners wait until something breaks. Smart homeowners invest strategically. 
+                Replace before failure = avoid disasters + maximize ROI.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-red-600">❌ Reactive Thinking</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• 20-year-old water heater floods basement = $6,500 emergency</li>
+                    <li>• Old HVAC dies in heatwave = 3X emergency replacement cost</li>
+                    <li>• Worn roof leaks = $30K interior damage + mold</li>
+                    <li>• No planning = always at mercy of failures</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="font-semibold mb-2 text-green-600">✅ Strategic Upgrades</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Replace at 12 years = $1,400 planned + avoid flood</li>
+                    <li>• Upgrade to energy-efficient = $800/yr savings</li>
+                    <li>• Proactive roof = $12K planned vs. $42K emergency</li>
+                    <li>• Budget = control + maximum property value</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-green-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=ADVANCE Phase"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Strategic Upgrade Planning
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=ADVANCE Phase"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      ROI Analysis Guide (18 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ROICalculators")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Upgrade ROI Calculators
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Dashboard Summary */}
         {allUpgrades.length > 0 && (
@@ -386,41 +463,6 @@ export default function Upgrade() {
             </CardContent>
           </Card>
         )}
-
-        {/* Educational CTA */}
-        <Card className="border-2 border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-              📚 Why Upgrade Strategically?
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Most homeowners wait until something breaks. Smart homeowners invest strategically.
-            </p>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div className="bg-white p-4 rounded-lg">
-                <p className="font-semibold mb-2" style={{ color: '#DC3545' }}>❌ Reactive Thinking</p>
-                <p className="text-sm text-gray-700">
-                  20-year-old water heater floods basement = $6,500 emergency
-                </p>
-              </div>
-              <div className="bg-white p-4 rounded-lg">
-                <p className="font-semibold mb-2" style={{ color: '#28A745' }}>✅ Strategic Upgrade</p>
-                <p className="text-sm text-gray-700">
-                  Proactive replacement at 12 years = $1,400 + avoid disaster
-                </p>
-              </div>
-            </div>
-            <Button
-              asChild
-              variant="outline"
-              style={{ minHeight: '48px' }}
-            >
-              <Link to={createPageUrl("ExploreTemplates")}>
-                Learn About Strategic Upgrades →
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
