@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TrendingUp, DollarSign, Clock, Sparkles, Search, ArrowUpDown, Shield, Award, Lightbulb } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts.jsx";
+import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
 
 export default function ExploreTemplates() {
   const location = useLocation();
