@@ -67,6 +67,12 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
     createInspectionMutation.mutate();
   };
 
+  const handleCancel = () => {
+    if (onCancel && typeof onCancel === 'function') {
+      onCancel();
+    }
+  };
+
   // If no property, show error
   if (!property) {
     return (
@@ -75,7 +81,7 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
           <CardContent className="p-12 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Selected</h1>
             <p className="text-gray-600 mb-6">Please select a property before starting an inspection.</p>
-            <Button onClick={onCancel} style={{ backgroundColor: '#1B365D' }}>
+            <Button onClick={handleCancel} style={{ backgroundColor: '#1B365D', minHeight: '48px' }}>
               Go Back
             </Button>
           </CardContent>
@@ -89,7 +95,7 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
       <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
         <Button
           variant="ghost"
-          onClick={onCancel}
+          onClick={handleCancel}
           className="mb-4"
           style={{ minHeight: '44px' }}
         >
