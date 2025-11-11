@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Crown, X, Home, Building2 } from "lucide-react";
+import { Check, Sparkles, Crown, X, Home, Building2, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TierBadge from "../components/upgrade/TierBadge";
+import { calculateProPricing } from "../components/shared/ServiceAreaChecker";
 
 export default function Upgrade() {
   const { data: user } = useQuery({
@@ -15,10 +16,16 @@ export default function Upgrade() {
     queryFn: () => base44.auth.me(),
   });
 
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list(),
+  });
+
   const currentTier = user?.subscription_tier || 'free';
+  const proPricing = calculateProPricing(properties);
 
   const proFeatures = [
-    'Up to 3 properties',
+    'Up to 3 properties (any size)',
     'Full baseline documentation',
     'Seasonal inspections with checklists',
     'Maintenance task tracking',
@@ -33,9 +40,15 @@ export default function Upgrade() {
   const comparisonFeatures = [
     { 
       name: 'Properties',
-      free: '1',
-      pro: '3',
+      free: '1 property',
+      pro: '3 properties',
       service: 'Unlimited'
+    },
+    { 
+      name: 'Additional Doors',
+      free: 'N/A',
+      pro: '+$2/door/month',
+      service: 'Included'
     },
     {
       name: 'Baseline Documentation',
@@ -135,7 +148,7 @@ export default function Upgrade() {
               <ul className="space-y-3 mb-6">
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>1 property</span>
+                  <span>1 property (any size)</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
@@ -188,16 +201,44 @@ export default function Upgrade() {
                   <span className="text-4xl font-bold" style={{ color: '#28A745' }}>$8</span>
                   <span className="text-gray-600">/month</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Billed monthly</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Up to 3 properties • ${(8 * 12).toFixed(0)}/year
+                </p>
               </div>
 
+              {/* Pro Pricing Calculator */}
+              {properties.length > 0 && currentTier === 'free' && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 mb-4">
+                  <div className="flex items-start gap-2 mb-2">
+                    <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      <p className="font-semibold text-blue-900 mb-1">Your Price:</p>
+                      <p className="text-blue-800">
+                        {proPricing.totalDoors} door{proPricing.totalDoors > 1 ? 's' : ''} total
+                      </p>
+                      {proPricing.additionalDoors > 0 && (
+                        <p className="text-blue-800">
+                          ${proPricing.breakdown.base} base + ${proPricing.breakdown.additionalCost} for {proPricing.additionalDoors} additional door{proPricing.additionalDoors > 1 ? 's' : ''}
+                        </p>
+                      )}
+                      <p className="font-bold text-blue-900 mt-1">
+                        = ${proPricing.monthlyPrice}/month
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <ul className="space-y-3 mb-6">
-                {proFeatures.map((feature, idx) => (
+                {proFeatures.slice(0, 6).map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>
                   </li>
                 ))}
+                <li className="text-xs text-gray-500 italic">
+                  + $2/door/month beyond first 3 doors
+                </li>
               </ul>
 
               {currentTier === 'pro' ? (
@@ -307,6 +348,45 @@ export default function Upgrade() {
           </Card>
         </div>
 
+        {/* Pro Pricing Explanation */}
+        <Card className="border-2 border-blue-300 bg-blue-50 mb-12">
+          <CardContent className="p-6">
+            <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
+              💡 How Pro Pricing Works
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold mb-2">Base: $8/month</p>
+                <p className="text-sm text-gray-700">
+                  Covers up to 3 properties of any size. A duplex = 1 property. A fourplex = 1 property. An apartment building = 1 property.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-2">Additional Doors: +$2/door/month</p>
+                <p className="text-sm text-gray-700">
+                  Only charged for doors beyond the first 3. This prevents non-certified operators from using the platform to run competing services at scale.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <p className="font-semibold mb-3">Examples:</p>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li>• 3 single-family homes (3 doors) = <strong>$8/month</strong></li>
+                  <li>• 2 SFH + 1 duplex (4 doors) = <strong>$10/month</strong> ($8 + $2)</li>
+                  <li>• 1 SFH + 1 fourplex (5 doors) = <strong>$12/month</strong> ($8 + $4)</li>
+                  <li>• Portfolio with 10 doors = <strong>$22/month</strong> ($8 + $14)</li>
+                </ul>
+              </div>
+
+              <p className="text-sm text-gray-600 italic">
+                Managing many properties? Consider PropertyCare service with volume discounts.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* PropertyCare Banner */}
         <Card className="border-2 border-orange-300 bg-orange-50 mb-12">
           <CardContent className="p-6">
@@ -319,7 +399,7 @@ export default function Upgrade() {
                   PropertyCare for Rental Portfolios
                 </h3>
                 <p className="text-gray-700 mb-4">
-                  Managing rental properties? PropertyCare offers per-door pricing with volume discounts. 
+                  Managing rental properties? PropertyCare offers per-door pricing with volume discounts (10-20% off). 
                   Perfect for landlords and investors with 2+ doors.
                 </p>
                 <Button
@@ -416,19 +496,20 @@ export default function Upgrade() {
 
               <div>
                 <h4 className="font-semibold mb-2" style={{ color: '#1B365D' }}>
-                  What happens to my data if I downgrade?
+                  How does the per-door pricing work for Pro?
                 </h4>
                 <p className="text-sm text-gray-700">
-                  All your data is preserved. If you downgrade from Pro to Free, you'll keep your first property active and others will be archived (but not deleted).
+                  Pro costs $8/month for up to 3 properties (regardless of size). If your properties have more than 3 total doors, 
+                  you pay an additional $2/month per door beyond the first 3. Example: 10 doors = $8 base + (7 × $2) = $22/month.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2" style={{ color: '#1B365D' }}>
-                  How does the 90-Day Safer Home Guarantee work?
+                  What happens to my data if I downgrade?
                 </h4>
                 <p className="text-sm text-gray-700">
-                  For HomeCare/PropertyCare members: If our operators miss a critical issue during a diagnostic visit that results in an emergency repair, we'll cover the labor cost up to the value of your annual subscription.
+                  All your data is preserved. If you downgrade from Pro to Free, you'll keep your first property active and others will be archived (but not deleted).
                 </p>
               </div>
 
