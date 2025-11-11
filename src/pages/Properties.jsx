@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PropertyWizard from "../components/properties/PropertyWizard";
 import PropertyEditDialog from "../components/properties/PropertyEditDialog";
+import UpgradePrompt from "../components/UpgradePrompt"; // Added import
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,12 +32,23 @@ export default function Properties() {
   const [showWizard, setShowWizard] = React.useState(false);
   const [editingProperty, setEditingProperty] = React.useState(null);
   const [deletingProperty, setDeletingProperty] = React.useState(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false); // Added state
   const queryClient = useQueryClient();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
   });
+
+  // Added user query
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // Added property limit logic
+  const propertyLimit = user?.property_limit || 1; // Default to 1 if not set
+  const canAddProperty = properties.length < propertyLimit;
 
   const deletePropertyMutation = useMutation({
     mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
@@ -63,6 +76,15 @@ export default function Properties() {
     }
   };
 
+  // Added handleAddProperty function
+  const handleAddProperty = () => {
+    if (!canAddProperty) {
+      setShowUpgradePrompt(true);
+    } else {
+      setShowWizard(true);
+    }
+  };
+
   if (showWizard) {
     return (
       <div className="min-h-screen bg-white p-4">
@@ -87,16 +109,31 @@ export default function Properties() {
           </p>
         </div>
 
+        {/* Upgrade Prompt */}
+        {showUpgradePrompt && (
+          <div className="mb-6">
+            <UpgradePrompt
+              context="property_limit"
+              onDismiss={() => setShowUpgradePrompt(false)}
+            />
+          </div>
+        )}
+
         {/* Add Property Button */}
         <div className="mb-6">
           <Button
-            onClick={() => setShowWizard(true)}
+            onClick={handleAddProperty} // Updated onClick
             className="w-full md:w-auto font-bold"
             style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
           >
             <Plus className="w-5 h-5 mr-2" />
             Add New Property
           </Button>
+          {!canAddProperty && ( // Added property limit message
+            <p className="text-sm text-orange-600 mt-2">
+              ⚠️ Property limit reached ({properties.length}/{propertyLimit}) - Upgrade to add more
+            </p>
+          )}
         </div>
 
         {properties.length === 0 ? (
@@ -108,7 +145,7 @@ export default function Properties() {
                 Start by adding your first property to begin protecting your investment
               </p>
               <Button
-                onClick={() => setShowWizard(true)}
+                onClick={handleAddProperty} // Updated onClick
                 style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
               >
                 <Plus className="w-5 h-5 mr-2" />
