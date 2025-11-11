@@ -58,6 +58,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         condition_notes: editingSystem.condition_notes || "",
         warning_signs_present: editingSystem.warning_signs_present || [],
         photo_urls: editingSystem.photo_urls || [],
+        manual_urls: editingSystem.manual_urls || [],
         estimated_lifespan_years: editingSystem.estimated_lifespan_years || "",
         replacement_cost_estimate: editingSystem.replacement_cost_estimate || "",
         key_components: editingSystem.key_components || {}
@@ -78,6 +79,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         condition_notes: "",
         warning_signs_present: [],
         photo_urls: [],
+        manual_urls: [],
         estimated_lifespan_years: "",
         replacement_cost_estimate: "",
         key_components: {},
@@ -100,6 +102,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       condition_notes: "",
       warning_signs_present: [],
       photo_urls: [],
+      manual_urls: [],
       estimated_lifespan_years: "",
       replacement_cost_estimate: "",
       key_components: {}
@@ -108,9 +111,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
 
   const [formData, setFormData] = React.useState(getInitialFormData);
   const [photos, setPhotos] = React.useState(() => getInitialFormData().photo_urls || []);
+  const [manuals, setManuals] = React.useState(() => getInitialFormData().manual_urls || []);
   const [uploading, setUploading] = React.useState(false);
+  const [uploadingManuals, setUploadingManuals] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
   const [showAddAnother, setShowAddAnother] = React.useState(false);
+  const [scanningBarcode, setScanningBarcode] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -120,6 +126,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       const initialData = getInitialFormData();
       setFormData(initialData);
       setPhotos(initialData.photo_urls || []); // Sync photos state with formData's photos
+      setManuals(initialData.manual_urls || []); // Sync manuals state
       setShowAddAnother(false); // Reset this flag when dialog opens
     }
   }, [editingSystem, open, getInitialFormData]);
@@ -200,6 +207,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         estimated_lifespan_years: parseInt(data.estimated_lifespan_years) || null,
         replacement_cost_estimate: parseFloat(data.replacement_cost_estimate) || null,
         photo_urls: photos,
+        manual_urls: manuals.map(m => m.url), // Save only the URLs
         is_required: editingSystem?.is_required || false
       };
 
@@ -238,8 +246,83 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     }
   };
 
+  const handleManualUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    setUploadingManuals(true);
+
+    try {
+      const uploadPromises = files.map(file => 
+        base44.integrations.Core.UploadFile({ file })
+      );
+      const results = await Promise.all(uploadPromises);
+      const newUrls = results.map(r => ({ url: r.file_url, name: r.file_name || r.file_url.split('/').pop() }));
+      setManuals(prev => [...prev, ...newUrls]);
+    } catch (error) {
+      console.error('Manual upload failed:', error);
+    } finally {
+      setUploadingManuals(false);
+    }
+  };
+
+  const handleBarcodeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setScanningBarcode(true);
+    try {
+      // Upload the barcode image
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      // Use AI to extract product info from barcode
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this barcode/product label image and extract:
+        1. Brand name
+        2. Model number
+        3. Serial number (if visible)
+        4. Year of manufacture (if visible)
+        
+        Return as JSON with keys: brand, model, serial, year.
+        If a field is not found, return it as an empty string.`,
+        file_urls: [file_url], // Pass as an array for invokeLLM
+        response_json_schema: {
+          type: "object",
+          properties: {
+            brand: { type: "string" },
+            model: { type: "string" },
+            serial: { type: "string" },
+            year: { type: "string" }
+          },
+          required: ["brand", "model", "serial", "year"]
+        }
+      });
+
+      // Populate form with extracted data
+      if (result.brand || result.model || result.year) {
+        const brandModel = [result.brand, result.model].filter(Boolean).join(' ');
+        setFormData(prev => ({
+          ...prev,
+          brand_model: brandModel || prev.brand_model,
+          installation_year: result.year || prev.installation_year
+        }));
+        
+        // Add barcode image to photos only if not already present
+        if (!photos.includes(file_url)) {
+            setPhotos(prev => [...prev, file_url]);
+        }
+      }
+    } catch (error) {
+      console.error('Barcode scan failed:', error);
+    } finally {
+      setScanningBarcode(false);
+    }
+  };
+
   const removePhoto = (index) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeManual = (index) => {
+    setManuals(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e) => {
@@ -263,11 +346,13 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       condition_notes: "",
       warning_signs_present: [],
       photo_urls: [],
+      manual_urls: [],
       estimated_lifespan_years: "",
       replacement_cost_estimate: "",
       key_components: {}
     });
     setPhotos([]);
+    setManuals([]);
   };
 
   const updateComponent = (key, value) => {
@@ -362,12 +447,16 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                     />
                     <p className="text-xs text-gray-600 mt-1">Written on filter frame</p>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Checkbox
+                      id="hvac-maintenance-contract"
                       checked={formData.key_components.has_maintenance_contract || false}
                       onCheckedChange={(checked) => updateComponent('has_maintenance_contract', checked)}
+                      className="h-4 w-4"
                     />
-                    <Label>I have a maintenance contract</Label>
+                    <Label htmlFor="hvac-maintenance-contract" className="font-normal cursor-pointer">
+                      I have a maintenance contract
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -470,18 +559,22 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Checkbox
+                      id="main-shutoff-known"
                       checked={formData.key_components.main_shutoff_known || false}
                       onCheckedChange={(checked) => updateComponent('main_shutoff_known', checked)}
+                      className="h-4 w-4"
                     />
-                    <Label>I know where it is and can access it quickly</Label>
+                    <Label htmlFor="main-shutoff-known" className="font-normal cursor-pointer">
+                      I know where it is and can access it quickly
+                    </Label>
                   </div>
                 </div>
               </div>
 
               <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                <h4 className="font-semibold text-red-900 mb-2">Section 4: Washing Machine (High Risk)</h4>
+                <h4 className="font-semibold text-red-900 mb-2">Section 3: Washing Machine (High Risk)</h4>
                 <div className="space-y-4">
                   <div>
                     <Label className="font-bold">Supply Line Type</Label>
@@ -569,26 +662,38 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-900 mb-2">Section 3: Safety Features</h4>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Checkbox
+                      id="gfci-bathrooms"
                       checked={formData.key_components.gfci_bathrooms || false}
                       onCheckedChange={(checked) => updateComponent('gfci_bathrooms', checked)}
+                      className="h-4 w-4"
                     />
-                    <Label>GFCI outlets in bathrooms</Label>
+                    <Label htmlFor="gfci-bathrooms" className="font-normal cursor-pointer">
+                      GFCI outlets in bathrooms
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Checkbox
+                      id="gfci-kitchen"
                       checked={formData.key_components.gfci_kitchen || false}
                       onCheckedChange={(checked) => updateComponent('gfci_kitchen', checked)}
+                      className="h-4 w-4"
                     />
-                    <Label>GFCI outlets in kitchen</Label>
+                    <Label htmlFor="gfci-kitchen" className="font-normal cursor-pointer">
+                      GFCI outlets in kitchen
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Checkbox
+                      id="afci-breakers"
                       checked={formData.key_components.afci_breakers || false}
                       onCheckedChange={(checked) => updateComponent('afci_breakers', checked)}
+                      className="h-4 w-4"
                     />
-                    <Label>AFCI breakers present</Label>
+                    <Label htmlFor="afci-breakers" className="font-normal cursor-pointer">
+                      AFCI breakers present
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -771,6 +876,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     );
   }
 
+  // Check if this is an appliance system for barcode scanner
+  const isAppliance = [
+    "Refrigerator", "Range/Oven", "Dishwasher", "Washing Machine", 
+    "Dryer", "Microwave", "Garbage Disposal"
+  ].includes(formData.system_type);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
@@ -791,6 +902,53 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                   <p className="text-gray-800 leading-relaxed">
                     {SYSTEM_IMPORTANCE[formData.system_type]}
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Barcode Scanner for Appliances */}
+          {isAppliance && (
+            <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xl">📷</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-purple-900 mb-1">Quick Scan Product Label</h3>
+                  <p className="text-sm text-purple-800 mb-3">
+                    Take a photo of the model/serial number plate and we'll extract the details automatically
+                  </p>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleBarcodeUpload}
+                      className="hidden"
+                      disabled={scanningBarcode}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
+                      disabled={scanningBarcode}
+                      asChild
+                    >
+                      <span>
+                        {scanningBarcode ? (
+                          <>
+                            <span className="animate-spin mr-2">⚙️</span>
+                            Scanning...
+                          </>
+                        ) : (
+                          <>
+                            📸 Scan Product Label
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
                 </div>
               </div>
             </div>
@@ -921,6 +1079,46 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Manuals & Documents Upload Section */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+              📄 Owner's Manuals & Warranty Documents
+            </h4>
+            <p className="text-sm text-green-800 mb-4">
+              Upload PDFs of manuals, warranty info, or installation guides. Never lose important documents again!
+            </p>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,image/*"
+              multiple
+              onChange={handleManualUpload}
+              className="mb-4"
+              disabled={uploadingManuals}
+            />
+            {uploadingManuals && <p className="text-sm text-gray-600">Uploading manuals...</p>}
+            {manuals.length > 0 && (
+              <div className="space-y-2 mt-4">
+                {manuals.map((manual, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-white border border-green-300 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">📄</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {manual.name || `Document ${idx + 1}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeManual(idx)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
