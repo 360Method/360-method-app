@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,15 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+    },
+  });
+
+  const updateSystemMutation = useMutation({
+    mutationFn: async ({ systemId, updates }) => {
+      return base44.entities.SystemBaseline.update(systemId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['baseline-systems'] });
     },
   });
 
@@ -133,8 +143,40 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           photo_urls: currentIssueData.photo_urls,
           execution_type: currentIssueData.who_will_fix === 'diy' ? 'DIY' : currentIssueData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
         });
+
+        // Update the baseline system condition if this issue affects a documented system
+        if (selectedSystem && selectedSystemData) {
+          const conditionUpdates = {};
+          
+          // Update condition based on severity
+          if (currentIssueData.severity === 'Urgent') {
+            conditionUpdates.condition = 'Urgent';
+          } else if (currentIssueData.severity === 'Flag' && ['Good', 'Excellent'].includes(selectedSystemData.condition)) {
+            conditionUpdates.condition = 'Fair';
+          }
+
+          // Add warning signs if not already present
+          const existingWarnings = selectedSystemData.warning_signs_present || [];
+          const newWarning = currentIssueData.description.substring(0, 100);
+          if (newWarning && !existingWarnings.includes(newWarning)) { // Ensure newWarning is not empty
+            conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
+          }
+
+          // Add condition notes
+          const timestamp = new Date().toLocaleDateString();
+          const existingNotes = selectedSystemData.condition_notes || '';
+          conditionUpdates.condition_notes = existingNotes + 
+            `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${currentIssueData.description}`;
+
+          if (Object.keys(conditionUpdates).length > 0) {
+            await updateSystemMutation.mutateAsync({
+              systemId: selectedSystem,
+              updates: conditionUpdates
+            });
+          }
+        }
       } catch (error) {
-        console.error("Error creating task:", error);
+        console.error("Error creating task or updating system:", error);
       } finally {
         setIsEstimating(false);
       }

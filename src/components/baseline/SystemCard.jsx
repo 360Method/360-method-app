@@ -1,8 +1,10 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle, ClipboardCheck } from "lucide-react";
 
 const getSystemIcon = (type) => {
   const icons = {
@@ -36,7 +38,33 @@ const getConditionColor = (condition) => {
   return colors[condition] || "bg-gray-100 text-gray-800 border-gray-200";
 };
 
-export default function SystemCard({ systemType, system, description, isRequired, onEdit, onAdd }) {
+export default function SystemCard({ systemType, system, description, isRequired, onEdit, onAdd, propertyId }) {
+  // Fetch recent inspections for this property to show last inspected date
+  const { data: recentInspections = [] } = useQuery({
+    queryKey: ['recent-inspections', propertyId],
+    queryFn: () => base44.entities.Inspection.filter(
+      { property_id: propertyId, status: 'Completed' }, 
+      '-inspection_date', 
+      3
+    ),
+    enabled: !!propertyId && !!system,
+    initialData: [],
+  });
+
+  // Find when this system was last mentioned in an inspection
+  const lastInspectedDate = React.useMemo(() => {
+    if (!system || recentInspections.length === 0) return null;
+    
+    for (const inspection of recentInspections) {
+      const issues = inspection.checklist_items || [];
+      const systemIssue = issues.find(issue => issue.system_id === system.id);
+      if (systemIssue || inspection.checklist_items?.length > 0) {
+        return inspection.inspection_date || inspection.created_date;
+      }
+    }
+    return null;
+  }, [system, recentInspections]);
+
   if (!system) {
     return (
       <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={onAdd}>
@@ -114,9 +142,28 @@ export default function SystemCard({ systemType, system, description, isRequired
           </div>
         )}
         
+        {/* Last Inspection Info */}
+        {lastInspectedDate && (
+          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4 text-blue-600" />
+              <div>
+                <p className="text-xs text-blue-900 font-medium">Last Inspected</p>
+                <p className="text-xs text-blue-700">
+                  {new Date(lastInspectedDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {system.last_service_date && (
           <div>
-            <p className="text-xs text-gray-600">Last Serviced</p>
+            <p className="text-xs text-gray-600">Last Professional Service</p>
             <p className="text-sm font-medium text-gray-900">
               {new Date(system.last_service_date).toLocaleDateString()}
             </p>
