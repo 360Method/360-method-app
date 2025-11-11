@@ -307,37 +307,54 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
 
       // Populate form with extracted data
       if (result && (result.brand || result.model || result.year)) {
-        const updates = {};
-        
         // Build brand_model string
         const brandModel = [result.brand, result.model].filter(Boolean).join(' ').trim();
-        if (brandModel) {
-          updates.brand_model = brandModel;
-        }
         
         // Extract year from various formats
+        let extractedYear = "";
         if (result.year) {
-          // Try to extract 4-digit year
           const yearMatch = result.year.match(/20\d{2}|19\d{2}/);
           if (yearMatch) {
-            updates.installation_year = yearMatch[0];
+            extractedYear = yearMatch[0];
           }
         }
         
-        // Update form data
-        if (Object.keys(updates).length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            ...updates
-          }));
+        // Update form based on system type
+        if (brandModel || extractedYear) {
+          setFormData(prev => {
+            const updates = { ...prev };
+            
+            // Set brand/model for all systems
+            if (brandModel) {
+              updates.brand_model = brandModel;
+            }
+            
+            // Set year based on system type
+            if (extractedYear) {
+              // For Plumbing System, populate water heater year in key_components
+              if (formData.system_type === "Plumbing System") {
+                updates.key_components = {
+                  ...prev.key_components,
+                  water_heater_year: extractedYear
+                };
+              } else {
+              // For all other systems, use installation_year
+                updates.installation_year = extractedYear;
+              }
+            }
+            
+            return updates;
+          });
           
           // Show success feedback
-          alert(`✅ Data extracted successfully!\n\nBrand/Model: ${updates.brand_model || 'N/A'}\nYear: ${updates.installation_year || 'N/A'}`);
+          const successMessage = `✅ Data extracted successfully!\n\nBrand/Model: ${brandModel || 'N/A'}\nYear: ${extractedYear || 'N/A'}`;
+          console.log(successMessage);
+          alert(successMessage);
         } else {
           alert("Could not extract clear data from the image. Please try taking a clearer photo or enter the information manually.");
         }
         
-        // Add barcode image to photos only if not already present
+        // Add image to photos only if not already present
         if (!photos.includes(file_url)) {
           setPhotos(prev => [...prev, file_url]);
         }
@@ -349,6 +366,8 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       alert("Scanning failed. Please try again or enter the information manually.");
     } finally {
       setScanningBarcode(false);
+      // Reset the file input
+      e.target.value = '';
     }
   };
 
