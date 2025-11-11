@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
+import ConfirmDialog from "../components/ui/confirm-dialog";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -137,6 +138,8 @@ export default function Baseline() {
   const [showCelebration, setShowCelebration] = React.useState(false);
   const [scrollPosition, setScrollPosition] = React.useState(0);
   const [lastAddedSystemType, setLastAddedSystemType] = React.useState(null);
+  const [deletingSystem, setDeletingSystem] = React.useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -167,18 +170,32 @@ export default function Baseline() {
   });
 
   const handleDeleteSystem = (system) => {
-    const instanceCount = systems.filter(s => s.system_type === system.system_type).length;
-    const isRequired = REQUIRED_SYSTEMS.includes(system.system_type);
+    setDeletingSystem(system);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletingSystem) {
+      await deleteMutation.mutateAsync(deletingSystem.id);
+      setDeletingSystem(null);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const getDeleteMessage = () => {
+    if (!deletingSystem) return '';
     
-    let message = `Are you sure you want to delete '${system.nickname || system.system_type}'? This cannot be undone.`;
+    const instanceCount = systems.filter(s => s.system_type === deletingSystem.system_type).length;
+    const isRequired = REQUIRED_SYSTEMS.includes(deletingSystem.system_type);
+    const systemName = deletingSystem.nickname || deletingSystem.system_type;
+    
+    let message = `Are you sure you want to delete "${systemName}"? This action cannot be undone.`;
     
     if (isRequired && instanceCount === 1) {
-      message += "\n\n⚠️ This is a required system. Deleting it will affect your baseline completion.";
+      message += "\n\n⚠️ Warning: This is a required system. Deleting it will affect your baseline completion percentage and may lock the ACT phase features.";
     }
     
-    if (confirm(message)) {
-      deleteMutation.mutate(system.id);
-    }
+    return message;
   };
 
   // Group systems by type
@@ -849,6 +866,20 @@ export default function Baseline() {
             service_type: "Professional Baseline Assessment",
             description: "I would like a professional to document all systems in my property and provide a complete baseline assessment."
           }}
+        />
+
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            setDeletingSystem(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          title="Delete System Documentation?"
+          message={getDeleteMessage()}
+          confirmText="Yes, Delete"
+          cancelText="Cancel"
+          variant="destructive"
         />
       </div>
     </div>

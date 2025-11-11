@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,22 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 import InspectionSetup from "../components/inspect/InspectionSetup";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
 import InspectionComplete from "../components/inspect/InspectionComplete";
 import InspectionReport from "../components/inspect/InspectionReport";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
+import ConfirmDialog from "../components/ui/confirm-dialog";
 
 export default function Inspect() {
   const location = useLocation();
@@ -53,6 +44,7 @@ export default function Inspect() {
   const [activeInspection, setActiveInspection] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
   const [inspectionToDelete, setInspectionToDelete] = React.useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -81,7 +73,6 @@ export default function Inspect() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
-      setInspectionToDelete(null);
     },
   });
 
@@ -136,12 +127,34 @@ export default function Inspect() {
 
   const handleDeleteInspection = (inspection) => {
     setInspectionToDelete(inspection);
+    setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (inspectionToDelete) {
-      deleteInspectionMutation.mutate(inspectionToDelete.id);
+      await deleteInspectionMutation.mutateAsync(inspectionToDelete.id);
+      setInspectionToDelete(null);
+      setShowDeleteDialog(false);
     }
+  };
+
+  const getDeleteMessage = () => {
+    if (!inspectionToDelete) return '';
+    
+    // const completionStatus = inspectionToDelete.status === 'Completed' ? 'completed' : 'in-progress'; // This variable is not used
+    const hasIssues = (inspectionToDelete.issues_found || 0) > 0;
+    
+    let message = `Are you sure you want to delete the ${inspectionToDelete.season} ${inspectionToDelete.year} inspection?`;
+    
+    if (hasIssues && inspectionToDelete.status === 'Completed') {
+      message += `\n\n⚠️ Warning: This inspection documented ${inspectionToDelete.issues_found} issue(s). Deleting it will permanently remove the inspection report and all findings.`;
+    } else if (inspectionToDelete.status === 'In Progress') {
+      message += `\n\n⚠️ Warning: This inspection is in progress (${inspectionToDelete.completion_percentage}% complete). All progress will be lost.`;
+    }
+    
+    message += '\n\nThis action cannot be undone.';
+    
+    return message;
   };
 
   // Render different views
@@ -515,28 +528,20 @@ export default function Inspect() {
         }}
       />
 
-      <AlertDialog open={!!inspectionToDelete} onOpenChange={() => setInspectionToDelete(null)}>
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Inspection?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the {inspectionToDelete?.season} {inspectionToDelete?.year} inspection?
-              This will permanently remove the inspection report and all documented issues.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleteInspectionMutation.isPending}
-            >
-              {deleteInspectionMutation.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setInspectionToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Inspection?"
+        message={getDeleteMessage()}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={deleteInspectionMutation.isPending}
+      />
     </div>
   );
 }
