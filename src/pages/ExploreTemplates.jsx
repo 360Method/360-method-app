@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TrendingUp, DollarSign, Clock, Sparkles, Search, ArrowUpDown, Shield, Award, Lightbulb } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
+import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts.jsx";
 
 export default function ExploreTemplates() {
   const location = useLocation();
@@ -269,7 +269,7 @@ export default function ExploreTemplates() {
                 </p>
               </div>
               <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }>Aging systems?</p>
+                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Aging systems?</p>
                 <p className="text-sm text-gray-700">
                   Consider <strong>Preventive Replacements</strong> before failures cause expensive damage
                 </p>
