@@ -8,7 +8,7 @@ import { base44 } from "@/api/base44Client";
  * @param {string} issueData.severity - Severity level (Urgent, Flag, Monitor)
  * @param {string} issueData.area - Area where issue was found
  * @param {string} issueData.estimated_cost - Cost range selected by user
- * @returns {Promise<Object>} AI-generated estimates
+ * @returns {Promise<Object>} AI-generated estimates with disclaimer
  */
 export async function estimateCascadeRisk(issueData) {
   const prompt = `You are a home maintenance expert analyzing a property issue to help homeowners understand cascade risks and cost impacts.
@@ -56,6 +56,14 @@ IMPORTANT GUIDELINES:
 - Be educational but concise
 - Focus on the SPECIFIC issue described, not generic examples
 
+IMPORTANT DISCLAIMER:
+All cost estimates are averages based on typical scenarios. Actual costs may vary significantly based on:
+- Property condition and accessibility
+- Extent of damage discovered during work
+- Local contractor rates and market conditions
+- Materials required and availability
+- Unforeseen complications
+
 Return your analysis as a JSON object.`;
 
   try {
@@ -94,7 +102,8 @@ Return your analysis as a JSON object.`;
       cascade_risk_reason: result.cascade_risk_reason || "Small issue can lead to larger problems over time, increasing repair costs.",
       current_fix_cost: Math.max(0, result.current_fix_cost || 200),
       delayed_fix_cost: Math.max(0, result.delayed_fix_cost || 2000),
-      cost_impact_reason: result.cost_impact_reason || "Delaying repairs allows the problem to worsen, requiring more extensive work and emergency service premiums."
+      cost_impact_reason: result.cost_impact_reason || "Delaying repairs allows the problem to worsen, requiring more extensive work and emergency service premiums.",
+      cost_disclaimer: "⚠️ Cost estimates are AI-generated averages based on typical scenarios. Actual costs may vary significantly based on property condition, scope of work, contractor rates, and unforeseen complications. Get professional estimates for accurate pricing."
     };
   } catch (error) {
     console.error("AI estimation error:", error);
@@ -123,7 +132,8 @@ Return your analysis as a JSON object.`;
       cascade_risk_reason: `Small ${issueData.system_type} issues can escalate to larger system failures, requiring emergency repairs at significantly higher costs.`,
       current_fix_cost: costs.current,
       delayed_fix_cost: costs.delayed,
-      cost_impact_reason: `Delaying ${issueData.system_type} repairs allows the problem to compound, often requiring emergency service with premium pricing and additional damage restoration.`
+      cost_impact_reason: `Delaying ${issueData.system_type} repairs allows the problem to compound, often requiring emergency service with premium pricing and additional damage restoration.`,
+      cost_disclaimer: "⚠️ Cost estimates are AI-generated averages. Actual costs may vary based on property condition, scope of work, and contractor rates. Get professional estimates for accurate pricing."
     };
   }
 }

@@ -1,34 +1,35 @@
 
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, X, Lightbulb, AlertTriangle, Clock, DollarSign, Sparkles } from "lucide-react";
+import { Label } from "@/components/ui/label"; // Added Label import
+import { ArrowLeft, X, AlertTriangle, DollarSign, Sparkles, CheckCircle2 } from "lucide-react"; // Added CheckCircle2 import
 
 import ServiceRequestDialog from "../services/ServiceRequestDialog";
 import { estimateCascadeRisk } from "../shared/CascadeEstimator";
 
-const SEVERITY_INFO = {
+const SEVERITY_LEVELS = { // Renamed from SEVERITY_INFO and 'examples' changed to 'example'
   Urgent: {
     icon: '🚨',
     description: 'Safety hazard or will cause damage soon',
-    examples: 'Active leak, gas smell, sparking outlet, no heat/AC in extreme weather',
+    example: 'Active leak, gas smell, sparking outlet, no heat/AC in extreme weather',
     color: '#DC3545'
   },
   Flag: {
     icon: '⚠️',
     description: 'Needs attention within weeks/months to prevent bigger problems',
-    examples: 'Worn parts, minor leaks, aging systems, preventive maintenance',
+    example: 'Worn parts, minor leaks, aging systems, preventive maintenance',
     color: '#FF6B35'
   },
   Monitor: {
     icon: '✅',
     description: 'Working now, just track at next inspection',
-    examples: 'Minor wear, cosmetic issues, long-term planning',
+    example: 'Minor wear, cosmetic issues, long-term planning',
     color: '#28A745'
   }
 };
@@ -43,26 +44,53 @@ const COST_RANGES = [
   { value: 'unknown', label: 'Unknown - need quote' }
 ];
 
-export default function IssueDocumentation({ area, inspection, property, relevantSystems, onSave, onCancel }) {
-  const [selectedSystem, setSelectedSystem] = React.useState(relevantSystems.length === 1 ? relevantSystems[0].id : '');
-  const [description, setDescription] = React.useState('');
-  const [photos, setPhotos] = React.useState([]);
+// Utility function to parse cost range into a numeric value for AI estimation fallback
+const parseCostRange = (costRange) => {
+  if (costRange === 'free') return 0;
+  if (costRange === 'unknown') return 0;
+  if (costRange.includes('+')) return parseInt(costRange.replace('+', ''), 10);
+  const [min] = costRange.split('-');
+  return parseInt(min, 10);
+};
+
+export default function IssueDocumentation({
+  propertyId,
+  inspection,
+  area,
+  existingIssues = [],
+  onComplete
+}) {
+  const [formData, setFormData] = React.useState({
+    system: '', // This will be the system_type string
+    description: '',
+    severity: 'Flag',
+    photo_urls: [],
+    is_quick_fix: null, // null, true, or false
+    estimated_cost: '', // e.g., '1-50', 'unknown'
+    who_will_fix: '' // 'diy', 'professional', 'undecided'
+  });
+  const [photos, setPhotos] = React.useState([]); // Local state for photo display and manipulation
   const [uploading, setUploading] = React.useState(false);
-  const [severity, setSeverity] = React.useState('Flag');
-  const [isQuickFix, setIsQuickFix] = React.useState(null);
-  const [estimatedCost, setEstimatedCost] = React.useState('');
-  const [whoWillFix, setWhoWillFix] = React.useState('not_sure');
+  const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(false);
+  const [aiEstimating, setAiEstimating] = React.useState(false); // Replaces isEstimating
+  const [aiEstimate, setAiEstimate] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
-  const [isEstimating, setIsEstimating] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  // Fetch baseline systems for the property to potentially update them
+  const { data: baselineSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', propertyId],
+    queryFn: () => base44.entities.SystemBaseline.list({ property_id: propertyId }),
+    enabled: !!propertyId,
+  });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
       return base44.entities.MaintenanceTask.create(taskData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', propertyId] }); // Invalidate for specific property
     },
   });
 
@@ -71,26 +99,9 @@ export default function IssueDocumentation({ area, inspection, property, relevan
       return base44.entities.SystemBaseline.update(systemId, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['baseline-systems'] });
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] }); // Invalidate for specific property
     },
   });
-
-  // Handle null property early
-  if (!property) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <Card className="border-none shadow-lg max-w-2xl w-full">
-          <CardContent className="p-12 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Data</h1>
-            <p className="text-gray-600 mb-6">Unable to document issue without property information.</p>
-            <Button onClick={onCancel} style={{ backgroundColor: '#1B365D' }}>
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -100,382 +111,297 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     try {
       const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
       const results = await Promise.all(uploadPromises);
-      const urls = results.map(r => r.file_url);
-      setPhotos(prev => [...prev, ...urls]);
+      const newUrls = results.map(r => r.file_url);
+      setPhotos(prev => [...prev, ...newUrls]); // Update local photos state for display
+      setFormData(prev => ({
+        ...prev,
+        photo_urls: [...prev.photo_urls, ...newUrls] // Update formData
+      }));
     } catch (error) {
       console.error("Upload error:", error);
+    } finally {
+      setUploading(false);
+      e.target.value = ''; // Clear the input field
     }
-    setUploading(false);
   };
 
   const removePhoto = (index) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotos(prev => prev.filter((_, i) => i !== index)); // Update local photos state
+    setFormData(prev => ({
+      ...prev,
+      photo_urls: prev.photo_urls.filter((_, i) => i !== index) // Update formData
+    }));
   };
 
-  const selectedSystemData = relevantSystems.find(s => s.id === selectedSystem);
+  const handleQuickFixAnswer = async (isQuickFix) => {
+    setFormData(prev => ({ ...prev, is_quick_fix: isQuickFix }));
+    setShowQuickFixQuestion(false); // Hide the question after answering
 
-  const currentIssueData = {
-    area: area.name,
-    area_id: area.id,
-    system_name: selectedSystemData?.nickname || selectedSystemData?.system_type || area.name,
-    system_id: selectedSystem || null,
-    description,
-    photo_urls: photos,
-    severity,
-    is_quick_fix: isQuickFix,
-    estimated_cost,
-    who_will_fix: whoWillFix,
-    found_date: new Date().toISOString().split('T')[0],
-    status: 'Identified'
-  };
-
-  const handleSave = async () => {
-    if (currentIssueData.is_quick_fix === false && property?.id) {
-      setIsEstimating(true);
-      
+    if (!isQuickFix) { // If not a quick fix, proceed with AI estimation
+      setAiEstimating(true);
+      setAiEstimate(null); // Clear previous estimate
       try {
-        // Use AI to estimate cascade risk and costs
-        const aiEstimates = await estimateCascadeRisk({
-          description: currentIssueData.description,
-          system_type: selectedSystemData?.system_type || 'General',
-          severity: currentIssueData.severity,
-          area: currentIssueData.area,
-          estimated_cost: currentIssueData.estimated_cost
+        const estimate = await estimateCascadeRisk({
+          description: formData.description,
+          system_type: formData.system,
+          severity: formData.severity,
+          area: area.name,
+          estimated_cost: formData.estimated_cost
         });
-
-        await createTaskMutation.mutateAsync({
-          property_id: property.id,
-          title: `${currentIssueData.area}: ${currentIssueData.description.substring(0, 50)}${currentIssueData.description.length > 50 ? '...' : ''}`,
-          description: `Issue found during ${inspection.season} ${inspection.year} inspection.\n\n${currentIssueData.description}`,
-          system_type: selectedSystemData?.system_type || 'General',
-          priority: currentIssueData.severity === 'Urgent' ? 'High' : currentIssueData.severity === 'Flag' ? 'Medium' : 'Low',
-          status: 'Identified',
-          cascade_risk_score: aiEstimates.cascade_risk_score,
-          cascade_risk_reason: aiEstimates.cascade_risk_reason,
-          current_fix_cost: aiEstimates.current_fix_cost,
-          delayed_fix_cost: aiEstimates.delayed_fix_cost,
-          cost_impact_reason: aiEstimates.cost_impact_reason,
-          urgency_timeline: currentIssueData.severity === 'Urgent' ? 'Immediate' : currentIssueData.severity === 'Flag' ? '30-90 days' : 'Next inspection',
-          has_cascade_alert: aiEstimates.cascade_risk_score >= 7,
-          photo_urls: currentIssueData.photo_urls,
-          execution_type: currentIssueData.who_will_fix === 'diy' ? 'DIY' : currentIssueData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
-        });
-
-        // Update the baseline system condition if this issue affects a documented system
-        if (selectedSystem && selectedSystemData) {
-          const conditionUpdates = {};
-          
-          // Update condition based on severity
-          if (currentIssueData.severity === 'Urgent') {
-            conditionUpdates.condition = 'Urgent';
-          } else if (currentIssueData.severity === 'Flag' && ['Good', 'Excellent'].includes(selectedSystemData.condition)) {
-            conditionUpdates.condition = 'Fair';
-          }
-
-          // Add warning signs if not already present
-          const existingWarnings = selectedSystemData.warning_signs_present || [];
-          const newWarning = currentIssueData.description.substring(0, 100);
-          if (newWarning && !existingWarnings.includes(newWarning)) {
-            conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
-          }
-
-          // Add condition notes
-          const timestamp = new Date().toLocaleDateString();
-          const existingNotes = selectedSystemData.condition_notes || '';
-          conditionUpdates.condition_notes = existingNotes + 
-            `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${currentIssueData.description}`;
-
-          if (Object.keys(conditionUpdates).length > 0) {
-            await updateSystemMutation.mutateAsync({
-              systemId: selectedSystem,
-              updates: conditionUpdates
-            });
-          }
-        }
+        setAiEstimate(estimate);
       } catch (error) {
-        console.error("Error creating task or updating system:", error);
+        console.error('AI estimation failed:', error);
+        // Provide a fallback AI estimate if the service fails
+        setAiEstimate({
+          cascade_risk_score: 5, // Default if AI fails
+          cascade_risk_reason: 'Could not get AI estimate. Manual review needed.',
+          current_fix_cost: parseCostRange(formData.estimated_cost),
+          delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5, // Heuristic default
+          cost_impact_reason: 'AI estimation failed, using default values.',
+          cost_disclaimer: 'AI estimation failed. The following costs are estimated based on your input cost range only.'
+        });
       } finally {
-        setIsEstimating(false);
+        setAiEstimating(false);
       }
     }
-
-    onSave(currentIssueData);
   };
 
-  const serviceDialogPrefilledData = property?.id ? {
-    property_id: property.id,
-    service_type: "Specific Task Repair",
-    description: `${currentIssueData.area}: ${currentIssueData.description}`,
-    urgency: currentIssueData.severity === 'Urgent' ? 'Emergency' : 'High',
-    photo_urls: currentIssueData.photo_urls,
-    notes: currentIssueData.description
-  } : null;
+  const handleSubmit = async () => {
+    if (formData.is_quick_fix) {
+      // Quick fix path
+      onComplete([...existingIssues, {
+        area_id: area.id,
+        item_name: `${formData.system}: ${formData.description}`,
+        severity: formData.severity,
+        notes: `Quick fix completed during inspection. ${formData.who_will_fix === 'diy' ? 'DIY repair' : 'Professional service'}. Estimated cost: ${formData.estimated_cost}.`,
+        photo_urls: formData.photo_urls,
+        completed: true
+      }]);
+    } else {
+      // Non-quick fix path (add to Priority Queue)
+      if (!aiEstimate) {
+        console.error("AI estimate missing for non-quick fix. Cannot proceed.");
+        return;
+      }
 
-  const isFormValid = description.trim() && isQuickFix !== null && (isQuickFix === true || estimatedCost);
+      const taskData = {
+        property_id: propertyId,
+        title: `${formData.system}: ${formData.description.substring(0, 50)}${formData.description.length > 50 ? '...' : ''}`,
+        description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
+        system_type: formData.system,
+        priority: formData.severity === 'Urgent' ? 'High' : formData.severity === 'Flag' ? 'Medium' : 'Low',
+        status: 'Identified',
+        photo_urls: formData.photo_urls,
+        current_fix_cost: aiEstimate.current_fix_cost,
+        delayed_fix_cost: aiEstimate.delayed_fix_cost,
+        cascade_risk_score: aiEstimate.cascade_risk_score,
+        cascade_risk_reason: aiEstimate.cascade_risk_reason,
+        cost_impact_reason: aiEstimate.cost_impact_reason,
+        has_cascade_alert: aiEstimate.cascade_risk_score >= 7,
+        execution_type: formData.who_will_fix === 'diy' ? 'DIY' : formData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
+      };
+
+      try {
+        await createTaskMutation.mutateAsync(taskData);
+
+        // Update related baseline systems for this property and system_type
+        if (formData.system !== 'General') {
+          const systemsToUpdate = baselineSystems.filter(s => s.system_type === formData.system);
+          for (const system of systemsToUpdate) {
+            const conditionUpdates = {};
+
+            // Update condition based on severity (preserving original logic)
+            if (formData.severity === 'Urgent') {
+              conditionUpdates.condition = 'Urgent';
+            } else if (formData.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
+              conditionUpdates.condition = 'Fair';
+            }
+
+            // Add warning signs if not already present (preserving original logic)
+            const existingWarnings = system.warning_signs_present || [];
+            const newWarning = formData.description.substring(0, 100);
+            if (newWarning && !existingWarnings.includes(newWarning)) {
+              conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
+            }
+
+            // Add condition notes (preserving original logic)
+            const timestamp = new Date().toLocaleDateString();
+            const existingNotes = system.condition_notes || '';
+            const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${formData.description}`;
+            conditionUpdates.condition_notes = existingNotes.includes(newNote) ? existingNotes : existingNotes + newNote;
+
+
+            if (Object.keys(conditionUpdates).length > 0) {
+              await updateSystemMutation.mutateAsync({
+                systemId: system.id,
+                updates: conditionUpdates
+              });
+            }
+          }
+        }
+        onComplete([...existingIssues, {
+          area_id: area.id,
+          item_name: `${formData.system}: ${formData.description}`,
+          severity: formData.severity,
+          notes: 'Added to Priority Queue for scheduling',
+          photo_urls: formData.photo_urls,
+          completed: false
+        }]);
+
+      } catch (error) {
+        console.error("Error creating task or updating system:", error);
+      }
+    }
+  };
+
+  // Determine if the "Continue" button for quick fix question should be enabled
+  const canAskQuickFixQuestion = formData.system && formData.description && formData.estimated_cost;
+  // Determine if the Quick Fix submit button should be enabled
+  const canSubmitQuickFix = formData.is_quick_fix === true && formData.who_will_fix;
+  // Determine if the Priority Queue submit button should be enabled
+  const canSubmitPriorityQueue = formData.is_quick_fix === false && aiEstimate && formData.who_will_fix;
 
   return (
-    <div className="min-h-screen bg-white pb-24">
-      <div className="mobile-container md:max-w-4xl md:mx-auto">
-        <Button
-          variant="ghost"
-          onClick={onCancel}
-          className="mb-4"
-          style={{ minHeight: '44px' }}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
+    <>
+      <div className="min-h-screen bg-white pb-8">
+        <div className="mobile-container md:max-w-3xl md:mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => onComplete(existingIssues)} // Go back to area inspection, not just cancel form
+            className="mb-4"
+            style={{ minHeight: '44px' }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Area Inspection
+          </Button>
 
-        <div className="mb-6">
-          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px', lineHeight: '1.2' }}>
-            Document Issue - {area.name}
-          </h1>
-        </div>
-
-        {/* AI Estimation Info Banner */}
-        {isQuickFix === false && estimatedCost && (
-          <Card className="border-2 border-purple-300 bg-purple-50 mobile-card mb-4">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-purple-900 mb-1">
-                    🤖 AI-Powered Analysis
-                  </p>
-                  <p className="text-sm text-purple-800">
-                    When you save this issue, our AI will analyze the cascade risk and provide detailed cost estimates based on your description. This helps you understand the true urgency and potential savings of acting now vs. later.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* System Selection */}
-        {relevantSystems.length > 1 && (
-          <Card className="border-none shadow-sm mobile-card">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Which system?</label>
-              <Select value={selectedSystem} onValueChange={setSelectedSystem}>
-                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                  <SelectValue placeholder="Select system" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {relevantSystems.map((system) => (
-                    <SelectItem key={system.id} value={system.id}>
-                      {system.nickname || system.system_type}
-                      {system.brand_model && ` - ${system.brand_model}`}
-                      {system.installation_year && ` (${new Date().getFullYear() - system.installation_year} years old)`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        )}
-
-        {relevantSystems.length === 1 && (
-          <Card className="border-none shadow-sm mobile-card">
-            <CardContent className="p-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">System:</p>
-              <p className="font-semibold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                {selectedSystemData?.nickname || selectedSystemData?.system_type}
+          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35' }}>
+            <CardHeader>
+              <CardTitle style={{ color: '#1B365D', fontSize: '20px' }}>
+                Document Issue Found
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Area: {area.name}
               </p>
-            </CardContent>
-          </Card>
-        )}
-
-        <hr className="border-gray-200 my-6" />
-
-        {/* Description */}
-        <Card className="border-none shadow-sm mobile-card">
-          <CardContent className="p-4">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">What did you find? *</label>
-            <p className="text-sm text-gray-600 mb-3">
-              Be specific about what you observed - the more detail you provide, the better our AI can estimate cascade risks and costs.
-            </p>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Filter extremely dirty, not changed in 6+ months based on color. Airflow noticeably reduced from vents in living room and master bedroom."
-              rows={4}
-              className="w-full"
-              style={{ minHeight: '120px', fontSize: '16px' }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Photos */}
-        <Card className="border-none shadow-sm mobile-card">
-          <CardContent className="p-4">
-            <label className="text-sm font-medium text-gray-700 mb-3 block">
-              📷 Add Photos (Recommended)
-            </label>
-            <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors" style={{ minHeight: '56px' }}>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-              <span className="text-gray-600">{uploading ? 'Uploading...' : `Upload Photos (${photos.length} photos)`}</span>
-            </label>
-            {photos.length > 0 && (
-              <div className="flex gap-3 flex-wrap mt-4">
-                {photos.map((url, idx) => (
-                  <div key={idx} className="relative group">
-                    <img src={url} alt="" className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200" />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(idx)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ minHeight: '28px', minWidth: '28px' }}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <hr className="border-gray-200 my-6" />
-
-        {/* Severity Rating */}
-        <Card className="border-none shadow-sm mobile-card">
-          <CardContent className="p-4 space-y-3">
-            <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-              ⚡ SEVERITY RATING:
-            </h2>
-            
-            {Object.entries(SEVERITY_INFO).map(([level, info]) => (
-              <label
-                key={level}
-                className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                  severity === level ? 'border-current shadow-md' : 'border-gray-200'
-                }`}
-                style={severity === level ? { borderColor: info.color, backgroundColor: `${info.color}10`, minHeight: '56px' } : { minHeight: '56px' }}
-              >
-                <input
-                  type="radio"
-                  value={level}
-                  checked={severity === level}
-                  onChange={(e) => setSeverity(e.target.value)}
-                  className="mt-1"
-                  style={{ minWidth: '18px', minHeight: '18px' }}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{info.icon}</span>
-                    <span className="font-bold" style={{ color: info.color, fontSize: '16px' }}>{level.toUpperCase()}</span>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">{info.description}</p>
-                  <p className="text-xs text-gray-600">Examples: {info.examples}</p>
-                </div>
-              </label>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Quick Fix Question - Now always visible with ability to change selection */}
-        <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS? *
-              </h2>
-              {isQuickFix !== null && (
-                <Button
-                  onClick={() => {
-                    setIsQuickFix(null);
-                    setEstimatedCost('');
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-600"
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* System Selection */}
+              <div>
+                <Label htmlFor="system-select">Which system is affected?</Label>
+                <Select
+                  value={formData.system}
+                  onValueChange={(value) => setFormData({ ...formData, system: value })}
+                  required
                 >
-                  Change
-                </Button>
-              )}
-            </div>
-            <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
-              Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue with AI-powered cascade analysis.
-            </p>
-            
-            <div className="space-y-3">
-              <Button
-                onClick={() => setIsQuickFix(true)}
-                className={`w-full justify-start text-left p-4 h-auto ${
-                  isQuickFix === true ? 'border-2 shadow-md' : ''
-                }`}
-                variant="outline"
-                style={{ 
-                  minHeight: '56px',
-                  borderColor: isQuickFix === true ? '#28A745' : undefined,
-                  backgroundColor: isQuickFix === true ? '#F0FFF4' : undefined
-                }}
-              >
-                <div>
-                  <p className="font-semibold mb-1 flex items-center gap-2">
-                    {isQuickFix === true ? '●' : '○'} Yes - I can fix this now
-                    {isQuickFix === true && (
-                      <Badge className="bg-green-600 text-white">Selected</Badge>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-600">Filter replacement, tightening screws, testing detectors</p>
-                </div>
-              </Button>
-              
-              <Button
-                onClick={() => setIsQuickFix(false)}
-                className={`w-full justify-start text-left p-4 h-auto ${
-                  isQuickFix === false ? 'border-2 shadow-md' : ''
-                }`}
-                variant="outline"
-                style={{ 
-                  minHeight: '56px',
-                  borderColor: isQuickFix === false ? '#28A745' : undefined,
-                  backgroundColor: isQuickFix === false ? '#F0FFF4' : undefined
-                }}
-              >
-                <div>
-                  <p className="font-semibold mb-1 flex items-center gap-2">
-                    {isQuickFix === false ? '●' : '○'} No - Needs more time/help
-                    {isQuickFix === false && (
-                      <Badge className="bg-green-600 text-white">Selected</Badge>
-                    )}
-                    <Badge className="bg-purple-100 text-purple-800 border-purple-300">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      AI Analysis
-                    </Badge>
-                  </p>
-                  <p className="text-sm text-gray-600">Add to Priority Queue with smart risk & cost analysis</p>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Estimated Cost & Who Will Fix - Only if not a quick fix */}
-        {isQuickFix === false && (
-          <>
-            <Card className="border-none shadow-sm mobile-card">
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-6 h-6" style={{ color: '#1B365D' }} />
-                  <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                    💰 ESTIMATED COST: *
-                  </h2>
-                </div>
-                
-                <Select value={estimatedCost} onValueChange={setEstimatedCost}>
-                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                    <SelectValue placeholder="Select cost range" />
+                  <SelectTrigger id="system-select" style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}>
+                    <SelectValue placeholder="Select system..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-white">
+                  <SelectContent style={{ backgroundColor: '#FFFFFF' }}>
+                    <SelectItem value="HVAC">HVAC</SelectItem>
+                    <SelectItem value="Plumbing">Plumbing</SelectItem>
+                    <SelectItem value="Electrical">Electrical</SelectItem>
+                    <SelectItem value="Roof">Roof</SelectItem>
+                    <SelectItem value="Foundation">Foundation</SelectItem>
+                    <SelectItem value="Gutters">Gutters</SelectItem>
+                    <SelectItem value="Exterior">Exterior</SelectItem>
+                    <SelectItem value="Windows/Doors">Windows/Doors</SelectItem>
+                    <SelectItem value="Appliances">Appliances</SelectItem>
+                    <SelectItem value="General">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <Label htmlFor="issue-description">Describe the issue</Label>
+                <Textarea
+                  id="issue-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Be specific: What did you notice? Where exactly? How bad is it?"
+                  rows={4}
+                  required
+                  style={{ minHeight: '96px', backgroundColor: '#FFFFFF' }}
+                />
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <Label htmlFor="photo-upload">📷 Photos (highly recommended)</Label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  capture="environment"
+                  onChange={handlePhotoUpload}
+                  className="mb-4"
+                  disabled={uploading}
+                  style={{ minHeight: '48px' }}
+                />
+                {uploading && <p className="text-sm text-gray-600">Uploading...</p>}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {photos.map((url, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={url} alt={`Issue ${idx + 1}`} className="w-24 h-24 object-cover rounded border-2 border-white shadow" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(idx)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        style={{ minHeight: '28px', minWidth: '28px' }}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Severity Rating */}
+              <div>
+                <Label>How urgent is this?</Label>
+                <div className="space-y-2 mt-2">
+                  {Object.entries(SEVERITY_LEVELS).map(([key, level]) => (
+                    <label
+                      key={key}
+                      className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        formData.severity === key ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={{ minHeight: '80px' }}
+                    >
+                      <input
+                        type="radio"
+                        name="severity"
+                        value={key}
+                        checked={formData.severity === key}
+                        onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-2xl">{level.icon}</span>
+                          <span className="font-semibold" style={{ color: level.color }}>{key}</span>
+                        </div>
+                        <p className="text-sm text-gray-700">{level.description}</p>
+                        <p className="text-xs text-gray-600 mt-1">Example: {level.example}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cost Estimate */}
+              <div>
+                <Label htmlFor="cost-estimate">Estimated cost to fix</Label>
+                <Select
+                  value={formData.estimated_cost}
+                  onValueChange={(value) => setFormData({ ...formData, estimated_cost: value })}
+                  required
+                >
+                  <SelectTrigger id="cost-estimate" style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}>
+                    <SelectValue placeholder="Select cost range..." />
+                  </SelectTrigger>
+                  <SelectContent style={{ backgroundColor: '#FFFFFF' }}>
                     {COST_RANGES.map((range) => (
                       <SelectItem key={range.value} value={range.value}>
                         {range.label}
@@ -483,143 +409,215 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                     ))}
                   </SelectContent>
                 </Select>
-                
-                <p className="text-xs text-gray-600">
-                  💡 This helps our AI provide more accurate delayed-cost estimates
-                </p>
-              </CardContent>
-            </Card>
-
-            <hr className="border-gray-200 my-6" />
-
-            {/* Who Will Fix */}
-            <Card className="border-none shadow-sm mobile-card">
-              <CardContent className="p-4 space-y-4">
-                <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                  📋 ACTION PLAN:
-                </h2>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-3 block">Who will fix this?</label>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
-                      <input
-                        type="radio"
-                        value="diy"
-                        checked={whoWillFix === 'diy'}
-                        onChange={(e) => setWhoWillFix(e.target.value)}
-                        style={{ minWidth: '18px', minHeight: '18px' }}
-                      />
-                      <span>I'll do it myself (DIY)</span>
-                    </label>
-                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
-                      <input
-                        type="radio"
-                        value="professional"
-                        checked={whoWillFix === 'professional'}
-                        onChange={(e) => setWhoWillFix(e.target.value)}
-                        style={{ minWidth: '18px', minHeight: '18px' }}
-                      />
-                      <span>Hire a professional</span>
-                    </label>
-                    <label className="flex items-center gap-2" style={{ minHeight: '44px' }}>
-                      <input
-                        type="radio"
-                        value="not_sure"
-                        checked={whoWillFix === 'not_sure'}
-                        onChange={(e) => setWhoWillFix(e.target.value)}
-                        style={{ minWidth: '18px', minHeight: '18px' }}
-                      />
-                      <span>Not sure yet</span>
-                    </label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* Validation Message */}
-        {!isFormValid && (
-          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">Complete Required Fields:</p>
-                  <ul className="text-sm text-gray-700 space-y-1 pl-5 list-disc">
-                    {!description.trim() && <li>Enter a description of the issue</li>}
-                    {isQuickFix === null && <li>Answer if this is a quick fix (5 min or less)</li>}
-                    {isQuickFix === false && !estimatedCost && <li>Select estimated cost range</li>}
-                  </ul>
-                </div>
               </div>
+
+              {/* Quick Fix Question - Only show if form data is valid and question not yet answered */}
+              {formData.is_quick_fix === null && !showQuickFixQuestion && (
+                <Button
+                  onClick={() => setShowQuickFixQuestion(true)}
+                  disabled={!canAskQuickFixQuestion}
+                  className="w-full"
+                  style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                >
+                  Continue
+                </Button>
+              )}
+
+              {/* Display Quick Fix Question */}
+              {showQuickFixQuestion && (
+                <Card className="border-2 border-blue-300 bg-blue-50">
+                  <CardContent className="p-6">
+                    <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
+                      Can you fix this yourself RIGHT NOW?
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-6">
+                      Quick fixes are simple tasks you can complete during this inspection (like tightening a loose screw, replacing a battery, etc.)
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <Button
+                        onClick={() => handleQuickFixAnswer(true)}
+                        className="w-full"
+                        style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+                      >
+                        ✅ Yes - I'll fix it now (Quick Fix)
+                      </Button>
+                      <Button
+                        onClick={() => handleQuickFixAnswer(false)}
+                        variant="outline"
+                        className="w-full"
+                        style={{ minHeight: '56px' }}
+                      >
+                        📋 No - Add to Priority Queue
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Quick Fix Path - Show only if answered YES to quick fix */}
+              {formData.is_quick_fix === true && (
+                <Card className="border-2 border-green-300 bg-green-50">
+                  <CardContent className="p-6">
+                    <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#28A745' }}>
+                      <CheckCircle2 className="w-6 h-6" />
+                      Great! Quick Fix
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="who-fixed-quick-fix">Who fixed it?</Label>
+                        <Select
+                          value={formData.who_will_fix}
+                          onValueChange={(value) => setFormData({ ...formData, who_will_fix: value })}
+                          required
+                        >
+                          <SelectTrigger id="who-fixed-quick-fix" style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}>
+                            <SelectValue placeholder="Select..." />
+                          </SelectTrigger>
+                          <SelectContent style={{ backgroundColor: '#FFFFFF' }}>
+                            <SelectItem value="diy">I fixed it myself (DIY)</SelectItem>
+                            <SelectItem value="professional">Called a professional</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={!canSubmitQuickFix || createTaskMutation.isPending}
+                        className="w-full"
+                        style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                      >
+                        {createTaskMutation.isPending ? 'Saving...' : 'Mark as Fixed & Continue'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Priority Queue Path with AI Estimate - Show only if answered NO to quick fix */}
+              {formData.is_quick_fix === false && (
+                <>
+                  {aiEstimating && (
+                    <Card className="border-2 border-purple-300 bg-purple-50">
+                      <CardContent className="p-6 text-center">
+                        <div className="animate-spin text-5xl mb-4">⚙️</div>
+                        <p className="font-medium text-gray-700">AI analyzing cascade risk...</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {aiEstimate && (
+                    <Card className="border-2 border-orange-300 bg-orange-50">
+                      <CardContent className="p-6">
+                        <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#FF6B35' }}>
+                          <AlertTriangle className="w-6 h-6" />
+                          AI Risk Analysis
+                        </h3>
+
+                        {/* Cost Disclaimer */}
+                        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
+                          <p className="text-xs text-yellow-900 leading-relaxed">
+                            {aiEstimate.cost_disclaimer}
+                          </p>
+                        </div>
+
+                        {/* Cascade Risk Score */}
+                        <div className="mb-4 p-4 bg-white rounded border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold">Cascade Risk:</span>
+                            <Badge className={
+                              aiEstimate.cascade_risk_score >= 7 ? 'bg-red-600' :
+                              aiEstimate.cascade_risk_score >= 4 ? 'bg-orange-600' :
+                              'bg-green-600'
+                            }>
+                              {aiEstimate.cascade_risk_score}/10
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-700">{aiEstimate.cascade_risk_reason}</p>
+                        </div>
+
+                        {/* Cost Comparison */}
+                        <div className="mb-4 p-4 bg-white rounded border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">Fix Now Estimate:</span>
+                            <span className="font-bold text-green-700">${aiEstimate.current_fix_cost.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">Fix Later Estimate:</span>
+                            <span className="font-bold text-red-700">${aiEstimate.delayed_fix_cost.toLocaleString()}</span>
+                          </div>
+                          <div className="pt-2 border-t flex items-center justify-between">
+                            <span className="text-sm font-semibold text-gray-900">Potential Cost Increase:</span>
+                            <span className="font-bold text-red-700">
+                              +${(aiEstimate.delayed_fix_cost - aiEstimate.current_fix_cost).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-3 italic">
+                            {aiEstimate.cost_impact_reason}
+                          </p>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="who-will-fix-priority">Who will handle this?</Label>
+                          <Select
+                            value={formData.who_will_fix}
+                            onValueChange={(value) => setFormData({ ...formData, who_will_fix: value })}
+                            required
+                          >
+                            <SelectTrigger id="who-will-fix-priority" style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}>
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent style={{ backgroundColor: '#FFFFFF' }}>
+                              <SelectItem value="diy">I'll do it myself (DIY)</SelectItem>
+                              <SelectItem value="professional">Hire a professional</SelectItem>
+                              <SelectItem value="undecided">Not sure yet</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex flex-col gap-3 mt-6">
+                          <Button
+                            onClick={handleSubmit}
+                            disabled={!canSubmitPriorityQueue || createTaskMutation.isPending}
+                            className="w-full"
+                            style={{ backgroundColor: '#FF6B35', minHeight: '56px', fontSize: '16px' }}
+                          >
+                            {createTaskMutation.isPending ? 'Adding...' : 'Add to Priority Queue'}
+                          </Button>
+                          {formData.who_will_fix === 'professional' && (
+                            <Button
+                              onClick={() => setShowServiceDialog(true)}
+                              variant="outline"
+                              className="w-full"
+                              style={{ minHeight: '56px' }}
+                            >
+                              Request Professional Service Now
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3 pt-6 border-t">
-          <Button
-            onClick={handleSave}
-            disabled={!isFormValid || createTaskMutation.isPending || isEstimating}
-            className="w-full font-bold"
-            style={{ 
-              backgroundColor: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#28A745' : '#CCCCCC',
-              color: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#FFFFFF' : '#666666',
-              minHeight: '56px', 
-              fontSize: '16px',
-              cursor: isFormValid && !createTaskMutation.isPending && !isEstimating ? 'pointer' : 'not-allowed',
-              opacity: isFormValid && !createTaskMutation.isPending && !isEstimating ? 1 : 0.6
-            }}
-          >
-            {isEstimating ? (
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 animate-pulse" />
-                AI Analyzing Cascade Risk...
-              </span>
-            ) : createTaskMutation.isPending ? (
-              'Saving...'
-            ) : (
-              'Save Issue & Continue Inspection'
-            )}
-          </Button>
-
-          {/* Professional Service Option */}
-          {((severity === 'Urgent' || severity === 'Flag') && description && isQuickFix !== null && serviceDialogPrefilledData) && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                Can't or don't want to fix this yourself?
-              </p>
-              <Button
-                onClick={() => setShowServiceDialog(true)}
-                variant="outline"
-                className="w-full"
-                style={{ borderColor: '#28A745', color: '#28A745', minHeight: '48px' }}
-              >
-                Request Professional Service
-              </Button>
-            </div>
-          )}
-
-          <Button
-            onClick={onCancel}
-            variant="ghost"
-            className="w-full"
-            style={{ minHeight: '48px' }}
-          >
-            Cancel
-          </Button>
         </div>
       </div>
 
-      {serviceDialogPrefilledData && (
-        <ServiceRequestDialog
-          open={showServiceDialog}
-          onClose={() => setShowServiceDialog(false)}
-          prefilledData={serviceDialogPrefilledData}
-        />
-      )}
-    </div>
+      {/* Service Request Dialog */}
+      <ServiceRequestDialog
+        open={showServiceDialog}
+        onClose={() => setShowServiceDialog(false)}
+        prefilledData={{
+          property_id: propertyId,
+          service_type: "Inspection Issue - Professional Repair",
+          description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}:\n\n${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}\n\nEstimated Cost: ${formData.estimated_cost}\n\nNote: Cost estimate is AI-generated average. Actual cost may vary.`,
+          severity: formData.severity,
+          system_type: formData.system,
+          photo_urls: formData.photo_urls,
+          title: `${formData.system}: ${formData.description.substring(0, 50)}${formData.description.length > 50 ? '...' : ''}`,
+          notes: `Found during ${inspection.season} ${inspection.year} inspection. AI cascade risk: ${aiEstimate?.cascade_risk_score}/10`
+        }}
+      />
+    </>
   );
 }

@@ -411,7 +411,7 @@ Return JSON with "suggestions" array.`;
     const taskData = {
       property_id: propertyId,
       title: suggestion.title,
-      description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)`,
+      description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)\n\n⚠️ Note: Cost estimates are regional averages. Actual costs may vary based on property condition, scope of work, contractor rates, and unforeseen complications.`,
       system_type: suggestion.system_type,
       priority: suggestion.priority,
       status: 'Identified',
@@ -447,7 +447,7 @@ Return JSON with "suggestions" array.`;
         return {
           property_id: propertyId,
           title: suggestion.title,
-          description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)`,
+          description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)\n\n⚠️ Note: Cost estimates are regional averages. Actual costs may vary based on property condition, scope of work, contractor rates, and unforeseen complications.`,
           system_type: suggestion.system_type,
           priority: suggestion.priority,
           status: 'Identified',
@@ -563,6 +563,23 @@ Return JSON with "suggestions" array.`;
             </div>
           ) : aiSuggestions && aiSuggestions.length > 0 ? (
             <>
+              {/* Cost Disclaimer Banner */}
+              <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-yellow-900 mb-1">
+                      💡 About Cost Estimates
+                    </p>
+                    <p className="text-xs text-yellow-800 leading-relaxed">
+                      All cost estimates are AI-generated regional averages based on {property.climate_zone} market data. 
+                      Actual costs may vary significantly based on property condition, scope of work, contractor rates, 
+                      accessibility, materials required, and unforeseen complications. Get professional estimates for accurate pricing.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
@@ -576,6 +593,7 @@ Return JSON with "suggestions" array.`;
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <p className="text-sm text-gray-600 mb-1">Est. Total Cost</p>
                   <p className="text-xl font-bold text-blue-700">${estimatedCost.toLocaleString()}</p>
+                  <p className="text-xs text-gray-600 mt-1">Avg. estimate</p>
                 </div>
               </div>
 
@@ -728,6 +746,9 @@ Return JSON with "suggestions" array.`;
                                           +${suggestion.cost_increase.toLocaleString()} ({Math.round((suggestion.cost_multiplier - 1) * 100)}% more)
                                         </span>
                                       </div>
+                                      <p className="text-xs text-gray-600 mt-2 italic">
+                                        * Estimates based on regional averages. Actual costs vary.
+                                      </p>
                                     </div>
                                   </div>
                                 )}
@@ -759,9 +780,10 @@ Return JSON with "suggestions" array.`;
                                   {suggestion.description}
                                 </p>
                                 <div className="flex items-center justify-between flex-wrap gap-2">
-                                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                                    <DollarSign className="w-4 h-4" />
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <DollarSign className="w-4 h-4 text-gray-600" />
                                     <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                    <span className="text-xs text-gray-500">(avg)</span>
                                     {suggestion.cost_increase > 500 && (
                                       <Badge className="ml-2 bg-red-100 text-red-800 text-xs">
                                         +${Math.round(suggestion.cost_increase/100)*100} if delayed
@@ -808,7 +830,7 @@ Return JSON with "suggestions" array.`;
           prefilledData={{
             property_id: propertyId,
             service_type: "AI Calendar Suggestion",
-            description: `${selectedSuggestion.title}\n\n${selectedSuggestion.description}\n\nEstimated Cost: $${selectedSuggestion.estimated_cost_range}\n\nSuggested Timeline: ${format(addMonths(new Date(), selectedSuggestion.suggested_month || 0), 'MMMM yyyy')}`
+            description: `${selectedSuggestion.title}\n\n${selectedSuggestion.description}\n\nEstimated Cost Range: $${selectedSuggestion.estimated_cost_range}\n\nNote: This is an AI-generated estimate based on ${property.climate_zone} regional averages. Actual costs may vary based on property specifics, scope of work, and contractor rates.\n\nSuggested Timeline: ${format(addMonths(new Date(), selectedSuggestion.suggested_month || 0), 'MMMM yyyy')}`
           }}
         />
       )}
