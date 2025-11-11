@@ -273,17 +273,24 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       // Upload the barcode image
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      // Use AI to extract product info from barcode
+      // Use AI to extract product info from data plate
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this barcode/product label image and extract:
-        1. Brand name
+        prompt: `You are analyzing a product data plate or model label. Extract the following information:
+        
+        1. Brand/Manufacturer name
         2. Model number
         3. Serial number (if visible)
-        4. Year of manufacture (if visible)
+        4. Year of manufacture or installation date (look for "MFG Date", "Mfg Year", "Date", or year numbers)
         
-        Return as JSON with keys: brand, model, serial, year.
-        If a field is not found, return it as an empty string.`,
-        file_urls: [file_url], // Pass as an array for invokeLLM
+        Be thorough - look for ALL text on the plate. Years might be in formats like:
+        - "2015"
+        - "MFG 03/2018"
+        - "Date: 2020"
+        
+        Return ONLY valid data you can clearly read. If you cannot find a field, return an empty string for it.
+        
+        Return as JSON.`,
+        file_urls: file_url,
         response_json_schema: {
           type: "object",
           properties: {
@@ -296,22 +303,50 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         }
       });
 
+      console.log("AI extraction result:", result);
+
       // Populate form with extracted data
-      if (result.brand || result.model || result.year) {
-        const brandModel = [result.brand, result.model].filter(Boolean).join(' ');
-        setFormData(prev => ({
-          ...prev,
-          brand_model: brandModel || prev.brand_model,
-          installation_year: result.year || prev.installation_year
-        }));
+      if (result && (result.brand || result.model || result.year)) {
+        const updates = {};
+        
+        // Build brand_model string
+        const brandModel = [result.brand, result.model].filter(Boolean).join(' ').trim();
+        if (brandModel) {
+          updates.brand_model = brandModel;
+        }
+        
+        // Extract year from various formats
+        if (result.year) {
+          // Try to extract 4-digit year
+          const yearMatch = result.year.match(/20\d{2}|19\d{2}/);
+          if (yearMatch) {
+            updates.installation_year = yearMatch[0];
+          }
+        }
+        
+        // Update form data
+        if (Object.keys(updates).length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            ...updates
+          }));
+          
+          // Show success feedback
+          alert(`✅ Data extracted successfully!\n\nBrand/Model: ${updates.brand_model || 'N/A'}\nYear: ${updates.installation_year || 'N/A'}`);
+        } else {
+          alert("Could not extract clear data from the image. Please try taking a clearer photo or enter the information manually.");
+        }
         
         // Add barcode image to photos only if not already present
         if (!photos.includes(file_url)) {
-            setPhotos(prev => [...prev, file_url]);
+          setPhotos(prev => [...prev, file_url]);
         }
+      } else {
+        alert("Could not extract data from the image. Please try:\n- Taking a clearer photo\n- Ensuring good lighting\n- Getting closer to the data plate\n\nOr enter the information manually.");
       }
     } catch (error) {
       console.error('Barcode scan failed:', error);
+      alert("Scanning failed. Please try again or enter the information manually.");
     } finally {
       setScanningBarcode(false);
     }
