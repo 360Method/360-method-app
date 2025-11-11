@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -67,6 +67,18 @@ export default function Schedule() {
     setShowTaskForm(true);
   };
 
+  const handleTaskComplete = () => {
+    setShowTaskForm(false);
+    setTaskFormDate(null);
+    // Force refetch of tasks for this property
+    queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', selectedProperty] });
+  };
+
+  const handleTaskCancel = () => {
+    setShowTaskForm(false);
+    setTaskFormDate(null);
+  };
+
   const tasksThisWeek = scheduledTasks.filter(t => {
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
@@ -80,23 +92,6 @@ export default function Schedule() {
   }).length;
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
-
-  if (showTaskForm) {
-    return (
-      <ManualTaskForm
-        propertyId={selectedProperty}
-        prefilledDate={taskFormDate}
-        onComplete={() => {
-          setShowTaskForm(false);
-          setTaskFormDate(null);
-        }}
-        onCancel={() => {
-          setShowTaskForm(false);
-          setTaskFormDate(null);
-        }}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -151,12 +146,35 @@ export default function Schedule() {
         )}
 
         {/* Seasonal Task Suggestions */}
-        {currentProperty && (
+        {currentProperty && !showTaskForm && (
           <SeasonalTaskSuggestions 
             propertyId={selectedProperty}
             property={currentProperty}
             compact={false}
           />
+        )}
+
+        {/* Task Form Overlay */}
+        {showTaskForm && (
+          <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+            <div className="min-h-screen flex items-start justify-center p-4">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative">
+                <button
+                  onClick={handleTaskCancel}
+                  className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  style={{ minHeight: '40px', minWidth: '40px' }}
+                >
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
+                <ManualTaskForm
+                  propertyId={selectedProperty}
+                  prefilledDate={taskFormDate}
+                  onComplete={handleTaskComplete}
+                  onCancel={handleTaskCancel}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Calendar */}

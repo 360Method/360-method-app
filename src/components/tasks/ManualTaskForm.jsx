@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Upload, DollarSign, AlertCircle, Calendar, Sparkles, Info } from "lucide-react";
+import { Upload, DollarSign, AlertCircle, Calendar, Sparkles, Info } from "lucide-react";
 import { estimateCascadeRisk } from "../shared/CascadeEstimator";
 
 const SYSTEM_TYPES = [
@@ -73,7 +73,9 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, editi
       }
     },
     onSuccess: () => {
+      // Invalidate all maintenance task queries to ensure calendar updates
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       onComplete();
     },
   });
@@ -144,8 +146,8 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, editi
   );
 
   return (
-    <div className="min-h-screen bg-white pb-24">
-      <div className="mobile-container md:max-w-4xl md:mx-auto">
+    <div className="bg-white pb-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
+      <div className="p-6">
         <div className="mb-6">
           <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
             {editingTask ? 'Edit Task' : 'Create Maintenance Task'}
@@ -404,7 +406,8 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, editi
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ minHeight: '28px', minWidth: '28px' }}
                       >
-                        <X className="w-4 h-4" />
+                        <span className="sr-only">Remove</span>
+                        ×
                       </button>
                     </div>
                   ))}
