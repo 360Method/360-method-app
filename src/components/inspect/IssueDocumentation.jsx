@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, X, Lightbulb, AlertTriangle, Clock, DollarSign } from "lucide-react";
+import { ArrowLeft, Upload, X, Lightbulb, AlertTriangle, Clock, DollarSign, Sparkles } from "lucide-react";
 
 import ServiceRequestDialog from "../services/ServiceRequestDialog";
+import { estimateCascadeRisk } from "../shared/CascadeEstimator";
 
 const SEVERITY_INFO = {
   Urgent: {
@@ -52,6 +52,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
   const [estimatedCost, setEstimatedCost] = React.useState('');
   const [whoWillFix, setWhoWillFix] = React.useState('not_sure');
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [isEstimating, setIsEstimating] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -103,39 +104,40 @@ export default function IssueDocumentation({ area, inspection, property, relevan
 
   const handleSave = async () => {
     if (currentIssueData.is_quick_fix === false) {
-      const cascadeRiskScores = {
-        'Urgent': 9,
-        'Flag': 6,
-        'Monitor': 3
-      };
+      setIsEstimating(true);
+      
+      try {
+        // Use AI to estimate cascade risk and costs
+        const aiEstimates = await estimateCascadeRisk({
+          description: currentIssueData.description,
+          system_type: selectedSystemData?.system_type || 'General',
+          severity: currentIssueData.severity,
+          area: currentIssueData.area,
+          estimated_cost: currentIssueData.estimated_cost
+        });
 
-      const costEstimates = {
-        'free': { current: 0, delayed: 500 },
-        '1-50': { current: 25, delayed: 1000 },
-        '50-200': { current: 125, delayed: 2500 },
-        '200-500': { current: 350, delayed: 5000 },
-        '500-1500': { current: 1000, delayed: 10000 },
-        '1500+': { current: 3000, delayed: 20000 },
-        'unknown': { current: 500, delayed: 5000 }
-      };
-
-      const costs = costEstimates[currentIssueData.estimated_cost] || { current: 200, delayed: 2000 };
-
-      await createTaskMutation.mutateAsync({
-        property_id: property.id,
-        title: `${currentIssueData.area}: ${currentIssueData.description.substring(0, 50)}${currentIssueData.description.length > 50 ? '...' : ''}`,
-        description: `Issue found during ${inspection.season} ${inspection.year} inspection.\n\n${currentIssueData.description}`,
-        system_type: selectedSystemData?.system_type || 'General',
-        priority: currentIssueData.severity === 'Urgent' ? 'High' : currentIssueData.severity === 'Flag' ? 'Medium' : 'Low',
-        status: 'Identified',
-        cascade_risk_score: cascadeRiskScores[currentIssueData.severity],
-        current_fix_cost: costs.current,
-        delayed_fix_cost: costs.delayed,
-        urgency_timeline: currentIssueData.severity === 'Urgent' ? 'Immediate' : currentIssueData.severity === 'Flag' ? '30-90 days' : 'Next inspection',
-        has_cascade_alert: currentIssueData.severity === 'Urgent',
-        photo_urls: currentIssueData.photo_urls,
-        execution_type: currentIssueData.who_will_fix === 'diy' ? 'DIY' : currentIssueData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
-      });
+        await createTaskMutation.mutateAsync({
+          property_id: property.id,
+          title: `${currentIssueData.area}: ${currentIssueData.description.substring(0, 50)}${currentIssueData.description.length > 50 ? '...' : ''}`,
+          description: `Issue found during ${inspection.season} ${inspection.year} inspection.\n\n${currentIssueData.description}`,
+          system_type: selectedSystemData?.system_type || 'General',
+          priority: currentIssueData.severity === 'Urgent' ? 'High' : currentIssueData.severity === 'Flag' ? 'Medium' : 'Low',
+          status: 'Identified',
+          cascade_risk_score: aiEstimates.cascade_risk_score,
+          cascade_risk_reason: aiEstimates.cascade_risk_reason,
+          current_fix_cost: aiEstimates.current_fix_cost,
+          delayed_fix_cost: aiEstimates.delayed_fix_cost,
+          cost_impact_reason: aiEstimates.cost_impact_reason,
+          urgency_timeline: currentIssueData.severity === 'Urgent' ? 'Immediate' : currentIssueData.severity === 'Flag' ? '30-90 days' : 'Next inspection',
+          has_cascade_alert: aiEstimates.cascade_risk_score >= 7,
+          photo_urls: currentIssueData.photo_urls,
+          execution_type: currentIssueData.who_will_fix === 'diy' ? 'DIY' : currentIssueData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
+        });
+      } catch (error) {
+        console.error("Error creating task:", error);
+      } finally {
+        setIsEstimating(false);
+      }
     }
 
     onSave(currentIssueData);
@@ -170,6 +172,25 @@ export default function IssueDocumentation({ area, inspection, property, relevan
             Document Issue - {area.name}
           </h1>
         </div>
+
+        {/* AI Estimation Info Banner */}
+        {isQuickFix === false && estimatedCost && (
+          <Card className="border-2 border-purple-300 bg-purple-50 mobile-card mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-6 h-6 text-purple-600 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-purple-900 mb-1">
+                    🤖 AI-Powered Analysis
+                  </p>
+                  <p className="text-sm text-purple-800">
+                    When you save this issue, our AI will analyze the cascade risk and provide detailed cost estimates based on your description. This helps you understand the true urgency and potential savings of acting now vs. later.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* System Selection */}
         {relevantSystems.length > 1 && (
@@ -211,7 +232,9 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         <Card className="border-none shadow-sm mobile-card">
           <CardContent className="p-4">
             <label className="text-sm font-medium text-gray-700 mb-2 block">What did you find? *</label>
-            <p className="text-sm text-gray-600 mb-3">Be specific about what you observed</p>
+            <p className="text-sm text-gray-600 mb-3">
+              Be specific about what you observed - the more detail you provide, the better our AI can estimate cascade risks and costs.
+            </p>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -306,7 +329,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                 ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS? *
               </h2>
               <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue.
+                Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue with AI-powered cascade analysis.
               </p>
               
               <div className="space-y-3">
@@ -329,8 +352,14 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                   style={{ minHeight: '56px' }}
                 >
                   <div>
-                    <p className="font-semibold mb-1">● No - Needs more time/help</p>
-                    <p className="text-sm text-gray-600">Add to Priority Queue for scheduling</p>
+                    <p className="font-semibold mb-1 flex items-center gap-2">
+                      ● No - Needs more time/help
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        AI Analysis
+                      </Badge>
+                    </p>
+                    <p className="text-sm text-gray-600">Add to Priority Queue with smart risk & cost analysis</p>
                   </div>
                 </Button>
               </div>
@@ -362,6 +391,10 @@ export default function IssueDocumentation({ area, inspection, property, relevan
                     ))}
                   </SelectContent>
                 </Select>
+                
+                <p className="text-xs text-gray-600">
+                  💡 This helps our AI provide more accurate delayed-cost estimates
+                </p>
               </CardContent>
             </Card>
 
@@ -437,18 +470,27 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         <div className="flex flex-col gap-3 pt-6 border-t">
           <Button
             onClick={handleSave}
-            disabled={!isFormValid || createTaskMutation.isPending}
+            disabled={!isFormValid || createTaskMutation.isPending || isEstimating}
             className="w-full font-bold"
             style={{ 
-              backgroundColor: isFormValid && !createTaskMutation.isPending ? '#28A745' : '#CCCCCC',
-              color: isFormValid && !createTaskMutation.isPending ? '#FFFFFF' : '#666666',
+              backgroundColor: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#28A745' : '#CCCCCC',
+              color: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#FFFFFF' : '#666666',
               minHeight: '56px', 
               fontSize: '16px',
-              cursor: isFormValid && !createTaskMutation.isPending ? 'pointer' : 'not-allowed',
-              opacity: isFormValid && !createTaskMutation.isPending ? 1 : 0.6
+              cursor: isFormValid && !createTaskMutation.isPending && !isEstimating ? 'pointer' : 'not-allowed',
+              opacity: isFormValid && !createTaskMutation.isPending && !isEstimating ? 1 : 0.6
             }}
           >
-            {createTaskMutation.isPending ? 'Saving...' : 'Save Issue & Continue Inspection'}
+            {isEstimating ? (
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+                AI Analyzing Cascade Risk...
+              </span>
+            ) : createTaskMutation.isPending ? (
+              'Saving...'
+            ) : (
+              'Save Issue & Continue Inspection'
+            )}
           </Button>
 
           {/* Professional Service Option */}
