@@ -1,10 +1,9 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info } from "lucide-react";
 
 import ServiceRequestDialog from "../services/ServiceRequestDialog";
 
@@ -15,11 +14,31 @@ const PRIORITY_COLORS = {
   Routine: "bg-gray-100 text-gray-800 border-gray-200"
 };
 
+// Generic cascade examples by system type
+const GENERIC_CASCADE_EXAMPLES = {
+  "HVAC": "Small refrigerant leak → Compressor works harder → Compressor burns out → Full system replacement ($5K-8K)",
+  "Plumbing": "Small leak → Water damage → Mold growth → Structural damage → $8K-15K repair",
+  "Electrical": "Loose connection → Arcing → Fire hazard → Electrical fire → $20K-50K+ damage",
+  "Roof": "Small leak → Rotted deck → Interior damage → Mold growth → Structural issues → $30K+ disaster",
+  "Foundation": "Small crack → Water intrusion → Foundation settling → Structural damage → $15K-40K repair",
+  "Gutters": "Clog → Overflow → Foundation damage → Basement flooding → Landscaping erosion → $10K-30K damage",
+  "Exterior": "Damaged siding → Water intrusion → Insulation damage → Mold → Interior damage → $8K-20K repair",
+  "Windows/Doors": "Seal failure → Water intrusion → Frame rot → Wall damage → Mold → $5K-15K repair",
+  "Appliances": "Worn hose → Burst → Flood → Water damage → Mold → $8K-15K cleanup",
+  "Landscaping": "Poor grading → Water pools → Foundation damage → Basement issues → $10K-25K repair",
+  "General": "Small issue → Secondary damage → Tertiary failures → Emergency repair at 3X cost"
+};
+
 export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
 
   const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
+
+  // Get cascade example - use custom reason if provided, otherwise generic
+  const cascadeExample = task.cascade_risk_reason 
+    || GENERIC_CASCADE_EXAMPLES[task.system_type] 
+    || GENERIC_CASCADE_EXAMPLES["General"];
 
   return (
     <>
@@ -98,26 +117,27 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                 <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <TrendingDown className="w-6 h-6 text-orange-600 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-bold text-orange-900 mb-2">💥 Cascade Risk:</h4>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
+                        💥 Cascade Risk: Why This Matters
+                        {task.cascade_risk_score && (
+                          <Badge className="bg-orange-600 text-white">
+                            {task.cascade_risk_score}/10 Risk
+                          </Badge>
+                        )}
+                      </h4>
                       <p className="text-sm text-gray-800 leading-relaxed mb-3">
                         This problem triggers a chain reaction of increasingly expensive damage if left unaddressed.
                       </p>
-                      {task.system_type === "Plumbing System" && task.title.toLowerCase().includes("hose") && (
-                        <p className="text-sm text-gray-800 leading-relaxed">
-                          <strong>Example:</strong> Burst rubber hose → Flood damage (200+ gallons) → Water damage to floors/walls → Mold growth → $8,000-15,000 repair
+                      <div className="bg-white rounded-lg p-3 border border-orange-200">
+                        <p className="text-xs font-semibold text-orange-900 mb-2 flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Typical Cascade Pattern:
                         </p>
-                      )}
-                      {task.system_type === "Gutters" && (
-                        <p className="text-sm text-gray-800 leading-relaxed">
-                          <strong>Example:</strong> Clogged gutter → Water overflow → Foundation damage → Basement flooding → Landscaping erosion → $10,000-30,000 damage
+                        <p className="text-sm text-gray-800 font-mono leading-relaxed">
+                          {cascadeExample}
                         </p>
-                      )}
-                      {task.system_type === "Roof" && (
-                        <p className="text-sm text-gray-800 leading-relaxed">
-                          <strong>Example:</strong> Small leak → Rotted deck → Interior damage → Mold growth → Structural issues → $30,000+ disaster
-                        </p>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -128,9 +148,10 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                     <DollarSign className="w-5 h-5" />
-                    Cost Impact:
+                    Cost Impact: Why Acting Now Saves Money
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-3">
                     <div>
                       <p className="text-xs text-gray-600 mb-1">Fix Now:</p>
                       <p className="text-2xl font-bold text-green-700">
@@ -144,11 +165,29 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                       </p>
                     </div>
                   </div>
+
+                  {task.cost_impact_reason && (
+                    <div className="bg-white rounded-lg p-3 border border-blue-200 mb-3">
+                      <p className="text-xs font-semibold text-blue-900 mb-2 flex items-center gap-1">
+                        <Info className="w-3 h-3" />
+                        Why Delaying Costs More:
+                      </p>
+                      <p className="text-sm text-gray-800 leading-relaxed">
+                        {task.cost_impact_reason}
+                      </p>
+                    </div>
+                  )}
+
                   {costSavings > 0 && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="pt-3 border-t border-blue-200">
                       <p className="text-sm font-medium text-gray-800">
                         ✅ Act now and save: <span className="text-green-700 font-bold">${costSavings.toLocaleString()}</span>
                       </p>
+                      {task.urgency_timeline && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Timeline: {task.urgency_timeline}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
