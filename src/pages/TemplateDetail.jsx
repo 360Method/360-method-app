@@ -274,7 +274,7 @@ export default function TemplateDetail() {
                 <Shield className="w-8 h-8 text-purple-600 flex-shrink-0" />
                 <div>
                   <Badge className="mb-2" style={{ backgroundColor: '#8B5CF6' }}>
-                    YOUR MEMBER BENEFUITE
+                    YOUR MEMBER BENEFIT
                   </Badge>
                   <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
                     Premium Contractor Network Access
