@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,38 +36,6 @@ const SYSTEM_LIFESPANS = {
   "Dryer": 13
 };
 
-// Helper function to parse cost range and return midpoint
-function parseCostRange(costRange) {
-  if (!costRange) return 0;
-  
-  // Remove all dollar signs and spaces
-  const cleaned = String(costRange).replace(/\$/g, '').replace(/\s/g, '');
-  
-  // Handle "free" or "0"
-  if (cleaned.toLowerCase() === 'free' || cleaned === '0') return 0;
-  
-  // Handle "X+" format (e.g., "1500+")
-  if (cleaned.includes('+')) {
-    const base = parseInt(cleaned.replace('+', ''));
-    return isNaN(base) ? 0 : base * 2; // Use 2X the base for "X+" ranges
-  }
-  
-  // Handle "X-Y" format (e.g., "200-500")
-  if (cleaned.includes('-')) {
-    const [min, max] = cleaned.split('-').map(n => parseInt(n));
-    if (!isNaN(min) && !isNaN(max)) {
-      return Math.round((min + max) / 2);
-    }
-  }
-  
-  // Try to parse as single number
-  const singleNum = parseInt(cleaned);
-  if (!isNaN(singleNum)) return singleNum;
-  
-  // Default fallback if parsing fails
-  return 500; 
-}
-
 export default function AIMaintenanceCalendar({ 
   propertyId, 
   property, 
@@ -78,7 +45,7 @@ export default function AIMaintenanceCalendar({
 }) {
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
-  const [selectedTimeframe, setSelectedTimeframe] = React.useState('6');
+  const [selectedTimeframe, setSelectedTimeframe] = React.useState('6'); // 3, 6, 12 months
   const [expandedCard, setExpandedCard] = React.useState(null);
 
   const queryClient = useQueryClient();
@@ -114,7 +81,7 @@ export default function AIMaintenanceCalendar({
             condition: sys.condition,
             lastService: sys.last_service_date,
             brand: sys.brand_model,
-            warnings: sys.warning_signs_present || []
+            warningS: sys.warning_signs_present || []
           };
         });
 
@@ -149,7 +116,7 @@ CLIMATE ZONE: ${property.climate_zone}
 CURRENT SEASON: ${currentSeason}
 
 DOCUMENTED SYSTEMS (${systems.length}):
-${systemsContext.map(s => `- ${s.type}${s.nickname ? ` (${s.nickname})` : ''}: ${s.age} years old (${s.percentLife}% of ${s.lifespan}-year lifespan), Condition: ${s.condition}, Last service: ${s.lastService || 'unknown'}${s.warnings.length > 0 ? `, Warnings: ${s.warnings.join('; ')}` : ''}`).join('\n')}
+${systemsContext.map(s => `- ${s.type}${s.nickname ? ` (${s.nickname})` : ''}: ${s.age} years old (${s.percentLife}% of ${s.lifespan}-year lifespan), Condition: ${s.condition}, Last service: ${s.lastService || 'unknown'}${s.warningS.length > 0 ? `, Warnings: ${s.warningS.join('; ')}` : ''}`).join('\n')}
 
 RECENT INSPECTIONS:
 ${inspectionContext.length > 0 ? inspectionContext.map(i => `- ${i.season} ${i.year}: ${i.issuesFound} issues found (${i.urgentCount} urgent, ${i.flagCount} flags)`).join('\n') : 'No recent inspections'}
@@ -165,37 +132,27 @@ TASK: Generate proactive maintenance suggestions for the next ${selectedTimefram
 5. Climate zone requirements (${property.climate_zone})
 
 For each suggestion, provide:
-- title: Clear, specific task name
-- description: Why it's needed (2-3 sentences), what happens if skipped
-- system_type: Matching one from documented systems above
-- priority: "High" | "Medium" | "Low" | "Routine"
-- suggested_month: Number 0-${parseInt(selectedTimeframe) - 1} (0 = this month)
-- estimated_cost_range: Use ONLY these formats: "0-50", "50-200", "200-500", "500-1000", "1000-2000", "2000-5000", "5000+" (NO dollar signs)
-- urgency_reason: Why do it at this specific time (1-2 sentences)
-- consequences: What happens if skipped for 6-12 months (1-2 sentences)
+- Title (clear, specific task name)
+- Description (why it's needed, what happens if skipped)
+- System type (matching one from the list above)
+- Priority (High/Medium/Low/Routine)
+- Suggested month (0-${selectedTimeframe - 1} from now)
+- Estimated cost range ($50-200, $200-500, etc.)
+- Urgency reason (why do it at this time)
+- Consequences (what happens if skipped for 6-12 months)
 
 PRIORITIZATION GUIDELINES:
-- Systems 80%+ of lifespan = "High" priority, plan replacement
-- Systems 60-79% lifespan = "Medium" priority, preservation
-- Recent inspection flags = "High" or "Medium" priority
-- Seasonal maintenance = "Routine" priority
-- Warning signs present = Upgrade to "High" priority
+- Systems 80%+ of lifespan = HIGH priority, plan replacement
+- Systems 60-79% lifespan = MEDIUM priority, preservation
+- Recent inspection flags = HIGH/MEDIUM priority
+- Seasonal maintenance = ROUTINE priority
+- Warning signs present = Upgrade to HIGH priority
 
-COST ESTIMATION GUIDELINES (professional service, not DIY):
-- Filter changes, detector tests = "0-50"
-- Minor repairs, tune-ups = "200-500"
-- Component replacements, moderate repairs = "500-1000"
-- Significant work, preservation services = "1000-2000"
-- Major repairs, partial replacements = "2000-5000"
-- Full system replacements = "5000+"
+Generate 6-10 actionable suggestions. Be specific (use system nicknames/brands). Avoid suggesting tasks already in the active task list. Focus on preventing expensive failures.
 
-Generate 6-10 actionable suggestions. Be specific (use system nicknames/brands from baseline). Avoid suggesting tasks already in the active task list. Focus on preventing expensive failures.
+Return as JSON array of suggestions.`;
 
-CRITICAL: Use cost ranges WITHOUT dollar signs: "200-500" NOT "$200-500"
-
-Return as JSON object with "suggestions" array.`;
-
-        const result = await base44.integrations.Core.InvokeLLM({
+        const suggestions = await base44.integrations.Core.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
             type: "object",
@@ -217,12 +174,11 @@ Return as JSON object with "suggestions" array.`;
                   required: ["title", "description", "system_type", "priority", "suggested_month"]
                 }
               }
-            },
-            required: ["suggestions"]
+            }
           }
         });
 
-        setAiSuggestions(result.suggestions || []);
+        setAiSuggestions(suggestions.suggestions || []);
       } catch (error) {
         console.error('Failed to generate AI suggestions:', error);
         setAiSuggestions([]);
@@ -297,15 +253,19 @@ Return as JSON object with "suggestions" array.`;
     return months;
   }, [aiSuggestions, selectedTimeframe]);
 
-  // Calculate stats with improved cost parsing
+  // Calculate stats
   const totalSuggestions = aiSuggestions?.length || 0;
   const highPriority = aiSuggestions?.filter(s => s.priority === 'High').length || 0;
-  const estimatedCost = React.useMemo(() => {
-    if (!aiSuggestions) return 0;
-    return aiSuggestions.reduce((sum, s) => {
-      return sum + parseCostRange(s.estimated_cost_range);
-    }, 0);
-  }, [aiSuggestions]);
+  const estimatedCost = aiSuggestions?.reduce((sum, s) => {
+    const costMap = {
+      '$0-50': 25,
+      '$50-200': 125,
+      '$200-500': 350,
+      '$500-1500': 1000,
+      '$1500+': 3000
+    };
+    return sum + (costMap[s.estimated_cost_range] || 200);
+  }, 0) || 0;
 
   if (!property || !systems || systems.length === 0) {
     return (
@@ -380,8 +340,8 @@ Return as JSON object with "suggestions" array.`;
                 <p className="text-2xl font-bold text-red-700">{highPriority}</p>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-sm text-gray-600 mb-1">Est. Total Cost</p>
-                <p className="text-xl font-bold text-blue-700">${estimatedCost.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 mb-1">Estimated Cost</p>
+                <p className="text-2xl font-bold text-blue-700">${estimatedCost.toLocaleString()}</p>
               </div>
             </div>
 
@@ -435,7 +395,7 @@ Return as JSON object with "suggestions" array.`;
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <div className="flex items-center gap-2 mb-2">
                                 <Badge
                                   className={
                                     suggestion.priority === 'High'
@@ -493,11 +453,11 @@ Return as JSON object with "suggestions" array.`;
                                 </div>
                               )}
 
-                              <div className="flex items-center gap-4 text-sm flex-wrap">
+                              <div className="flex items-center gap-4 text-sm">
                                 {suggestion.estimated_cost_range && (
                                   <div className="flex items-center gap-1">
                                     <DollarSign className="w-4 h-4 text-gray-600" />
-                                    <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                    <span>{suggestion.estimated_cost_range}</span>
                                   </div>
                                 )}
                                 <div className="flex items-center gap-1">
@@ -508,7 +468,7 @@ Return as JSON object with "suggestions" array.`;
 
                               <button
                                 onClick={() => setExpandedCard(null)}
-                                className="text-xs text-purple-600 mt-2 hover:underline"
+                                className="text-xs text-purple-600 mt-2"
                               >
                                 Show less
                               </button>
@@ -523,13 +483,13 @@ Return as JSON object with "suggestions" array.`;
                                   {suggestion.estimated_cost_range && (
                                     <div className="flex items-center gap-1">
                                       <DollarSign className="w-4 h-4" />
-                                      <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                      <span>{suggestion.estimated_cost_range}</span>
                                     </div>
                                   )}
                                 </div>
                                 <button
                                   onClick={() => setExpandedCard(`${monthIdx}-${idx}`)}
-                                  className="text-xs text-purple-600 hover:underline"
+                                  className="text-xs text-purple-600"
                                 >
                                   Show more
                                 </button>
