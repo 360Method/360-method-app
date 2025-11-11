@@ -12,6 +12,23 @@ export default function AreaInspection({ area, inspection, property, baselineSys
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
 
+  // Handle null property early
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <Card className="border-none shadow-lg max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Data</h1>
+            <p className="text-gray-600 mb-6">Unable to perform inspection without property information.</p>
+            <Button onClick={onBack} style={{ backgroundColor: '#1B365D' }}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Get systems relevant to this area
   const relevantSystems = baselineSystems.filter(system => {
     if (area.id === 'hvac') return system.system_type === 'HVAC System';

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,41 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Mail, Printer, CheckCircle, AlertTriangle, Edit, Camera, DollarSign } from "lucide-react";
 
 export default function InspectionReport({ inspection, property, baselineSystems, onBack, onEdit }) {
-  const allIssues = inspection.checklist_items || [];
+  // Handle null inspection or property at the earliest point
+  if (!inspection) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <Card className="border-none shadow-lg max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Inspection Data</h1>
+            <p className="text-gray-600 mb-6">Unable to load inspection report. Please go back and try again.</p>
+            <Button onClick={onBack} style={{ backgroundColor: '#1B365D' }}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <Card className="border-none shadow-lg max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Data</h1>
+            <p className="text-gray-600 mb-6">Unable to load property information for this inspection. Please go back and try again.</p>
+            <Button onClick={onBack} style={{ backgroundColor: '#1B365D' }}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Safely access checklist_items now that inspection is guaranteed to exist
+  const allIssues = inspection?.checklist_items || [];
   const urgentIssues = allIssues.filter(i => i.severity === 'Urgent');
   const flagIssues = allIssues.filter(i => i.severity === 'Flag');
   const monitorIssues = allIssues.filter(i => i.severity === 'Monitor');
@@ -292,8 +327,8 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       <ol className="list-decimal ml-5 space-y-1">
                         {urgentIssues.map((issue, idx) => (
                           <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description.substring(0, 100)}
-                            {issue.description.length > 100 ? '...' : ''}
+                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
+                            {issue.description && issue.description.length > 100 ? '...' : ''}
                           </li>
                         ))}
                       </ol>
@@ -308,8 +343,8 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + 1}>
                         {flagIssues.map((issue, idx) => (
                           <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description.substring(0, 100)}
-                            {issue.description.length > 100 ? '...' : ''}
+                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
+                            {issue.description && issue.description.length > 100 ? '...' : ''}
                           </li>
                         ))}
                       </ol>
@@ -324,8 +359,8 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + flagIssues.length + 1}>
                         {monitorIssues.map((issue, idx) => (
                           <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description.substring(0, 100)}
-                            {issue.description.length > 100 ? '...' : ''}
+                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
+                            {issue.description && issue.description.length > 100 ? '...' : ''}
                           </li>
                         ))}
                       </ol>
@@ -406,7 +441,7 @@ function IssueDetailCard({ issue, number }) {
           </div>
         </div>
 
-        <p className="text-gray-800 mb-3">{issue.description}</p>
+        <p className="text-gray-800 mb-3">{issue.description || 'No description provided.'}</p>
 
         {/* Cost and Action */}
         <div className="flex flex-wrap gap-3 mb-3">

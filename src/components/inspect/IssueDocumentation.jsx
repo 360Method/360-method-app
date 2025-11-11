@@ -75,6 +75,23 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     },
   });
 
+  // Handle null property early
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <Card className="border-none shadow-lg max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Data</h1>
+            <p className="text-gray-600 mb-6">Unable to document issue without property information.</p>
+            <Button onClick={onCancel} style={{ backgroundColor: '#1B365D' }}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -106,14 +123,14 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     photo_urls: photos,
     severity,
     is_quick_fix: isQuickFix,
-    estimated_cost: estimatedCost,
+    estimated_cost,
     who_will_fix: whoWillFix,
     found_date: new Date().toISOString().split('T')[0],
     status: 'Identified'
   };
 
   const handleSave = async () => {
-    if (currentIssueData.is_quick_fix === false) {
+    if (currentIssueData.is_quick_fix === false && property?.id) {
       setIsEstimating(true);
       
       try {
@@ -185,14 +202,14 @@ export default function IssueDocumentation({ area, inspection, property, relevan
     onSave(currentIssueData);
   };
 
-  const serviceDialogPrefilledData = {
+  const serviceDialogPrefilledData = property?.id ? {
     property_id: property.id,
     service_type: "Specific Task Repair",
     description: `${currentIssueData.area}: ${currentIssueData.description}`,
     urgency: currentIssueData.severity === 'Urgent' ? 'Emergency' : 'High',
     photo_urls: currentIssueData.photo_urls,
     notes: currentIssueData.description
-  };
+  } : null;
 
   const isFormValid = description.trim() && isQuickFix !== null && (isQuickFix === true || estimatedCost);
 
@@ -569,7 +586,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </Button>
 
           {/* Professional Service Option */}
-          {((severity === 'Urgent' || severity === 'Flag') && description && isQuickFix !== null) && (
+          {((severity === 'Urgent' || severity === 'Flag') && description && isQuickFix !== null && serviceDialogPrefilledData) && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm font-medium text-blue-900 mb-2">
                 Can't or don't want to fix this yourself?
@@ -596,11 +613,13 @@ export default function IssueDocumentation({ area, inspection, property, relevan
         </div>
       </div>
 
-      <ServiceRequestDialog
-        open={showServiceDialog}
-        onClose={() => setShowServiceDialog(false)}
-        prefilledData={serviceDialogPrefilledData}
-      />
+      {serviceDialogPrefilledData && (
+        <ServiceRequestDialog
+          open={showServiceDialog}
+          onClose={() => setShowServiceDialog(false)}
+          prefilledData={serviceDialogPrefilledData}
+        />
+      )}
     </div>
   );
 }
