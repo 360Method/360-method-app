@@ -21,7 +21,7 @@ const INSPECTION_ZONES = [
   },
   {
     id: 'basement',
-    name: '🏚️ Basement/Foundation',
+    name: '🏚️ Basement/Crawlspace',
     areas: ['foundation'], // 'basement' was added in outline but not in INSPECTION_AREAS, so keeping only 'foundation' here
     estimatedTime: '5-8 min',
     why: 'While you\'re downstairs'
@@ -35,7 +35,7 @@ const INSPECTION_ZONES = [
   },
   {
     id: 'upper',
-    name: '🏚️ Upper Level', // Reusing '🏚️' icon for attic
+    name: '⬆️ Upper Level', // Reusing '🏚️' icon for attic
     areas: ['attic'],
     estimatedTime: '5-8 min',
     why: 'Check attic and insulation'
