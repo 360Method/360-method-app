@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,13 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit, Calendar } from "lucide-react";
+import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit } from "lucide-react";
 import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
 import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
 import InspectionReport from "../components/inspect/InspectionReport.jsx";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
-import { CLIMATE_ZONES, getCurrentSeason, getDaysUntilDeadline } from "@/utils/climateZones";
 
 export default function Inspect() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -54,23 +52,9 @@ export default function Inspect() {
   }, [properties, selectedProperty]);
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
-  const climateZone = currentProperty?.climate_zone ? CLIMATE_ZONES[currentProperty.climate_zone] : null;
-  const currentSeasonData = climateZone ? getCurrentSeason(currentProperty.climate_zone) : null;
 
   const sortedInspections = inspections
     .sort((a, b) => new Date(b.inspection_date || b.created_date) - new Date(a.inspection_date || a.created_date));
-
-  // Calculate days until recommended deadline
-  const daysUntilDeadline = currentSeasonData ? getDaysUntilDeadline(
-    currentProperty.climate_zone, 
-    currentSeasonData.season
-  ) : null;
-
-  // Check if there's a completed inspection for current season
-  const currentYear = new Date().getFullYear();
-  const currentSeasonInspection = inspections.find(
-    i => i.season === currentSeasonData?.season && i.year === currentYear && i.status === 'Completed'
-  );
 
   const handleStartInspection = () => {
     setCurrentView('setup');
@@ -177,27 +161,11 @@ export default function Inspect() {
     );
   }
 
-  // Determine status color and message
-  let statusColor = '#28A745';
-  let statusBg = '#F0FFF4';
-  let statusBorder = '#28A745';
-  
-  if (daysUntilDeadline !== null) {
-    if (daysUntilDeadline < 0) {
-      statusColor = '#DC3545';
-      statusBg = '#FFF5F2';
-      statusBorder = '#DC3545';
-    } else if (daysUntilDeadline <= 14) {
-      statusColor = '#FF6B35';
-      statusBg = '#FFF5F2';
-      statusBorder = '#FF6B35';
-    }
-  }
-
   // Main history view - Mobile first
   return (
     <div className="min-h-screen bg-white pb-4">
       <div className="mobile-container md:max-w-4xl md:mx-auto">
+        {/* Header - Mobile optimized */}
         <div className="mb-6">
           <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
             INSPECT
@@ -207,6 +175,7 @@ export default function Inspect() {
           </p>
         </div>
 
+        {/* Property Selector - Full width on mobile */}
         <Card className="border-none shadow-sm mobile-card">
           <CardContent className="p-4">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
@@ -225,80 +194,7 @@ export default function Inspect() {
           </CardContent>
         </Card>
 
-        {climateZone && (
-          <Card className="border-none shadow-sm mobile-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">{climateZone.icon}</span>
-                <p className="text-sm font-medium text-gray-700">Your Climate: <strong>{climateZone.name}</strong></p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentSeasonData && climateZone && (
-          <Card 
-            className="border-2 mobile-card" 
-            style={{ borderColor: statusBorder, backgroundColor: statusBg }}
-          >
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-5 h-5" style={{ color: statusColor }} />
-                    <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                      📅 CURRENT SEASON: {currentSeasonData.season} {currentYear}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    Inspection Window: {new Date(currentYear, parseInt(currentSeasonData.start.split('-')[0]) - 1, parseInt(currentSeasonData.start.split('-')[1])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(currentYear, parseInt(currentSeasonData.end.split('-')[0]) - 1, parseInt(currentSeasonData.end.split('-')[1])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </p>
-                  <p className="text-sm font-medium" style={{ color: statusColor }}>
-                    Recommended by: {new Date(currentYear, parseInt(currentSeasonData.recommendedBy.split('-')[0]) - 1, parseInt(currentSeasonData.recommendedBy.split('-')[1])).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    {daysUntilDeadline !== null && (
-                      daysUntilDeadline >= 0 
-                        ? ` (${daysUntilDeadline} days remaining)`
-                        : ` (${Math.abs(daysUntilDeadline)} days overdue)`
-                    )}
-                  </p>
-                </div>
-                {currentSeasonInspection && (
-                  <Badge className="bg-green-600 text-white">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Complete
-                  </Badge>
-                )}
-              </div>
-              
-              {currentSeasonData.urgencyNote && (
-                <div className={`p-3 rounded-lg ${currentSeasonData.urgencyLevel === 'HIGH' ? 'bg-orange-100 border border-orange-300' : 'bg-blue-100 border border-blue-300'}`}>
-                  <p className="text-sm font-medium flex items-start gap-2">
-                    {currentSeasonData.urgencyLevel === 'HIGH' && <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600" />}
-                    <span style={{ color: currentSeasonData.urgencyLevel === 'HIGH' ? '#DC3545' : '#1B365D' }}>
-                      {currentSeasonData.urgencyNote}
-                    </span>
-                  </p>
-                </div>
-              )}
-              
-              <p className="text-sm text-gray-700">
-                <strong>Focus:</strong> {currentSeasonData.focus}
-              </p>
-              
-              {!currentSeasonInspection && daysUntilDeadline !== null && daysUntilDeadline < 0 && (
-                <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-sm font-medium text-red-900">
-                    ⚠️ INSPECTION OVERDUE
-                  </p>
-                  <p className="text-sm text-red-800 mt-1">
-                    Complete your inspection ASAP to catch issues before they worsen.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Action Buttons - Stacked on mobile, side-by-side on desktop */}
         <div className="space-y-3 mb-6 md:flex md:gap-4 md:space-y-0">
           <Button
             onClick={handleStartInspection}
@@ -320,6 +216,7 @@ export default function Inspect() {
           </Button>
         </div>
 
+        {/* Baseline Warning - Mobile optimized */}
         {baselineSystems.length === 0 && (
           <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
             <CardContent className="p-4">
@@ -340,6 +237,7 @@ export default function Inspect() {
 
         <hr className="border-gray-200 my-6" />
 
+        {/* Inspection History */}
         <div>
           <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
             Inspection History
