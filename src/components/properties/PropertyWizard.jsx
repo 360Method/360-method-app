@@ -17,10 +17,44 @@ export default function PropertyWizard({ onComplete, onCancel }) {
   const createPropertyMutation = useMutation({
     mutationFn: async (data) => {
       console.log('Creating property with data:', data);
-      const fullAddress = `${data.street_address}${data.unit_number ? ` #${data.unit_number}` : ''}, ${data.city}, ${data.state} ${data.zip_code}`;
+      
+      // Clean the data - convert empty strings to undefined for numeric fields
+      const cleanedData = { ...data };
+      
+      const numericFields = [
+        'year_built', 'square_footage', 'bedrooms', 'bathrooms',
+        'purchase_price', 'current_value', 'monthly_rent', 'door_count'
+      ];
+      
+      numericFields.forEach(field => {
+        if (cleanedData[field] === '' || cleanedData[field] === null) {
+          delete cleanedData[field];
+        } else if (cleanedData[field] !== undefined) {
+          cleanedData[field] = Number(cleanedData[field]);
+        }
+      });
+      
+      // Clean units array if it exists
+      if (cleanedData.units && Array.isArray(cleanedData.units)) {
+        cleanedData.units = cleanedData.units.map(unit => {
+          const cleanedUnit = { ...unit };
+          ['square_footage', 'bedrooms', 'bathrooms'].forEach(field => {
+            if (cleanedUnit[field] === '' || cleanedUnit[field] === null) {
+              delete cleanedUnit[field];
+            } else if (cleanedUnit[field] !== undefined) {
+              cleanedUnit[field] = Number(cleanedUnit[field]);
+            }
+          });
+          return cleanedUnit;
+        });
+      }
+      
+      const fullAddress = `${cleanedData.street_address}${cleanedData.unit_number ? ` #${cleanedData.unit_number}` : ''}, ${cleanedData.city}, ${cleanedData.state} ${cleanedData.zip_code}`;
+      
+      console.log('Cleaned data before create:', cleanedData);
       
       return base44.entities.Property.create({
-        ...data,
+        ...cleanedData,
         address: fullAddress,
         setup_completed: true,
         baseline_completion: 0
