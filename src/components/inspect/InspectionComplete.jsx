@@ -3,10 +3,14 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb } from "lucide-react"; // Added Lightbulb
+import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb, Shield, DollarSign } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { generatePreservationRecommendations } from "../shared/PreservationAnalyzer";
+import { useQuery } from "@tanstack/react-query";
 
 export default function InspectionComplete({ inspection, property, onViewPriorityQueue, onViewReport, onDone }) {
   const [aiSummary, setAiSummary] = React.useState(null);
+  const [preservationOpportunities, setPreservationOpportunities] = React.useState(null);
   const [generatingSummary, setGeneratingSummary] = React.useState(false);
 
   const allIssues = inspection.checklist_items || [];
@@ -18,11 +22,16 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
 
   const tasksCreated = urgentCount + flagCount;
 
-  // Generate AI summary of inspection
+  // Fetch baseline systems for preservation analysis
+  const { data: systems = [] } = useQuery({
+    queryKey: ['systemBaselines', property.id],
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+  });
+
+  // Generate AI summary and preservation opportunities
   React.useEffect(() => {
-    const generateSummary = async () => {
-      // Only generate if there are issues and no summary has been generated yet
-      if (allIssues.length === 0 || aiSummary) return;
+    const generateAnalysis = async () => {
+      if (allIssues.length === 0) return;
       
       setGeneratingSummary(true);
       try {
@@ -44,7 +53,6 @@ Provide:
 
 Be clear, actionable, and help the homeowner understand what matters most.`;
 
-        // Assuming base44.integrations.Core.InvokeLLM is available in the global scope or imported context
         const summary = await base44.integrations.Core.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
@@ -59,18 +67,25 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
         });
 
         setAiSummary(summary);
+
+        // Generate preservation opportunities
+        if (systems.length > 0) {
+          const preservation = await generatePreservationRecommendations(systems);
+          if (preservation) {
+            setPreservationOpportunities(preservation);
+          }
+        }
       } catch (error) {
-        console.error('Failed to generate AI summary:', error);
+        console.error('Failed to generate AI analysis:', error);
       } finally {
         setGeneratingSummary(false);
       }
     };
 
-    // Trigger summary generation if conditions are met
     if (allIssues.length > 0 && !aiSummary) {
-      generateSummary();
+      generateAnalysis();
     }
-  }, [allIssues, inspection.season, property.address, aiSummary]); // Include aiSummary in dependencies to prevent re-runs after generation
+  }, [allIssues, inspection.season, property.address, systems, aiSummary]);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -143,6 +158,90 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
                       <p className="text-gray-800">{aiSummary.long_term_advice}</p>
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Preservation Opportunities */}
+          {preservationOpportunities && preservationOpportunities.opportunities.length > 0 && (
+            <Card className="border-2" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2 text-green-900">
+                  <Shield className="w-6 h-6 text-green-700" />
+                  🛡️ PRESERVATION OPPORTUNITIES
+                </h2>
+                
+                <p className="text-center text-gray-800 mb-6">
+                  You have <strong>{preservationOpportunities.opportunities.length} aging system{preservationOpportunities.opportunities.length > 1 ? 's' : ''}</strong> where 
+                  preservation can save thousands:
+                </p>
+
+                <div className="space-y-4">
+                  {preservationOpportunities.opportunities.slice(0, 3).map((opp, idx) => (
+                    <div key={idx} className="bg-white p-4 rounded-lg border-2 border-green-200 text-left">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-gray-900">
+                            {opp.system.nickname || opp.system.system_type}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {opp.age} years old ({opp.percentLifespan}% of {opp.lifespan}-year lifespan)
+                          </p>
+                        </div>
+                        <Badge className={
+                          opp.priority === 'HIGH' ? 'bg-red-600' :
+                          opp.priority === 'MEDIUM' ? 'bg-orange-600' :
+                          'bg-blue-600'
+                        }>
+                          {opp.priority}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-600">Preservation Cost</p>
+                          <p className="font-bold text-green-700">${opp.investment.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Extends Life</p>
+                          <p className="font-bold text-green-700">{opp.extensionYears} years</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Replacement Avoided</p>
+                          <p className="font-bold text-green-700">${opp.replacementCost.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Annual Savings</p>
+                          <p className="font-bold text-green-700">${Math.round(opp.annualSavings).toLocaleString()}/yr</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                  <p className="font-bold text-blue-900 mb-2 flex items-center justify-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    TOTAL PRESERVATION OPPORTUNITY
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <p className="text-gray-700">Invest</p>
+                      <p className="text-2xl font-bold text-blue-900">${preservationOpportunities.totalInvestment.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-700">Avoid</p>
+                      <p className="text-2xl font-bold text-blue-900">${preservationOpportunities.totalSavings.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-700">ROI</p>
+                      <p className="text-2xl font-bold text-blue-900">{preservationOpportunities.totalROI.toFixed(1)}:1</p>
+                    </div>
+                  </div>
+                  <p className="text-center text-xs text-gray-600 mt-3">
+                    Avoid ${preservationOpportunities.totalSavings.toLocaleString()} in replacements (next 2-4 years) with ${preservationOpportunities.totalInvestment.toLocaleString()} preservation
+                  </p>
                 </div>
               </CardContent>
             </Card>
