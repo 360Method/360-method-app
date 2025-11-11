@@ -17,6 +17,7 @@ import PropertyCare from './pages/PropertyCare';
 import Checkout from './pages/Checkout';
 import Welcome from './pages/Welcome';
 import Waitlist from './pages/Waitlist';
+import Pricing from './pages/Pricing';
 import Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "Checkout": Checkout,
     "Welcome": Welcome,
     "Waitlist": Waitlist,
+    "Pricing": Pricing,
 }
 
 export const pagesConfig = {

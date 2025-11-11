@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -21,7 +22,8 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Lightbulb // Added Lightbulb icon
 } from "lucide-react";
 import BottomNav from "./components/navigation/BottomNav";
 
@@ -57,6 +59,7 @@ const navigationItems = [
     color: "text-green-600",
     subItems: [
       { title: "Preserve", url: createPageUrl("Preserve"), icon: Shield },
+      { title: "Upgrade", url: createPageUrl("Upgrade"), icon: Lightbulb }, // Added new sub-item
       { title: "Scale", url: createPageUrl("Scale"), icon: Building2 },
     ]
   },
@@ -67,7 +70,7 @@ const navigationItems = [
   },
   {
     title: "Plans & Pricing",
-    url: createPageUrl("Upgrade"),
+    url: createPageUrl("Pricing"), // Changed URL from "Upgrade" to "Pricing"
     icon: Sparkles,
     highlight: true,
   },
