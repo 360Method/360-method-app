@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
+import ManualTaskForm from "../components/tasks/ManualTaskForm";
 
 export default function Schedule() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -17,6 +18,8 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState(null);
   const [showDialog, setShowDialog] = React.useState(false);
+  const [showTaskForm, setShowTaskForm] = React.useState(false);
+  const [taskFormDate, setTaskFormDate] = React.useState(null);
 
   const queryClient = useQueryClient();
 
@@ -58,6 +61,11 @@ export default function Schedule() {
     setShowDialog(true);
   };
 
+  const handleAddTask = (date = null) => {
+    setTaskFormDate(date);
+    setShowTaskForm(true);
+  };
+
   const tasksThisWeek = scheduledTasks.filter(t => {
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
@@ -70,6 +78,23 @@ export default function Schedule() {
     return isSameMonth(taskDate, currentMonth);
   }).length;
 
+  if (showTaskForm) {
+    return (
+      <ManualTaskForm
+        propertyId={selectedProperty}
+        prefilledDate={taskFormDate}
+        onComplete={() => {
+          setShowTaskForm(false);
+          setTaskFormDate(null);
+        }}
+        onCancel={() => {
+          setShowTaskForm(false);
+          setTaskFormDate(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -78,6 +103,14 @@ export default function Schedule() {
             <h1 className="text-3xl font-bold text-gray-900">ACT → Schedule</h1>
             <p className="text-gray-600 mt-1">Calendar view of all scheduled maintenance</p>
           </div>
+          <Button
+            onClick={() => handleAddTask()}
+            className="gap-2"
+            style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+          >
+            <Plus className="w-5 h-5" />
+            Schedule Task
+          </Button>
         </div>
 
         {properties.length > 0 && (
@@ -213,6 +246,10 @@ export default function Schedule() {
           selectedDate={selectedDate}
           propertyId={selectedProperty}
           existingTasks={selectedDate ? getTasksForDate(selectedDate) : []}
+          onAddTask={() => {
+            setShowDialog(false);
+            handleAddTask(selectedDate);
+          }}
         />
       </div>
     </div>
