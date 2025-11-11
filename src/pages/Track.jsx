@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, DollarSign, Calendar, Download, Filter } from "lucide-react";
+import { Activity, DollarSign, Calendar, Download, Filter, Plus } from "lucide-react";
 import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
+import ManualTaskForm from "../components/tasks/ManualTaskForm";
 
 export default function Track() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -16,6 +17,7 @@ export default function Track() {
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [filterType, setFilterType] = React.useState('all');
   const [filterDate, setFilterDate] = React.useState('all');
+  const [showTaskForm, setShowTaskForm] = React.useState(false);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -165,6 +167,16 @@ export default function Track() {
     link.click();
   };
 
+  if (showTaskForm) {
+    return (
+      <ManualTaskForm
+        propertyId={selectedProperty}
+        onComplete={() => setShowTaskForm(false)}
+        onCancel={() => setShowTaskForm(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -173,10 +185,20 @@ export default function Track() {
             <h1 className="text-3xl font-bold text-gray-900">AWARE → Track</h1>
             <p className="text-gray-600 mt-1">Complete timeline of your property maintenance</p>
           </div>
-          <Button onClick={exportReport} variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export Report
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setShowTaskForm(true)}
+              className="gap-2"
+              style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+            >
+              <Plus className="w-5 h-5" />
+              Log Maintenance
+            </Button>
+            <Button onClick={exportReport} variant="outline" className="gap-2" style={{ minHeight: '48px' }}>
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+          </div>
         </div>
 
         {properties.length > 0 && (
@@ -267,7 +289,16 @@ export default function Track() {
                 ))
               ) : (
                 <div className="text-center py-12 text-gray-500">
-                  No timeline events found. Start documenting your maintenance!
+                  <Activity className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold mb-2">No Timeline Events Found</h3>
+                  <p className="mb-4">Start documenting your maintenance to build your property history</p>
+                  <Button
+                    onClick={() => setShowTaskForm(true)}
+                    style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Log First Maintenance Event
+                  </Button>
                 </div>
               )}
             </div>
