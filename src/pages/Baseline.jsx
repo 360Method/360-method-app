@@ -135,6 +135,8 @@ export default function Baseline() {
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
   const [showCelebration, setShowCelebration] = React.useState(false);
+  const [scrollPosition, setScrollPosition] = React.useState(0);
+  const [lastAddedSystemType, setLastAddedSystemType] = React.useState(null);
 
   const queryClient = useQueryClient();
 
@@ -260,6 +262,9 @@ export default function Baseline() {
   }, [overallProgress, selectedProperty, properties, queryClient]);
 
   const handleEditSystem = (system) => {
+    // Save scroll position before opening dialog
+    setScrollPosition(window.scrollY);
+    
     setEditingSystem({
       ...system,
       description: SYSTEM_DESCRIPTIONS[system.system_type],
@@ -269,6 +274,10 @@ export default function Baseline() {
   };
 
   const handleAddSystem = (systemType) => {
+    // Save scroll position and system type before opening dialog
+    setScrollPosition(window.scrollY);
+    setLastAddedSystemType(systemType);
+    
     setEditingSystem({ 
       system_type: systemType, 
       property_id: selectedProperty,
@@ -282,6 +291,14 @@ export default function Baseline() {
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingSystem(null);
+    
+    // Restore scroll position after a short delay to allow DOM updates
+    setTimeout(() => {
+      window.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth'
+      });
+    }, 100);
   };
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
