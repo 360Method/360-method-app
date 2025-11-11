@@ -1,333 +1,336 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, Calendar, AlertCircle, Wrench } from "lucide-react";
-import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
+import { Users, Home, Building2, MapPin, Star, TrendingUp, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function Services() {
-  const [showRequestDialog, setShowRequestDialog] = React.useState(false);
-
-  const { data: serviceRequests = [], isLoading } = useQuery({
-    queryKey: ['serviceRequests'],
-    queryFn: () => base44.entities.ServiceRequest.list('-created_date'),
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: () => base44.entities.Property.list(),
   });
 
-  const pendingRequests = serviceRequests.filter(r => r.status === 'Submitted');
-  const scheduledRequests = serviceRequests.filter(r => r.status === 'Scheduled');
-  const inProgressRequests = serviceRequests.filter(r => r.status === 'In Progress');
-  const completedRequests = serviceRequests.filter(r => r.status === 'Completed');
-
-  const getPropertyAddress = (propertyId) => {
-    const property = properties.find(p => p.id === propertyId);
-    return property?.address || 'Unknown Property';
-  };
-
-  const statusIcons = {
-    'Submitted': <Clock className="w-4 h-4" />,
-    'Scheduled': <Calendar className="w-4 h-4" />,
-    'In Progress': <Wrench className="w-4 h-4" />,
-    'Completed': <CheckCircle className="w-4 h-4" />,
-    'Cancelled': <XCircle className="w-4 h-4" />
-  };
-
-  const statusColors = {
-    'Submitted': 'bg-blue-100 text-blue-800',
-    'Scheduled': 'bg-purple-100 text-purple-800',
-    'In Progress': 'bg-orange-100 text-orange-800',
-    'Completed': 'bg-green-100 text-green-800',
-    'Cancelled': 'bg-gray-100 text-gray-800'
-  };
-
-  const urgencyColors = {
-    'Emergency': 'bg-red-100 text-red-800 border-red-300',
-    'High': 'bg-orange-100 text-orange-800 border-orange-300',
-    'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'Low': 'bg-green-100 text-green-800 border-green-300'
-  };
-
-  const renderServiceRequest = (request) => (
-    <Card key={request.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-bold" style={{ color: '#1B365D' }}>
-                  Request #{request.id.slice(0, 8)} - {request.service_type}
-                </h3>
-                <Badge className={statusColors[request.status]}>
-                  {statusIcons[request.status]}
-                  <span className="ml-1">{request.status}</span>
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>Property:</strong> {getPropertyAddress(request.property_id)}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>Submitted:</strong> {new Date(request.created_date).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </p>
-              {request.scheduled_date && (
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Scheduled:</strong> {new Date(request.scheduled_date).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </p>
-              )}
-              <Badge className={`${urgencyColors[request.urgency]} border`}>
-                Priority: {request.urgency}
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="border-t pt-3">
-            <p className="text-sm text-gray-700">
-              <strong>Description:</strong>
-            </p>
-            <p className="text-sm text-gray-600 mt-1">{request.description}</p>
-          </div>
-
-          {request.preferred_contact_time && (
-            <p className="text-sm text-gray-600">
-              <strong>Timeline:</strong> {request.preferred_contact_time}
-            </p>
-          )}
-
-          {request.status === 'Completed' && (
-            <div className="border-t pt-3">
-              {request.completion_date && (
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Completed:</strong> {new Date(request.completion_date).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </p>
-              )}
-              {request.final_cost && (
-                <p className="text-sm text-gray-600 mb-2">
-                  <strong>Cost:</strong> ${request.final_cost}
-                </p>
-              )}
-              {request.completion_notes && (
-                <p className="text-sm text-gray-600">
-                  <strong>Notes:</strong> {request.completion_notes}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const currentTier = user?.subscription_tier || 'free';
+  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const operatorName = user?.operator_name;
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+      <div className="mobile-container md:max-w-6xl md:mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-              Professional Services
-            </h1>
-            <p className="text-xl text-gray-600">
-              Let Handy Pioneers handle the work for you
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowRequestDialog(true)}
-            className="h-14 px-8 text-lg font-bold"
-            style={{ backgroundColor: '#28A745' }}
-          >
-            Request Service
-          </Button>
+        <div className="mb-8 text-center">
+          <Badge className="mb-4" style={{ backgroundColor: '#1B365D' }}>
+            PROFESSIONAL SERVICES
+          </Badge>
+          <h1 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '32px' }}>
+            360° Method Services
+          </h1>
+          <p className="text-gray-600 text-lg">
+            From DIY software to full professional management
+          </p>
         </div>
 
-        {/* Service Offerings */}
-        <Card className="border-2" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
-          <CardHeader>
-            <CardTitle style={{ color: '#1B365D' }}>How We Help You</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* One-Time Services */}
-            <div>
-              <h3 className="text-lg font-bold mb-4" style={{ color: '#1B365D' }}>ONE-TIME SERVICES:</h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card className="border-none shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="text-3xl mb-2">📋</div>
-                    <h4 className="font-bold mb-2">Professional Baseline Assessment</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Complete property documentation and priority report
-                    </p>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Time: 2-3 hours | Cost: $299
-                    </p>
+        {/* Current Status */}
+        {isServiceMember && operatorName ? (
+          <Card className="border-2 border-green-300 bg-green-50 mb-8">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    Active Service Member
+                  </h3>
+                  <p className="text-gray-700 mb-3">
+                    Your properties are being managed by: <strong>{operatorName}</strong>
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-3">
                     <Button
-                      onClick={() => setShowRequestDialog(true)}
                       variant="outline"
-                      className="w-full"
+                      style={{ minHeight: '48px' }}
+                      onClick={() => alert('Coming soon: Contact operator')}
                     >
-                      Schedule Baseline
+                      <Users className="w-4 h-4 mr-2" />
+                      Contact Your Operator
                     </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="text-3xl mb-2">🔍</div>
-                    <h4 className="font-bold mb-2">Seasonal Inspection</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Quarterly walkthrough with issue identification
-                    </p>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Time: 60-90 min | Cost: $149
-                    </p>
                     <Button
-                      onClick={() => setShowRequestDialog(true)}
                       variant="outline"
-                      className="w-full"
+                      style={{ minHeight: '48px' }}
+                      onClick={() => alert('Coming soon: Service dashboard')}
                     >
-                      Schedule Inspection
+                      View Service Details
                     </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="text-3xl mb-2">🔧</div>
-                    <h4 className="font-bold mb-2">Task-Based Repairs</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Fix specific issues from your Priority Queue
-                    </p>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Pricing: Varies by task
-                    </p>
-                    <Button
-                      onClick={() => setShowRequestDialog(true)}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      Request Repair
-                    </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-8">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    Not Currently a Service Member
+                  </h3>
+                  <p className="text-gray-700 mb-3">
+                    You're managing your properties yourself. Want professional help?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    See our service options below to get expert assistance with maintenance and management.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            <hr className="border-gray-300" />
+        {/* Service Options */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* HomeCare */}
+          <Card className="border-2 mobile-card" style={{ borderColor: '#1B365D' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1B365D' }}>
+                  <Home className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '22px' }}>
+                    HomeCare
+                  </h3>
+                  <p className="text-sm text-gray-600">For your primary residence</p>
+                </div>
+              </div>
 
-            {/* Membership Programs */}
-            <div>
-              <h3 className="text-lg font-bold mb-4" style={{ color: '#1B365D' }}>MEMBERSHIP PROGRAMS:</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card className="border-2" style={{ borderColor: '#28A745' }}>
-                  <CardContent className="p-6">
-                    <div className="text-3xl mb-2">🏠</div>
-                    <h4 className="font-bold text-xl mb-2">HomeCare Membership</h4>
-                    <p className="text-2xl font-bold mb-4" style={{ color: '#28A745' }}>$1,490/year</p>
-                    <p className="text-sm text-gray-600 mb-4">Perfect for homeowners who want systematic care</p>
-                    <div className="space-y-2 mb-4">
-                      <p className="text-sm">✓ 4 seasonal inspections per year</p>
-                      <p className="text-sm">✓ Priority scheduling (no 2-week waits)</p>
-                      <p className="text-sm">✓ 10% discount on all repairs</p>
-                      <p className="text-sm">✓ Quarterly maintenance included</p>
-                      <p className="text-sm">✓ Emergency support line</p>
-                    </div>
-                    <Button className="w-full" style={{ backgroundColor: '#28A745' }}>
-                      Learn More
-                    </Button>
-                  </CardContent>
-                </Card>
+              <p className="text-gray-700 mb-4">
+                Professional maintenance service for homeowners who want to protect their biggest investment without the hassle.
+              </p>
 
-                <Card className="border-2" style={{ borderColor: '#FF6B35' }}>
-                  <CardContent className="p-6">
-                    <div className="text-3xl mb-2">🏢</div>
-                    <h4 className="font-bold text-xl mb-2">PropertyCare Membership</h4>
-                    <p className="text-2xl font-bold mb-4" style={{ color: '#FF6B35' }}>Starting at $2,190/year</p>
-                    <p className="text-sm text-gray-600 mb-4">For real estate investors managing rental properties</p>
-                    <div className="space-y-2 mb-4">
-                      <p className="text-sm">✓ Everything in HomeCare plus:</p>
-                      <p className="text-sm">✓ Multi-property portfolio management</p>
-                      <p className="text-sm">✓ Tenant coordination and access scheduling</p>
-                      <p className="text-sm">✓ Detailed reporting for accounting</p>
-                      <p className="text-sm">✓ Annual property health reports</p>
-                    </div>
-                    <Button className="w-full" style={{ backgroundColor: '#FF6B35' }}>
-                      Learn More
-                    </Button>
-                  </CardContent>
-                </Card>
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-green-600" />
+                  <span>4 seasonal diagnostic visits per year</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-green-600" />
+                  <span>6-16 hours of included labor</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-green-600" />
+                  <span>24/7 concierge support system</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="w-4 h-4 text-green-600" />
+                  <span>90-Day Safer Home Guarantee</span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-xl text-gray-600">FROM</span>
+                  <span className="text-3xl font-bold" style={{ color: '#1B365D' }}>$124</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+                <p className="text-xs text-gray-500">Billed annually • Includes Pro software</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Button
+                  asChild
+                  className="font-bold"
+                  style={{ backgroundColor: '#1B365D', minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("HomeCare")}>
+                    Learn More About HomeCare
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("FindOperator")}>
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Find Operator Near Me
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* PropertyCare */}
+          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FF6B35' }}>
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold" style={{ color: '#FF6B35', fontSize: '22px' }}>
+                    PropertyCare
+                  </h3>
+                  <p className="text-sm text-gray-600">For rental properties</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700 mb-4">
+                Professional management for investors and landlords. Priced per door with volume discounts for portfolios.
+              </p>
+
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  <span>4 seasonal diagnostics per door</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  <span>Tenant coordination & turnovers</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  <span>Portfolio analytics & reporting</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  <span>Volume discounts (10-20% off)</span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-xl text-gray-600">FROM</span>
+                  <span className="text-3xl font-bold" style={{ color: '#FF6B35' }}>$124</span>
+                  <span className="text-gray-600">/door/month</span>
+                </div>
+                <p className="text-xs text-gray-500">Billed annually • 5+ doors get discount</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Button
+                  asChild
+                  className="font-bold"
+                  style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("PropertyCare")}>
+                    Calculate PropertyCare Pricing
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("FindOperator")}>
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Find Operator for Portfolio
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Why Choose Professional Service */}
+        <Card className="border-2 border-gray-300 mb-8">
+          <CardContent className="p-6">
+            <h3 className="font-bold mb-6 text-center" style={{ color: '#1B365D', fontSize: '24px' }}>
+              Why Choose Professional Service?
+            </h3>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <Shield className="w-8 h-8 text-green-600" />
+                </div>
+                <h4 className="font-semibold mb-2" style={{ color: '#1B365D' }}>
+                  Prevent Disasters
+                </h4>
+                <p className="text-sm text-gray-700">
+                  Catch small issues before they become $15K emergencies. Members prevent $2-4K/year in disasters.
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                  <Star className="w-8 h-8 text-blue-600" />
+                </div>
+                <h4 className="font-semibold mb-2" style={{ color: '#1B365D' }}>
+                  Save Time
+                </h4>
+                <p className="text-sm text-gray-700">
+                  No more coordinating contractors or worrying about maintenance. We handle everything for you.
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp className="w-8 h-8 text-purple-600" />
+                </div>
+                <h4 className="font-semibold mb-2" style={{ color: '#1B365D' }}>
+                  Protect Your Investment
+                </h4>
+                <p className="text-sm text-gray-700">
+                  Maintain your property value and avoid costly neglect. Get peace of mind knowing experts are watching.
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <hr className="border-gray-200" />
-
-        {/* Service Requests */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6" style={{ color: '#1B365D' }}>YOUR SERVICE REQUESTS:</h2>
-
-          {serviceRequests.length === 0 ? (
-            <Card className="border-none shadow-sm">
-              <CardContent className="p-12 text-center">
-                <Wrench className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl font-semibold mb-2 text-gray-700">No Service Requests Yet</h3>
-                <p className="text-gray-600 mb-6">Request your first service to get started</p>
-                <Button
-                  onClick={() => setShowRequestDialog(true)}
-                  style={{ backgroundColor: '#28A745' }}
-                >
-                  Request Service
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-8">
-              {/* Pending & In Progress */}
-              {(pendingRequests.length > 0 || inProgressRequests.length > 0 || scheduledRequests.length > 0) && (
-                <div>
-                  <h3 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>ACTIVE REQUESTS:</h3>
-                  <div className="space-y-4">
-                    {pendingRequests.map(renderServiceRequest)}
-                    {scheduledRequests.map(renderServiceRequest)}
-                    {inProgressRequests.map(renderServiceRequest)}
-                  </div>
+        {/* Testimonials / Social Proof */}
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-6">
+            <h3 className="font-bold mb-6 text-center" style={{ color: '#1B365D', fontSize: '24px' }}>
+              What Service Members Say
+            </h3>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center gap-1 mb-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
-              )}
+                <p className="text-sm text-gray-700 mb-3">
+                  "Best decision I made. They caught a small roof leak that would've cost me thousands. 
+                  Now I sleep easy knowing my home is being watched by professionals."
+                </p>
+                <p className="text-xs text-gray-600 font-semibold">
+                  — Sarah M., HomeCare Essential Member
+                </p>
+              </div>
 
-              {/* Completed */}
-              {completedRequests.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>COMPLETED:</h3>
-                  <div className="space-y-4">
-                    {completedRequests.map(renderServiceRequest)}
-                  </div>
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center gap-1 mb-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
-              )}
+                <p className="text-sm text-gray-700 mb-3">
+                  "As a landlord with 8 doors, PropertyCare has been a game-changer. Maintenance costs down 30%, 
+                  tenant satisfaction up. Worth every penny."
+                </p>
+                <p className="text-xs text-gray-600 font-semibold">
+                  — James K., PropertyCare Premium Member
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <ServiceRequestDialog
-        open={showRequestDialog}
-        onClose={() => setShowRequestDialog(false)}
-      />
     </div>
   );
 }
