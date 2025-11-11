@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Lightbulb, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Lightbulb, AlertTriangle, X } from "lucide-react"; // Added X icon
 import IssueDocumentation from "./IssueDocumentation";
 
 export default function AreaInspection({ area, inspection, property, baselineSystems, existingIssues, onComplete, onBack }) {
@@ -11,6 +11,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
   const [issues, setIssues] = React.useState(existingIssues || []);
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
+  const [prefillFromBaseline, setPrefillFromBaseline] = React.useState(true); // New state variable
 
   // Handle null property early
   if (!property) {
@@ -32,14 +33,82 @@ export default function AreaInspection({ area, inspection, property, baselineSys
   // Get systems relevant to this area
   const relevantSystems = baselineSystems.filter(system => {
     if (area.id === 'hvac') return system.system_type === 'HVAC System';
-    if (area.id === 'plumbing') return system.system_type === 'Plumbing System';
+    if (area.id === 'plumbing') return ['Plumbing System', 'Water & Sewer/Septic'].includes(system.system_type); // Updated
     if (area.id === 'electrical') return system.system_type === 'Electrical System';
     if (area.id === 'gutters') return system.system_type === 'Gutters & Downspouts';
     if (area.id === 'roof') return system.system_type === 'Roof System';
     if (area.id === 'foundation') return system.system_type === 'Foundation & Structure';
-    if (area.id === 'safety') return ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System'].includes(system.system_type);
+    if (area.id === 'exterior') return ['Exterior Siding & Envelope', 'Foundation & Structure'].includes(system.system_type); // Updated
+    if (area.id === 'driveways') return system.system_type === 'Driveways & Hardscaping'; // New
+    if (area.id === 'attic') return system.system_type === 'Attic & Insulation'; // New
+    if (area.id === 'windows') return system.system_type === 'Windows & Doors'; // New
+    if (area.id === 'kitchen') return ['Plumbing System', 'Refrigerator', 'Range/Oven', 'Dishwasher', 'Microwave', 'Garbage Disposal'].includes(system.system_type); // Updated
+    if (area.id === 'bathrooms') return system.system_type === 'Plumbing System'; // Updated
+    if (area.id === 'safety') return ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System', 'Radon Test'].includes(system.system_type); // Updated
     return false;
   });
+
+  // Pre-fill inspection data from baseline systems with condition issues
+  const getPrefilledIssues = React.useCallback(() => {
+    if (!prefillFromBaseline || !relevantSystems.length) return [];
+
+    const prefilledIssues = [];
+    
+    relevantSystems.forEach(system => {
+      // Check if system has poor condition
+      if (['Poor', 'Urgent', 'Fair'].includes(system.condition)) {
+        const severityMap = {
+          'Urgent': 'Urgent',
+          'Poor': 'Flag',
+          'Fair': 'Monitor'
+        };
+
+        const issue = {
+          area_id: area.id,
+          item_name: `${system.nickname || system.system_type}: Pre-filled from baseline`,
+          severity: severityMap[system.condition] || 'Monitor',
+          notes: system.condition_notes || `System condition: ${system.condition}`,
+          photo_urls: system.photo_urls || [],
+          completed: false,
+          prefilled: true,
+          system_id: system.id
+        };
+
+        // Check if warning signs are present
+        if (system.warning_signs_present && system.warning_signs_present.length > 0) {
+          issue.notes += `\n\nWarning signs observed: ${system.warning_signs_present.join(', ')}`;
+        }
+
+        // Add age information if available
+        if (system.installation_year) {
+          const age = new Date().getFullYear() - system.installation_year;
+          issue.notes += `\n\nAge: ${age} years old (installed ${system.installation_year})`;
+          
+          if (system.estimated_lifespan_years) {
+            const remainingLife = system.estimated_lifespan_years - age;
+            if (remainingLife <= 2) {
+              issue.notes += `\nLifespan: Approaching end of expected lifespan (${remainingLife} years remaining)`;
+            }
+          }
+        }
+
+        prefilledIssues.push(issue);
+      }
+    });
+
+    return prefilledIssues;
+  }, [relevantSystems, area.id, prefillFromBaseline]);
+
+  // Merge prefilled issues with existing issues on mount
+  React.useEffect(() => {
+    if (prefillFromBaseline && existingIssues.length === 0) {
+      const prefilledIssues = getPrefilledIssues();
+      if (prefilledIssues.length > 0) {
+        setIssues(prefilledIssues);
+      }
+    }
+  }, [prefillFromBaseline, existingIssues, getPrefilledIssues]);
+
 
   // Generate AI suggestions based on baseline data
   React.useEffect(() => {
@@ -120,6 +189,10 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
     setDocumentingIssue(false);
   };
 
+  const handleRemovePrefilledIssue = (index) => {
+    setIssues(prev => prev.filter((_, i) => i !== index));
+  };
+
   if (documentingIssue) {
     return (
       <IssueDocumentation
@@ -174,6 +247,72 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
             </h1>
           </div>
         </div>
+
+        {/* Pre-filled Issues from Baseline */}
+        {issues.some(i => i.prefilled) && (
+          <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="font-bold flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
+                    <Lightbulb className="w-5 h-5 text-purple-600" />
+                    🔍 Pre-filled from Your Baseline
+                  </h2>
+                  <p className="text-sm text-gray-700 mt-1">
+                    These systems had condition issues documented in your baseline
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPrefillFromBaseline(false)}
+                  className="text-xs"
+                >
+                  Clear Pre-fills
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {issues.filter(i => i.prefilled).map((issue, idx) => (
+                  <div key={idx} className="bg-white rounded-lg p-3 border-2 border-purple-200">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className={
+                            issue.severity === 'Urgent' ? 'bg-red-600' :
+                            issue.severity === 'Flag' ? 'bg-orange-600' :
+                            'bg-green-600'
+                          }>
+                            {issue.severity}
+                          </Badge>
+                          <span className="font-medium text-sm">{issue.item_name}</span>
+                        </div>
+                        <p className="text-xs text-gray-700 whitespace-pre-wrap">{issue.notes}</p>
+                        {issue.photo_urls && issue.photo_urls.length > 0 && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            📷 {issue.photo_urls.length} photo{issue.photo_urls.length > 1 ? 's' : ''} from baseline
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemovePrefilledIssue(idx)}
+                        className="text-gray-500 hover:text-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-gray-600 mt-3 italic">
+                💡 Tip: Review these during your inspection and update or remove as needed
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI-Powered Inspection Suggestions */}
         {relevantSystems.length > 0 && (
@@ -405,7 +544,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
                   <div key={idx} className="flex items-start gap-2 text-sm">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
                     <div>
-                      <span className="font-medium">{issue.severity}</span>: {issue.description.substring(0, 60)}...
+                      <span className="font-medium">{issue.severity}</span>: {issue.description ? issue.description.substring(0, 60) + '...' : issue.notes.substring(0, 60) + '...'}
                     </div>
                   </div>
                 ))}
