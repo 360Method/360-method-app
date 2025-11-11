@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TrendingUp, DollarSign, Clock, Sparkles, Search, ArrowUpDown, Shield, Award, Lightbulb } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
+import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts.js";
 
 export default function ExploreTemplates() {
   const location = useLocation();
