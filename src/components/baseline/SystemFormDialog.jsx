@@ -111,7 +111,13 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
 
   const [formData, setFormData] = React.useState(getInitialFormData);
   const [photos, setPhotos] = React.useState(() => getInitialFormData().photo_urls || []);
-  const [manuals, setManuals] = React.useState(() => getInitialFormData().manual_urls || []);
+  const [manuals, setManuals] = React.useState(() => {
+    const initialData = getInitialFormData();
+    // Ensure manuals is an array of objects with { url, name }
+    return (initialData.manual_urls || []).map(item => 
+      typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
+    );
+  });
   const [uploading, setUploading] = React.useState(false);
   const [uploadingManuals, setUploadingManuals] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
@@ -126,7 +132,9 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       const initialData = getInitialFormData();
       setFormData(initialData);
       setPhotos(initialData.photo_urls || []); // Sync photos state with formData's photos
-      setManuals(initialData.manual_urls || []); // Sync manuals state
+      setManuals((initialData.manual_urls || []).map(item => 
+        typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
+      )); // Sync manuals state
       setShowAddAnother(false); // Reset this flag when dialog opens
     }
   }, [editingSystem, open, getInitialFormData]);
@@ -243,6 +251,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       console.error('Upload failed:', error);
     } finally {
       setUploading(false);
+      e.target.value = ''; // Clear input
     }
   };
 
@@ -261,6 +270,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       console.error('Manual upload failed:', error);
     } finally {
       setUploadingManuals(false);
+      e.target.value = ''; // Clear input
     }
   };
 
@@ -329,9 +339,8 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
               updates.brand_model = brandModel;
             }
             
-            // Set year based on system type
+            // For Plumbing System, populate water heater year in key_components
             if (extractedYear) {
-              // For Plumbing System, populate water heater year in key_components
               if (formData.system_type === "Plumbing System") {
                 updates.key_components = {
                   ...prev.key_components,
@@ -494,12 +503,50 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                   </div>
                   <div>
                     <Label>Filter Size</Label>
-                    <Input
+                    <Select
                       value={formData.key_components.filter_size || ""}
-                      onChange={(e) => updateComponent('filter_size', e.target.value)}
-                      placeholder="e.g., 16x25x1"
-                    />
-                    <p className="text-xs text-gray-600 mt-1">Written on filter frame</p>
+                      onValueChange={(value) => updateComponent('filter_size', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select filter size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="14x20x1">14 x 20 x 1</SelectItem>
+                        <SelectItem value="14x24x1">14 x 24 x 1</SelectItem>
+                        <SelectItem value="14x25x1">14 x 25 x 1</SelectItem>
+                        <SelectItem value="15x20x1">15 x 20 x 1</SelectItem>
+                        <SelectItem value="16x20x1">16 x 20 x 1</SelectItem>
+                        <SelectItem value="16x24x1">16 x 24 x 1</SelectItem>
+                        <SelectItem value="16x25x1">16 x 25 x 1</SelectItem>
+                        <SelectItem value="18x24x1">18 x 24 x 1</SelectItem>
+                        <SelectItem value="18x25x1">18 x 25 x 1</SelectItem>
+                        <SelectItem value="20x20x1">20 x 20 x 1</SelectItem>
+                        <SelectItem value="20x24x1">20 x 24 x 1</SelectItem>
+                        <SelectItem value="20x25x1">20 x 25 x 1</SelectItem>
+                        <SelectItem value="20x30x1">20 x 30 x 1</SelectItem>
+                        <SelectItem value="24x24x1">24 x 24 x 1</SelectItem>
+                        <SelectItem value="16x20x2">16 x 20 x 2</SelectItem>
+                        <SelectItem value="16x25x2">16 x 25 x 2</SelectItem>
+                        <SelectItem value="20x20x2">20 x 20 x 2</SelectItem>
+                        <SelectItem value="20x25x2">20 x 25 x 2</SelectItem>
+                        <SelectItem value="16x20x4">16 x 20 x 4</SelectItem>
+                        <SelectItem value="16x25x4">16 x 25 x 4</SelectItem>
+                        <SelectItem value="20x20x4">20 x 20 x 4</SelectItem>
+                        <SelectItem value="20x25x4">20 x 25 x 4</SelectItem>
+                        <SelectItem value="custom">Custom/Other Size</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Written on filter frame. Common sizes listed - select "Custom" if yours isn't here.
+                    </p>
+                    {formData.key_components.filter_size === "custom" && (
+                      <Input
+                        value={formData.key_components.filter_size_custom || ""}
+                        onChange={(e) => updateComponent('filter_size_custom', e.target.value)}
+                        placeholder="Enter custom size (e.g., 17x22x1)"
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Checkbox
