@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield, AlertTriangle, Wrench, PhoneCall } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { createPageUrl, calculateSavingsRange, calculateAllTierSavings, getMemberTierName, isServiceMember } from "@/utils";
+import { createPageUrl } from "@/utils";
 
 export default function TemplateDetail() {
   const location = useLocation();
@@ -34,14 +35,18 @@ export default function TemplateDetail() {
   });
 
   const currentTier = user?.subscription_tier || 'free';
-  const isMember = isServiceMember(currentTier);
-  const tierName = getMemberTierName(currentTier);
+  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const memberDiscount = currentTier.includes('essential') ? 0.05 
+    : currentTier.includes('premium') ? 0.10 
+    : currentTier.includes('elite') ? 0.15 
+    : 0;
 
   const handleStartProject = () => {
     navigate(createPageUrl("Upgrade") + "?new=true&template=" + templateId);
   };
 
   const handleRequestQuote = () => {
+    // Navigate to services or show quote request dialog
     navigate(createPageUrl("Services"));
   };
 
@@ -61,23 +66,16 @@ export default function TemplateDetail() {
   }
 
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
+  const memberSavings = avgCost * memberDiscount;
   const avgDIYCost = template.diy_cost_min && template.diy_cost_max 
     ? (template.diy_cost_min + template.diy_cost_max) / 2 
     : 0;
   const potentialSavings = avgCost - avgDIYCost;
 
-  // Calculate member savings using official structure
-  const memberSavings = isMember 
-    ? calculateSavingsRange(template.average_cost_min, template.average_cost_max, currentTier)
-    : null;
-
-  const allTierSavings = calculateAllTierSavings(avgCost);
-
   // Estimated property value (use first property or default)
   const estimatedHomeValue = properties[0]?.current_value || properties[0]?.purchase_price || 400000;
   const valueAfter = estimatedHomeValue + (template.typical_value_added || avgCost * (template.average_roi_percent / 100));
-  const memberPrice = isMember ? avgCost - memberSavings.avgSavings : avgCost;
-  const trueCost = memberPrice - (template.typical_value_added || avgCost * (template.average_roi_percent / 100));
+  const trueCost = avgCost - (template.typical_value_added || avgCost * (template.average_roi_percent / 100));
 
   return (
     <div className="min-h-screen bg-white">
@@ -163,158 +161,14 @@ export default function TemplateDetail() {
           </CardContent>
         </Card>
 
-        {/* Typical Cost Range */}
-        <Card className="border-2 border-gray-300 mb-6">
-          <CardContent className="p-6">
-            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-              💰 Typical Cost Range
-            </h2>
-            <div className="text-center mb-4">
-              <p className="text-gray-600 mb-2">National Average</p>
-              <p className="text-4xl font-bold" style={{ color: '#1B365D' }}>
-                ${template.average_cost_min.toLocaleString()} - ${template.average_cost_max.toLocaleString()}
-              </p>
-              <p className="text-gray-600 mt-2">
-                Average: ${avgCost.toLocaleString()}
-              </p>
-            </div>
-            <p className="text-xs text-gray-600 text-center">
-              * Example estimates only. Request professional quote for your specific project.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Member Preferred Pricing */}
-        {isMember ? (
-          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <Shield className="w-8 h-8 text-purple-600 flex-shrink-0" />
-                <div className="flex-1">
-                  <Badge className="mb-3" style={{ backgroundColor: '#8B5CF6' }}>
-                    YOUR {tierName.toUpperCase()} MEMBER BENEFIT
-                  </Badge>
-                  <h3 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '20px' }}>
-                    Member Preferred Pricing on This Project
-                  </h3>
-                  
-                  <div className="bg-white rounded-lg p-4 mb-4">
-                    <div className="grid md:grid-cols-3 gap-4 text-center mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Standard Pricing</p>
-                        <p className="text-2xl font-bold text-gray-700 line-through">
-                          ${avgCost.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Your Savings</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          -${Math.round(memberSavings.avgSavings).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          ({(memberSavings.minPercent * 100).toFixed(0)}%{memberSavings.minPercent !== memberSavings.maxPercent ? `-${(memberSavings.maxPercent * 100).toFixed(0)}%` : ''})
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Your Member Price</p>
-                        <p className="text-2xl font-bold" style={{ color: '#28A745' }}>
-                          ~${Math.round(memberPrice).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-purple-200 pt-4">
-                      <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>
-                        Your {tierName} Member Benefits:
-                      </p>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        <li>✓ Pre-negotiated member pricing saves ${Math.round(memberSavings.minSavings).toLocaleString()}-${Math.round(memberSavings.maxSavings).toLocaleString()}</li>
-                        <li>✓ We already know your home from diagnostics</li>
-                        <li>✓ Priority scheduling (start within 3 weeks vs. 2-3 months market average)</li>
-                        <li>✓ Quality guarantee backed by your operator</li>
-                        <li>✓ No bidding hassle - single point of contact</li>
-                        <li>✓ Project coordination included</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {user?.operator_name && (
-                    <p className="text-sm text-gray-700">
-                      <strong>Your Operator:</strong> {user.operator_name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-8 h-8 text-blue-600 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '20px' }}>
-                    💎 Unlock Member Preferred Pricing
-                  </h3>
-                  <p className="text-gray-800 mb-4">
-                    Service members get exclusive pre-negotiated pricing with certified operators.
-                  </p>
-                  
-                  <div className="bg-white rounded-lg p-4 mb-4">
-                    <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                      Potential Savings on This ${avgCost.toLocaleString()} Project:
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Essential Member:</span>
-                        <span className="font-bold text-green-700">
-                          Save ${Math.round(allTierSavings.essential.cappedSavings).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Premium Member:</span>
-                        <span className="font-bold text-green-700">
-                          Save ${Math.round(allTierSavings.premium.cappedSavings).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Elite Member:</span>
-                        <span className="font-bold text-green-700">
-                          Save ${Math.round(allTierSavings.elite.cappedSavings).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-3">
-                      * Savings based on official member preferred pricing structure
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Button
-                      asChild
-                      className="w-full"
-                      style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                    >
-                      <Link to={createPageUrl("Pricing")}>
-                        View Plans & Member Benefits →
-                      </Link>
-                    </Button>
-                    <p className="text-xs text-center text-gray-600">
-                      Plus: Priority scheduling • No bidding hassle • Quality guarantee
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <div className="h-6" />
 
         {/* DIY vs Professional Comparison */}
         {avgDIYCost > 0 && (
           <Card className="border-2 border-blue-300 mb-6">
             <CardContent className="p-6">
               <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-                🔨 DIY vs Professional Comparison
+                💰 DIY vs Professional Cost Comparison
               </h2>
               
               <div className="grid md:grid-cols-2 gap-6 mb-4">
@@ -377,11 +231,7 @@ export default function TemplateDetail() {
                     <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
                       ${template.average_cost_min.toLocaleString()} - ${template.average_cost_max.toLocaleString()}
                     </p>
-                    {isMember && (
-                      <p className="text-sm font-semibold text-green-700">
-                        Your price: ~${Math.round(memberPrice).toLocaleString()}
-                      </p>
-                    )}
+                    <p className="text-sm text-gray-600">Average: ${avgCost.toLocaleString()}</p>
                   </div>
 
                   {template.project_duration && (
@@ -401,7 +251,6 @@ export default function TemplateDetail() {
                       <li>✓ Correct permits & inspections</li>
                       <li>✓ Professional results</li>
                       <li>✓ No time investment required</li>
-                      {isMember && <li>✓ <strong>Member preferred pricing</strong></li>}
                     </ul>
                   </div>
                 </div>
@@ -414,89 +263,314 @@ export default function TemplateDetail() {
           </Card>
         )}
 
-        {/* ROI Analysis */}
-        <Card className="border-2 border-green-300 bg-green-50 mb-6">
-          <CardContent className="p-6">
-            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-              📊 ROI Analysis
-            </h2>
-            
-            <div className="grid md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Current Home Value</p>
-                <p className="text-xl font-bold" style={{ color: '#1B365D' }}>
-                  ${estimatedHomeValue.toLocaleString()}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Your Investment</p>
-                <p className="text-xl font-bold" style={{ color: '#1B365D' }}>
-                  ${isMember ? Math.round(memberPrice).toLocaleString() : avgCost.toLocaleString()}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Value Added</p>
-                <p className="text-xl font-bold text-green-700">
-                  ${(template.typical_value_added || Math.round(avgCost * (template.average_roi_percent / 100))).toLocaleString()}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">ROI</p>
-                <p className="text-xl font-bold text-green-700">
-                  {template.average_roi_percent}%
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-4">
-              <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>True Out-of-Pocket Cost:</p>
-              <p className="text-3xl font-bold" style={{ color: trueCost > 0 ? '#1B365D' : '#28A745' }}>
-                ${Math.abs(Math.round(trueCost)).toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {trueCost > 0 
-                  ? `You invest $${isMember ? Math.round(memberPrice).toLocaleString() : avgCost.toLocaleString()} but gain $${(template.typical_value_added || Math.round(avgCost * (template.average_roi_percent / 100))).toLocaleString()} in equity`
-                  : `This upgrade pays for itself in equity gained!`
-                }
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* What's Included */}
-        {template.whats_included && template.whats_included.length > 0 && (
-          <Card className="border-none shadow-sm mb-6">
+        {/* Member Benefits or Upsell */}
+        {isServiceMember ? (
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-6">
-              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-                ✅ What's Typically Included
-              </h2>
-              <ul className="space-y-2">
-                {template.whats_included.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex items-start gap-3">
+                <Shield className="w-8 h-8 text-purple-600 flex-shrink-0" />
+                <div>
+                  <Badge className="mb-2" style={{ backgroundColor: '#8B5CF6' }}>
+                    YOUR MEMBER BENEFIT
+                  </Badge>
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    Premium Contractor Network Access
+                  </h3>
+                  <p className="text-gray-800 mb-3">
+                    As a {currentTier.includes('essential') ? 'Essential' : currentTier.includes('premium') ? 'Premium' : 'Elite'} member, 
+                    you get this project coordinated through our vetted contractor network.
+                  </p>
+                  <div className="bg-white rounded-lg p-4">
+                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Your Benefits:</p>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Pre-negotiated pricing (~{memberDiscount * 100}% savings)</li>
+                      <li>• Estimated savings on this project: <strong className="text-purple-700">${Math.round(memberSavings).toLocaleString()}</strong></li>
+                      <li>• Free project coordination & management</li>
+                      <li>• Quality guarantee from your operator</li>
+                      <li>• No bidding, vetting, or oversight hassle</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    💰 Save Thousands with Service Membership
+                  </h3>
+                  <p className="text-gray-800 mb-3">
+                    Members get access to our vetted contractor network with pre-negotiated rates.
+                  </p>
+                  <div className="bg-white rounded-lg p-4 mb-3">
+                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>
+                      Potential Savings on This ~${avgCost.toLocaleString()} Project:
+                    </p>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      <p>• Essential (5% savings): <strong className="text-green-700">${Math.round(avgCost * 0.05).toLocaleString()}</strong></p>
+                      <p>• Premium (10% savings): <strong className="text-green-700">${Math.round(avgCost * 0.10).toLocaleString()}</strong></p>
+                      <p>• Elite (15% savings): <strong className="text-green-700">${Math.round(avgCost * 0.15).toLocaleString()}</strong></p>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      * Example savings based on national averages. Actual savings may vary.
+                    </p>
+                  </div>
+                  <Button
+                    asChild
+                    size="sm"
+                    style={{ backgroundColor: '#28A745', minHeight: '44px' }}
+                  >
+                    <Link to={createPageUrl("Pricing")}>
+                      View Plans & Pricing →
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
+
+        {/* The Opportunity */}
+        <Card className="border-2 border-green-300 bg-green-50 mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '24px' }}>
+              💡 The Opportunity
+            </h2>
+            <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              <strong>Invest ${template.average_cost_min.toLocaleString()}-${template.average_cost_max.toLocaleString()}, 
+              gain ${(template.typical_value_added || avgCost * (template.average_roi_percent / 100)).toLocaleString()} in value.</strong>
+            </p>
+            <p className="text-gray-700" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              With an average {template.average_roi_percent}% ROI, this upgrade pays for most of itself in increased property value.
+              {trueCost > 0 && (
+                <> Your true cost? Just ${Math.round(trueCost).toLocaleString()} for a transformed property.</>
+              )}
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Why This Works */}
         {template.why_it_works && template.why_it_works.length > 0 && (
           <Card className="border-none shadow-sm mb-6">
             <CardContent className="p-6">
               <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-                💡 Why This Upgrade Works
+                ✓ Why This Upgrade Works
               </h2>
-              <ul className="space-y-3">
+              <div className="space-y-2">
                 {template.why_it_works.map((reason, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <Star className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">{reason}</span>
-                  </li>
+                  <div key={idx} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-gray-700">{reason}</p>
+                  </div>
                 ))}
-              </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* What's Included */}
+        {template.whats_included && template.whats_included.length > 0 && (
+          <Card className="border-none shadow-sm mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+                📋 What's Typically Included
+              </h2>
+              <div className="grid md:grid-cols-2 gap-3">
+                {template.whats_included.map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" />
+                    <p className="text-sm text-gray-700">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Cost Breakdown */}
+        <Card className="border-2 border-blue-300 mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+              💰 Investment Range
+            </h2>
+            
+            <div className="space-y-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Typical Investment Range</p>
+                <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>
+                  ${template.average_cost_min.toLocaleString()} - ${template.average_cost_max.toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Average: ${avgCost.toLocaleString()}
+                </p>
+              </div>
+
+              {isServiceMember && memberSavings > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <p className="font-semibold text-purple-900 mb-2">
+                      🌟 Your Member Pricing
+                    </p>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-gray-700">
+                        Market rate: <span className="line-through">${avgCost.toLocaleString()}</span>
+                      </p>
+                      <p className="text-gray-700">
+                        Your savings: <span className="font-bold text-purple-700">-${Math.round(memberSavings).toLocaleString()}</span>
+                      </p>
+                      <p className="font-bold text-lg text-purple-900">
+                        Your cost: ~${Math.round(avgCost - memberSavings).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ROI Calculator */}
+        <Card className="border-2 border-green-300 bg-green-50 mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+              📈 ROI Calculator (Customized to Your Property)
+            </h2>
+
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Current Home Value</p>
+                <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                  ${estimatedHomeValue.toLocaleString()}
+                </p>
+                {properties.length > 0 && (
+                  <p className="text-xs text-gray-600">{properties[0].address}</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Expected Value Added</p>
+                <p className="text-2xl font-bold text-green-700">
+                  +${(template.typical_value_added || avgCost * (template.average_roi_percent / 100)).toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-600">{template.average_roi_percent}% ROI</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Home Value After</p>
+                <p className="text-2xl font-bold text-green-700">
+                  ${Math.round(valueAfter).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-green-300 pt-4">
+              <p className="text-sm font-semibold mb-2" style={{ color: '#1B365D' }}>
+                Your True Cost:
+              </p>
+              <p className="text-lg text-gray-700">
+                You invest ${avgCost.toLocaleString()} but gain ${(template.typical_value_added || avgCost * (template.average_roi_percent / 100)).toLocaleString()} in equity.
+              </p>
+              <p className="text-xl font-bold" style={{ color: trueCost > 0 ? '#1B365D' : '#28A745' }}>
+                Net cost: {trueCost > 0 ? `$${Math.round(trueCost).toLocaleString()}` : '$0 (pays for itself!)'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Timeline */}
+        {template.project_duration && (
+          <Card className="border-none shadow-sm mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '22px' }}>
+                <Clock className="w-6 h-6" />
+                Timeline
+              </h2>
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="font-semibold">Typical Duration:</p>
+                  <p className="text-gray-700">{template.project_duration}</p>
+                </div>
+              </div>
+              {template.best_for && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-semibold mb-1" style={{ color: '#1B365D' }}>
+                    💡 Best For:
+                  </p>
+                  <p className="text-sm text-gray-700">{template.best_for}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Success Stories */}
+        {template.success_stories && template.success_stories.length > 0 && (
+          <Card className="border-2 border-yellow-300 bg-yellow-50 mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '22px' }}>
+                <Star className="w-6 h-6 text-yellow-600" />
+                Success Stories
+              </h2>
+              <div className="space-y-4">
+                {template.success_stories.map((story, idx) => (
+                  <div key={idx} className="bg-white p-4 rounded-lg">
+                    <p className="text-gray-700 italic mb-2">"{story.quote}"</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      — {story.author}, {story.location}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Special Benefits */}
+        {(template.rental_income_boost > 0 || template.annual_savings > 0) && (
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+                ✨ Special Benefits
+              </h2>
+              {template.rental_income_boost > 0 && (
+                <div className="flex items-start gap-3 mb-3">
+                  <DollarSign className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold" style={{ color: '#1B365D' }}>
+                      Rental Income Boost
+                    </p>
+                    <p className="text-gray-700">
+                      Increase rent by <strong>${template.rental_income_boost}/month</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Annual: ${template.rental_income_boost * 12}/year additional income
+                    </p>
+                  </div>
+                </div>
+              )}
+              {template.annual_savings > 0 && (
+                <div className="flex items-start gap-3">
+                  <TrendingUp className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold" style={{ color: '#1B365D' }}>
+                      Annual Energy Savings
+                    </p>
+                    <p className="text-gray-700">
+                      Save <strong>${template.annual_savings}/year</strong> on utility bills
+                    </p>
+                    {template.payback_timeline && (
+                      <p className="text-sm text-gray-600">
+                        Payback: {template.payback_timeline}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -528,7 +602,7 @@ export default function TemplateDetail() {
                 Get Professional Quote from 360° Contractor
               </Button>
 
-              {isMember && user?.operator_name && (
+              {isServiceMember && user?.operator_name && (
                 <Button
                   asChild
                   variant="outline"
@@ -542,7 +616,7 @@ export default function TemplateDetail() {
                 </Button>
               )}
 
-              {!isMember && (
+              {!isServiceMember && (
                 <Button
                   asChild
                   variant="outline"
@@ -567,6 +641,27 @@ export default function TemplateDetail() {
                 </Link>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Related Templates */}
+        <Card className="border-none shadow-sm bg-gray-50">
+          <CardContent className="p-6">
+            <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+              💡 Related Upgrades
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Other projects in the {template.category} category
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              style={{ minHeight: '48px' }}
+            >
+              <Link to={createPageUrl("ExploreTemplates") + `?category=${encodeURIComponent(template.category)}`}>
+                View Similar Templates →
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
