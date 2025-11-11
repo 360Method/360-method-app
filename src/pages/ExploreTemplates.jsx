@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Award, TrendingUp, DollarSign, Clock, Home, ChevronRight, Zap, Users, Shield, Sparkles } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, calculateSavingsRange, getMemberTierName, isServiceMember } from "@/utils";
 
 export default function ExploreTemplates() {
   const location = useLocation();
@@ -30,11 +30,8 @@ export default function ExploreTemplates() {
   });
 
   const currentTier = user?.subscription_tier || 'free';
-  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
-  const memberDiscount = currentTier.includes('essential') ? 0.05 
-    : currentTier.includes('premium') ? 0.10 
-    : currentTier.includes('elite') ? 0.15 
-    : 0;
+  const isMember = isServiceMember(currentTier);
+  const tierName = getMemberTierName(currentTier);
 
   const categories = [
     { value: 'all', label: 'All Templates', icon: Sparkles },
@@ -78,18 +75,18 @@ export default function ExploreTemplates() {
             High-ROI projects that transform your property
           </p>
           <p className="text-sm text-gray-600">
-            {templates.length} inspiring templates with real numbers and success stories
+            {templates.length} inspiring templates with real numbers and member preferred pricing
           </p>
         </div>
 
         {/* Member Savings Banner */}
-        {isServiceMember && memberDiscount > 0 && (
+        {isMember && (
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge style={{ backgroundColor: '#8B5CF6' }}>MEMBER BENEFIT</Badge>
+                <Badge style={{ backgroundColor: '#8B5CF6' }}>{tierName.toUpperCase()} MEMBER</Badge>
                 <p className="text-sm font-semibold text-purple-900">
-                  🌟 All projects coordinated through your vetted contractor network with {memberDiscount * 100}% negotiated savings
+                  🌟 All projects coordinated through your vetted contractor network with member preferred pricing
                 </p>
               </div>
             </CardContent>
@@ -97,17 +94,17 @@ export default function ExploreTemplates() {
         )}
 
         {/* Non-Member Upsell */}
-        {!isServiceMember && (
+        {!isMember && (
           <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-blue-900 mb-2">
-                    💰 Members save 5-15% on ALL upgrades through our contractor network
+                    💰 Members get exclusive pre-negotiated pricing on ALL upgrades
                   </p>
                   <p className="text-sm text-blue-700">
-                    Plus: free project coordination, quality guarantee, and no bidding hassle
+                    Save 5-15% through our contractor network + free project coordination + quality guarantee
                   </p>
                 </div>
                 <Button
@@ -171,7 +168,7 @@ export default function ExploreTemplates() {
                   </Button>
                   <Button
                     onClick={() => setSortBy('cost')}
-                    variant={sortBy === 'cost' ? "outline" : "outline"}
+                    variant={sortBy === 'cost' ? "default" : "outline"}
                     size="sm"
                     style={{ minHeight: '40px' }}
                   >
@@ -213,8 +210,8 @@ export default function ExploreTemplates() {
                     <TemplateCard
                       key={template.id}
                       template={template}
-                      memberDiscount={memberDiscount}
-                      isServiceMember={isServiceMember}
+                      currentTier={currentTier}
+                      isMember={isMember}
                     />
                   ))}
                 </div>
@@ -237,8 +234,8 @@ export default function ExploreTemplates() {
                 <TemplateCard
                   key={template.id}
                   template={template}
-                  memberDiscount={memberDiscount}
-                  isServiceMember={isServiceMember}
+                  currentTier={currentTier}
+                  isMember={isMember}
                 />
               ))}
             </div>
@@ -294,9 +291,11 @@ export default function ExploreTemplates() {
 }
 
 // Template Card Component
-function TemplateCard({ template, memberDiscount, isServiceMember }) {
+function TemplateCard({ template, currentTier, isMember }) {
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-  const savingsAmount = avgCost * memberDiscount;
+  const savings = isMember 
+    ? calculateSavingsRange(template.average_cost_min, template.average_cost_max, currentTier)
+    : null;
 
   return (
     <Card className="border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer">
@@ -333,9 +332,9 @@ function TemplateCard({ template, memberDiscount, isServiceMember }) {
                 <p className="font-bold text-sm" style={{ color: '#1B365D' }}>
                   ${template.average_cost_min.toLocaleString()}-{template.average_cost_max.toLocaleString()}
                 </p>
-                {isServiceMember && savingsAmount > 100 && (
-                  <p className="text-xs text-purple-700">
-                    💎 Save ~${Math.round(savingsAmount).toLocaleString()}
+                {isMember && savings && savings.avgSavings > 100 && (
+                  <p className="text-xs font-semibold text-purple-700">
+                    💎 Save ~${Math.round(savings.avgSavings).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -346,6 +345,15 @@ function TemplateCard({ template, memberDiscount, isServiceMember }) {
                 </p>
               </div>
             </div>
+
+            {/* Member pricing note */}
+            {isMember && savings && savings.avgSavings > 100 && (
+              <div className="mb-3 p-2 bg-purple-50 rounded border border-purple-200">
+                <p className="text-xs text-purple-900">
+                  <strong>Your Member Price:</strong> ~${Math.round(avgCost - savings.avgSavings).toLocaleString()}
+                </p>
+              </div>
+            )}
 
             {/* Value added */}
             {template.typical_value_added && (

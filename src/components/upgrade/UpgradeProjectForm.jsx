@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles, Shield, FileText } from "lucide-react";
+import { calculateMemberSavings, getMemberTierName, isServiceMember, createPageUrl } from "@/utils/memberPricing"; // Adjusted based on previous context, original outline suggested "@/utils" but createPageUrl is likely in memberPricing based on usage
 import UpgradeDocuments from "./UpgradeDocuments";
 
-export default function UpgradeProjectForm({ properties, project, templateId, memberDiscount = 0, onComplete, onCancel }) {
+export default function UpgradeProjectForm({ properties, project, templateId, onComplete, onCancel }) {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [projectData, setProjectData] = React.useState(
@@ -39,7 +40,8 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
   });
 
   const currentTier = user?.subscription_tier || 'free';
-  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const isMember = isServiceMember(currentTier);
+  const tierName = getMemberTierName(currentTier);
 
   // Fetch template if templateId provided
   const { data: template } = useQuery({
@@ -125,7 +127,7 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
       let estimatedROI = 0.70; // Default 70%
       if (projectData.category === "Energy Efficiency") estimatedROI = 0.65;
       if (projectData.category === "Property Value") estimatedROI = 0.85;
-      if (projectData.category === "Curb Appeal") estimatedROI = 0.75;
+      if (projectData.category === "Rental Appeal") estimatedROI = 0.75;
       
       setProjectData(prev => ({
         ...prev,
@@ -134,10 +136,12 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
     }
   };
 
-  // Calculations for ROI display
+  // Calculations for ROI display with member pricing
   const investment = projectData.investment_required;
+  const memberSavings = isMember ? calculateMemberSavings(investment, currentTier) : null;
+  const memberPrice = isMember && memberSavings ? investment - memberSavings.cappedSavings : investment;
   const equityGained = projectData.property_value_impact || 0;
-  const netEquity = equityGained - investment;
+  const netEquity = equityGained - memberPrice; // Use member price for true cost calculation
   const roiPercent = investment > 0 
     ? Math.round((equityGained / investment) * 100)
     : 0;
@@ -354,6 +358,9 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                 onChange={(e) => setProjectData({ ...projectData, investment_required: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
               />
+              <p className="text-xs text-gray-600 mt-1">
+                * Estimate only. Get professional quote for accurate pricing.
+              </p>
             </div>
 
             {/* Annual Savings */}
@@ -435,53 +442,83 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Member Benefits Banner (if service member) */}
-              {isServiceMember && memberDiscount > 0 && (
+              {isMember && memberSavings && memberSavings.cappedSavings > 0 && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Shield className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
+                      <Badge className="mb-2" style={{ backgroundColor: '#8B5CF6' }}>
+                        {tierName.toUpperCase()} MEMBER BENEFIT
+                      </Badge>
                       <p className="font-bold text-purple-900 mb-2">
-                        🌟 Member Benefit: Premium Contractor Network
+                        🌟 Member Preferred Pricing on This Project
                       </p>
-                      <p className="text-sm text-purple-800 mb-2">
-                        As a service member, you get access to our vetted contractor network with negotiated rates.
-                      </p>
-                      <div className="text-sm text-purple-900">
-                        <p className="font-semibold">Your benefits on this project:</p>
-                        <p>• Pre-negotiated pricing (typically {memberDiscount * 100}% below market)</p>
-                        <p>• Free project coordination & oversight</p>
-                        <p>• Quality guarantee backed by your operator</p>
-                        <p>• No bidding hassle - we handle everything</p>
+                      <div className="bg-white rounded-lg p-3 mb-3">
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                          <div>
+                            <p className="text-xs text-gray-600">Standard Price</p>
+                            <p className="text-lg font-bold text-gray-700 line-through">
+                              ${investment.toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Your Savings</p>
+                            <p className="text-lg font-bold text-green-700">
+                              -${Math.round(memberSavings.cappedSavings).toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Your Price</p>
+                            <p className="text-lg font-bold" style={{ color: '#8B5CF6' }}>
+                              ${Math.round(memberPrice).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                       </div>
+                      <p className="text-sm text-purple-800">
+                        <strong>Your benefits:</strong> Pre-negotiated pricing • Free project coordination • 
+                        Quality guarantee • Priority scheduling • No bidding hassle
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Non-Member Upsell */}
-              {!isServiceMember && (
+              {!isMember && (
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="font-bold text-blue-900 mb-2">
-                        💡 Save Big with HomeCare/PropertyCare Service
+                        💡 Unlock Member Preferred Pricing
                       </p>
                       <p className="text-sm text-blue-800 mb-3">
-                        Members save 5-15% on all upgrades through our contractor network plus get free project management.
+                        Service members get exclusive pre-negotiated pricing through our contractor network.
                       </p>
                       <div className="text-sm text-blue-900 mb-3">
                         <p className="font-semibold">On this ${investment.toLocaleString()} project, you could save:</p>
-                        <p>• Essential Members: ~${Math.round(investment * 0.05).toLocaleString()}</p>
-                        <p>• Premium Members: ~${Math.round(investment * 0.10).toLocaleString()}</p>
-                        <p>• Elite Members: ~${Math.round(investment * 0.15).toLocaleString()}</p>
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          <div>
+                            <p className="font-semibold">Essential:</p>
+                            <p>${Math.round(calculateMemberSavings(investment, 'essential').cappedSavings).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Premium:</p>
+                            <p>${Math.round(calculateMemberSavings(investment, 'premium').cappedSavings).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Elite:</p>
+                            <p>${Math.round(calculateMemberSavings(investment, 'elite').cappedSavings).toLocaleString()}</p>
+                          </div>
+                        </div>
                       </div>
                       <Button
                         asChild
                         size="sm"
                         style={{ backgroundColor: '#3B82F6', minHeight: '40px' }}
                       >
-                        <a href="/services" target="_blank">
+                        <a href={createPageUrl("Pricing")} target="_blank">
                           Learn About Service Plans →
                         </a>
                       </Button>
@@ -511,9 +548,21 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                 </h3>
                 <div className="space-y-2 bg-green-50 p-4 rounded-lg">
                   <div className="flex justify-between">
-                    <span className="text-sm">Your Investment:</span>
+                    <span className="text-sm">Standard Investment:</span>
                     <span className="font-semibold">${investment.toLocaleString()}</span>
                   </div>
+                  {isMember && memberSavings && memberSavings.cappedSavings > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Your Member Savings:</span>
+                        <span className="font-semibold text-purple-700">-${Math.round(memberSavings.cappedSavings).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-semibold">Your Price:</span>
+                        <span className="font-bold text-purple-700">${Math.round(memberPrice).toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-sm">Expected Value Added:</span>
                     <span className="font-semibold text-green-700">+${equityGained.toLocaleString()}</span>
@@ -530,8 +579,8 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                   </div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">
-                  💡 You invest ${investment.toLocaleString()} but gain ${equityGained.toLocaleString()} in property value = 
-                  {netEquity >= 0 ? ` only $${Math.round(netEquity).toLocaleString()} true cost` : ` negative cost (pays for itself!)`}
+                  💡 You pay ${Math.round(memberPrice).toLocaleString()} but gain ${equityGained.toLocaleString()} in property value = 
+                  {netEquity >= 0 ? ` only $${Math.round(Math.abs(netEquity)).toLocaleString()} true cost` : ` it pays for itself!`}
                 </p>
               </div>
 
@@ -553,7 +602,7 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                     <div className="flex justify-between">
                       <span className="text-sm">Payback Period:</span>
                       <span className="font-semibold">
-                        {Math.round(investment / projectData.annual_savings)} years
+                        {Math.round(memberPrice / projectData.annual_savings)} years
                       </span>
                     </div>
                   </div>

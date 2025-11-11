@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield, AlertTriangle, Wrench, PhoneCall } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { calculateSavingsRange, calculateAllTierSavings, getMemberTierName, isServiceMember } from "@/utils/memberPricing";
+import { createPageUrl, calculateSavingsRange, calculateAllTierSavings, getMemberTierName, isServiceMember } from "@/utils";
 
 export default function TemplateDetail() {
   const location = useLocation();
