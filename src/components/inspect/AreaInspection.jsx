@@ -9,6 +9,8 @@ import IssueDocumentation from "./IssueDocumentation";
 export default function AreaInspection({ area, inspection, property, baselineSystems, existingIssues, onComplete, onBack }) {
   const [documentingIssue, setDocumentingIssue] = React.useState(false);
   const [issues, setIssues] = React.useState(existingIssues || []);
+  const [aiSuggestions, setAiSuggestions] = React.useState(null);
+  const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
 
   // Get systems relevant to this area
   const relevantSystems = baselineSystems.filter(system => {
@@ -21,6 +23,75 @@ export default function AreaInspection({ area, inspection, property, baselineSys
     if (area.id === 'safety') return ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System'].includes(system.system_type);
     return false;
   });
+
+  // Generate AI suggestions based on baseline data
+  React.useEffect(() => {
+    const generateSuggestions = async () => {
+      // Only generate if there are relevant systems and suggestions haven't been fetched yet for this area/context
+      if (relevantSystems.length === 0 || aiSuggestions !== null) {
+        return;
+      }
+      
+      setLoadingSuggestions(true);
+      try {
+        const systemsInfo = relevantSystems.map(sys => {
+          const age = sys.installation_year ? new Date().getFullYear() - sys.installation_year : 'unknown';
+          return `${sys.system_type} (nickname: ${sys.nickname || 'none'}, brand/model: ${sys.brand_model || 'unknown'}, age: ${age} years, condition: ${sys.condition || 'unknown'})`;
+        }).join('\n');
+
+        const prompt = `You are inspecting the "${area.name}" area during a ${inspection.season} seasonal inspection. Your goal is to help a homeowner identify potential issues and maintenance needs.
+
+Systems documented in baseline for this area:
+${systemsInfo}
+
+Based on the documented systems (age, condition, type) and the current season (${inspection.season}), provide:
+1. Priority inspection checks (3-5 specific, actionable things for the homeowner to look for right now)
+2. Common issues or concerns found for these types of systems specifically during the ${inspection.season} season
+3. Red flags that, if observed, indicate urgent attention or professional help is needed
+
+Be concise, specific, and practical. Focus on preventing expensive failures and ensuring home safety. Do not invent systems or conditions not mentioned in the baseline. If no systems are documented, provide general advice for the area.`;
+
+        const suggestions = await base44.integrations.Core.InvokeLLM({
+          prompt: prompt,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              priority_checks: { type: "array", items: { type: "string" } },
+              seasonal_concerns: { type: "array", items: { type: "string" } },
+              red_flags: { type: "array", items: { type: "string" } }
+            },
+            required: ["priority_checks", "seasonal_concerns", "red_flags"]
+          },
+          force_json: true
+        });
+
+        if (suggestions && Array.isArray(suggestions.priority_checks) && Array.isArray(suggestions.seasonal_concerns) && Array.isArray(suggestions.red_flags)) {
+            setAiSuggestions(suggestions);
+        } else {
+            console.warn('AI returned invalid suggestions structure:', suggestions);
+            setAiSuggestions({
+                priority_checks: ["Could not generate specific checks. Please refer to general inspection points."],
+                seasonal_concerns: ["Could not generate specific concerns at this time."],
+                red_flags: ["Could not generate specific red flags. Rely on your judgment for urgent issues."]
+            });
+        }
+
+      } catch (error) {
+        console.error('Failed to generate AI suggestions:', error);
+        setAiSuggestions({
+            priority_checks: ["Failed to load AI suggestions. Please check general inspection points."],
+            seasonal_concerns: ["Failed to load AI suggestions."],
+            red_flags: ["Failed to load AI suggestions."]
+        });
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    if (relevantSystems.length > 0 && aiSuggestions === null) {
+      generateSuggestions();
+    }
+  }, [relevantSystems, area.id, inspection.season, aiSuggestions]);
 
   const handleSaveAndContinue = () => {
     onComplete(issues);
@@ -86,6 +157,76 @@ export default function AreaInspection({ area, inspection, property, baselineSys
             </h1>
           </div>
         </div>
+
+        {/* AI-Powered Inspection Suggestions */}
+        {relevantSystems.length > 0 && (
+          <>
+            {loadingSuggestions ? (
+              <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }}>
+                <CardContent className="p-4 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="animate-spin text-2xl">⚙️</div>
+                    <span className="font-medium text-purple-900">AI analyzing your systems...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : aiSuggestions && (
+              <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }}>
+                <CardContent className="p-4">
+                  <h2 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
+                    <Lightbulb className="w-5 h-5 text-purple-600" />
+                    🤖 AI Inspection Assistant
+                  </h2>
+
+                  {/* Priority Checks */}
+                  {aiSuggestions.priority_checks?.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold mb-2 text-purple-900">Priority Checks Based on Your Systems:</h3>
+                      <ul className="space-y-2">
+                        {aiSuggestions.priority_checks.map((check, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <input type="checkbox" className="mt-1" style={{ minWidth: '18px', minHeight: '18px' }} />
+                            <span className="text-gray-800">{check}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Seasonal Concerns */}
+                  {aiSuggestions.seasonal_concerns?.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold mb-2 text-orange-900">⚠️ {inspection.season} Concerns:</h3>
+                      <ul className="space-y-1">
+                        {aiSuggestions.seasonal_concerns.map((concern, idx) => (
+                          <li key={idx} className="text-sm text-gray-800 flex items-start gap-2">
+                            <span className="text-orange-600 font-bold mt-0.5">•</span>
+                            <span>{concern}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Red Flags */}
+                  {aiSuggestions.red_flags?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-2 text-red-900">🚨 Red Flags (Report Immediately):</h3>
+                      <ul className="space-y-1">
+                        {aiSuggestions.red_flags.map((flag, idx) => (
+                          <li key={idx} className="text-sm text-gray-800 flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <span>{flag}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
 
         {/* Documented Systems */}
         {relevantSystems.length > 0 && (

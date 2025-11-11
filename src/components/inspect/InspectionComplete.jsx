@@ -1,10 +1,14 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, CheckCircle, AlertTriangle, ArrowRight } from "lucide-react";
+import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb } from "lucide-react"; // Added Lightbulb
 
 export default function InspectionComplete({ inspection, property, onViewPriorityQueue, onViewReport, onDone }) {
+  const [aiSummary, setAiSummary] = React.useState(null);
+  const [generatingSummary, setGeneratingSummary] = React.useState(false);
+
   const allIssues = inspection.checklist_items || [];
   const urgentCount = inspection.urgent_count || 0;
   const flagCount = inspection.flag_count || 0;
@@ -13,6 +17,60 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
   const durationMinutes = inspection.duration_minutes || 0;
 
   const tasksCreated = urgentCount + flagCount;
+
+  // Generate AI summary of inspection
+  React.useEffect(() => {
+    const generateSummary = async () => {
+      // Only generate if there are issues and no summary has been generated yet
+      if (allIssues.length === 0 || aiSummary) return;
+      
+      setGeneratingSummary(true);
+      try {
+        const issuesText = allIssues.map(issue => 
+          `${issue.severity}: ${issue.description} (${issue.area})`
+        ).join('\n');
+
+        const prompt = `Summarize this ${inspection.season} home inspection and provide homeowner guidance:
+
+Property: ${property.address}
+Issues found:
+${issuesText}
+
+Provide:
+1. Overall assessment (1-2 sentences)
+2. Top 3 priorities homeowner should address first
+3. Estimated total cost range for all urgent and flagged items
+4. Long-term maintenance advice based on findings
+
+Be clear, actionable, and help the homeowner understand what matters most.`;
+
+        // Assuming base44.integrations.Core.InvokeLLM is available in the global scope or imported context
+        const summary = await base44.integrations.Core.InvokeLLM({
+          prompt: prompt,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              overall_assessment: { type: "string" },
+              top_priorities: { type: "array", items: { type: "string" } },
+              estimated_cost_range: { type: "string" },
+              long_term_advice: { type: "string" }
+            }
+          }
+        });
+
+        setAiSummary(summary);
+      } catch (error) {
+        console.error('Failed to generate AI summary:', error);
+      } finally {
+        setGeneratingSummary(false);
+      }
+    };
+
+    // Trigger summary generation if conditions are met
+    if (allIssues.length > 0 && !aiSummary) {
+      generateSummary();
+    }
+  }, [allIssues, inspection.season, property.address, aiSummary]); // Include aiSummary in dependencies to prevent re-runs after generation
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -29,6 +87,66 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
             </p>
             <p className="text-gray-600">Duration: {durationMinutes} minutes</p>
           </div>
+
+          <hr className="border-gray-200" />
+
+          {/* AI Summary */}
+          {generatingSummary ? (
+            <Card className="border-2" style={{ borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }}>
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="animate-spin text-3xl">⚙️</div>
+                  <span className="text-lg font-medium text-purple-900">AI analyzing your inspection...</span>
+                </div>
+                <p className="text-sm text-gray-600">Generating insights and recommendations</p>
+              </CardContent>
+            </Card>
+          ) : aiSummary && (
+            <Card className="border-2" style={{ borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }}>
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2" style={{ color: '#1B365D' }}>
+                  <Lightbulb className="w-6 h-6 text-purple-600" />
+                  AI Inspection Summary
+                </h2>
+                
+                <div className="text-left space-y-4">
+                  {/* Overall Assessment */}
+                  <div>
+                    <h3 className="font-bold mb-2 text-purple-900">Overall Assessment:</h3>
+                    <p className="text-gray-800">{aiSummary.overall_assessment}</p>
+                  </div>
+
+                  {/* Top Priorities */}
+                  {aiSummary.top_priorities?.length > 0 && (
+                    <div>
+                      <h3 className="font-bold mb-2 text-red-900">🎯 Top 3 Priorities:</h3>
+                      <ol className="list-decimal ml-6 space-y-1">
+                        {aiSummary.top_priorities.map((priority, idx) => (
+                          <li key={idx} className="text-gray-800">{priority}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
+                  {/* Cost Estimate */}
+                  {aiSummary.estimated_cost_range && (
+                    <div>
+                      <h3 className="font-bold mb-2 text-gray-900">💰 Estimated Cost Range:</h3>
+                      <p className="text-gray-800">{aiSummary.estimated_cost_range}</p>
+                    </div>
+                  )}
+
+                  {/* Long-term Advice */}
+                  {aiSummary.long_term_advice && (
+                    <div>
+                      <h3 className="font-bold mb-2 text-green-900">📋 Long-Term Maintenance:</h3>
+                      <p className="text-gray-800">{aiSummary.long_term_advice}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <hr className="border-gray-200" />
 

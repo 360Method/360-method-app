@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
@@ -86,7 +88,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         is_required: editingSystem.is_required
       };
     }
-    
+
     // Default empty state
     return {
       system_type: "",
@@ -114,7 +116,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [manuals, setManuals] = React.useState(() => {
     const initialData = getInitialFormData();
     // Ensure manuals is an array of objects with { url, name }
-    return (initialData.manual_urls || []).map(item => 
+    return (initialData.manual_urls || []).map(item =>
       typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
     );
   });
@@ -123,19 +125,22 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [warnings, setWarnings] = React.useState([]);
   const [showAddAnother, setShowAddAnother] = React.useState(false);
   const [scanningBarcode, setScanningBarcode] = React.useState(false);
+  const [aiAnalysis, setAiAnalysis] = React.useState(null);
+  const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
 
   const queryClient = useQueryClient();
 
   // Effect to reset form data when dialog opens or editingSystem changes
   React.useEffect(() => {
-    if (open) { 
+    if (open) {
       const initialData = getInitialFormData();
       setFormData(initialData);
       setPhotos(initialData.photo_urls || []); // Sync photos state with formData's photos
-      setManuals((initialData.manual_urls || []).map(item => 
+      setManuals((initialData.manual_urls || []).map(item =>
         typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
       )); // Sync manuals state
       setShowAddAnother(false); // Reset this flag when dialog opens
+      setAiAnalysis(null); // Reset AI analysis when dialog opens
     }
   }, [editingSystem, open, getInitialFormData]);
 
@@ -155,15 +160,15 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     // Plumbing warnings
     if (formData.system_type === "Plumbing System") {
       if (components.washing_machine_hoses === "rubber") {
-        newWarnings.push({ 
-          level: "danger", 
-          message: "⚠️ REPLACE IMMEDIATELY - Rubber hoses are the #1 cause of home flood damage. Switch to braided stainless steel hoses ($20 at hardware store). This is urgent." 
+        newWarnings.push({
+          level: "danger",
+          message: "⚠️ REPLACE IMMEDIATELY - Rubber hoses are the #1 cause of home flood damage. Switch to braided stainless steel hoses ($20 at hardware store). This is urgent."
         });
       }
       if (!components.main_shutoff_known) {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "FIND THIS NOW - Knowing your main water shutoff location is critical for emergencies" 
+        newWarnings.push({
+          level: "warning",
+          message: "FIND THIS NOW - Knowing your main water shutoff location is critical for emergencies"
         });
       }
       const heaterAge = components.water_heater_year ? new Date().getFullYear() - components.water_heater_year : 0;
@@ -175,15 +180,15 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     // Electrical warnings
     if (formData.system_type === "Electrical System") {
       if (components.wiring_type === "knob_tube") {
-        newWarnings.push({ 
-          level: "danger", 
-          message: "🔥 SAFETY HAZARD - Knob and tube wiring is dangerous. Schedule electrician evaluation immediately. Many insurers won't cover homes with this wiring." 
+        newWarnings.push({
+          level: "danger",
+          message: "🔥 SAFETY HAZARD - Knob and tube wiring is dangerous. Schedule electrician evaluation immediately. Many insurers won't cover homes with this wiring."
         });
       }
       if (components.wiring_type === "aluminum") {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "⚠️ Aluminum wiring needs professional evaluation - can be fire hazard" 
+        newWarnings.push({
+          level: "warning",
+          message: "⚠️ Aluminum wiring needs professional evaluation - can be fire hazard"
         });
       }
     }
@@ -196,15 +201,70 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         newWarnings.push({ level: "warning", message: "Roof is approaching end of expected lifespan - budget for replacement" });
       }
       if (components.multiple_layers) {
-        newWarnings.push({ 
-          level: "warning", 
-          message: "Multiple layers = problems. Cannot add another layer. Full tear-off required at next replacement." 
+        newWarnings.push({
+          level: "warning",
+          message: "Multiple layers = problems. Cannot add another layer. Full tear-off required at next replacement."
         });
       }
     }
 
     setWarnings(newWarnings);
   }, [formData]);
+
+  // Generate AI risk analysis after system is saved
+  const generateAiAnalysis = React.useCallback(async (savedSystem) => {
+    if (!savedSystem.installation_year || !savedSystem.system_type) return;
+
+    setGeneratingAnalysis(true);
+    try {
+      const systemAge = new Date().getFullYear() - savedSystem.installation_year;
+      const lifespanYears = savedSystem.estimated_lifespan_years || 20; // Use a default if not specified
+      const remainingYears = Math.max(0, lifespanYears - systemAge);
+
+      const analysisPrompt = `Analyze this home system and provide maintenance insights:
+
+System: ${savedSystem.system_type}
+${savedSystem.nickname ? `Location: ${savedSystem.nickname}` : ''}
+${savedSystem.brand_model ? `Brand/Model: ${savedSystem.brand_model}` : ''}
+Age: ${systemAge} years old (installed ${savedSystem.installation_year})
+Expected lifespan: ${lifespanYears} years
+Remaining lifespan: ${remainingYears} years
+Current condition: ${savedSystem.condition}
+${savedSystem.condition_notes ? `Condition notes: ${savedSystem.condition_notes}` : ''}
+${savedSystem.warning_signs_present?.length > 0 ? `Warning signs: ${savedSystem.warning_signs_present.join(', ')}` : ''}
+
+Provide:
+1. Risk assessment based on age and condition (1-10 scale, where 10 is highest risk)
+2. Specific warning signs to watch for during inspections
+3. Recommended maintenance tasks in the next 6-12 months
+4. Estimated timeline for replacement if nearing end-of-life
+
+Be specific, practical, and focus on preventing expensive failures.`;
+
+      const analysis = await base44.integrations.Core.InvokeLLM({
+        prompt: analysisPrompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            risk_score: { type: "number" },
+            risk_explanation: { type: "string" },
+            warning_signs: { type: "array", items: { type: "string" } },
+            recommended_actions: { type: "array", items: { type: "string" } },
+            replacement_timeline: { type: "string" }
+          },
+          required: ["risk_score", "risk_explanation", "warning_signs", "recommended_actions", "replacement_timeline"]
+        }
+      });
+
+      setAiAnalysis(analysis);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      // Optionally show an error message to the user
+      alert("Failed to generate AI analysis. Please try again later.");
+    } finally {
+      setGeneratingAnalysis(false);
+    }
+  }, []);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -225,15 +285,24 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         return base44.entities.SystemBaseline.create(submitData);
       }
     },
-    onSuccess: () => {
+    onSuccess: (savedSystem) => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-      
-      if (!editingSystem?.id && allowsMultiple) {
+
+      // Only generate AI analysis for *new* systems that have an installation_year
+      if (!editingSystem?.id && savedSystem.installation_year && savedSystem.system_type) {
+        generateAiAnalysis(savedSystem);
+      } else if (!editingSystem?.id && allowsMultiple) {
+        // If it's a new system, allows multiple, but no year for AI analysis (or analysis failed)
         setShowAddAnother(true);
       } else {
+        // If it's an existing system, or a new single system, or new multi-system without year for AI analysis
         onClose();
       }
     },
+    onError: (error) => {
+      console.error("Save failed:", error);
+      alert("Failed to save system. Please try again.");
+    }
   });
 
   const handlePhotoUpload = async (e) => {
@@ -241,7 +310,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     setUploading(true);
 
     try {
-      const uploadPromises = files.map(file => 
+      const uploadPromises = files.map(file =>
         base44.integrations.Core.UploadFile({ file })
       );
       const results = await Promise.all(uploadPromises);
@@ -260,7 +329,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     setUploadingManuals(true);
 
     try {
-      const uploadPromises = files.map(file => 
+      const uploadPromises = files.map(file =>
         base44.integrations.Core.UploadFile({ file })
       );
       const results = await Promise.all(uploadPromises);
@@ -282,23 +351,23 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     try {
       // Upload the barcode image
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
+
       // Use AI to extract product info from data plate
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `You are analyzing a product data plate or model label. Extract the following information:
-        
+
         1. Brand/Manufacturer name
         2. Model number
         3. Serial number (if visible)
         4. Year of manufacture or installation date (look for "MFG Date", "Mfg Year", "Date", or year numbers)
-        
+
         Be thorough - look for ALL text on the plate. Years might be in formats like:
         - "2015"
         - "MFG 03/2018"
         - "Date: 2020"
-        
+
         Return ONLY valid data you can clearly read. If you cannot find a field, return an empty string for it.
-        
+
         Return as JSON.`,
         file_urls: file_url,
         response_json_schema: {
@@ -319,7 +388,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       if (result && (result.brand || result.model || result.year)) {
         // Build brand_model string
         const brandModel = [result.brand, result.model].filter(Boolean).join(' ').trim();
-        
+
         // Extract year from various formats
         let extractedYear = "";
         if (result.year) {
@@ -328,17 +397,17 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
             extractedYear = yearMatch[0];
           }
         }
-        
+
         // Update form based on system type
         if (brandModel || extractedYear) {
           setFormData(prev => {
             const updates = { ...prev };
-            
+
             // Set brand/model for all systems
             if (brandModel) {
               updates.brand_model = brandModel;
             }
-            
+
             // For Plumbing System, populate water heater year in key_components
             if (extractedYear) {
               if (formData.system_type === "Plumbing System") {
@@ -351,10 +420,10 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                 updates.installation_year = extractedYear;
               }
             }
-            
+
             return updates;
           });
-          
+
           // Show success feedback
           const successMessage = `✅ Data extracted successfully!\n\nBrand/Model: ${brandModel || 'N/A'}\nYear: ${extractedYear || 'N/A'}`;
           console.log(successMessage);
@@ -362,7 +431,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         } else {
           alert("Could not extract clear data from the image. Please try taking a clearer photo or enter the information manually.");
         }
-        
+
         // Add image to photos only if not already present
         if (!photos.includes(file_url)) {
           setPhotos(prev => [...prev, file_url]);
@@ -937,6 +1006,129 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     }
   };
 
+  // Show AI analysis before "Add Another" screen
+  if (aiAnalysis && !showAddAnother) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              AI System Analysis
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Risk Score */}
+            <Card className={`border-2 ${
+              aiAnalysis.risk_score >= 7 ? 'border-red-300 bg-red-50' :
+              aiAnalysis.risk_score >= 4 ? 'border-orange-300 bg-orange-50' :
+              'border-green-300 bg-green-50'
+            }`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-lg">Risk Assessment</h3>
+                  <Badge className={
+                    aiAnalysis.risk_score >= 7 ? 'bg-red-600' :
+                    aiAnalysis.risk_score >= 4 ? 'bg-orange-600' :
+                    'bg-green-600'
+                  }>
+                    Risk Score: {aiAnalysis.risk_score}/10
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-800">{aiAnalysis.risk_explanation}</p>
+              </CardContent>
+            </Card>
+
+            {/* Warning Signs to Watch */}
+            {aiAnalysis.warning_signs?.length > 0 && (
+              <Card className="border-2 border-yellow-300 bg-yellow-50">
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-700" />
+                    Warning Signs to Watch For
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiAnalysis.warning_signs.map((sign, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <span className="text-yellow-700 font-bold mt-0.5">•</span>
+                        <span>{sign}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recommended Actions */}
+            {aiAnalysis.recommended_actions?.length > 0 && (
+              <Card className="border-2 border-blue-300 bg-blue-50">
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-blue-700" />
+                    Recommended Actions (Next 6-12 Months)
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiAnalysis.recommended_actions.map((action, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 flex-shrink-0" />
+                        <span>{action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Replacement Timeline */}
+            {aiAnalysis.replacement_timeline && (
+              <Card className="border-2 border-purple-300 bg-purple-50">
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-2">Replacement Planning</h3>
+                  <p className="text-sm text-gray-800">{aiAnalysis.replacement_timeline}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3 pt-4 border-t">
+              {allowsMultiple ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      setAiAnalysis(null); // Clear AI analysis to show add another screen
+                      setShowAddAnother(true);
+                    }}
+                    className="w-full gap-2"
+                    style={{ backgroundColor: 'var(--primary)' }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Another {formData.system_type}
+                  </Button>
+                  <Button
+                    onClick={onClose}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Done
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={onClose}
+                  className="w-full"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                >
+                  Done
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+
   if (showAddAnother) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
@@ -981,12 +1173,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const showBarcodeScanner = [
     "HVAC System",
     "Plumbing System",
-    "Refrigerator", 
-    "Range/Oven", 
-    "Dishwasher", 
-    "Washing Machine", 
-    "Dryer", 
-    "Microwave", 
+    "Refrigerator",
+    "Range/Oven",
+    "Dishwasher",
+    "Washing Machine",
+    "Dryer",
+    "Microwave",
     "Garbage Disposal"
   ].includes(formData.system_type);
 
@@ -1025,10 +1217,10 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                 <div className="flex-1">
                   <h3 className="font-bold text-purple-900 mb-1">Quick Scan Model/Serial Plate</h3>
                   <p className="text-sm text-purple-800 mb-3">
-                    {formData.system_type === "HVAC System" && 
+                    {formData.system_type === "HVAC System" &&
                       "Take a photo of the unit's data plate (usually on furnace or outdoor AC unit) and we'll extract the details automatically"
                     }
-                    {formData.system_type === "Plumbing System" && 
+                    {formData.system_type === "Plumbing System" &&
                       "Take a photo of your water heater's data plate and we'll extract brand, model, and year automatically"
                     }
                     {!["HVAC System", "Plumbing System"].includes(formData.system_type) &&
@@ -1241,11 +1433,16 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
           <div className="flex flex-col gap-3 pt-6 border-t">
             <Button
               type="submit"
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || generatingAnalysis}
               className="w-full h-14 text-lg font-semibold"
               style={{ backgroundColor: 'var(--accent)' }}
             >
-              {saveMutation.isPending ? 'Saving...' : editingSystem?.id ? `Update ${formData.system_type}` : `Save ${formData.system_type}`}
+              {generatingAnalysis ? (
+                <>
+                  <span className="animate-spin">⚙️</span>
+                  Generating AI Analysis...
+                </>
+              ) : (saveMutation.isPending ? 'Saving...' : editingSystem?.id ? `Update ${formData.system_type}` : `Save ${formData.system_type}`)}
             </Button>
             <button
               type="button"
