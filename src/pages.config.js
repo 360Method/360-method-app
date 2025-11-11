@@ -14,6 +14,7 @@ import Services from './pages/Services';
 import HomeCare from './pages/HomeCare';
 import FindOperator from './pages/FindOperator';
 import PropertyCare from './pages/PropertyCare';
+import Checkout from './pages/Checkout';
 import Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "HomeCare": HomeCare,
     "FindOperator": FindOperator,
     "PropertyCare": PropertyCare,
+    "Checkout": Checkout,
 }
 
 export const pagesConfig = {
