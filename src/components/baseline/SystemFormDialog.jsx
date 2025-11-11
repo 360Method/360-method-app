@@ -876,10 +876,17 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     );
   }
 
-  // Check if this is an appliance system for barcode scanner
-  const isAppliance = [
-    "Refrigerator", "Range/Oven", "Dishwasher", "Washing Machine", 
-    "Dryer", "Microwave", "Garbage Disposal"
+  // Check if this system should have barcode scanner
+  const showBarcodeScanner = [
+    "HVAC System",
+    "Plumbing System",
+    "Refrigerator", 
+    "Range/Oven", 
+    "Dishwasher", 
+    "Washing Machine", 
+    "Dryer", 
+    "Microwave", 
+    "Garbage Disposal"
   ].includes(formData.system_type);
 
   return (
@@ -907,17 +914,25 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
             </div>
           )}
 
-          {/* Barcode Scanner for Appliances */}
-          {isAppliance && (
+          {/* Barcode Scanner for Systems with Model/Serial Numbers */}
+          {showBarcodeScanner && (
             <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xl">📷</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-purple-900 mb-1">Quick Scan Product Label</h3>
+                  <h3 className="font-bold text-purple-900 mb-1">Quick Scan Model/Serial Plate</h3>
                   <p className="text-sm text-purple-800 mb-3">
-                    Take a photo of the model/serial number plate and we'll extract the details automatically
+                    {formData.system_type === "HVAC System" && 
+                      "Take a photo of the unit's data plate (usually on furnace or outdoor AC unit) and we'll extract the details automatically"
+                    }
+                    {formData.system_type === "Plumbing System" && 
+                      "Take a photo of your water heater's data plate and we'll extract brand, model, and year automatically"
+                    }
+                    {!["HVAC System", "Plumbing System"].includes(formData.system_type) &&
+                      "Take a photo of the model/serial number plate and we'll extract the details automatically"
+                    }
                   </p>
                   <label className="cursor-pointer">
                     <input
@@ -938,12 +953,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
                       <span>
                         {scanningBarcode ? (
                           <>
-                            <span className="animate-spin mr-2">⚙️</span>
+                            <span className="animate-spin">⚙️</span>
                             Scanning...
                           </>
                         ) : (
                           <>
-                            📸 Scan Product Label
+                            📸 Scan Data Plate
                           </>
                         )}
                       </span>
