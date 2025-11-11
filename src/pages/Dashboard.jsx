@@ -52,6 +52,7 @@ export default function Dashboard() {
   const isFreeTier = currentTier === 'free';
   const isProTier = currentTier === 'pro';
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const canAddProperty = properties.length < propertyLimit;
 
   const avgHealthScore = properties.length > 0
     ? Math.round(properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length)
@@ -112,8 +113,8 @@ export default function Dashboard() {
                       size="sm"
                       className="border-blue-600 text-blue-600 hover:bg-blue-100"
                     >
-                      <Link to={createPageUrl("Upgrade")}>
-                        View Upgrade Options
+                      <Link to={createPageUrl("Pricing")}>
+                        View Plans & Pricing
                       </Link>
                     </Button>
                   </div>
@@ -149,18 +150,58 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white">
       <div className="mobile-container md:max-w-6xl md:mx-auto">
-        {/* Header with Tier Badge */}
+        {/* Header with Tier Badge and Add Property */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
               Dashboard
             </h1>
-            <TierBadge tier={currentTier} />
+            <div className="flex items-center gap-2">
+              <TierBadge tier={currentTier} />
+              <Button
+                asChild
+                size="sm"
+                style={{ backgroundColor: '#FF6B35', minHeight: '40px' }}
+              >
+                <Link to={createPageUrl("Properties")}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  <span className="hidden md:inline">Add Property</span>
+                </Link>
+              </Button>
+            </div>
           </div>
           <p className="text-gray-600" style={{ fontSize: '16px' }}>
             Your property portfolio at a glance
           </p>
         </div>
+
+        {/* Property Limit Warning */}
+        {!canAddProperty && (
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-orange-900 mb-1">
+                    Property Limit Reached
+                  </p>
+                  <p className="text-sm text-orange-700 mb-2">
+                    You have {properties.length} of {propertyLimit} properties. Upgrade to add more.
+                  </p>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Link to={createPageUrl("Pricing")}>
+                      View Plans & Pricing
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Contextual Upgrade Prompt */}
         {showUpgradePrompt && isFreeTier && (
@@ -400,8 +441,8 @@ export default function Dashboard() {
                   asChild
                   style={{ backgroundColor: '#28A745', minHeight: '48px' }}
                 >
-                  <Link to={createPageUrl("Upgrade")}>
-                    Upgrade to Pro - $8/month
+                  <Link to={createPageUrl("Pricing")}>
+                    View Plans & Pricing
                   </Link>
                 </Button>
                 <Button
