@@ -1,16 +1,12 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Shield, AlertTriangle, Calendar, DollarSign, TrendingUp, BookOpen, Video, Calculator } from "lucide-react";
+import { Shield, AlertTriangle, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import SystemLifecycleCard from "../components/preserve/SystemLifecycleCard";
 import ExpenseForecast from "../components/preserve/ExpenseForecast";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 
 export default function Preserve() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -85,62 +81,6 @@ export default function Preserve() {
             <p className="text-gray-600 mt-1">Predictive maintenance and system lifecycle tracking</p>
           </div>
         </div>
-
-        {/* Why Lifecycle Tracking Matters - Educational Section */}
-        {systems.length > 0 && (
-          <Card className="border-2 border-blue-300 bg-blue-50">
-            <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <Shield className="w-6 h-6 text-blue-600" />
-                Why Lifecycle Tracking Matters
-              </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Systems don't fail randomly - they age predictably. Track lifecycles = replace before failure = 
-                avoid $20K emergencies. Budget years ahead instead of scrambling for cash.
-              </p>
-              <div className="border-t border-blue-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
-                </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=ADVANCE Phase"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Lifecycle Planning Guide
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=ADVANCE Phase"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Preventive Replacement (16 min)
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Replacement Forecaster
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">

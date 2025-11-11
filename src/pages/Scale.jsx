@@ -1,11 +1,9 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, TrendingDown, TrendingUp, DollarSign, AlertTriangle, BookOpen, Video, Calculator } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Building2, TrendingDown, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
@@ -60,62 +58,6 @@ export default function Scale() {
           <h1 className="text-3xl font-bold text-gray-900">ADVANCE → Scale</h1>
           <p className="text-gray-600 mt-1">Multi-property portfolio management for investors</p>
         </div>
-
-        {/* Why Portfolio Management Matters - Educational Section */}
-        {properties.length > 1 && (
-          <Card className="border-2 border-purple-300 bg-purple-50">
-            <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <Building2 className="w-6 h-6 text-purple-600" />
-                Why Portfolio Management Matters
-              </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                One property = manageable. Multiple properties = chaos without systems. Track every asset, 
-                benchmark performance, identify underperformers. Professional investors scale through data.
-              </p>
-              <div className="border-t border-purple-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
-                </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=For Investors"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Portfolio Management Guide
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=For Investors"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Scaling Your Portfolio (22 min)
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Portfolio Analyzer
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Portfolio Overview */}
         <div className="grid md:grid-cols-4 gap-4">

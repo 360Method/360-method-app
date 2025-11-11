@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield, AlertTriangle, Wrench, PhoneCall } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
 
 export default function TemplateDetail() {
   const location = useLocation();
@@ -37,6 +36,10 @@ export default function TemplateDetail() {
 
   const currentTier = user?.subscription_tier || 'free';
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const memberDiscount = currentTier.includes('essential') ? 0.05 
+    : currentTier.includes('premium') ? 0.10 
+    : currentTier.includes('elite') ? 0.15 
+    : 0;
 
   const handleStartProject = () => {
     navigate(createPageUrl("Upgrade") + "?new=true&template=" + templateId);
@@ -63,11 +66,7 @@ export default function TemplateDetail() {
   }
 
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-  
-  // Use new capped discount calculator
-  const memberSavings = calculateMemberSavings(avgCost, currentTier);
-  const allTierSavings = getAllTierSavings(avgCost);
-  
+  const memberSavings = avgCost * memberDiscount;
   const avgDIYCost = template.diy_cost_min && template.diy_cost_max 
     ? (template.diy_cost_min + template.diy_cost_max) / 2 
     : 0;
@@ -264,8 +263,8 @@ export default function TemplateDetail() {
           </Card>
         )}
 
-        {/* Member Benefits or Upsell with CAPPED DISCOUNTS */}
-        {isServiceMember && memberSavings.savings > 0 ? (
+        {/* Member Benefits or Upsell */}
+        {isServiceMember ? (
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
@@ -278,29 +277,14 @@ export default function TemplateDetail() {
                     Premium Contractor Network Access
                   </h3>
                   <p className="text-gray-800 mb-3">
-                    As a {getTierDisplayName(currentTier)} member, you get this project coordinated through our vetted contractor network.
+                    As a {currentTier.includes('essential') ? 'Essential' : currentTier.includes('premium') ? 'Premium' : 'Elite'} member, 
+                    you get this project coordinated through our vetted contractor network.
                   </p>
                   <div className="bg-white rounded-lg p-4">
-                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Your Member Pricing:</p>
-                    <div className="space-y-2 mb-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-700">Standard Cost:</span>
-                        <span className="font-semibold">${avgCost.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-purple-700 font-semibold">Your Price:</span>
-                        <span className="font-bold text-purple-700">${Math.round(memberSavings.memberPrice).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center border-t pt-2">
-                        <span className="text-green-700 font-bold">You Save:</span>
-                        <span className="font-bold text-green-700">${Math.round(memberSavings.savings).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-3">
-                      * Savings based on negotiated member rates with {memberSavings.effectivePercent.toFixed(1)}% discount
-                      {memberSavings.wasCapped && " (capped at maximum savings)"}
-                    </p>
+                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Your Benefits:</p>
                     <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Pre-negotiated pricing (~{memberDiscount * 100}% savings)</li>
+                      <li>• Estimated savings on this project: <strong className="text-purple-700">${Math.round(memberSavings).toLocaleString()}</strong></li>
                       <li>• Free project coordination & management</li>
                       <li>• Quality guarantee from your operator</li>
                       <li>• No bidding, vetting, or oversight hassle</li>
@@ -317,7 +301,7 @@ export default function TemplateDetail() {
                 <Sparkles className="w-8 h-8 text-blue-600 flex-shrink-0" />
                 <div className="flex-1">
                   <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                    💰 Save with Service Membership
+                    💰 Save Thousands with Service Membership
                   </h3>
                   <p className="text-gray-800 mb-3">
                     Members get access to our vetted contractor network with pre-negotiated rates.
@@ -327,18 +311,12 @@ export default function TemplateDetail() {
                       Potential Savings on This ~${avgCost.toLocaleString()} Project:
                     </p>
                     <div className="space-y-1 text-sm text-gray-700">
-                      <p>• Essential: <strong className="text-green-700">${Math.round(allTierSavings.essential.savings).toLocaleString()}</strong>
-                        {allTierSavings.essential.wasCapped && " (capped)"}
-                      </p>
-                      <p>• Premium: <strong className="text-green-700">${Math.round(allTierSavings.premium.savings).toLocaleString()}</strong>
-                        {allTierSavings.premium.wasCapped && " (capped)"}
-                      </p>
-                      <p>• Elite: <strong className="text-green-700">${Math.round(allTierSavings.elite.savings).toLocaleString()}</strong>
-                        {allTierSavings.elite.wasCapped && " (capped)"}
-                      </p>
+                      <p>• Essential (5% savings): <strong className="text-green-700">${Math.round(avgCost * 0.05).toLocaleString()}</strong></p>
+                      <p>• Premium (10% savings): <strong className="text-green-700">${Math.round(avgCost * 0.10).toLocaleString()}</strong></p>
+                      <p>• Elite (15% savings): <strong className="text-green-700">${Math.round(avgCost * 0.15).toLocaleString()}</strong></p>
                     </div>
                     <p className="text-xs text-gray-600 mt-2">
-                      * Example savings based on project size. Actual savings may vary.
+                      * Example savings based on national averages. Actual savings may vary.
                     </p>
                   </div>
                   <Button
@@ -431,7 +409,7 @@ export default function TemplateDetail() {
                 </p>
               </div>
 
-              {isServiceMember && memberSavings.savings > 0 && (
+              {isServiceMember && memberSavings > 0 && (
                 <div className="border-t border-gray-200 pt-4">
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <p className="font-semibold text-purple-900 mb-2">
@@ -442,10 +420,10 @@ export default function TemplateDetail() {
                         Market rate: <span className="line-through">${avgCost.toLocaleString()}</span>
                       </p>
                       <p className="text-gray-700">
-                        Your savings: <span className="font-bold text-purple-700">-${Math.round(memberSavings.savings).toLocaleString()}</span>
+                        Your savings: <span className="font-bold text-purple-700">-${Math.round(memberSavings).toLocaleString()}</span>
                       </p>
                       <p className="font-bold text-lg text-purple-900">
-                        Your cost: ~${Math.round(avgCost - memberSavings.savings).toLocaleString()}
+                        Your cost: ~${Math.round(avgCost - memberSavings).toLocaleString()}
                       </p>
                     </div>
                   </div>

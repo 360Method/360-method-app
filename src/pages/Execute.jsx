@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,10 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Wrench, Phone, BookOpen, Video, Calculator } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { CheckCircle2, Wrench, Phone } from "lucide-react";
 import TaskExecutionCard from "../components/execute/TaskExecutionCard";
 import ServiceRequestCard from "../components/execute/ServiceRequestCard";
 
@@ -24,11 +20,6 @@ export default function Execute() {
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
   });
 
   const { data: tasks = [] } = useQuery({
@@ -61,8 +52,6 @@ export default function Execute() {
     r.status === 'Submitted' || r.status === 'Scheduled' || r.status === 'In Progress'
   );
 
-  const currentTier = user?.subscription_tier || 'free';
-
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -72,62 +61,6 @@ export default function Execute() {
             <p className="text-gray-600 mt-1">Complete tasks with DIY guides or professional service</p>
           </div>
         </div>
-
-        {/* Why Proper Execution Matters - Educational Section */}
-        {scheduledTasks.length > 0 && (
-          <Card className="border-2 border-green-300 bg-green-50">
-            <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-                Why Proper Execution Matters
-              </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Half-done maintenance = wasted money. Cheap contractor = disaster waiting. DIY without research = expensive mistakes. 
-                Execute right the first time = long-lasting results + peace of mind.
-              </p>
-              <div className="border-t border-green-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
-                </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=DIY Guides"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      DIY How-To Library
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=DIY Maintenance"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Video Tutorials
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("Resources")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Vetting Contractors
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">
@@ -181,7 +114,6 @@ export default function Execute() {
                         key={task.id}
                         task={task}
                         propertyId={selectedProperty}
-                        currentTier={currentTier}
                       />
                     ))}
                   </div>
