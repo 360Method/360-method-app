@@ -13,14 +13,14 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Plus,
-  Bell,
   TrendingUp,
   Lightbulb,
   FileText,
-  CalendarCheck
+  CalendarCheck,
+  ShoppingCart
 } from "lucide-react";
 import { format, addMonths } from "date-fns";
-import ServiceRequestDialog from "../services/ServiceRequestDialog";
+import AddToCartDialog from "../cart/AddToCartDialog";
 
 // Regional cost multipliers based on climate zone
 const REGIONAL_MULTIPLIERS = {
@@ -221,7 +221,7 @@ export default function AIMaintenanceCalendar({
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = React.useState('6');
   const [expandedCard, setExpandedCard] = React.useState(null);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState(null);
 
   const queryClient = useQueryClient();
@@ -425,16 +425,16 @@ Return JSON with "suggestions" array.`;
     await createTaskMutation.mutateAsync(taskData);
   };
 
-  const handleRequestEstimate = (suggestion) => {
+  const handleAddToCart = (suggestion) => {
     setSelectedSuggestion(suggestion);
-    setShowServiceDialog(true);
+    setShowCartDialog(true);
   };
 
   const handleScheduleService = async (suggestion) => {
-    // For members, add to queue AND create service request
+    // For members, add to queue AND create service request (this function is kept for now but not directly used by the UI as per the outline)
     await handleAddToQueue(suggestion);
     setSelectedSuggestion(suggestion);
-    setShowServiceDialog(true);
+    setShowCartDialog(true);
   };
 
   const handleScheduleAll = async () => {
@@ -671,29 +671,16 @@ Return JSON with "suggestions" array.`;
                                 </h4>
                               </div>
                               <div className="flex flex-col gap-2 flex-shrink-0">
-                                {isMember ? (
-                                  <Button
-                                    onClick={() => handleScheduleService(suggestion)}
-                                    disabled={createTaskMutation.isPending}
-                                    size="sm"
-                                    className="gap-1 whitespace-nowrap"
-                                    style={{ backgroundColor: '#28A745', minHeight: '44px' }}
-                                  >
-                                    <CalendarCheck className="w-4 h-4" />
-                                    Schedule
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    onClick={() => handleRequestEstimate(suggestion)}
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-1 whitespace-nowrap"
-                                    style={{ minHeight: '44px' }}
-                                  >
-                                    <FileText className="w-4 h-4" />
-                                    Get Estimate
-                                  </Button>
-                                )}
+                                <Button
+                                  onClick={() => handleAddToCart(suggestion)}
+                                  disabled={createTaskMutation.isPending}
+                                  size="sm"
+                                  className="gap-1 whitespace-nowrap"
+                                  style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
+                                >
+                                  <ShoppingCart className="w-4 h-4" />
+                                  Add to Cart
+                                </Button>
                                 <Button
                                   onClick={() => handleAddToQueue(suggestion)}
                                   disabled={createTaskMutation.isPending}
@@ -819,18 +806,24 @@ Return JSON with "suggestions" array.`;
         </CardContent>
       </Card>
 
-      {/* Service Request Dialog */}
+      {/* Add to Cart Dialog */}
       {selectedSuggestion && (
-        <ServiceRequestDialog
-          open={showServiceDialog}
+        <AddToCartDialog
+          open={showCartDialog}
           onClose={() => {
-            setShowServiceDialog(false);
+            setShowCartDialog(false);
             setSelectedSuggestion(null);
           }}
           prefilledData={{
             property_id: propertyId,
-            service_type: "AI Calendar Suggestion",
-            description: `${selectedSuggestion.title}\n\n${selectedSuggestion.description}\n\nEstimated Cost Range: $${selectedSuggestion.estimated_cost_range}\n\nNote: This is an AI-generated estimate based on ${property.climate_zone} regional averages. Actual costs may vary based on property specifics, scope of work, and contractor rates.\n\nSuggested Timeline: ${format(addMonths(new Date(), selectedSuggestion.suggested_month || 0), 'MMMM yyyy')}`
+            source_type: "ai_suggestion",
+            title: selectedSuggestion.title,
+            description: `🤖 AI-Recommended\n\n${selectedSuggestion.description}\n\n⚠️ If Skipped: ${selectedSuggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${selectedSuggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(selectedSuggestion.delayed_cost_min, selectedSuggestion.delayed_cost_max)} (${selectedSuggestion.cost_multiplier.toFixed(1)}X increase)\n\n⚠️ Note: Cost estimates are regional averages. Actual costs may vary based on property condition, scope of work, contractor rates, and unforeseen complications.`,
+            system_type: selectedSuggestion.system_type,
+            priority: selectedSuggestion.priority,
+            estimated_cost_min: selectedSuggestion.cost_min,
+            estimated_cost_max: selectedSuggestion.cost_max,
+            customer_notes: `AI Suggested Timeline: ${format(addMonths(new Date(), selectedSuggestion.suggested_month || 0), 'MMMM yyyy')}`
           }}
         />
       )}

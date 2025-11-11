@@ -1,11 +1,12 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart } from "lucide-react";
 
-import ServiceRequestDialog from "../services/ServiceRequestDialog";
+import AddToCartDialog from "../cart/AddToCartDialog";
 
 const PRIORITY_COLORS = {
   High: "bg-red-100 text-red-800 border-red-200",
@@ -31,7 +32,7 @@ const GENERIC_CASCADE_EXAMPLES = {
 
 export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [showCartDialog, setShowCartDialog] = React.useState(false);
 
   const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
 
@@ -196,11 +197,12 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 pt-4 border-t">
                 <Button
-                  onClick={() => setShowServiceDialog(true)}
-                  className="w-full"
-                  style={{ backgroundColor: '#28A745' }}
+                  onClick={() => setShowCartDialog(true)}
+                  className="w-full gap-2"
+                  style={{ backgroundColor: '#8B5CF6' }}
                 >
-                  Request Professional Service
+                  <ShoppingCart className="w-4 h-4" />
+                  Add to Service Cart
                 </Button>
 
                 <div className="flex flex-wrap gap-3">
@@ -248,20 +250,22 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
         </CardContent>
       </Card>
 
-      <ServiceRequestDialog
-        open={showServiceDialog}
-        onClose={() => setShowServiceDialog(false)}
+      <AddToCartDialog
+        open={showCartDialog}
+        onClose={() => setShowCartDialog(false)}
         prefilledData={{
           property_id: task.property_id,
-          task_id: task.id,
-          service_type: "Specific Task Repair",
-          description: task.description,
+          source_type: "task",
+          source_id: task.id,
           title: task.title,
+          description: task.description,
           system_type: task.system_type,
-          urgency: task.priority === 'High' ? 'High' : 'Medium',
-          severity: task.priority,
+          priority: task.priority,
           photo_urls: task.photo_urls || [],
-          notes: task.description
+          estimated_hours: Math.ceil((task.current_fix_cost || 500) / 150), // Assuming $150/hour for estimation
+          estimated_cost_min: task.current_fix_cost,
+          estimated_cost_max: task.delayed_fix_cost,
+          customer_notes: task.cascade_risk_reason ? `⚠️ Cascade Risk: ${task.cascade_risk_reason}` : ''
         }}
       />
     </>

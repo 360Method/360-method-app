@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,10 +22,14 @@ import {
   CheckCircle2,
   FileText,
   Calendar,
-  Crown
+  Crown,
+  Edit,
+  Image as ImageIcon
 } from "lucide-react";
 import { estimateCartItems } from "../components/cart/AIEstimator";
+import EditCartItemDialog from "../components/cart/EditCartItemDialog";
 import { format } from "date-fns";
+import { createPageUrl } from "@/utils";
 
 export default function CartReview() {
   const [aiEstimating, setAiEstimating] = React.useState(false);
@@ -33,6 +38,8 @@ export default function CartReview() {
   const [customerNotes, setCustomerNotes] = React.useState('');
   const [preferredStartDate, setPreferredStartDate] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [editingItem, setEditingItem] = React.useState(null);
+  const [showEditDialog, setShowEditDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -137,6 +144,11 @@ export default function CartReview() {
 
   // Non-member potential savings
   const potentialMemberSavings = Math.round((totalCostMin + totalCostMax) / 2 * 0.15) + (Math.min(totalHours, 10) * 150);
+
+  const handleEditItem = (item) => {
+    setEditingItem(item);
+    setShowEditDialog(true);
+  };
 
   const handleSubmit = async () => {
     if (cartItems.length === 0 || !packageName) return;
@@ -408,19 +420,34 @@ View in app: ServicePackage #${servicePackage.id}
                             </Badge>
                           )}
                           {item.photo_urls?.length > 0 && (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <ImageIcon className="w-3 h-3" />
+                              {item.photo_urls.length}
+                            </Badge>
+                          )}
+                          {item.preferred_timeline && (
                             <Badge variant="outline" className="text-xs">
-                              📷 {item.photo_urls.length} {item.photo_urls.length === 1 ? 'photo' : 'photos'}
+                              📅 {item.preferred_timeline}
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteItemMutation.mutate(item.id)}
-                        className="text-red-600 hover:bg-red-50 rounded p-2 transition-colors"
-                        style={{ minHeight: '40px', minWidth: '40px' }}
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleEditItem(item)}
+                          className="text-blue-600 hover:bg-blue-50 rounded p-2 transition-colors"
+                          style={{ minHeight: '40px', minWidth: '40px' }}
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => deleteItemMutation.mutate(item.id)}
+                          className="text-red-600 hover:bg-red-50 rounded p-2 transition-colors"
+                          style={{ minHeight: '40px', minWidth: '40px' }}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-700 mb-3">{item.description}</p>
@@ -429,6 +456,25 @@ View in app: ServicePackage #${servicePackage.id}
                       <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
                         <p className="text-xs font-semibold text-blue-900 mb-1">Customer Notes:</p>
                         <p className="text-xs text-gray-800">{item.customer_notes}</p>
+                      </div>
+                    )}
+
+                    {/* Photo Thumbnails */}
+                    {item.photo_urls && item.photo_urls.length > 0 && (
+                      <div className="flex gap-2 mb-3">
+                        {item.photo_urls.slice(0, 4).map((url, photoIdx) => (
+                          <img
+                            key={photoIdx}
+                            src={url}
+                            alt={`Photo ${photoIdx + 1}`}
+                            className="w-16 h-16 object-cover rounded border-2 border-gray-200"
+                          />
+                        ))}
+                        {item.photo_urls.length > 4 && (
+                          <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded border-2 border-gray-200 text-xs font-medium text-gray-600">
+                            +{item.photo_urls.length - 4}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -644,6 +690,16 @@ View in app: ServicePackage #${servicePackage.id}
           </div>
         </div>
       </div>
+
+      {/* Edit Cart Item Dialog */}
+      <EditCartItemDialog
+        open={showEditDialog}
+        onClose={() => {
+          setShowEditDialog(false);
+          setEditingItem(null);
+        }}
+        item={editingItem}
+      />
     </div>
   );
 }
