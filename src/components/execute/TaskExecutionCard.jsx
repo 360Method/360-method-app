@@ -8,9 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, Phone, Calendar, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { calculateMemberSavings, getTierDisplayName } from "@/utils/memberDiscounts";
 
-export default function TaskExecutionCard({ task, propertyId, currentTier }) {
+export default function TaskExecutionCard({ task, propertyId }) {
   const [showComplete, setShowComplete] = React.useState(false);
   const [showServiceRequest, setShowServiceRequest] = React.useState(false);
   const [completionData, setCompletionData] = React.useState({
@@ -24,11 +23,6 @@ export default function TaskExecutionCard({ task, propertyId, currentTier }) {
   });
 
   const queryClient = useQueryClient();
-
-  // Calculate member pricing if applicable
-  const isServiceMember = currentTier?.includes('homecare') || currentTier?.includes('propertycare');
-  const estimatedCost = task.current_fix_cost || task.delayed_fix_cost || 0;
-  const memberPricing = calculateMemberSavings(estimatedCost, currentTier);
 
   const completeTaskMutation = useMutation({
     mutationFn: () => base44.entities.MaintenanceTask.update(task.id, {
@@ -93,28 +87,10 @@ export default function TaskExecutionCard({ task, propertyId, currentTier }) {
             </Badge>
           </div>
 
-          {/* Member Pricing Display */}
-          {estimatedCost > 0 && (
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-2">
-                <DollarSign className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-1">Estimated Cost:</p>
-                  {isServiceMember && memberPricing.savings > 0 ? (
-                    <div className="space-y-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xs text-gray-500 line-through">${estimatedCost.toLocaleString()}</span>
-                        <span className="font-bold text-purple-700">${memberPricing.memberPrice.toLocaleString()}</span>
-                      </div>
-                      <p className="text-xs text-purple-600 font-semibold">
-                        💎 Your {getTierDisplayName(currentTier)} savings: ${memberPricing.savings.toLocaleString()}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="font-bold text-gray-900">${estimatedCost.toLocaleString()}</p>
-                  )}
-                </div>
-              </div>
+          {task.current_fix_cost && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <DollarSign className="w-4 h-4" />
+              <span>Estimated Cost: ${task.current_fix_cost.toLocaleString()}</span>
             </div>
           )}
 
@@ -181,25 +157,11 @@ export default function TaskExecutionCard({ task, propertyId, currentTier }) {
                   <DialogTitle>Request Professional Service</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  {isServiceMember && memberPricing.savings > 0 ? (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded">
-                      <p className="text-sm font-semibold text-purple-900 mb-1">
-                        💎 Your Member Pricing
-                      </p>
-                      <p className="text-sm text-purple-700">
-                        Standard: ${estimatedCost.toLocaleString()} → Your Price: ${memberPricing.memberPrice.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-1">
-                        Save ~${memberPricing.savings.toLocaleString()} on this service
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                      <p className="text-sm text-blue-900">
-                        Your service request will be sent to your operator. They'll contact you to schedule the work.
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-sm text-blue-900">
+                      Your service request will be sent to Handy Pioneers. They'll contact you to schedule the work.
+                    </p>
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700 block mb-2">
                       Issue Description
