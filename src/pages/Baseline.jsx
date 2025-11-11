@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
@@ -297,29 +296,12 @@ export default function Baseline() {
   };
 
   // Calculate completion metrics
-  // These are already calculated above for the milestone check, but we need them again for display
-  // const requiredSystemTypes = REQUIRED_SYSTEMS.filter(type => systemsByType[type]?.length > 0); // Already defined
-  // const requiredComplete = requiredSystemTypes.length; // Already defined
-  
-  // const recommendedSystemTypes = RECOMMENDED_SYSTEMS.filter(type => systemsByType[type]?.length > 0); // Already defined
-  // const recommendedComplete = recommendedSystemTypes.length; // Already defined
-  
-  // const applianceTypes = APPLIANCE_TYPES.filter(type => systemsByType[type]?.length > 0); // Already defined
-  // const appliancesComplete = applianceTypes.length; // Already defined
-  
-  // const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0); // Already defined
-  // const safetyComplete = safetyTypes.length; // Already defined
-  
-  // const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0); // Already defined
-  
   const essentialProgress = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
   const recommendedProgress = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
-  // Update overall progress calculation to reflect new total (6 Req + 8 Rec + 1 App + 1 Safe = 16)
   const overallProgress = Math.round((totalSystemTypes / 16) * 100);
   
   const actPhaseUnlocked = requiredComplete >= 4;
   const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
-  // Update baselineBoss threshold (was 13 for 15 total, now 14 for 16 total)
   const baselineBoss = totalSystemTypes >= 14;
 
   // Get next milestone
@@ -449,7 +431,7 @@ export default function Baseline() {
       return (
         <Card
           key={systemType}
-          className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer group" // Added group class
+          className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer group"
           onClick={() => handleAddSystem(systemType)}
         >
           <CardContent className="p-4 md:p-6">
@@ -464,7 +446,7 @@ export default function Baseline() {
                 <CheckCircle2 className="w-5 h-5 text-blue-500" />
               )}
             </div>
-            <Button variant="outline" size="sm" className="w-full gap-2 group-hover:bg-gray-50"> {/* Added group-hover effect */}
+            <Button variant="outline" size="sm" className="w-full gap-2 group-hover:bg-gray-50">
               <Plus className="w-4 h-4" />
               Document {systemType}
             </Button>
@@ -475,7 +457,7 @@ export default function Baseline() {
 
     // Has instances - show list
     return (
-      <Card key={systemType} className={`border-2 shadow-md hover:shadow-lg transition-shadow ${isRequired ? 'border-red-200' : 'border-blue-200'}`}> {/* Added shadow and hover effects */}
+      <Card key={systemType} className={`border-2 shadow-md hover:shadow-lg transition-shadow ${isRequired ? 'border-red-200' : 'border-blue-200'}`}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -497,7 +479,7 @@ export default function Baseline() {
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                     {instance.nickname || `${systemType} ${instances.length > 1 ? `#${idx + 1}` : ''}`}
-                    {isOld && ( // Conditional badge for aging systems
+                    {isOld && (
                       <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
                         Aging
                       </Badge>
@@ -507,7 +489,7 @@ export default function Baseline() {
                     {instance.brand_model && `${instance.brand_model} • `}
                     {instance.installation_year && `Installed ${instance.installation_year} (${age}yr)`}
                   </p>
-                  {instance.condition && instance.condition !== 'Good' && ( // Conditional badge for system condition
+                  {instance.condition && instance.condition !== 'Good' && (
                     <Badge className={
                       instance.condition === 'Urgent' ? 'bg-red-600 text-white mt-1' :
                       instance.condition === 'Poor' ? 'bg-orange-600 text-white mt-1' :
@@ -599,6 +581,143 @@ export default function Baseline() {
           <p className="text-xl text-gray-600">Document Your Property Systems</p>
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
+
+        {/* Property Selector - MOVED UP */}
+        {properties.length > 0 && (
+          <Card className="border-2 border-blue-300 shadow-lg">
+            <CardContent className="p-6">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
+              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                <SelectTrigger className="w-full md:w-96">
+                  <SelectValue placeholder="Select a property" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.address}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* PROMINENT DOCUMENTATION METHOD SELECTOR - Always visible when property selected */}
+        {selectedProperty && (
+          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl">
+            <CardHeader className="pb-4">
+              <div className="text-center">
+                <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                  Choose Your Documentation Method
+                </CardTitle>
+                <p className="text-gray-700">Pick the approach that works best for you</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Two Big Options */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Quick Start Wizard */}
+                <Card 
+                  className="border-3 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group hover:shadow-xl"
+                  onClick={() => setShowWizard(true)}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Sparkles className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          ⚡ Quick Start Wizard
+                        </h3>
+                        <Badge className="bg-purple-600 text-white mb-3">
+                          <Clock className="w-3 h-3 mr-1" />
+                          10-15 minutes
+                        </Badge>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Guided step-by-step documentation of your 4 most critical systems. Get started fast with smart photo scanning.
+                        </p>
+                      </div>
+                      <div className="bg-purple-100 rounded-lg p-4 text-left">
+                        <p className="text-xs font-semibold text-purple-900 mb-2">✓ Perfect for:</p>
+                        <ul className="text-xs text-purple-800 space-y-1">
+                          <li>• First-time users</li>
+                          <li>• Digital-first approach</li>
+                          <li>• Quick essential coverage</li>
+                          <li>• Unlock ACT phase fast</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        className="w-full gap-2 text-lg py-6 group-hover:bg-purple-700"
+                        style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Start Quick Setup
+                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Physical Walkthrough */}
+                <Card 
+                  className="border-3 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl"
+                  onClick={() => setShowPhysicalWalkthrough(true)}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <MapPin className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          🏠 Physical Walkthrough
+                        </h3>
+                        <Badge className="bg-green-600 text-white mb-3">
+                          <Clock className="w-3 h-3 mr-1" />
+                          30-45 minutes
+                        </Badge>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Room-by-room route through your property. Document everything efficiently with optimal zone-based navigation.
+                        </p>
+                      </div>
+                      <div className="bg-green-100 rounded-lg p-4 text-left">
+                        <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
+                        <ul className="text-xs text-green-800 space-y-1">
+                          <li>• Complete documentation</li>
+                          <li>• Physical inspection mindset</li>
+                          <li>• Mobile on-site use</li>
+                          <li>• Maximum coverage</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        className="w-full gap-2 text-lg py-6 group-hover:bg-green-700"
+                        style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+                      >
+                        <Navigation className="w-5 h-5" />
+                        Start Walkthrough
+                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Manual Option - Smaller, Below */}
+              <div className="border-t pt-4">
+                <p className="text-center text-sm text-gray-600 mb-3">
+                  Or document systems individually as you go →
+                </p>
+                <div className="text-center">
+                  <Badge variant="outline" className="text-xs text-gray-600">
+                    Scroll down to browse all system categories
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Why This Matters - Prominent Educational Section */}
         <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl">
@@ -779,51 +898,6 @@ export default function Baseline() {
           </Card>
         )}
 
-        {/* Property Selector */}
-        {properties.length > 0 && (
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
-                  <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                    <SelectTrigger className="w-full md:w-96">
-                      <SelectValue placeholder="Select a property" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {property.address}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {currentProperty && systems.length === 0 && (
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => setShowWizard(true)}
-                      className="gap-2"
-                      style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      Quick Start
-                    </Button>
-                    <Button
-                      onClick={() => setShowPhysicalWalkthrough(true)}
-                      className="gap-2"
-                      style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                    >
-                      <MapPin className="w-5 h-5" />
-                      Physical Walkthrough
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {selectedProperty ? (
           <>
             {/* Status Message with Professional Option AND Why It Matters Reminder */}
@@ -880,7 +954,7 @@ export default function Baseline() {
                   <div className="text-right">
                     <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{overallProgress}%</p>
                     <p className="text-sm text-gray-600">Overall Complete</p>
-                    <p className="text-xs text-gray-500 mt-1">{totalSystemTypes} of 16 types</p> {/* Updated display */}
+                    <p className="text-xs text-gray-500 mt-1">{totalSystemTypes} of 16 types</p>
                   </div>
                 </div>
               </CardContent>
