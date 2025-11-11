@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
@@ -236,6 +236,7 @@ export default function Baseline() {
   let statusBorderColor = "";
   let statusBgColor = "";
   let statusIconElement = null;
+  let whyItMattersReminder = null;
 
   if (baselineBoss) {
     statusMessage = "🏆 BASELINE BOSS!";
@@ -243,18 +244,33 @@ export default function Baseline() {
     statusBorderColor = "border-purple-300";
     statusBgColor = "bg-purple-50";
     statusIconElement = <Trophy className="w-8 h-8 text-purple-600" />;
+    whyItMattersReminder = {
+      icon: <TrendingUp className="w-4 h-4 text-purple-600" />,
+      text: "Your complete baseline = strategic control + maximum home value + peace of mind. You're prepared for anything.",
+      color: "text-purple-800"
+    };
   } else if (allRequiredComplete) {
     statusMessage = "All Essential Systems Documented!";
     statusSubtext = "You've secured the basics. Now, build complete peace of mind by adding appliances and safety systems.";
     statusBorderColor = "border-green-300";
     statusBgColor = "bg-green-50";
     statusIconElement = <Award className="w-8 h-8 text-green-600" />;
+    whyItMattersReminder = {
+      icon: <Shield className="w-4 h-4 text-green-600" />,
+      text: "Complete baseline = Budget 2-3 years ahead + Avoid emergency costs + Increase home value $8K-15K at sale.",
+      color: "text-green-800"
+    };
   } else if (actPhaseUnlocked) {
     statusMessage = "🎉 ACT Phase Unlocked!";
     statusSubtext = "You can now prioritize and schedule maintenance. Consider completing your full baseline for maximum protection.";
     statusBorderColor = "border-green-300";
     statusBgColor = "bg-green-50";
     statusIconElement = <CheckCircle2 className="w-8 h-8 text-green-600" />;
+    whyItMattersReminder = {
+      icon: <DollarSign className="w-4 h-4 text-green-600" />,
+      text: "Keep going! Full baseline = Prevent $25K-50K in disasters + Strategic planning + No surprises.",
+      color: "text-green-800"
+    };
   } else {
     const systemsNeeded = 4 - requiredComplete;
     statusMessage = `Complete ${systemsNeeded} more essential system type${systemsNeeded > 1 ? 's' : ''}`;
@@ -262,6 +278,11 @@ export default function Baseline() {
     statusBorderColor = "border-orange-300";
     statusBgColor = "bg-orange-50";
     statusIconElement = <AlertCircle className="w-8 h-8 text-orange-600" />;
+    whyItMattersReminder = {
+      icon: <Lightbulb className="w-4 h-4 text-orange-600" />,
+      text: "Each system documented = More control over your home + Fewer surprises + Better budgeting. Keep going!",
+      color: "text-orange-800"
+    };
   }
 
   // Update property baseline_completion
@@ -443,7 +464,7 @@ export default function Baseline() {
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
 
-        {/* Why Baseline Matters - Enhanced Educational Section */}
+        {/* Why Baseline Matters - Full Educational Section (only when systems.length === 0) */}
         {systems.length === 0 && (
           <Card className="border-2 border-blue-300 bg-blue-50">
             <CardContent className="p-6">
@@ -707,7 +728,7 @@ export default function Baseline() {
 
         {selectedProperty ? (
           <>
-            {/* Status Message with Professional Option */}
+            {/* Status Message with Professional Option AND Why It Matters Reminder */}
             <Card className={`border-2 ${statusBorderColor}`} style={{ backgroundColor: statusBgColor }}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -716,6 +737,18 @@ export default function Baseline() {
                     <div className="flex-1">
                       <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>{statusMessage}</h3>
                       <p className="text-gray-700">{statusSubtext}</p>
+                      
+                      {/* Condensed "Why It Matters" Reminder - Always visible after first system */}
+                      {systems.length > 0 && whyItMattersReminder && (
+                        <div className="mt-3 p-3 bg-white/60 border border-gray-300 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            {whyItMattersReminder.icon}
+                            <p className={`text-xs font-medium leading-relaxed ${whyItMattersReminder.color}`}>
+                              💡 {whyItMattersReminder.text}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Professional Service CTA for incomplete baseline */}
                       {essentialProgress < 100 && (
