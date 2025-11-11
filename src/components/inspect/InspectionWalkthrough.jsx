@@ -16,6 +16,12 @@ const INSPECTION_AREAS = [
     whatToCheck: 'Siding condition, paint, foundation cracks, drainage, grading'
   },
   { 
+    id: 'driveways', 
+    name: 'Driveways & Hardscaping', 
+    icon: '🚗',
+    whatToCheck: 'Surface cracks, potholes, heaving, drainage, edges, walkways, patios'
+  },
+  { 
     id: 'gutters', 
     name: 'Gutters & Downspouts', 
     icon: '🌧️',
@@ -85,7 +91,6 @@ const INSPECTION_AREAS = [
 
 export default function InspectionWalkthrough({ inspection, property, baselineSystems, onComplete, onCancel }) {
   const [inspectedAreas, setInspectedAreas] = React.useState(() => {
-    // Initialize from existing inspection data if available
     const existingItems = inspection.checklist_items || [];
     const groupedByArea = {};
     existingItems.forEach(item => {
@@ -140,7 +145,6 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
     },
   });
 
-  // Auto-save inspection progress whenever inspectedAreas changes
   React.useEffect(() => {
     const allIssues = Object.values(inspectedAreas).flat();
     const totalAreas = INSPECTION_AREAS.length;
@@ -170,12 +174,10 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
   };
 
   const handlePauseInspection = () => {
-    // Progress is already auto-saved, just exit
     onCancel();
   };
 
   const handleBackFromArea = () => {
-    // Save current progress when backing out of an area
     setCurrentArea(null);
   };
 
@@ -216,7 +218,6 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
           Pause & Save Inspection
         </Button>
 
-        {/* Progress Header */}
         <Card className="border-2 mobile-card" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
           <CardContent className="p-4 md:p-6">
             <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '22px', lineHeight: '1.2' }}>
@@ -243,7 +244,6 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
               {monitorCount > 0 && <span className="text-green-600">✅ {monitorCount} monitor</span>}
             </div>
 
-            {/* Auto-save indicator */}
             <div className="mt-3 pt-3 border-t border-gray-300">
               <p className="text-xs text-green-700 flex items-center gap-2">
                 <CheckCircle className="w-3 h-3" />
@@ -255,7 +255,6 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
 
         <hr className="border-gray-200 my-6" />
 
-        {/* Area Selection */}
         <div>
           <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
             SELECT AREA TO INSPECT:
@@ -322,7 +321,6 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col gap-3 pt-6 border-t">
           <Button
             onClick={handleCompleteInspection}

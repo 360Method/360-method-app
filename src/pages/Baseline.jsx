@@ -28,6 +28,7 @@ const RECOMMENDED_SYSTEMS = [
   "Windows & Doors",
   "Gutters & Downspouts",
   "Landscaping & Grading",
+  "Driveways & Hardscaping", // Added new system
   "Attic & Insulation",
   "Basement/Crawlspace",
   "Garage & Overhead Door"
@@ -55,6 +56,7 @@ const MULTI_INSTANCE_SYSTEMS = [
   "HVAC System",
   "Garage & Overhead Door",
   "Basement/Crawlspace",
+  "Driveways & Hardscaping", // Added new system
   ...APPLIANCE_TYPES,
   ...SAFETY_TYPES
 ];
@@ -109,6 +111,11 @@ const SYSTEM_DESCRIPTIONS = {
     what: "Ground slope, drainage, trees, vegetation around home",
     why: "Poor grading = water toward foundation = flooding + cracks + structural damage = $15K-50K+.",
     lifespan: "Ongoing"
+  },
+  "Driveways & Hardscaping": { // Added new system description
+    what: "Driveways, walkways, patios, retaining walls - all hard surfaces and structures",
+    why: "Cracks expand = water infiltration = foundation damage + trip hazards + major replacement $10K-30K+.",
+    lifespan: "15-30 years"
   },
   "Attic & Insulation": {
     what: "Space between ceiling and roof with insulation and ventilation",
@@ -220,15 +227,18 @@ export default function Baseline() {
   const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0);
   const safetyComplete = safetyTypes.length;
   
+  // Total distinct types including appliances/safety as 1 each if any instances exist
   const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
   
   const essentialProgress = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
   const recommendedProgress = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
-  const overallProgress = Math.round((totalSystemTypes / 15) * 100);
+  // Update overall progress calculation to reflect new total (6 Req + 8 Rec + 1 App + 1 Safe = 16)
+  const overallProgress = Math.round((totalSystemTypes / 16) * 100);
   
   const actPhaseUnlocked = requiredComplete >= 4;
   const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
-  const baselineBoss = totalSystemTypes >= 13;
+  // Update baselineBoss threshold (was 13 for 15 total, now 14 for 16 total)
+  const baselineBoss = totalSystemTypes >= 14;
 
   // Dynamic messaging for status card
   let statusMessage = "";
@@ -596,7 +606,7 @@ export default function Baseline() {
                     <ul className="text-sm text-gray-800 space-y-1">
                       <li>• <strong>Essential systems (6):</strong> 2-3 hours total</li>
                       <li>• <strong>Per system:</strong> 15-30 minutes average</li>
-                      <li>• <strong>Complete baseline (15):</strong> 4-6 hours one-time</li>
+                      <li>• <strong>Complete baseline (16):</strong> 4-6 hours one-time</li> {/* Updated count */}
                       <li>• <strong>After setup:</strong> 5 min updates per year</li>
                     </ul>
                   </div>
@@ -716,7 +726,7 @@ export default function Baseline() {
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-sm text-gray-600">System Types</p>
-                      <p className="text-2xl font-bold text-gray-900">{totalSystemTypes}/15</p>
+                      <p className="text-2xl font-bold text-gray-900">{totalSystemTypes}/16</p> {/* Updated total display */}
                       <p className="text-xs text-gray-500">{overallProgress}% complete</p>
                     </div>
                   </div>
@@ -767,6 +777,7 @@ export default function Baseline() {
                               <div className="bg-white rounded p-2 mb-3 border border-blue-200">
                                 <p className="text-xs font-semibold text-blue-900 mb-1">✅ What's Included:</p>
                                 <ul className="text-xs text-gray-700 space-y-1">
+                                  {/* Update the count here as well for clarity */}
                                   <li>• All {REQUIRED_SYSTEMS.length + RECOMMENDED_SYSTEMS.length} essential & recommended systems</li>
                                   <li>• Age verification (permits, receipts, model numbers)</li>
                                   <li>• Current condition assessment with photos</li>
