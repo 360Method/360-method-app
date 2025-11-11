@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, Star, Phone, Mail, ExternalLink, CheckCircle2 } from "lucide-react";
+import OperatorContactDialog from "../components/services/OperatorContactDialog";
 
 export default function FindOperator() {
   const [zipCode, setZipCode] = React.useState("");
   const [searchTriggered, setSearchTriggered] = React.useState(false);
+  const [selectedOperator, setSelectedOperator] = React.useState(null);
+  const [serviceTier, setServiceTier] = React.useState(null);
 
   const { data: operators = [] } = useQuery({
     queryKey: ['operators'],
@@ -22,10 +25,14 @@ export default function FindOperator() {
     setSearchTriggered(true);
   };
 
-  // Filter operators by zip code if provided
   const filteredOperators = zipCode
     ? operators.filter(op => op.service_areas?.some(area => area.includes(zipCode)))
     : operators;
+
+  const handleContactOperator = (operator, tier = 'premium') => {
+    setSelectedOperator(operator);
+    setServiceTier(tier);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -111,23 +118,25 @@ export default function FindOperator() {
           </Card>
         )}
 
-        {/* Sample Operator (demonstration) */}
-        {(!searchTriggered || zipCode === "98660" || zipCode === "98683") && (
-          <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#1B365D' }}>
+        {/* Operator Results */}
+        {filteredOperators.map((operator) => (
+          <Card key={operator.id} className="border-2 mobile-card mb-6" style={{ borderColor: '#1B365D' }}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-2xl">HP</span>
+                  <span className="text-white font-bold text-2xl">
+                    {operator.company_name.substring(0, 2).toUpperCase()}
+                  </span>
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold mb-1" style={{ color: '#1B365D', fontSize: '22px' }}>
-                    Handy Pioneers
+                    {operator.company_name}
                   </h3>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">4.9</span>
-                      <span className="text-sm text-gray-600">(127 reviews)</span>
+                      <span className="font-semibold">{operator.rating?.toFixed(1) || '5.0'}</span>
+                      <span className="text-sm text-gray-600">({operator.review_count || 0} reviews)</span>
                     </div>
                     <Badge variant="outline" className="text-xs">
                       <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />
@@ -135,56 +144,67 @@ export default function FindOperator() {
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge style={{ backgroundColor: '#28A745' }}>HomeCare</Badge>
-                    <Badge style={{ backgroundColor: '#FF6B35' }}>PropertyCare</Badge>
+                    {operator.service_types?.includes('homecare') && (
+                      <Badge style={{ backgroundColor: '#28A745' }}>HomeCare</Badge>
+                    )}
+                    {operator.service_types?.includes('propertycare') && (
+                      <Badge style={{ backgroundColor: '#FF6B35' }}>PropertyCare</Badge>
+                    )}
                   </div>
                 </div>
               </div>
 
               <p className="text-gray-700 mb-4">
-                Clark County's premier 360° Operator. Serving Vancouver, Camas, Washougal, 
-                and surrounding areas. Family-owned and operated since 2024.
+                {operator.description || 'Professional 360° Method operator serving your area.'}
               </p>
 
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-700">
-                    Service Areas: 98660, 98661, 98662, 98663, 98664, 98665, 98683, 98686
+                    Service Areas: {operator.service_areas?.join(', ') || 'Multiple areas'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-gray-500" />
-                  <a href="tel:3605559999" className="text-blue-600 hover:underline">
-                    (360) 555-9999
+                  <a href={`tel:${operator.phone}`} className="text-blue-600 hover:underline">
+                    {operator.phone}
                   </a>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-gray-500" />
-                  <a href="mailto:support@handypioneers.com" className="text-blue-600 hover:underline">
-                    support@handypioneers.com
+                  <a href={`mailto:${operator.email}`} className="text-blue-600 hover:underline">
+                    {operator.email}
                   </a>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <ExternalLink className="w-4 h-4 text-gray-500" />
-                  <a href="https://handypioneers.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    handypioneers.com
-                  </a>
-                </div>
+                {operator.website && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                    <a href={operator.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      {operator.website}
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="grid md:grid-cols-3 gap-3 mb-6">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>87</p>
+                  <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                    {operator.active_customers || 0}
+                  </p>
                   <p className="text-xs text-gray-600">Active Customers</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold" style={{ color: '#28A745' }}>4.9★</p>
+                  <p className="text-2xl font-bold" style={{ color: '#28A745' }}>
+                    {operator.rating?.toFixed(1) || '5.0'}★
+                  </p>
                   <p className="text-xs text-gray-600">Average Rating</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold" style={{ color: '#FF6B35' }}>5yrs</p>
-                  <p className="text-xs text-gray-600">Experience</p>
+                  <p className="text-2xl font-bold" style={{ color: operator.accepting_new_clients ? '#28A745' : '#DC3545' }}>
+                    {operator.accepting_new_clients ? 'YES' : 'FULL'}
+                  </p>
+                  <p className="text-xs text-gray-600">Accepting New</p>
                 </div>
               </div>
 
@@ -192,7 +212,8 @@ export default function FindOperator() {
                 <Button
                   className="flex-1 font-bold"
                   style={{ backgroundColor: '#1B365D', minHeight: '48px' }}
-                  onClick={() => alert('Coming soon: Contact operator form')}
+                  onClick={() => handleContactOperator(operator)}
+                  disabled={!operator.accepting_new_clients}
                 >
                   Request Service
                 </Button>
@@ -200,14 +221,14 @@ export default function FindOperator() {
                   variant="outline"
                   className="flex-1"
                   style={{ minHeight: '48px' }}
-                  onClick={() => alert('Coming soon: Operator profile page')}
+                  onClick={() => alert('Coming soon: Detailed operator profile')}
                 >
                   View Full Profile
                 </Button>
               </div>
             </CardContent>
           </Card>
-        )}
+        ))}
 
         {/* Info Card */}
         <Card className="border-2 border-blue-200 bg-blue-50">
@@ -234,6 +255,18 @@ export default function FindOperator() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Operator Contact Dialog */}
+      {selectedOperator && (
+        <OperatorContactDialog
+          operator={selectedOperator}
+          serviceTier={serviceTier}
+          onClose={() => {
+            setSelectedOperator(null);
+            setServiceTier(null);
+          }}
+        />
+      )}
     </div>
   );
 }
