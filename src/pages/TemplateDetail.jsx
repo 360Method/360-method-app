@@ -1,10 +1,11 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield, AlertTriangle, Wrench, PhoneCall } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -44,6 +45,11 @@ export default function TemplateDetail() {
     navigate(createPageUrl("Upgrade") + "?new=true&template=" + templateId);
   };
 
+  const handleRequestQuote = () => {
+    // Navigate to services or show quote request dialog
+    navigate(createPageUrl("Services"));
+  };
+
   if (!template) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -61,6 +67,10 @@ export default function TemplateDetail() {
 
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
   const memberSavings = avgCost * memberDiscount;
+  const avgDIYCost = template.diy_cost_min && template.diy_cost_max 
+    ? (template.diy_cost_min + template.diy_cost_max) / 2 
+    : 0;
+  const potentialSavings = avgCost - avgDIYCost;
 
   // Estimated property value (use first property or default)
   const estimatedHomeValue = properties[0]?.current_value || properties[0]?.purchase_price || 400000;
@@ -105,6 +115,153 @@ export default function TemplateDetail() {
             )}
           </div>
         </div>
+
+        {/* Cost Disclaimer */}
+        <Card className="border-2 border-yellow-300 bg-yellow-50 mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-yellow-900 mb-1">
+                  ⚠️ Pricing Disclaimer
+                </p>
+                <p className="text-sm text-yellow-800">
+                  All costs shown are <strong>example estimates only</strong> based on national averages. 
+                  Actual costs vary significantly by location, materials, labor rates, and project specifics. 
+                  A professional quote from a licensed contractor is required for accurate pricing.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Get Professional Quote CTA */}
+        <Card className="border-2 mb-6" style={{ borderColor: '#28A745' }}>
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                <PhoneCall className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                  Get Accurate Pricing for Your Project
+                </h3>
+                <p className="text-gray-700 mb-3">
+                  Request a free quote from a licensed 360° Method contractor operator in your area.
+                </p>
+                <Button
+                  onClick={handleRequestQuote}
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                >
+                  <PhoneCall className="w-5 h-5 mr-2" />
+                  Request Professional Quote
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="h-6" />
+
+        {/* DIY vs Professional Comparison */}
+        {avgDIYCost > 0 && (
+          <Card className="border-2 border-blue-300 mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+                💰 DIY vs Professional Cost Comparison
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                {/* DIY Column */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="w-5 h-5 text-blue-600" />
+                    <h3 className="font-bold" style={{ color: '#1B365D' }}>DIY Approach</h3>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 mb-1">Materials Cost Range</p>
+                    <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                      ${template.diy_cost_min?.toLocaleString()} - ${template.diy_cost_max?.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-600">Average: ${avgDIYCost.toLocaleString()}</p>
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold mb-1">Difficulty Level</p>
+                    <Badge className={
+                      template.diy_difficulty === 'Not Recommended' ? 'bg-red-600' :
+                      template.diy_difficulty === 'Advanced DIY Only' ? 'bg-orange-600' :
+                      template.diy_difficulty === 'Intermediate DIY' ? 'bg-yellow-600' :
+                      'bg-green-600'
+                    }>
+                      {template.diy_difficulty}
+                    </Badge>
+                  </div>
+
+                  {template.diy_time_estimate && (
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold mb-1">Time Investment</p>
+                      <p className="text-sm text-gray-700">{template.diy_time_estimate}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <p className="text-sm font-semibold mb-2" style={{ color: '#1B365D' }}>
+                      Potential Savings
+                    </p>
+                    <p className="text-xl font-bold text-green-700">
+                      ${Math.round(potentialSavings).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      * Your time not factored in
+                    </p>
+                  </div>
+                </div>
+
+                {/* Professional Column */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-5 h-5 text-green-600" />
+                    <h3 className="font-bold" style={{ color: '#1B365D' }}>Professional Install</h3>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 mb-1">Total Cost Range</p>
+                    <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                      ${template.average_cost_min.toLocaleString()} - ${template.average_cost_max.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-600">Average: ${avgCost.toLocaleString()}</p>
+                  </div>
+
+                  {template.project_duration && (
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold mb-1">Duration</p>
+                      <p className="text-sm text-gray-700">{template.project_duration}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <p className="text-sm font-semibold mb-2" style={{ color: '#1B365D' }}>
+                      Professional Benefits
+                    </p>
+                    <ul className="text-xs text-gray-700 space-y-1">
+                      <li>✓ Licensed & insured</li>
+                      <li>✓ Warranty on work</li>
+                      <li>✓ Correct permits & inspections</li>
+                      <li>✓ Professional results</li>
+                      <li>✓ No time investment required</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-600 text-center">
+                💡 All cost estimates are examples only. Request a professional quote for accurate pricing.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Member Benefits or Upsell */}
         {isServiceMember ? (
@@ -151,13 +308,16 @@ export default function TemplateDetail() {
                   </p>
                   <div className="bg-white rounded-lg p-4 mb-3">
                     <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>
-                      Potential Savings on This ${avgCost.toLocaleString()} Project:
+                      Potential Savings on This ~${avgCost.toLocaleString()} Project:
                     </p>
                     <div className="space-y-1 text-sm text-gray-700">
                       <p>• Essential (5% savings): <strong className="text-green-700">${Math.round(avgCost * 0.05).toLocaleString()}</strong></p>
                       <p>• Premium (10% savings): <strong className="text-green-700">${Math.round(avgCost * 0.10).toLocaleString()}</strong></p>
                       <p>• Elite (15% savings): <strong className="text-green-700">${Math.round(avgCost * 0.15).toLocaleString()}</strong></p>
                     </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      * Example savings based on national averages. Actual savings may vary.
+                    </p>
                   </div>
                   <Button
                     asChild
@@ -429,7 +589,17 @@ export default function TemplateDetail() {
                 style={{ backgroundColor: '#28A745', minHeight: '56px' }}
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                Create Project from Template
+                Create Project & Track Progress
+              </Button>
+
+              <Button
+                onClick={handleRequestQuote}
+                variant="outline"
+                className="w-full font-semibold"
+                style={{ minHeight: '56px', borderColor: '#28A745', color: '#28A745' }}
+              >
+                <PhoneCall className="w-5 h-5 mr-2" />
+                Get Professional Quote from 360° Contractor
               </Button>
 
               {isServiceMember && user?.operator_name && (
@@ -441,7 +611,7 @@ export default function TemplateDetail() {
                 >
                   <Link to={createPageUrl("Services")}>
                     <Shield className="w-5 h-5 mr-2" />
-                    Request Quote from {user.operator_name}
+                    Contact Your Operator: {user.operator_name}
                   </Link>
                 </Button>
               )}
