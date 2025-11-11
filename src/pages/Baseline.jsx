@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -464,7 +465,9 @@ export default function Baseline() {
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <span className="text-base">{systemType} ({instances.length})</span>
               {isRequired && (
-                <Badge className="bg-green-600 text-white text-xs">COMPLETE</Badge>
+                <Badge className="bg-green-600 text-white">
+                  COMPLETE
+                </Badge>
               )}
             </div>
           </CardTitle>
