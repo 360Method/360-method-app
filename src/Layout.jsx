@@ -27,6 +27,7 @@ import {
   BookOpen
 } from "lucide-react";
 import BottomNav from "./components/navigation/BottomNav";
+import CartDrawer from "./components/cart/CartDrawer";
 
 const navigationItems = [
   {
@@ -463,6 +464,9 @@ export default function Layout({ children }) {
 
         {/* Mobile Bottom Navigation */}
         <BottomNav />
+
+        {/* Floating Cart Drawer */}
+        <CartDrawer />
       </div>
     </>
   );
