@@ -20,6 +20,9 @@ import Waitlist from './pages/Waitlist';
 import Pricing from './pages/Pricing';
 import ExploreTemplates from './pages/ExploreTemplates';
 import TemplateDetail from './pages/TemplateDetail';
+import Resources from './pages/Resources';
+import ResourceGuides from './pages/ResourceGuides';
+import VideoTutorials from './pages/VideoTutorials';
 import Layout from './Layout.jsx';
 
 
@@ -46,6 +49,9 @@ export const PAGES = {
     "Pricing": Pricing,
     "ExploreTemplates": ExploreTemplates,
     "TemplateDetail": TemplateDetail,
+    "Resources": Resources,
+    "ResourceGuides": ResourceGuides,
+    "VideoTutorials": VideoTutorials,
 }
 
 export const pagesConfig = {
