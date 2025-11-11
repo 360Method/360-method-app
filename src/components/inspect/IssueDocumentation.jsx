@@ -158,7 +158,7 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           // Add warning signs if not already present
           const existingWarnings = selectedSystemData.warning_signs_present || [];
           const newWarning = currentIssueData.description.substring(0, 100);
-          if (newWarning && !existingWarnings.includes(newWarning)) { // Ensure newWarning is not empty
+          if (newWarning && !existingWarnings.includes(newWarning)) {
             conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
           }
 
@@ -363,51 +363,84 @@ export default function IssueDocumentation({ area, inspection, property, relevan
           </CardContent>
         </Card>
 
-        {/* Quick Fix Question */}
-        {isQuickFix === null && (
-          <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
-            <CardContent className="p-4 space-y-4">
+        {/* Quick Fix Question - Now always visible with ability to change selection */}
+        <Card className="border-2 mobile-card" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
                 ⚡ CAN YOU FIX THIS IN 5 MINUTES OR LESS? *
               </h2>
-              <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue with AI-powered cascade analysis.
-              </p>
+              {isQuickFix !== null && (
+                <Button
+                  onClick={() => {
+                    setIsQuickFix(null);
+                    setEstimatedCost('');
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600"
+                >
+                  Change
+                </Button>
+              )}
+            </div>
+            <p className="text-gray-700" style={{ fontSize: '14px', lineHeight: '1.5' }}>
+              Quick fixes (5 min or less) should be done immediately. Longer tasks go to your Priority Queue with AI-powered cascade analysis.
+            </p>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={() => setIsQuickFix(true)}
+                className={`w-full justify-start text-left p-4 h-auto ${
+                  isQuickFix === true ? 'border-2 shadow-md' : ''
+                }`}
+                variant="outline"
+                style={{ 
+                  minHeight: '56px',
+                  borderColor: isQuickFix === true ? '#28A745' : undefined,
+                  backgroundColor: isQuickFix === true ? '#F0FFF4' : undefined
+                }}
+              >
+                <div>
+                  <p className="font-semibold mb-1 flex items-center gap-2">
+                    {isQuickFix === true ? '●' : '○'} Yes - I can fix this now
+                    {isQuickFix === true && (
+                      <Badge className="bg-green-600 text-white">Selected</Badge>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600">Filter replacement, tightening screws, testing detectors</p>
+                </div>
+              </Button>
               
-              <div className="space-y-3">
-                <Button
-                  onClick={() => setIsQuickFix(true)}
-                  className="w-full justify-start text-left p-4 h-auto"
-                  variant="outline"
-                  style={{ minHeight: '56px' }}
-                >
-                  <div>
-                    <p className="font-semibold mb-1">○ Yes - I can fix this now</p>
-                    <p className="text-sm text-gray-600">Filter replacement, tightening screws, testing detectors</p>
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => setIsQuickFix(false)}
-                  className="w-full justify-start text-left p-4 h-auto"
-                  variant="outline"
-                  style={{ minHeight: '56px' }}
-                >
-                  <div>
-                    <p className="font-semibold mb-1 flex items-center gap-2">
-                      ● No - Needs more time/help
-                      <Badge className="bg-purple-100 text-purple-800 border-purple-300">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        AI Analysis
-                      </Badge>
-                    </p>
-                    <p className="text-sm text-gray-600">Add to Priority Queue with smart risk & cost analysis</p>
-                  </div>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              <Button
+                onClick={() => setIsQuickFix(false)}
+                className={`w-full justify-start text-left p-4 h-auto ${
+                  isQuickFix === false ? 'border-2 shadow-md' : ''
+                }`}
+                variant="outline"
+                style={{ 
+                  minHeight: '56px',
+                  borderColor: isQuickFix === false ? '#28A745' : undefined,
+                  backgroundColor: isQuickFix === false ? '#F0FFF4' : undefined
+                }}
+              >
+                <div>
+                  <p className="font-semibold mb-1 flex items-center gap-2">
+                    {isQuickFix === false ? '●' : '○'} No - Needs more time/help
+                    {isQuickFix === false && (
+                      <Badge className="bg-green-600 text-white">Selected</Badge>
+                    )}
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI Analysis
+                    </Badge>
+                  </p>
+                  <p className="text-sm text-gray-600">Add to Priority Queue with smart risk & cost analysis</p>
+                </div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Estimated Cost & Who Will Fix - Only if not a quick fix */}
         {isQuickFix === false && (
