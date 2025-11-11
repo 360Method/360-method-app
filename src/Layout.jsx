@@ -28,6 +28,11 @@ import BottomNav from "./components/navigation/BottomNav";
 
 const navigationItems = [
   {
+    title: "Properties",
+    url: createPageUrl("Properties"),
+    icon: Home,
+  },
+  {
     title: "Dashboard",
     url: createPageUrl("Dashboard"),
     icon: LayoutDashboard,
@@ -63,22 +68,12 @@ const navigationItems = [
     ]
   },
   {
-    title: "Properties",
-    url: createPageUrl("Properties"),
-    icon: Home,
-  },
-  {
     title: "Services",
     icon: Wrench,
     subItems: [
       { title: "Professional Services", url: createPageUrl("Services"), icon: Wrench },
       { title: "Plans & Pricing", url: createPageUrl("Pricing"), icon: Sparkles },
     ]
-  },
-  {
-    title: "Settings",
-    url: createPageUrl("Settings"),
-    icon: Settings,
   },
 ];
 
@@ -315,11 +310,17 @@ export default function Layout({ children }) {
             })}
           </div>
 
-          <div className="border-t border-gray-200 p-4">
-            <div className="text-xs text-gray-500 text-center">
-              <p className="font-medium text-gray-700 mb-1">Prevent Disasters</p>
-              <p>Turn $50 problems into savings, not $15K emergencies</p>
-            </div>
+          {/* Settings at bottom */}
+          <div className="border-t border-gray-200 p-2">
+            <Link
+              to={createPageUrl("Settings")}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${
+                location.pathname === createPageUrl("Settings") ? 'bg-gray-100 font-medium' : ''
+              }`}
+            >
+              <Settings className="w-4 h-4 text-gray-600" />
+              <span>Settings</span>
+            </Link>
           </div>
         </aside>
 
@@ -356,7 +357,7 @@ export default function Layout({ children }) {
             </button>
           </div>
           
-          <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 80px)' }}>
+          <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 160px)' }}>
             {navigationItems.map((item) => {
               if (item.subItems) {
                 const isOpen = openSections[item.title];
@@ -412,6 +413,21 @@ export default function Layout({ children }) {
                 </Link>
               );
             })}
+          </div>
+
+          {/* Settings at bottom of mobile menu */}
+          <div className="border-t border-gray-200 p-4">
+            <Link
+              to={createPageUrl("Settings")}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 ${
+                location.pathname === createPageUrl("Settings") ? 'bg-gray-100 font-medium' : ''
+              }`}
+              style={{ minHeight: '48px' }}
+            >
+              <Settings className="w-5 h-5 text-gray-600" />
+              <span className="text-lg">Settings</span>
+            </Link>
           </div>
         </div>
 
