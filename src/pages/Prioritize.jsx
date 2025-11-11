@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, DollarSign, AlertTriangle, TrendingUp, Plus, BookOpen, Video } from "lucide-react";
+import { ListOrdered, DollarSign, AlertTriangle, TrendingUp, Plus, BookOpen, Video, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
+import AIMaintenanceCalendar from "../components/prioritize/AIMaintenanceCalendar";
 
 export default function Prioritize() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -18,6 +19,7 @@ export default function Prioritize() {
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [priorityFilter, setPriorityFilter] = React.useState('all');
   const [showTaskForm, setShowTaskForm] = React.useState(false);
+  const [showAICalendar, setShowAICalendar] = React.useState(true);
 
   const queryClient = useQueryClient();
 
@@ -30,6 +32,22 @@ export default function Prioritize() {
     queryKey: ['maintenanceTasks', selectedProperty],
     queryFn: () => selectedProperty 
       ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty })
+      : Promise.resolve([]),
+    enabled: !!selectedProperty,
+  });
+
+  const { data: baselineSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', selectedProperty],
+    queryFn: () => selectedProperty
+      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
+      : Promise.resolve([]),
+    enabled: !!selectedProperty,
+  });
+
+  const { data: inspections = [] } = useQuery({
+    queryKey: ['inspections', selectedProperty],
+    queryFn: () => selectedProperty
+      ? base44.entities.Inspection.filter({ property_id: selectedProperty })
       : Promise.resolve([]),
     enabled: !!selectedProperty,
   });
@@ -80,6 +98,8 @@ export default function Prioritize() {
   const currentCost = activeTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const potentialCost = activeTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || t.current_fix_cost || 0), 0);
 
+  const currentProperty = properties.find(p => p.id === selectedProperty);
+
   if (showTaskForm) {
     return (
       <ManualTaskForm
@@ -96,7 +116,7 @@ export default function Prioritize() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">ACT → Prioritize</h1>
-            <p className="text-gray-600 mt-1">Strategic task ranking based on cascade risk</p>
+            <p className="text-gray-600 mt-1">Strategic task ranking + AI maintenance planning</p>
           </div>
           <Button
             onClick={() => setShowTaskForm(true)}
@@ -109,7 +129,7 @@ export default function Prioritize() {
         </div>
 
         {/* Educational section for first-time users */}
-        {activeTasks.length === 0 && (
+        {activeTasks.length === 0 && baselineSystems.length === 0 && (
           <Card className="border-2 border-blue-300 bg-blue-50">
             <CardContent className="p-6">
               <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
@@ -256,6 +276,17 @@ export default function Prioritize() {
           </Card>
         </div>
 
+        {/* AI Maintenance Calendar */}
+        {selectedProperty && (
+          <AIMaintenanceCalendar
+            propertyId={selectedProperty}
+            property={currentProperty}
+            systems={baselineSystems}
+            inspections={inspections}
+            existingTasks={activeTasks}
+          />
+        )}
+
         {/* Priority Queue */}
         <Card className="border-none shadow-lg">
           <CardHeader>
@@ -285,7 +316,7 @@ export default function Prioritize() {
                 <p className="mb-4">
                   {priorityFilter !== 'all' 
                     ? 'Try changing the priority filter or add a new task'
-                    : 'Create your first maintenance task or run an inspection to identify issues'
+                    : 'Check the AI Maintenance Calendar above for proactive suggestions, or add a task manually'
                   }
                 </p>
                 <Button
