@@ -159,27 +159,26 @@ export default function Resources() {
           </p>
         </div>
 
-        {/* Popular Resources */}
+        {/* Popular Resources - FIXED: Proper clickable cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {popularResources.map((resource, idx) => {
             const Icon = resource.icon;
             return (
-              <Card
-                key={idx}
-                className="border-2 hover:shadow-lg transition-all cursor-pointer"
-                style={{ borderColor: resource.color }}
-              >
-                <CardContent className="p-6">
-                  <Link to={resource.url}>
+              <Link key={idx} to={resource.url} className="block">
+                <Card
+                  className="border-2 hover:shadow-lg transition-all cursor-pointer h-full"
+                  style={{ borderColor: resource.color }}
+                >
+                  <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center"
+                        className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{ backgroundColor: resource.color + '20' }}
                       >
                         <Icon className="w-6 h-6" style={{ color: resource.color }} />
                       </div>
                       {resource.badge && (
-                        <Badge style={{ backgroundColor: resource.color }}>
+                        <Badge style={{ backgroundColor: resource.color, color: 'white' }}>
                           {resource.badge}
                         </Badge>
                       )}
@@ -193,9 +192,9 @@ export default function Resources() {
                     <div className="flex items-center text-sm font-semibold" style={{ color: resource.color }}>
                       Explore →
                     </div>
-                  </Link>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>
@@ -219,7 +218,7 @@ export default function Resources() {
                         {topic.phase}
                       </h3>
                     </div>
-                    <ul className="space-y-2">
+                    <ul className="space-y-2 mb-4">
                       {topic.guides.map((guide, gIdx) => (
                         <li key={gIdx} className="flex items-start gap-2">
                           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: topic.color }} />
@@ -231,8 +230,8 @@ export default function Resources() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="w-full mt-4"
-                      style={{ borderColor: topic.color, color: topic.color }}
+                      className="w-full"
+                      style={{ borderColor: topic.color, color: topic.color, minHeight: '40px' }}
                     >
                       <Link to={createPageUrl("ResourceGuides") + `?category=${encodeURIComponent(topic.phase)}`}>
                         View {topic.phase} Guides
@@ -276,6 +275,7 @@ export default function Resources() {
                       variant="outline"
                       size="sm"
                       className="w-full"
+                      style={{ minHeight: '40px' }}
                     >
                       <Link to={createPageUrl("ResourceGuides") + `?category=${encodeURIComponent(type.title)}`}>
                         View Guides
@@ -303,6 +303,7 @@ export default function Resources() {
                   asChild
                   variant="outline"
                   className="h-auto py-3"
+                  style={{ minHeight: '44px' }}
                 >
                   <Link to={createPageUrl("ResourceGuides") + `?system=${encodeURIComponent(system)}`}>
                     {system}
@@ -324,29 +325,29 @@ export default function Resources() {
           <CardContent>
             <div className="grid md:grid-cols-2 gap-3">
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <div>
+                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
                   <p className="font-semibold text-sm">Printable Seasonal Checklists</p>
                   <p className="text-xs text-gray-600">Spring, Summer, Fall, Winter</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <div>
+                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
                   <p className="font-semibold text-sm">Budget Planning Worksheets</p>
                   <p className="text-xs text-gray-600">Annual maintenance budgeting</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <div>
+                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
                   <p className="font-semibold text-sm">Contractor Evaluation Forms</p>
                   <p className="text-xs text-gray-600">Vet and hire with confidence</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <div>
+                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
                   <p className="font-semibold text-sm">Maintenance Log Templates</p>
                   <p className="text-xs text-gray-600">Track all property work</p>
                 </div>
@@ -356,6 +357,7 @@ export default function Resources() {
               asChild
               variant="outline"
               className="w-full mt-4"
+              style={{ minHeight: '48px' }}
             >
               <Link to={createPageUrl("Downloads")}>
                 View All Downloads
@@ -378,8 +380,9 @@ export default function Resources() {
                 <div
                   key={idx}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  style={{ minHeight: '80px' }}
                 >
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <Badge variant="outline" className="mb-2 text-xs">
                       {content.type}
                     </Badge>
@@ -388,7 +391,7 @@ export default function Resources() {
                     </p>
                     <p className="text-sm text-gray-600">{content.time}</p>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                  <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
                 </div>
               ))}
             </div>
@@ -396,6 +399,7 @@ export default function Resources() {
               asChild
               variant="outline"
               className="w-full mt-4"
+              style={{ minHeight: '48px' }}
             >
               <Link to={createPageUrl("ResourceGuides")}>
                 View All Articles
@@ -411,7 +415,7 @@ export default function Resources() {
               <div className="w-12 h-12 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
                 <HelpCircle className="w-6 h-6 text-white" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
                   Need Help?
                 </h3>
