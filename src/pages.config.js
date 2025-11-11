@@ -11,6 +11,8 @@ import Upgrade from './pages/Upgrade';
 import Scale from './pages/Scale';
 import Settings from './pages/Settings';
 import Services from './pages/Services';
+import HomeCare from './pages/HomeCare';
+import FindOperator from './pages/FindOperator';
 import Layout from './Layout.jsx';
 
 
@@ -28,6 +30,8 @@ export const PAGES = {
     "Scale": Scale,
     "Settings": Settings,
     "Services": Services,
+    "HomeCare": HomeCare,
+    "FindOperator": FindOperator,
 }
 
 export const pagesConfig = {
