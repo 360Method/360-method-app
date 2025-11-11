@@ -116,6 +116,9 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
     ? featuredTemplates 
     : availableTemplates.slice(0, compact ? 2 : 4);
 
+  // Calculate remaining templates count
+  const remainingCount = availableTemplates.length - displayTemplates.length;
+
   if (compact) {
     return (
       <Card className="border-2 border-green-300 bg-green-50">
@@ -135,7 +138,7 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
             </button>
           </div>
           <p className="text-sm text-green-800 mb-3">
-            {displayTemplates.length} seasonal maintenance recommendations
+            {availableTemplates.length} seasonal maintenance recommendation{availableTemplates.length !== 1 ? 's' : ''}
           </p>
           <Button
             asChild
@@ -305,10 +308,10 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
           })}
         </div>
 
-        {availableTemplates.length > displayTemplates.length && (
+        {remainingCount > 0 && (
           <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
             <p className="text-sm text-gray-700 mb-2">
-              <strong>{availableTemplates.length - displayTemplates.length}</strong> more {currentSeason.toLowerCase()} tasks available
+              <strong>{remainingCount}</strong> more {currentSeason.toLowerCase()} task{remainingCount !== 1 ? 's' : ''} available
             </p>
             <p className="text-xs text-gray-600">
               Add these first, then we'll show you more seasonal recommendations
