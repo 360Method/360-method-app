@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -135,6 +136,43 @@ function getRegionalCost(systemType, taskKeywords, climateZone) {
   const adjustedMax = Math.round(bestMatch.max * multiplier);
   
   return { min: adjustedMin, max: adjustedMax, midpoint: Math.round((adjustedMin + adjustedMax) / 2) };
+}
+
+// Calculate delayed cost based on priority and cascade risk
+function calculateDelayedCost(currentCost, priority, systemType, taskCategory) {
+  let multiplier = 1.5; // Default 50% increase
+  
+  // Higher multipliers for high-risk scenarios
+  if (priority === "High") {
+    multiplier = 3.5; // 3.5X for high priority
+  } else if (priority === "Medium") {
+    multiplier = 2.5; // 2.5X for medium priority
+  } else if (priority === "Low") {
+    multiplier = 1.5; // 1.5X for low priority
+  } else if (priority === "Routine") {
+    multiplier = 1.2; // 1.2X for routine
+  }
+  
+  // Additional multipliers for cascade-prone systems
+  const cascadeSystems = ["HVAC System", "Plumbing System", "Roof System", "Foundation & Structure"];
+  if (cascadeSystems.includes(systemType)) {
+    multiplier += 1.0; // Add 1X for cascade risk
+  }
+  
+  // Replacement tasks have emergency premium
+  if (taskCategory?.includes("replacement") || taskCategory?.includes("major")) {
+    multiplier += 0.5; // Emergency replacement premium
+  }
+  
+  const delayedMin = Math.round(currentCost.min * multiplier);
+  const delayedMax = Math.round(currentCost.max * multiplier);
+  
+  return {
+    min: delayedMin,
+    max: delayedMax,
+    midpoint: Math.round((delayedMin + delayedMax) / 2),
+    multiplier: multiplier
+  };
 }
 
 // Helper function to format cost range
@@ -284,7 +322,7 @@ For each suggestion:
 - suggested_month: 0-${parseInt(selectedTimeframe) - 1} (0 = this month)
 - task_category: One of: "filter_replacement", "tune_up", "deep_cleaning", "component_replacement", "inspection", "minor_repair", "major_repair", "replacement", "cleaning", "routine_maintenance"
 - urgency_reason: Why do it at this time (1-2 sentences)
-- consequences: What happens if skipped (1-2 sentences)
+- consequences: What specific problems happen if skipped - be detailed about cascade failures, damage progression (2-3 sentences)
 
 PRIORITIZATION:
 - Systems 80%+ lifespan = "High", plan replacement
@@ -293,7 +331,7 @@ PRIORITIZATION:
 - Seasonal maintenance = "Routine"
 - Warning signs = "High"
 
-Generate 6-10 suggestions. Be specific. Avoid duplicates with existing tasks.
+Generate 6-10 suggestions. Be specific. Avoid duplicates with existing tasks. Focus on SPECIFIC consequences with dollar impacts.
 
 Return JSON with "suggestions" array.`;
 
@@ -331,13 +369,25 @@ Return JSON with "suggestions" array.`;
             `${suggestion.title} ${suggestion.task_category}`,
             climateZone
           );
+
+          const delayedCost = calculateDelayedCost(
+            costEstimate,
+            suggestion.priority,
+            suggestion.system_type,
+            suggestion.task_category
+          );
           
           return {
             ...suggestion,
             estimated_cost_range: formatCostRange(costEstimate.min, costEstimate.max),
             cost_min: costEstimate.min,
             cost_max: costEstimate.max,
-            cost_midpoint: costEstimate.midpoint
+            cost_midpoint: costEstimate.midpoint,
+            delayed_cost_min: delayedCost.min,
+            delayed_cost_max: delayedCost.max,
+            delayed_cost_midpoint: delayedCost.midpoint,
+            cost_increase: delayedCost.midpoint - costEstimate.midpoint,
+            cost_multiplier: delayedCost.multiplier
           };
         });
 
@@ -361,13 +411,15 @@ Return JSON with "suggestions" array.`;
     const taskData = {
       property_id: propertyId,
       title: suggestion.title,
-      description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Estimated Cost: $${suggestion.estimated_cost_range}`,
+      description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)`,
       system_type: suggestion.system_type,
       priority: suggestion.priority,
       status: 'Identified',
       scheduled_date: format(suggestedDate, 'yyyy-MM-dd'),
       execution_type: 'Not Decided',
-      current_fix_cost: suggestion.cost_midpoint || parseCostRange(suggestion.estimated_cost_range)
+      current_fix_cost: suggestion.cost_midpoint || parseCostRange(suggestion.estimated_cost_range),
+      delayed_fix_cost: suggestion.delayed_cost_midpoint,
+      has_cascade_alert: suggestion.cost_increase > 1000
     };
 
     await createTaskMutation.mutateAsync(taskData);
@@ -395,13 +447,15 @@ Return JSON with "suggestions" array.`;
         return {
           property_id: propertyId,
           title: suggestion.title,
-          description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Estimated Cost: $${suggestion.estimated_cost_range}`,
+          description: `🤖 AI-Recommended\n\n${suggestion.description}\n\n⚠️ If Skipped: ${suggestion.consequences || 'May lead to more expensive repairs later'}\n\n💰 Cost Now: $${suggestion.estimated_cost_range}\n💰 Cost If Delayed: $${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)} (${suggestion.cost_multiplier.toFixed(1)}X increase)`,
           system_type: suggestion.system_type,
           priority: suggestion.priority,
           status: 'Identified',
           scheduled_date: format(suggestedDate, 'yyyy-MM-dd'),
           execution_type: 'Not Decided',
-          current_fix_cost: suggestion.cost_midpoint || parseCostRange(suggestion.estimated_cost_range)
+          current_fix_cost: suggestion.cost_midpoint || parseCostRange(suggestion.estimated_cost_range),
+          delayed_fix_cost: suggestion.delayed_cost_midpoint,
+          has_cascade_alert: suggestion.cost_increase > 1000
         };
       });
 
@@ -652,11 +706,29 @@ Return JSON with "suggestions" array.`;
                                 )}
 
                                 {suggestion.consequences && (
-                                  <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded">
-                                    <p className="text-xs font-semibold text-orange-900 mb-1">
-                                      ⚠️ If Skipped:
+                                  <div className="mb-3 p-3 bg-red-50 border-2 border-red-300 rounded">
+                                    <p className="text-xs font-semibold text-red-900 mb-2 flex items-center gap-1">
+                                      <AlertTriangle className="w-4 h-4" />
+                                      ⚠️ If Skipped (6-12 months):
                                     </p>
-                                    <p className="text-xs text-gray-800">{suggestion.consequences}</p>
+                                    <p className="text-xs text-gray-800 mb-3">{suggestion.consequences}</p>
+                                    
+                                    <div className="bg-white p-3 rounded border border-red-200">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-gray-600">Fix Now:</span>
+                                        <span className="font-bold text-green-700">${suggestion.estimated_cost_range}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-gray-600">Fix Later:</span>
+                                        <span className="font-bold text-red-700">${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)}</span>
+                                      </div>
+                                      <div className="pt-2 border-t border-red-200 flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-red-900">Cost Increase:</span>
+                                        <span className="font-bold text-red-900">
+                                          +${suggestion.cost_increase.toLocaleString()} ({Math.round((suggestion.cost_multiplier - 1) * 100)}% more)
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
 
@@ -690,6 +762,11 @@ Return JSON with "suggestions" array.`;
                                   <div className="flex items-center gap-1 text-sm text-gray-600">
                                     <DollarSign className="w-4 h-4" />
                                     <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                    {suggestion.cost_increase > 500 && (
+                                      <Badge className="ml-2 bg-red-100 text-red-800 text-xs">
+                                        +${Math.round(suggestion.cost_increase/100)*100} if delayed
+                                      </Badge>
+                                    )}
                                   </div>
                                   <button
                                     onClick={() => setExpandedCard(`${monthIdx}-${idx}`)}
