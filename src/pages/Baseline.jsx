@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 import AddToCartDialog from "../components/cart/AddToCartDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
+import BaselineWizard from "../components/baseline/BaselineWizard"; // New import
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -134,6 +135,60 @@ const SYSTEM_DESCRIPTIONS = {
   }
 };
 
+// Milestone definitions
+const MILESTONES = [
+  {
+    id: 'first_system',
+    threshold: 1,
+    icon: '🎯',
+    title: 'First Step Complete!',
+    message: "You've documented your first system. This is how you take control.",
+    badge: 'Getting Started'
+  },
+  {
+    id: 'act_unlocked',
+    threshold: 4,
+    icon: '🔓',
+    title: 'ACT Phase Unlocked!',
+    message: 'You can now prioritize and schedule maintenance tasks.',
+    badge: 'ACT Access',
+    unlocks: ['Priority Queue', 'Task Scheduling', 'Cascade Prevention']
+  },
+  {
+    id: 'essentials_complete',
+    threshold: 6,
+    icon: '🛡️',
+    title: 'Essential Systems Complete!',
+    message: 'All critical systems documented. Your foundation is solid.',
+    badge: 'Foundation Secured'
+  },
+  {
+    id: 'halfway',
+    threshold: 8,
+    icon: '⭐',
+    title: 'Halfway There!',
+    message: "You're building serious protection. Keep going!",
+    badge: 'Momentum Builder'
+  },
+  {
+    id: 'recommended_complete',
+    threshold: 14, // 6 Required + 8 Recommended = 14
+    icon: '🏆',
+    title: 'Recommended Systems Complete!',
+    message: 'You have comprehensive coverage. This is elite homeownership.',
+    badge: 'Elite Protection'
+  },
+  {
+    id: 'baseline_boss',
+    threshold: 16, // 14 + 1 Appliance type + 1 Safety type = 16
+    icon: '👑',
+    title: 'BASELINE BOSS!',
+    message: "Complete documentation. You're in the top 1% of homeowners.",
+    badge: 'Baseline Boss',
+    unlocks: ['Advanced Analytics', 'Predictive Maintenance', 'Maximum ROI']
+  }
+];
+
 export default function Baseline() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
@@ -142,11 +197,14 @@ export default function Baseline() {
   const [showDialog, setShowDialog] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
-  const [showCelebration, setShowCelebration] = React.useState(false);
+  // Removed showCelebration, using recentMilestone instead
   const [scrollPosition, setScrollPosition] = React.useState(0);
   const [lastAddedSystemType, setLastAddedSystemType] = React.useState(null);
   const [deletingSystem, setDeletingSystem] = React.useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  // const [viewMode, setViewMode] = React.useState('cards'); // 'cards' or 'compact' - Not yet used in this implementation
+  const [showWizard, setShowWizard] = React.useState(false); // New state
+  const [recentMilestone, setRecentMilestone] = React.useState(null); // New state
 
   const queryClient = useQueryClient();
 
@@ -168,6 +226,45 @@ export default function Baseline() {
       setSelectedProperty(properties[0].id);
     }
   }, [properties, selectedProperty]);
+
+  // Calculate completion metrics for milestone check
+  const systemsByType = systems.reduce((acc, system) => {
+    if (!acc[system.system_type]) {
+      acc[system.system_type] = [];
+    }
+    acc[system.system_type].push(system);
+    return acc;
+  }, {});
+
+  const requiredSystemTypes = REQUIRED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
+  const requiredComplete = requiredSystemTypes.length;
+  
+  const recommendedSystemTypes = RECOMMENDED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
+  const recommendedComplete = recommendedSystemTypes.length;
+  
+  const applianceTypes = APPLIANCE_TYPES.filter(type => systemsByType[type]?.length > 0);
+  const appliancesComplete = applianceTypes.length;
+  
+  const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0);
+  const safetyComplete = safetyTypes.length;
+  
+  const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
+  
+  // Check if user just hit a milestone
+  const prevTotalSystemTypes = React.useRef(0);
+  React.useEffect(() => {
+    // Only check if property is selected and systems data is loaded
+    if (selectedProperty && !isLoading) {
+      if (totalSystemTypes > prevTotalSystemTypes.current) {
+        const newMilestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
+        if (newMilestone) {
+          setRecentMilestone(newMilestone);
+          setTimeout(() => setRecentMilestone(null), 10000); // Clear after 10 seconds
+        }
+      }
+      prevTotalSystemTypes.current = totalSystemTypes;
+    }
+  }, [totalSystemTypes, selectedProperty, isLoading]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.SystemBaseline.delete(id),
@@ -205,30 +302,21 @@ export default function Baseline() {
     return message;
   };
 
-  // Group systems by type
-  const systemsByType = systems.reduce((acc, system) => {
-    if (!acc[system.system_type]) {
-      acc[system.system_type] = [];
-    }
-    acc[system.system_type].push(system);
-    return acc;
-  }, {});
-
   // Calculate completion metrics
-  const requiredSystemTypes = REQUIRED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
-  const requiredComplete = requiredSystemTypes.length;
+  // These are already calculated above for the milestone check, but we need them again for display
+  // const requiredSystemTypes = REQUIRED_SYSTEMS.filter(type => systemsByType[type]?.length > 0); // Already defined
+  // const requiredComplete = requiredSystemTypes.length; // Already defined
   
-  const recommendedSystemTypes = RECOMMENDED_SYSTEMS.filter(type => systemsByType[type]?.length > 0);
-  const recommendedComplete = recommendedSystemTypes.length;
+  // const recommendedSystemTypes = RECOMMENDED_SYSTEMS.filter(type => systemsByType[type]?.length > 0); // Already defined
+  // const recommendedComplete = recommendedSystemTypes.length; // Already defined
   
-  const applianceTypes = APPLIANCE_TYPES.filter(type => systemsByType[type]?.length > 0);
-  const appliancesComplete = applianceTypes.length;
+  // const applianceTypes = APPLIANCE_TYPES.filter(type => systemsByType[type]?.length > 0); // Already defined
+  // const appliancesComplete = applianceTypes.length; // Already defined
   
-  const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0);
-  const safetyComplete = safetyTypes.length;
+  // const safetyTypes = SAFETY_TYPES.filter(type => systemsByType[type]?.length > 0); // Already defined
+  // const safetyComplete = safetyTypes.length; // Already defined
   
-  // Total distinct types including appliances/safety as 1 each if any instances exist
-  const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
+  // const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0); // Already defined
   
   const essentialProgress = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
   const recommendedProgress = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
@@ -239,6 +327,10 @@ export default function Baseline() {
   const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
   // Update baselineBoss threshold (was 13 for 15 total, now 14 for 16 total)
   const baselineBoss = totalSystemTypes >= 14;
+
+  // Get next milestone
+  const nextMilestone = MILESTONES.find(m => m.threshold > totalSystemTypes);
+  const systemsToNextMilestone = nextMilestone ? nextMilestone.threshold - totalSystemTypes : 0;
 
   // Dynamic messaging for status card
   let statusMessage = "";
@@ -364,10 +456,10 @@ export default function Baseline() {
       return (
         <Card
           key={systemType}
-          className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer group" // Added group class
           onClick={() => handleAddSystem(systemType)}
         >
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 {systemType}
@@ -379,16 +471,7 @@ export default function Baseline() {
                 <CheckCircle2 className="w-5 h-5 text-blue-500" />
               )}
             </div>
-            {description && (
-              <div className="mb-3">
-                <p className="text-xs text-gray-600 mb-2">{description.what}</p>
-                <div className="bg-orange-50 border border-orange-200 rounded p-2 mt-2">
-                  <p className="text-xs font-semibold text-orange-900 mb-1">⚠️ Why Document This?</p>
-                  <p className="text-xs text-orange-800">{description.why}</p>
-                </div>
-              </div>
-            )}
-            <Button variant="outline" size="sm" className="w-full gap-2">
+            <Button variant="outline" size="sm" className="w-full gap-2 group-hover:bg-gray-50"> {/* Added group-hover effect */}
               <Plus className="w-4 h-4" />
               Document {systemType}
             </Button>
@@ -399,7 +482,7 @@ export default function Baseline() {
 
     // Has instances - show list
     return (
-      <Card key={systemType} className={`border-2 shadow-lg ${isRequired ? 'border-red-200' : 'border-blue-200'}`}>
+      <Card key={systemType} className={`border-2 shadow-md hover:shadow-lg transition-shadow ${isRequired ? 'border-red-200' : 'border-blue-200'}`}> {/* Added shadow and hover effects */}
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -412,42 +495,56 @@ export default function Baseline() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {instances.map((instance, idx) => (
-            <div key={instance.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border">
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">
-                  {instance.nickname || `${systemType} ${instances.length > 1 ? `#${idx + 1}` : ''}`}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {instance.brand_model && `${instance.brand_model} • `}
-                  {instance.installation_year && `Installed ${instance.installation_year}`}
-                </p>
-                {instance.last_service_date && (
-                  <p className="text-xs text-gray-500">
-                    Last service: {new Date(instance.last_service_date).toLocaleDateString()}
+          {instances.map((instance, idx) => {
+            const age = instance.installation_year ? new Date().getFullYear() - instance.installation_year : null;
+            const isOld = age && instance.estimated_lifespan_years && age >= instance.estimated_lifespan_years * 0.8;
+            
+            return (
+              <div key={instance.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border hover:border-blue-300 transition-colors">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    {instance.nickname || `${systemType} ${instances.length > 1 ? `#${idx + 1}` : ''}`}
+                    {isOld && ( // Conditional badge for aging systems
+                      <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
+                        Aging
+                      </Badge>
+                    )}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {instance.brand_model && `${instance.brand_model} • `}
+                    {instance.installation_year && `Installed ${instance.installation_year} (${age}yr)`}
                   </p>
-                )}
+                  {instance.condition && instance.condition !== 'Good' && ( // Conditional badge for system condition
+                    <Badge className={
+                      instance.condition === 'Urgent' ? 'bg-red-600 text-white mt-1' :
+                      instance.condition === 'Poor' ? 'bg-orange-600 text-white mt-1' :
+                      'bg-yellow-600 text-white mt-1'
+                    }>
+                      {instance.condition}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditSystem(instance)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteSystem(instance)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2 ml-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditSystem(instance)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteSystem(instance)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {allowsMultiple && (
             <Button
               variant="outline"
@@ -464,6 +561,27 @@ export default function Baseline() {
     );
   };
 
+  // Conditional render for the Wizard
+  if (showWizard && selectedProperty) {
+    return (
+      <BaselineWizard
+        propertyId={selectedProperty}
+        property={currentProperty}
+        onComplete={() => {
+          setShowWizard(false);
+          queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+          // Optionally trigger a celebration if wizard completes a milestone
+          const milestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
+          if (milestone) {
+            setRecentMilestone(milestone);
+            setTimeout(() => setRecentMilestone(null), 10000);
+          }
+        }}
+        onSkip={() => setShowWizard(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
@@ -473,6 +591,37 @@ export default function Baseline() {
           <p className="text-xl text-gray-600">Document Your Property Systems</p>
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
+
+        {/* Milestone Celebration */}
+        {recentMilestone && (
+          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 animate-pulse">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="text-6xl mb-3">{recentMilestone.icon}</div>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                  {recentMilestone.title}
+                </h2>
+                <p className="text-lg text-gray-700 mb-4">{recentMilestone.message}</p>
+                {recentMilestone.unlocks && (
+                  <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                    <p className="font-semibold mb-2 text-purple-900">🎁 Unlocked Features:</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {recentMilestone.unlocks.map((unlock, idx) => (
+                        <Badge key={idx} className="bg-purple-600 text-white">
+                          <Unlock className="w-3 h-3 mr-1" />
+                          {unlock}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Badge className="bg-purple-600 text-white text-lg px-4 py-2 mt-4">
+                  {recentMilestone.badge}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Why Baseline Matters - Full Educational Section (only when systems.length === 0) */}
         {systems.length === 0 && (
@@ -722,14 +871,15 @@ export default function Baseline() {
                     </SelectContent>
                   </Select>
                 </div>
-                {currentProperty && (
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">System Types</p>
-                      <p className="text-2xl font-bold text-gray-900">{totalSystemTypes}/16</p> {/* Updated total display */}
-                      <p className="text-xs text-gray-500">{overallProgress}% complete</p>
-                    </div>
-                  </div>
+                {currentProperty && systems.length === 0 && ( // New Quick Start Wizard button
+                  <Button
+                    onClick={() => setShowWizard(true)}
+                    className="gap-2"
+                    style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Quick Start Wizard
+                  </Button>
                 )}
               </div>
             </CardContent>
@@ -748,6 +898,34 @@ export default function Baseline() {
                       <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>{statusMessage}</h3>
                       <p className="text-gray-700">{statusSubtext}</p>
                       
+                      {/* Next Milestone Progress */}
+                      {nextMilestone && totalSystemTypes < MILESTONES[MILESTONES.length - 1].threshold && (
+                        <div className="mt-4 p-3 bg-white/80 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-900">
+                              Next: {nextMilestone.title}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {systemsToNextMilestone} more
+                            </Badge>
+                          </div>
+                          <Progress 
+                            value={(totalSystemTypes / nextMilestone.threshold) * 100} 
+                            className="h-2"
+                          />
+                          {nextMilestone.unlocks && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {nextMilestone.unlocks.map((unlock, idx) => (
+                                <span key={idx} className="text-xs text-gray-600 flex items-center gap-1">
+                                  <Lock className="w-3 h-3" />
+                                  {unlock}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Condensed "Why It Matters" Reminder - Always visible after first system */}
                       {systems.length > 0 && whyItMattersReminder && (
                         <div className="mt-3 p-3 bg-white/60 border border-gray-300 rounded-lg">
@@ -764,6 +942,7 @@ export default function Baseline() {
                   <div className="text-right">
                     <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{overallProgress}%</p>
                     <p className="text-sm text-gray-600">Overall Complete</p>
+                    <p className="text-xs text-gray-500 mt-1">{totalSystemTypes} of 16 types</p> {/* Updated display */}
                   </div>
                 </div>
               </CardContent>
