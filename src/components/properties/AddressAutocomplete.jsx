@@ -10,21 +10,42 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
   const [isLoading, setIsLoading] = React.useState(false);
   const [showManualEntry, setShowManualEntry] = React.useState(false);
   const [selectedAddress, setSelectedAddress] = React.useState(null);
+  const [scriptLoaded, setScriptLoaded] = React.useState(false);
+  const [scriptError, setScriptError] = React.useState(false);
 
   // Load Google Maps script
   React.useEffect(() => {
-    if (window.google) return;
+    if (window.google) {
+      setScriptLoaded(true);
+      return;
+    }
+
+    // Check if script is already loading
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setScriptLoaded(true));
+      existingScript.addEventListener('error', () => setScriptError(true));
+      return;
+    }
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places`;
+    // Note: In production, you'll need to set up the API key in your secrets
+    // For now, using a placeholder - replace with your actual key
+    const apiKey = window.ENV?.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
+    script.addEventListener('load', () => setScriptLoaded(true));
+    script.addEventListener('error', () => {
+      setScriptError(true);
+      console.error('Failed to load Google Maps script');
+    });
     document.head.appendChild(script);
   }, []);
 
   // Debounced autocomplete search
   React.useEffect(() => {
-    if (inputValue.length < 3) {
+    if (!scriptLoaded || inputValue.length < 3) {
       setPredictions([]);
       return;
     }
@@ -34,7 +55,7 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [inputValue]);
+  }, [inputValue, scriptLoaded]);
 
   const searchAddresses = async (searchText) => {
     if (!window.google) return;
@@ -52,7 +73,7 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
       (results, status) => {
         setIsLoading(false);
         if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          setPredictions(results);
+          setPredictions(results.slice(0, 5)); // Limit to top 5 results
         } else {
           setPredictions([]);
         }
@@ -107,7 +128,7 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
         components.zip_code = component.long_name;
       }
       if (types.includes('administrative_area_level_2')) {
-        components.county = component.long_name;
+        components.county = component.long_name.replace(' County', '');
       }
     });
 
@@ -128,7 +149,7 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
     };
   };
 
-  if (showManualEntry) {
+  if (scriptError) {
     return (
       <Card className="border-2 border-orange-300 bg-orange-50">
         <CardContent className="p-4">
@@ -136,10 +157,37 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
             <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-900 mb-2">
+                Address Search Unavailable
+              </p>
+              <p className="text-sm text-gray-700 mb-3">
+                Unable to load Google Maps. Please enter your address manually.
+              </p>
+              <Button
+                onClick={() => setShowManualEntry(true)}
+                variant="outline"
+                size="sm"
+              >
+                Continue with Manual Entry
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (showManualEntry) {
+    return (
+      <Card className="border-2 border-blue-300 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900 mb-2">
                 Manual Address Entry Mode
               </p>
               <p className="text-sm text-gray-700 mb-3">
-                You'll need to enter address details manually. Some features may be limited without address verification.
+                Enter address details manually below. Without verification, map display and some location features may be limited.
               </p>
               <Button
                 onClick={() => setShowManualEntry(false)}
@@ -165,8 +213,9 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
             placeholder="Start typing your address..."
             className="pr-10"
             style={{ minHeight: '48px' }}
+            disabled={!scriptLoaded}
           />
-          {isLoading && (
+          {(isLoading || !scriptLoaded) && (
             <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-gray-400" />
           )}
         </div>
@@ -211,25 +260,35 @@ export default function AddressAutocomplete({ onAddressSelect, initialValue = ""
                 <p className="text-sm text-gray-700">
                   {selectedAddress.formatted_address}
                 </p>
+                {selectedAddress.county && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    {selectedAddress.county} County
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {inputValue.length >= 3 && predictions.length === 0 && !isLoading && (
+      {inputValue.length >= 3 && predictions.length === 0 && !isLoading && scriptLoaded && (
         <Card className="border-2 border-gray-300">
           <CardContent className="p-4">
             <p className="text-sm text-gray-700 mb-3">
-              Can't find your address?
+              Can't find your address? This might happen if:
             </p>
+            <ul className="text-xs text-gray-600 ml-4 mb-3 space-y-1">
+              <li>• Your property is new construction</li>
+              <li>• The address isn't in Google's database yet</li>
+              <li>• You're using a PO Box (use physical address instead)</li>
+            </ul>
             <Button
               onClick={() => setShowManualEntry(true)}
               variant="outline"
               size="sm"
               className="w-full"
             >
-              Switch to Manual Entry
+              Enter Address Manually
             </Button>
           </CardContent>
         </Card>
