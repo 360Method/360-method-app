@@ -17,8 +17,8 @@ export default function UpgradePrompt({ context = "general", onDismiss }) {
         "Portfolio dashboard",
         "Cross-property analytics"
       ],
-      cta: "Upgrade to Pro - $8/month",
-      ctaUrl: createPageUrl("Upgrade")
+      cta: "View Plans & Pricing",
+      ctaUrl: createPageUrl("Pricing")
     },
     cascade_alerts: {
       icon: TrendingUp,
@@ -31,7 +31,7 @@ export default function UpgradePrompt({ context = "general", onDismiss }) {
         "Priority recommendations"
       ],
       cta: "Upgrade to Pro - $8/month",
-      ctaUrl: createPageUrl("Upgrade")
+      ctaUrl: createPageUrl("Pricing")
     },
     contractor_marketplace: {
       icon: Users,
@@ -44,7 +44,7 @@ export default function UpgradePrompt({ context = "general", onDismiss }) {
         "Track contractor work"
       ],
       cta: "Upgrade to Pro - $8/month",
-      ctaUrl: createPageUrl("Upgrade")
+      ctaUrl: createPageUrl("Pricing")
     },
     homecare: {
       icon: Sparkles,

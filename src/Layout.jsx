@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -23,7 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
-  Lightbulb // Added Lightbulb icon
+  Lightbulb
 } from "lucide-react";
 import BottomNav from "./components/navigation/BottomNav";
 
@@ -59,7 +58,7 @@ const navigationItems = [
     color: "text-green-600",
     subItems: [
       { title: "Preserve", url: createPageUrl("Preserve"), icon: Shield },
-      { title: "Upgrade", url: createPageUrl("Upgrade"), icon: Lightbulb }, // Added new sub-item
+      { title: "Upgrade", url: createPageUrl("Upgrade"), icon: Lightbulb },
       { title: "Scale", url: createPageUrl("Scale"), icon: Building2 },
     ]
   },
@@ -69,15 +68,12 @@ const navigationItems = [
     icon: Home,
   },
   {
-    title: "Plans & Pricing",
-    url: createPageUrl("Pricing"), // Changed URL from "Upgrade" to "Pricing"
-    icon: Sparkles,
-    highlight: true,
-  },
-  {
     title: "Services",
-    url: createPageUrl("Services"),
     icon: Wrench,
+    subItems: [
+      { title: "Professional Services", url: createPageUrl("Services"), icon: Wrench },
+      { title: "Plans & Pricing", url: createPageUrl("Pricing"), icon: Sparkles },
+    ]
   },
   {
     title: "Settings",
@@ -92,7 +88,8 @@ export default function Layout({ children }) {
   const [openSections, setOpenSections] = React.useState({
     AWARE: true,
     ACT: true,
-    ADVANCE: true
+    ADVANCE: true,
+    Services: true
   });
 
   const toggleSection = (section) => {
@@ -260,7 +257,7 @@ export default function Layout({ children }) {
               </div>
               <div>
                 <h2 className="font-bold text-gray-900">360° Method</h2>
-                <p className="text-xs text-gray-500">Home Maintenance</p>
+                <p className="text-xs text-gray-500">Home Command Center</p>
               </div>
             </div>
           </div>
@@ -275,7 +272,7 @@ export default function Layout({ children }) {
                       onClick={() => toggleSection(item.title)}
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <item.icon className={`w-4 h-4 ${item.color}`} />
+                      <item.icon className={`w-4 h-4 ${item.color || 'text-gray-600'}`} />
                       <span className="font-semibold flex-1 text-left">{item.title}</span>
                       {isOpen ? (
                         <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -307,15 +304,11 @@ export default function Layout({ children }) {
                 <Link
                   key={item.title}
                   to={item.url}
-                  className={`flex items-center gap-3 px-3 py-2 mb-1 rounded-lg transition-colors ${
-                    item.highlight 
-                      ? 'bg-green-50 hover:bg-green-100 text-green-800 font-semibold border border-green-300'
-                      : 'hover:bg-gray-100'
-                  } ${
+                  className={`flex items-center gap-3 px-3 py-2 mb-1 rounded-lg transition-colors hover:bg-gray-100 ${
                     location.pathname === item.url ? 'bg-gray-100 font-medium' : ''
                   }`}
                 >
-                  <item.icon className={`w-4 h-4 ${item.highlight ? 'text-green-700' : 'text-gray-600'}`} />
+                  <item.icon className="w-4 h-4 text-gray-600" />
                   <span>{item.title}</span>
                 </Link>
               );
@@ -351,7 +344,7 @@ export default function Layout({ children }) {
               </div>
               <div>
                 <h2 className="font-bold text-gray-900">360° Method</h2>
-                <p className="text-xs text-gray-500">Home Maintenance</p>
+                <p className="text-xs text-gray-500">Home Command Center</p>
               </div>
             </div>
             <button
@@ -374,7 +367,7 @@ export default function Layout({ children }) {
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
                       style={{ minHeight: '48px' }}
                     >
-                      <item.icon className={`w-5 h-5 ${item.color}`} />
+                      <item.icon className={`w-5 h-5 ${item.color || 'text-gray-600'}`} />
                       <span className="font-semibold flex-1 text-left text-lg">{item.title}</span>
                       {isOpen ? (
                         <ChevronDown className="w-5 h-5 text-gray-500" />
@@ -409,16 +402,12 @@ export default function Layout({ children }) {
                   key={item.title}
                   to={item.url}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 p-3 mb-2 rounded-lg transition-colors ${
-                    item.highlight 
-                      ? 'bg-green-50 hover:bg-green-100 text-green-800 font-semibold border border-green-300'
-                      : 'hover:bg-gray-100'
-                  } ${
+                  className={`flex items-center gap-3 p-3 mb-2 rounded-lg transition-colors hover:bg-gray-100 ${
                     location.pathname === item.url ? 'bg-gray-100 font-medium' : ''
                   }`}
                   style={{ minHeight: '48px' }}
                 >
-                  <item.icon className={`w-5 h-5 ${item.highlight ? 'text-green-700' : 'text-gray-600'}`} />
+                  <item.icon className="w-5 h-5 text-gray-600" />
                   <span className="text-lg">{item.title}</span>
                 </Link>
               );
