@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -120,7 +121,7 @@ export default function Upgrade() {
             )}
           </div>
           <h1 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '32px' }}>
-            Choose Your Plan
+            Plans & Pricing
           </h1>
           <p className="text-gray-600 text-lg">
             From DIY software to full professional service
