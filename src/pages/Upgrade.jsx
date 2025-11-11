@@ -1,6 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +12,22 @@ import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard.jsx";
 import UpgradeProjectForm from "../components/upgrade/UpgradeProjectForm.jsx";
 
 export default function Upgrade() {
-  const [showNewProjectForm, setShowNewProjectForm] = React.useState(false);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const showNewForm = searchParams.get('new') === 'true';
+  const templateIdFromUrl = searchParams.get('template');
+  
+  const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);
+  const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
+
+  // If URL has template param, show form automatically
+  React.useEffect(() => {
+    if (showNewForm && templateIdFromUrl) {
+      setShowNewProjectForm(true);
+      setTemplateId(templateIdFromUrl);
+    }
+  }, [showNewForm, templateIdFromUrl]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -61,6 +76,9 @@ export default function Upgrade() {
   const handleFormComplete = () => {
     setShowNewProjectForm(false);
     setEditingProject(null);
+    setTemplateId(null);
+    // Clean up URL
+    window.history.replaceState({}, '', createPageUrl("Upgrade"));
   };
 
   if (showNewProjectForm || editingProject) {
@@ -70,6 +88,7 @@ export default function Upgrade() {
           <UpgradeProjectForm
             properties={properties}
             project={editingProject}
+            templateId={templateId}
             memberDiscount={memberDiscount}
             onComplete={handleFormComplete}
             onCancel={handleFormComplete}

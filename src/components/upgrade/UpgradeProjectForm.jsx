@@ -9,13 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
-import { useLocation } from "react-router-dom";
 
-export default function UpgradeProjectForm({ properties, project, memberDiscount = 0, onComplete, onCancel }) {
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const templateId = searchParams.get('template');
-  
+export default function UpgradeProjectForm({ properties, project, templateId, memberDiscount = 0, onComplete, onCancel }) {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [projectData, setProjectData] = React.useState(
@@ -36,7 +31,7 @@ export default function UpgradeProjectForm({ properties, project, memberDiscount
     }
   );
 
-  // Fetch template if coming from template page
+  // Fetch template if templateId provided
   const { data: template } = useQuery({
     queryKey: ['upgrade-template', templateId],
     queryFn: async () => {
@@ -44,7 +39,7 @@ export default function UpgradeProjectForm({ properties, project, memberDiscount
       const templates = await base44.entities.UpgradeTemplate.list();
       return templates.find(t => t.id === templateId);
     },
-    enabled: !!templateId,
+    enabled: !!templateId && !project,
   });
 
   // Pre-fill form with template data
