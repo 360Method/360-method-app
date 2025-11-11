@@ -600,6 +600,154 @@ export default function Baseline() {
           <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
         </div>
 
+        {/* Why This Matters - Prominent Educational Section */}
+        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
+              <Lightbulb className="w-8 h-8 text-yellow-600" />
+              Why Your Baseline Matters
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Prevent Disasters */}
+              <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h3 className="font-bold text-red-900 text-lg">Prevent Disasters</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span><strong>$25K-50K</strong> in prevented emergency costs</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Know when systems will fail <strong>before</strong> they do</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Replace on <strong>your timeline</strong>, not during crisis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Avoid <strong>3X emergency pricing</strong> during peak season</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Financial Control */}
+              <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-bold text-green-900 text-lg">Financial Control</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Budget <strong>2-3 years ahead</strong> with confidence</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Plan major expenses <strong>before</strong> they're urgent</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Get <strong>competitive bids</strong> when you have time</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Tax deductions for <strong>rental properties</strong></span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Property Value */}
+              <div className="bg-white rounded-lg p-5 border-2 border-blue-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-bold text-blue-900 text-lg">Property Value</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span><strong>$8K-15K</strong> higher sale value with documentation</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span>Pass <strong>inspections faster</strong> during sales</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span>Command <strong>premium pricing</strong> as well-maintained</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span><strong>Lower insurance</strong> premiums possible</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* The Bottom Line */}
+            <div className="bg-white rounded-lg p-5 border-2 border-purple-300">
+              <div className="flex items-start gap-3">
+                <Target className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
+                  <p className="text-gray-800 leading-relaxed">
+                    <strong>Most homeowners react to problems.</strong> They replace systems when they fail—during peak season, 
+                    at emergency pricing, with no time to shop around. A $6,000 planned HVAC replacement becomes $12,000+ when 
+                    it fails in July. <strong>Your baseline changes this.</strong> You'll know your 18-year-old HVAC has 
+                    2 years left, budget for it, get quotes in spring, and replace on <em>your</em> timeline at half the cost.
+                  </p>
+                  <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
+                    <p className="text-sm font-semibold text-purple-900">
+                      ⚡ <strong>This takes 30-60 minutes.</strong> It saves you tens of thousands of dollars and years of stress.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* What You'll Document */}
+            <div className="bg-white rounded-lg p-5 border-2 border-gray-300">
+              <h3 className="font-bold text-gray-900 text-lg mb-3 flex items-center gap-2">
+                <CheckCircle2 className="w-6 h-6 text-gray-700" />
+                What You'll Document:
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-800">
+                <div>
+                  <p className="font-semibold mb-2">✓ For Each System:</p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Brand/model (photo of data plate works!)</li>
+                    <li>• Installation year (critical for planning)</li>
+                    <li>• Current condition</li>
+                    <li>• Photos for insurance claims</li>
+                    <li>• Warranty information</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold mb-2">✓ Then We Calculate:</p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Expected lifespan remaining</li>
+                    <li>• Replacement timeline & budget</li>
+                    <li>• Preventive maintenance schedule</li>
+                    <li>• Cascade failure risks</li>
+                    <li>• Property health score</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Milestone Celebration */}
         {recentMilestone && (
           <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 animate-pulse">
