@@ -5,24 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, AlertTriangle, DollarSign, Clock, TrendingUp, BookOpen, Video, Calculator } from "lucide-react";
+import { ListOrdered, DollarSign, AlertTriangle, TrendingUp, Plus, BookOpen, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
-
-const PRIORITY_COLORS = {
-  High: "bg-red-100 text-red-800 border-red-200",
-  Medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  Low: "bg-blue-100 text-blue-800 border-blue-200",
-  Routine: "bg-gray-100 text-gray-800 border-gray-200"
-};
+import ManualTaskForm from "../components/tasks/ManualTaskForm";
 
 export default function Prioritize() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [filterPriority, setFilterPriority] = React.useState('all');
+  const [priorityFilter, setPriorityFilter] = React.useState('all');
+  const [showTaskForm, setShowTaskForm] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -45,44 +40,55 @@ export default function Prioritize() {
     }
   }, [properties, selectedProperty]);
 
-  // Filter identified tasks (not completed)
-  const activeTasks = tasks.filter(t => t.status !== 'Completed');
+  // Filter out completed tasks, sort by cascade risk then priority
+  const activeTasks = tasks
+    .filter(t => t.status !== 'Completed')
+    .sort((a, b) => {
+      // Sort by cascade risk score first (higher is more urgent)
+      if (b.cascade_risk_score !== a.cascade_risk_score) {
+        return (b.cascade_risk_score || 0) - (a.cascade_risk_score || 0);
+      }
+      // Then by priority
+      const priorityOrder = { 'High': 0, 'Medium': 1, 'Low': 2, 'Routine': 3 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
 
-  // Sort by cascade risk and priority
-  const sortedTasks = [...activeTasks].sort((a, b) => {
-    if (b.cascade_risk_score !== a.cascade_risk_score) {
-      return (b.cascade_risk_score || 0) - (a.cascade_risk_score || 0);
-    }
-    const priorityOrder = { High: 3, Medium: 2, Low: 1, Routine: 0 };
-    return priorityOrder[b.priority] - priorityOrder[a.priority];
-  });
-
-  // Apply filter
-  let filteredTasks = sortedTasks;
-  if (filterPriority !== 'all') {
-    filteredTasks = filteredTasks.filter(t => t.priority === filterPriority);
-  }
+  // Apply priority filter
+  const filteredTasks = priorityFilter === 'all' 
+    ? activeTasks 
+    : activeTasks.filter(t => t.priority === priorityFilter);
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MaintenanceTask.update(id, data),
+    mutationFn: ({ taskId, updates }) => 
+      base44.entities.MaintenanceTask.update(taskId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
     },
   });
 
   const handlePriorityChange = (taskId, newPriority) => {
-    updateTaskMutation.mutate({ id: taskId, data: { priority: newPriority } });
+    updateTaskMutation.mutate({ taskId, updates: { priority: newPriority } });
   };
 
   const handleStatusChange = (taskId, newStatus) => {
-    updateTaskMutation.mutate({ id: taskId, data: { status: newStatus } });
+    updateTaskMutation.mutate({ taskId, updates: { status: newStatus } });
   };
 
   // Calculate stats
   const highPriorityCount = activeTasks.filter(t => t.priority === 'High').length;
   const cascadeRiskCount = activeTasks.filter(t => t.has_cascade_alert).length;
-  const totalPotentialCost = activeTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
-  const totalCurrentCost = activeTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
+  const currentCost = activeTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
+  const potentialCost = activeTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || t.current_fix_cost || 0), 0);
+
+  if (showTaskForm) {
+    return (
+      <ManualTaskForm
+        propertyId={selectedProperty}
+        onComplete={() => setShowTaskForm(false)}
+        onCancel={() => setShowTaskForm(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -90,48 +96,56 @@ export default function Prioritize() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">ACT → Prioritize</h1>
-            <p className="text-gray-600 mt-1">Smart priority queue with cascade risk analysis</p>
+            <p className="text-gray-600 mt-1">Strategic task ranking based on cascade risk</p>
           </div>
+          <Button
+            onClick={() => setShowTaskForm(true)}
+            className="gap-2"
+            style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+          >
+            <Plus className="w-5 h-5" />
+            Add Task
+          </Button>
         </div>
 
-        {/* Why Strategic Prioritization Matters - Educational Section */}
-        {activeTasks.length > 0 && (
-          <Card className="border-2 border-orange-300 bg-orange-50">
+        {/* Educational section for first-time users */}
+        {activeTasks.length === 0 && (
+          <Card className="border-2 border-blue-300 bg-blue-50">
             <CardContent className="p-6">
               <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <ListOrdered className="w-6 h-6 text-orange-600" />
+                <BookOpen className="w-6 h-6 text-blue-600" />
                 Why Strategic Prioritization Matters
               </h3>
               <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Not all repairs are created equal. A $150 gutter cleaning prevents $20K foundation damage. 
-                A $50 HVAC filter saves $8K system replacement. Smart prioritization = massive savings.
+                Not all maintenance is equal. Some tasks, if ignored, trigger chain reactions costing 5-10X more. 
+                Prioritize strategically = prevent disasters.
               </p>
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-red-600">❌ Wrong Priority</p>
+                  <p className="font-semibold mb-2 text-red-600">❌ Random Prioritization</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Fix cosmetic issues first = $2K spent</li>
-                    <li>• Ignore small leak = cascades to $30K disaster</li>
-                    <li>• Wait until "convenient" = emergency at 3X cost</li>
-                    <li>• No budget planning = reactive spending</li>
+                    <li>• Fix what breaks when it breaks</li>
+                    <li>• Ignore cascade risks until disaster</li>
+                    <li>• Emergency replacements at 3X cost</li>
+                    <li>• Always reactive, never strategic</li>
                   </ul>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-green-600">✅ Strategic Priority</p>
+                  <p className="font-semibold mb-2 text-green-600">✅ Strategic Prioritization</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Fix cascade risks first = prevent disasters</li>
-                    <li>• Small leak caught = $200 repair vs. $30K</li>
-                    <li>• Plan timeline = no emergency pricing</li>
-                    <li>• Budget by ROI = maximize value</li>
+                    <li>• Prevent cascade failures ($20K-50K+)</li>
+                    <li>• Fix high-risk items before they spread</li>
+                    <li>• Budget accurately based on urgency</li>
+                    <li>• Control = peace of mind</li>
                   </ul>
                 </div>
               </div>
 
-              <div className="border-t border-orange-300 pt-4">
+              <div className="border-t border-blue-300 pt-4">
                 <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
                   📚 Learn More:
                 </p>
-                <div className="grid md:grid-cols-3 gap-3">
+                <div className="grid md:grid-cols-2 gap-3">
                   <Button
                     asChild
                     variant="outline"
@@ -154,17 +168,6 @@ export default function Prioritize() {
                       Cascade Risk Explained (12 min)
                     </Link>
                   </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Cost Avoidance Calculator
-                    </Link>
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -174,7 +177,7 @@ export default function Prioritize() {
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">
             <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
                   <Select value={selectedProperty} onValueChange={setSelectedProperty}>
@@ -192,16 +195,16 @@ export default function Prioritize() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Filter Priority</label>
-                  <Select value={filterPriority} onValueChange={setFilterPriority}>
-                    <SelectTrigger className="w-40">
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-48">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Routine">Routine</SelectItem>
+                      <SelectItem value="High">High Only</SelectItem>
+                      <SelectItem value="Medium">Medium Only</SelectItem>
+                      <SelectItem value="Low">Low Only</SelectItem>
+                      <SelectItem value="Routine">Routine Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -212,59 +215,43 @@ export default function Prioritize() {
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-4">
-          <Card className="border-none shadow-lg">
+          <Card className="border-2 border-red-300 bg-red-50">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">High Priority</p>
-                  <p className="text-2xl font-bold text-gray-900">{highPriorityCount}</p>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+                <p className="text-3xl font-bold text-red-700">{highPriorityCount}</p>
               </div>
+              <p className="text-sm font-semibold text-gray-700">High Priority Tasks</p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg">
+          <Card className="border-2 border-orange-300 bg-orange-50">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Cascade Risks</p>
-                  <p className="text-2xl font-bold text-gray-900">{cascadeRiskCount}</p>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <TrendingUp className="w-8 h-8 text-orange-600" />
+                <p className="text-3xl font-bold text-orange-700">{cascadeRiskCount}</p>
               </div>
+              <p className="text-sm font-semibold text-gray-700">Cascade Risks</p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg">
+          <Card className="border-2 border-blue-300 bg-blue-50">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Fix Now Cost</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalCurrentCost.toLocaleString()}</p>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <DollarSign className="w-8 h-8 text-blue-600" />
+                <p className="text-2xl font-bold text-blue-700">${currentCost.toLocaleString()}</p>
               </div>
+              <p className="text-sm font-semibold text-gray-700">Current Fix Cost</p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg">
+          <Card className="border-2 border-purple-300 bg-purple-50">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">If Delayed</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalPotentialCost.toLocaleString()}</p>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <DollarSign className="w-8 h-8 text-purple-600" />
+                <p className="text-2xl font-bold text-purple-700">${potentialCost.toLocaleString()}</p>
               </div>
+              <p className="text-sm font-semibold text-gray-700">If Delayed Cost</p>
             </CardContent>
           </Card>
         </div>
@@ -274,7 +261,7 @@ export default function Prioritize() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ListOrdered className="w-5 h-5" />
-              Priority Queue ({filteredTasks.length} items)
+              Priority Queue ({filteredTasks.length} tasks)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -287,6 +274,7 @@ export default function Prioritize() {
                     rank={index + 1}
                     onPriorityChange={handlePriorityChange}
                     onStatusChange={handleStatusChange}
+                    propertyId={selectedProperty}
                   />
                 ))}
               </div>
@@ -294,7 +282,19 @@ export default function Prioritize() {
               <div className="text-center py-12 text-gray-500">
                 <ListOrdered className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-xl font-semibold mb-2">No Tasks in Queue</h3>
-                <p>Great work! You're staying on top of your maintenance.</p>
+                <p className="mb-4">
+                  {priorityFilter !== 'all' 
+                    ? 'Try changing the priority filter or add a new task'
+                    : 'Create your first maintenance task or run an inspection to identify issues'
+                  }
+                </p>
+                <Button
+                  onClick={() => setShowTaskForm(true)}
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add First Task
+                </Button>
               </div>
             )}
           </CardContent>
