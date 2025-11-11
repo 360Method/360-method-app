@@ -1,9 +1,8 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +17,15 @@ import {
   FileText,
   Wrench,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Lightbulb,
+  Target,
+  Shield,
+  DollarSign,
+  TrendingUp,
+  ArrowRight,
+  MapPin,
+  ListOrdered
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import {
@@ -91,6 +98,17 @@ export default function Inspect() {
     setActiveInspection(null);
   };
 
+  const handleStartTraditionalInspection = () => {
+    setCurrentView('setup');
+    setActiveInspection(null);
+  };
+
+  const handleStartPhysicalInspection = () => {
+    // Create a new inspection and go directly to physical walkthrough
+    setCurrentView('setup');
+    setActiveInspection({ usePhysicalWalkthrough: true });
+  };
+
   const handleInspectionSetupComplete = (inspection) => {
     setActiveInspection(inspection);
     setCurrentView('walkthrough');
@@ -141,7 +159,6 @@ export default function Inspect() {
   const getDeleteMessage = () => {
     if (!inspectionToDelete) return '';
     
-    // const completionStatus = inspectionToDelete.status === 'Completed' ? 'completed' : 'in-progress'; // This variable is not used
     const hasIssues = (inspectionToDelete.issues_found || 0) > 0;
     
     let message = `Are you sure you want to delete the ${inspectionToDelete.season} ${inspectionToDelete.year} inspection?`;
@@ -208,62 +225,24 @@ export default function Inspect() {
   // Main inspection dashboard view
   return (
     <div className="min-h-screen bg-white">
-      <div className="mobile-container md:max-w-6xl md:mx-auto">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <ClipboardCheck className="w-8 h-8 text-blue-600" />
-            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-              Seasonal Diagnostics
-            </h1>
-          </div>
-          <p className="text-gray-600" style={{ fontSize: '16px' }}>
-            Regular inspections catch problems while they're cheap to fix
-          </p>
+        <div>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>AWARE → INSPECT</h1>
+          <p className="text-xl text-gray-600">Seasonal Property Inspections</p>
+          <p className="text-gray-600 mt-1">Catch problems while they're cheap to fix</p>
         </div>
 
-        {/* Connection Explanation */}
-        {inspections.length === 0 && hasBaselineSystems && (
-          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+        {/* Property Selector - MOVED UP */}
+        {properties.length > 0 && (
+          <Card className="border-2 border-blue-300 shadow-lg">
             <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <Eye className="w-6 h-6 text-blue-600" />
-                How Baseline & Inspections Work Together
-              </h3>
-              <div className="space-y-3 text-gray-800" style={{ fontSize: '15px', lineHeight: '1.6' }}>
-                <p>
-                  <strong>Baseline</strong> = One-time documentation of your systems (age, specs, initial condition)
-                </p>
-                <p>
-                  <strong>Inspections</strong> = Regular seasonal checks to see what's changed since baseline
-                </p>
-                <div className="bg-white p-4 rounded-lg mt-4">
-                  <p className="font-semibold mb-2 text-blue-900">🎯 How they connect:</p>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li>• Baseline creates the reference point ("HVAC installed 2015, working well")</li>
-                    <li>• Inspections track changes ("2025: Filter dirty, airflow reduced 30%")</li>
-                    <li>• Issues found update baseline system condition automatically</li>
-                    <li>• History shows how systems degrade over time</li>
-                  </ul>
-                </div>
-                <p className="text-sm font-medium text-blue-900 mt-4">
-                  💡 Think of Baseline as your "Day 1 photo" and Inspections as "progress check-ins" every 3 months
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Property Selector */}
-        {properties.length > 1 && (
-          <Card className="border-none shadow-sm mb-6">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property:</label>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                  <SelectValue placeholder="Choose a property" />
+                <SelectTrigger className="w-full md:w-96">
+                  <SelectValue placeholder="Select a property" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent>
                   {properties.map((property) => (
                     <SelectItem key={property.id} value={property.id}>
                       {property.address}
@@ -275,10 +254,286 @@ export default function Inspect() {
           </Card>
         )}
 
+        {/* PROMINENT INSPECTION METHOD SELECTOR - Always visible when property selected and baseline complete */}
+        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
+          <Card className="border-4 border-blue-400 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 shadow-2xl">
+            <CardHeader className="pb-4">
+              <div className="text-center">
+                <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                  Choose Your Inspection Method
+                </CardTitle>
+                <p className="text-gray-700">Pick the approach that works best for you</p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Two Big Options */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Traditional Area-by-Area */}
+                <Card 
+                  className="border-3 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group hover:shadow-xl"
+                  onClick={handleStartTraditionalInspection}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <ListOrdered className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          📋 Traditional Inspection
+                        </h3>
+                        <Badge className="bg-blue-600 text-white mb-3">
+                          <Clock className="w-3 h-3 mr-1" />
+                          20-30 minutes
+                        </Badge>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Checklist-based inspection organized by area. Select which areas to inspect and work through them systematically.
+                        </p>
+                      </div>
+                      <div className="bg-blue-100 rounded-lg p-4 text-left">
+                        <p className="text-xs font-semibold text-blue-900 mb-2">✓ Perfect for:</p>
+                        <ul className="text-xs text-blue-800 space-y-1">
+                          <li>• Focused inspections</li>
+                          <li>• Desktop/tablet use</li>
+                          <li>• Checklist-driven mindset</li>
+                          <li>• Selective area checking</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        className="w-full gap-2 text-lg py-6 group-hover:bg-blue-700"
+                        style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
+                      >
+                        <ListOrdered className="w-5 h-5" />
+                        Start Traditional
+                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Physical Walkthrough */}
+                <Card 
+                  className="border-3 border-teal-300 hover:border-teal-500 transition-all cursor-pointer group hover:shadow-xl"
+                  onClick={handleStartPhysicalInspection}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <MapPin className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          🏠 Physical Walkthrough
+                        </h3>
+                        <Badge className="bg-teal-600 text-white mb-3">
+                          <Clock className="w-3 h-3 mr-1" />
+                          30-40 minutes
+                        </Badge>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Room-by-room route through property. Optimal zone-based path minimizes backtracking and ensures complete coverage.
+                        </p>
+                      </div>
+                      <div className="bg-teal-100 rounded-lg p-4 text-left">
+                        <p className="text-xs font-semibold text-teal-900 mb-2">✓ Perfect for:</p>
+                        <ul className="text-xs text-teal-800 space-y-1">
+                          <li>• Complete inspections</li>
+                          <li>• Mobile on-site use</li>
+                          <li>• Physical movement mindset</li>
+                          <li>• Maximum efficiency</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        className="w-full gap-2 text-lg py-6 group-hover:bg-teal-700"
+                        style={{ backgroundColor: '#14B8A6', minHeight: '56px' }}
+                      >
+                        <MapPin className="w-5 h-5" />
+                        Start Walkthrough
+                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Professional Option - Below */}
+              <div className="border-t pt-4">
+                <div className="bg-white rounded-lg p-4 border-2 border-gray-300">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold flex-shrink-0">
+                        💼
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">Need Professional Help?</p>
+                        <p className="text-xs text-gray-600">Certified inspector comes to your property</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setShowServiceDialog(true)}
+                      variant="outline"
+                      className="whitespace-nowrap"
+                      style={{ minHeight: '48px' }}
+                    >
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Request Pro
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Why Inspections Matter - Educational Section */}
+        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
+              <Lightbulb className="w-8 h-8 text-yellow-600" />
+              Why Regular Inspections Matter
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Catch Early */}
+              <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Target className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h3 className="font-bold text-red-900 text-lg">Catch Problems Early</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Small issues become <strong>expensive disasters</strong> if ignored</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span><strong>$200 repair</strong> now vs <strong>$8,000</strong> later</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Seasonal changes reveal <strong>hidden problems</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span>Track <strong>degradation over time</strong></span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Prevent Cascades */}
+              <div className="bg-white rounded-lg p-5 border-2 border-orange-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <h3 className="font-bold text-orange-900 text-lg">Prevent Cascades</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">•</span>
+                    <span><strong>One failure</strong> triggers <strong>chain reactions</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">•</span>
+                    <span>Gutters → Foundation → Basement flooding</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">•</span>
+                    <span>Small roof leak → Rotted deck → Interior damage</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">•</span>
+                    <span>Stop problems <strong>before they spread</strong></span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Protect Value */}
+              <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-bold text-green-900 text-lg">Protect Value</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Well-maintained homes <strong>sell for 10-15% more</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Inspection records prove <strong>proactive care</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span><strong>Faster sales</strong> with documentation</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span>Lower <strong>insurance premiums</strong> possible</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* The Bottom Line */}
+            <div className="bg-white rounded-lg p-5 border-2 border-purple-300">
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
+                  <p className="text-gray-800 leading-relaxed">
+                    <strong>Seasonal inspections = predictable maintenance.</strong> Most homeowners only look at systems when 
+                    they fail—resulting in emergency repairs at 2-3X normal cost. Regular inspections let you spot the <em>"my HVAC 
+                    filter is dirty and airflow is reduced"</em> before it becomes <em>"my AC died in July and emergency replacement 
+                    costs $12,000."</em> A <strong>20-minute inspection</strong> every 3 months prevents thousands in emergency costs.
+                  </p>
+                  <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
+                    <p className="text-sm font-semibold text-purple-900">
+                      ⚡ <strong>Recommended:</strong> Spring (pre-AC season), Fall (pre-heating season), plus 2 mid-season checks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connection to Baseline */}
+            <div className="bg-white rounded-lg p-5 border-2 border-blue-300">
+              <h3 className="font-bold text-blue-900 text-lg mb-3 flex items-center gap-2">
+                <Eye className="w-6 h-6" />
+                How Baseline & Inspections Work Together:
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-800">
+                <div>
+                  <p className="font-semibold mb-2 text-blue-900">Baseline (One-Time):</p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Documents <strong>what you have</strong></li>
+                    <li>• Records initial condition</li>
+                    <li>• Sets reference point</li>
+                    <li>• Example: "HVAC installed 2015, working well"</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold mb-2 text-blue-900">Inspections (Regular):</p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Tracks <strong>what's changed</strong></li>
+                    <li>• Identifies new issues</li>
+                    <li>• Updates system conditions</li>
+                    <li>• Example: "Filter dirty, airflow reduced 30%"</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* In-Progress Inspection Alert */}
         {inProgressInspection && (
-          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
-            <CardContent className="p-4">
+          <Card className="border-2 border-orange-300 bg-orange-50">
+            <CardContent className="p-6">
               <div className="flex items-start gap-3">
                 <Clock className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -313,35 +568,9 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3 mb-6">
-          <Button
-            onClick={handleStartNewInspection}
-            disabled={!hasBaselineSystems}
-            className="w-full font-bold"
-            style={{ 
-              backgroundColor: hasBaselineSystems ? '#3B82F6' : '#CCCCCC',
-              minHeight: '56px',
-              fontSize: '16px'
-            }}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Start New Inspection
-          </Button>
-          
-          <Button
-            onClick={() => setShowServiceDialog(true)}
-            variant="outline"
-            style={{ minHeight: '48px' }}
-          >
-            <Wrench className="w-4 h-4 mr-2" />
-            Request Professional Inspection
-          </Button>
-        </div>
-
         {/* Baseline System Warning */}
-        {!hasBaselineSystems && (
-          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
+        {!hasBaselineSystems && selectedPropertyId && (
+          <Card className="border-2 border-orange-300 bg-orange-50">
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
@@ -367,7 +596,7 @@ export default function Inspect() {
         {/* Inspection History */}
         {inspections.length > 0 && (
           <div>
-            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: '#1B365D' }}>
               Inspection History
             </h2>
             
@@ -392,7 +621,7 @@ export default function Inspect() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
+                              <h3 className="font-bold text-xl" style={{ color: '#1B365D' }}>
                                 {inspection.season} {inspection.year}
                               </h3>
                               <Badge style={{ 
@@ -497,21 +726,14 @@ export default function Inspect() {
         )}
 
         {/* Empty State */}
-        {inspections.length === 0 && hasBaselineSystems && (
-          <Card className="border-none shadow-sm">
+        {inspections.length === 0 && hasBaselineSystems && !inProgressInspection && (
+          <Card className="border-none shadow-lg">
             <CardContent className="p-12 text-center">
               <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2">No Inspections Yet</h3>
               <p className="text-gray-600 mb-6">
-                Start your first seasonal inspection to catch problems early
+                Choose your inspection method above to get started
               </p>
-              <Button
-                onClick={handleStartNewInspection}
-                style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Start Your First Inspection
-              </Button>
             </CardContent>
           </Card>
         )}
@@ -540,7 +762,6 @@ export default function Inspect() {
         confirmText="Yes, Delete"
         cancelText="Cancel"
         variant="destructive"
-        isLoading={deleteInspectionMutation.isPending}
       />
     </div>
   );
