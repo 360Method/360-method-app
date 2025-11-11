@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +9,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PropertyWizard from "../components/properties/PropertyWizard";
 import PropertyEditDialog from "../components/properties/PropertyEditDialog";
-import UpgradePrompt from "../components/UpgradePrompt"; // Added import
+import UpgradePrompt from "../components/upgrade/UpgradePrompt";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +31,7 @@ export default function Properties() {
   const [showWizard, setShowWizard] = React.useState(false);
   const [editingProperty, setEditingProperty] = React.useState(null);
   const [deletingProperty, setDeletingProperty] = React.useState(null);
-  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false); // Added state
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const queryClient = useQueryClient();
 
   const { data: properties = [] } = useQuery({
@@ -40,14 +39,12 @@ export default function Properties() {
     queryFn: () => base44.entities.Property.list('-created_date'),
   });
 
-  // Added user query
   const { data: user } = useQuery({
     queryKey: ['current-user'],
     queryFn: () => base44.auth.me(),
   });
 
-  // Added property limit logic
-  const propertyLimit = user?.property_limit || 1; // Default to 1 if not set
+  const propertyLimit = user?.property_limit || 1;
   const canAddProperty = properties.length < propertyLimit;
 
   const deletePropertyMutation = useMutation({
@@ -76,7 +73,6 @@ export default function Properties() {
     }
   };
 
-  // Added handleAddProperty function
   const handleAddProperty = () => {
     if (!canAddProperty) {
       setShowUpgradePrompt(true);
@@ -122,14 +118,14 @@ export default function Properties() {
         {/* Add Property Button */}
         <div className="mb-6">
           <Button
-            onClick={handleAddProperty} // Updated onClick
+            onClick={handleAddProperty}
             className="w-full md:w-auto font-bold"
             style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
           >
             <Plus className="w-5 h-5 mr-2" />
             Add New Property
           </Button>
-          {!canAddProperty && ( // Added property limit message
+          {!canAddProperty && (
             <p className="text-sm text-orange-600 mt-2">
               ⚠️ Property limit reached ({properties.length}/{propertyLimit}) - Upgrade to add more
             </p>
@@ -145,7 +141,7 @@ export default function Properties() {
                 Start by adding your first property to begin protecting your investment
               </p>
               <Button
-                onClick={handleAddProperty} // Updated onClick
+                onClick={handleAddProperty}
                 style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
               >
                 <Plus className="w-5 h-5 mr-2" />
