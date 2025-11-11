@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucid
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
+import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 
 export default function Schedule() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -78,6 +79,8 @@ export default function Schedule() {
     return isSameMonth(taskDate, currentMonth);
   }).length;
 
+  const currentProperty = properties.find(p => p.id === selectedProperty);
+
   if (showTaskForm) {
     return (
       <ManualTaskForm
@@ -145,6 +148,15 @@ export default function Schedule() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Seasonal Task Suggestions */}
+        {currentProperty && (
+          <SeasonalTaskSuggestions 
+            propertyId={selectedProperty}
+            property={currentProperty}
+            compact={false}
+          />
         )}
 
         {/* Calendar */}

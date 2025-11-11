@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +24,7 @@ import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
 import PhaseProgressCard from "../components/dashboard/PhaseProgressCard";
 import UpgradePrompt from "../components/upgrade/UpgradePrompt";
 import TierBadge from "../components/upgrade/TierBadge";
+import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 
 export default function Dashboard() {
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
@@ -147,6 +149,9 @@ export default function Dashboard() {
     );
   }
 
+  // For single property, get the first property for seasonal suggestions
+  const primaryProperty = properties[0];
+
   return (
     <div className="min-h-screen bg-white">
       <div className="mobile-container md:max-w-6xl md:mx-auto">
@@ -240,6 +245,15 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Seasonal Task Suggestions - Compact version for dashboard */}
+        {primaryProperty && (
+          <SeasonalTaskSuggestions 
+            propertyId={primaryProperty.id}
+            property={primaryProperty}
+            compact={true}
+          />
         )}
 
         {/* Today's Mission Card */}
