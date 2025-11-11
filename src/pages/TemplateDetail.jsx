@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar } from "lucide-react";
+import { ArrowLeft, CheckCircle2, DollarSign, TrendingUp, Clock, Home, Star, Sparkles, Calendar, Shield } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -41,7 +41,6 @@ export default function TemplateDetail() {
     : 0;
 
   const handleStartProject = () => {
-    // Navigate to Upgrade page with template data in state
     navigate(createPageUrl("Upgrade") + "?new=true&template=" + templateId);
   };
 
@@ -61,10 +60,7 @@ export default function TemplateDetail() {
   }
 
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-  const coordinationFee = avgCost * 0.10; // 10% standard coordination fee
-  const memberSavings = coordinationFee * memberDiscount;
-  const memberCoordinationFee = coordinationFee - memberSavings;
-  const totalWithDiscount = avgCost + memberCoordinationFee;
+  const memberSavings = avgCost * memberDiscount;
 
   // Estimated property value (use first property or default)
   const estimatedHomeValue = properties[0]?.current_value || properties[0]?.purchase_price || 400000;
@@ -109,6 +105,74 @@ export default function TemplateDetail() {
             )}
           </div>
         </div>
+
+        {/* Member Benefits or Upsell */}
+        {isServiceMember ? (
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <Shield className="w-8 h-8 text-purple-600 flex-shrink-0" />
+                <div>
+                  <Badge className="mb-2" style={{ backgroundColor: '#8B5CF6' }}>
+                    YOUR MEMBER BENEFIT
+                  </Badge>
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    Premium Contractor Network Access
+                  </h3>
+                  <p className="text-gray-800 mb-3">
+                    As a {currentTier.includes('essential') ? 'Essential' : currentTier.includes('premium') ? 'Premium' : 'Elite'} member, 
+                    you get this project coordinated through our vetted contractor network.
+                  </p>
+                  <div className="bg-white rounded-lg p-4">
+                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Your Benefits:</p>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Pre-negotiated pricing (~{memberDiscount * 100}% savings)</li>
+                      <li>• Estimated savings on this project: <strong className="text-purple-700">${Math.round(memberSavings).toLocaleString()}</strong></li>
+                      <li>• Free project coordination & management</li>
+                      <li>• Quality guarantee from your operator</li>
+                      <li>• No bidding, vetting, or oversight hassle</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                    💰 Save Thousands with Service Membership
+                  </h3>
+                  <p className="text-gray-800 mb-3">
+                    Members get access to our vetted contractor network with pre-negotiated rates.
+                  </p>
+                  <div className="bg-white rounded-lg p-4 mb-3">
+                    <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>
+                      Potential Savings on This ${avgCost.toLocaleString()} Project:
+                    </p>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      <p>• Essential (5% savings): <strong className="text-green-700">${Math.round(avgCost * 0.05).toLocaleString()}</strong></p>
+                      <p>• Premium (10% savings): <strong className="text-green-700">${Math.round(avgCost * 0.10).toLocaleString()}</strong></p>
+                      <p>• Elite (15% savings): <strong className="text-green-700">${Math.round(avgCost * 0.15).toLocaleString()}</strong></p>
+                    </div>
+                  </div>
+                  <Button
+                    asChild
+                    size="sm"
+                    style={{ backgroundColor: '#28A745', minHeight: '44px' }}
+                  >
+                    <Link to={createPageUrl("Pricing")}>
+                      View Plans & Pricing →
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* The Opportunity */}
         <Card className="border-2 border-green-300 bg-green-50 mb-6">
@@ -171,12 +235,12 @@ export default function TemplateDetail() {
         <Card className="border-2 border-blue-300 mb-6">
           <CardContent className="p-6">
             <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-              💰 Cost Breakdown
+              💰 Investment Range
             </h2>
             
             <div className="space-y-4 mb-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Estimated Total Investment</p>
+                <p className="text-sm text-gray-600 mb-1">Typical Investment Range</p>
                 <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>
                   ${template.average_cost_min.toLocaleString()} - ${template.average_cost_max.toLocaleString()}
                 </p>
@@ -185,40 +249,27 @@ export default function TemplateDetail() {
                 </p>
               </div>
 
-              {isServiceMember && memberDiscount > 0 && (
+              {isServiceMember && memberSavings > 0 && (
                 <div className="border-t border-gray-200 pt-4">
-                  <Badge className="mb-2" style={{ backgroundColor: '#8B5CF6' }}>
-                    YOUR MEMBER SAVINGS
-                  </Badge>
                   <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-700">Standard coordination fee:</span>
-                      <span className="text-sm font-semibold">${coordinationFee.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-700">Your discounted fee ({memberDiscount * 100}% off):</span>
-                      <span className="text-sm font-semibold text-green-700">${Math.round(memberCoordinationFee).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-purple-200 pt-2">
-                      <span className="font-semibold text-purple-900">You save:</span>
-                      <span className="font-bold text-purple-900">${Math.round(memberSavings).toLocaleString()}</span>
+                    <p className="font-semibold text-purple-900 mb-2">
+                      🌟 Your Member Pricing
+                    </p>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-gray-700">
+                        Market rate: <span className="line-through">${avgCost.toLocaleString()}</span>
+                      </p>
+                      <p className="text-gray-700">
+                        Your savings: <span className="font-bold text-purple-700">-${Math.round(memberSavings).toLocaleString()}</span>
+                      </p>
+                      <p className="font-bold text-lg text-purple-900">
+                        Your cost: ~${Math.round(avgCost - memberSavings).toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-
-            {currentTier.includes('elite') && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <p className="font-semibold text-yellow-900 mb-1">🌟 Elite Member Bonus</p>
-                <p className="text-sm text-yellow-800">
-                  + Free project management ($500 value)
-                </p>
-                <p className="text-sm font-bold text-yellow-900">
-                  Total Elite savings: ${(memberSavings + 500).toLocaleString()}
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -378,7 +429,7 @@ export default function TemplateDetail() {
                 style={{ backgroundColor: '#28A745', minHeight: '56px' }}
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                Use This Template - Customize Details
+                Create Project from Template
               </Button>
 
               {isServiceMember && user?.operator_name && (
@@ -389,7 +440,22 @@ export default function TemplateDetail() {
                   style={{ minHeight: '56px', borderColor: '#8B5CF6', color: '#8B5CF6' }}
                 >
                   <Link to={createPageUrl("Services")}>
+                    <Shield className="w-5 h-5 mr-2" />
                     Request Quote from {user.operator_name}
+                  </Link>
+                </Button>
+              )}
+
+              {!isServiceMember && (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full font-semibold"
+                  style={{ minHeight: '56px', borderColor: '#3B82F6', color: '#3B82F6' }}
+                >
+                  <Link to={createPageUrl("Pricing")}>
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    See Member Benefits & Savings
                   </Link>
                 </Button>
               )}

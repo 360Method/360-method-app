@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ export default function ExploreTemplates() {
   });
 
   const currentTier = user?.subscription_tier || 'free';
+  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
   const memberDiscount = currentTier.includes('essential') ? 0.05 
     : currentTier.includes('premium') ? 0.10 
     : currentTier.includes('elite') ? 0.15 
@@ -81,14 +83,42 @@ export default function ExploreTemplates() {
         </div>
 
         {/* Member Savings Banner */}
-        {memberDiscount > 0 && (
+        {isServiceMember && memberDiscount > 0 && (
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge style={{ backgroundColor: '#8B5CF6' }}>MEMBER BENEFIT</Badge>
                 <p className="text-sm font-semibold text-purple-900">
-                  💰 All prices shown already include your {memberDiscount * 100}% member discount on coordination fees
+                  🌟 All projects coordinated through your vetted contractor network with {memberDiscount * 100}% negotiated savings
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Non-Member Upsell */}
+        {!isServiceMember && (
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                    💰 Members save 5-15% on ALL upgrades through our contractor network
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    Plus: free project coordination, quality guarantee, and no bidding hassle
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  style={{ backgroundColor: '#3B82F6', minHeight: '40px' }}
+                >
+                  <Link to={createPageUrl("Pricing")}>
+                    Learn More
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -184,6 +214,7 @@ export default function ExploreTemplates() {
                       key={template.id}
                       template={template}
                       memberDiscount={memberDiscount}
+                      isServiceMember={isServiceMember}
                     />
                   ))}
                 </div>
@@ -207,6 +238,7 @@ export default function ExploreTemplates() {
                   key={template.id}
                   template={template}
                   memberDiscount={memberDiscount}
+                  isServiceMember={isServiceMember}
                 />
               ))}
             </div>
@@ -262,7 +294,7 @@ export default function ExploreTemplates() {
 }
 
 // Template Card Component
-function TemplateCard({ template, memberDiscount }) {
+function TemplateCard({ template, memberDiscount, isServiceMember }) {
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
   const savingsAmount = avgCost * memberDiscount;
 
@@ -297,13 +329,13 @@ function TemplateCard({ template, memberDiscount }) {
             {/* Key metrics */}
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <p className="text-xs text-gray-600">Average Cost</p>
+                <p className="text-xs text-gray-600">Investment Range</p>
                 <p className="font-bold text-sm" style={{ color: '#1B365D' }}>
                   ${template.average_cost_min.toLocaleString()}-{template.average_cost_max.toLocaleString()}
                 </p>
-                {memberDiscount > 0 && savingsAmount > 100 && (
-                  <p className="text-xs text-green-700">
-                    Save ~${Math.round(savingsAmount).toLocaleString()}
+                {isServiceMember && savingsAmount > 100 && (
+                  <p className="text-xs text-purple-700">
+                    💎 Save ~${Math.round(savingsAmount).toLocaleString()}
                   </p>
                 )}
               </div>

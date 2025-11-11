@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles, Shield } from "lucide-react";
 
 export default function UpgradeProjectForm({ properties, project, templateId, memberDiscount = 0, onComplete, onCancel }) {
   const queryClient = useQueryClient();
@@ -30,6 +30,14 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
       planned_date: "",
     }
   );
+
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const currentTier = user?.subscription_tier || 'free';
+  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
 
   // Fetch template if templateId provided
   const { data: template } = useQuery({
@@ -108,9 +116,6 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
 
   const calculateROI = () => {
     const investment = projectData.investment_required || 0;
-    const coordinationFee = investment * 0.10;
-    const memberSavings = coordinationFee * memberDiscount;
-    const netCost = investment + coordinationFee - memberSavings;
 
     // Auto-calculate if not manually set
     if (!projectData.property_value_impact || projectData.property_value_impact === 0) {
@@ -128,13 +133,11 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
   };
 
   // Calculations for ROI display
-  const coordinationFee = projectData.investment_required * 0.10;
-  const memberSavings = coordinationFee * memberDiscount;
-  const netCost = projectData.investment_required + coordinationFee - memberSavings;
+  const investment = projectData.investment_required;
   const equityGained = projectData.property_value_impact || 0;
-  const netEquity = equityGained - netCost;
-  const roiPercent = projectData.investment_required > 0 
-    ? Math.round((equityGained / projectData.investment_required) * 100)
+  const netEquity = equityGained - investment;
+  const roiPercent = investment > 0 
+    ? Math.round((equityGained / investment) * 100)
     : 0;
 
   if (currentStep === 3) {
@@ -384,34 +387,61 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Cost Summary */}
-              <div>
-                <h3 className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  💰 Cost Projection
-                </h3>
-                <div className="space-y-2 bg-blue-50 p-4 rounded-lg">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Project Investment:</span>
-                    <span className="font-semibold">${projectData.investment_required.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Coordination Fee (10%):</span>
-                    <span className="font-semibold">${coordinationFee.toLocaleString()}</span>
-                  </div>
-                  {memberDiscount > 0 && (
-                    <>
-                      <div className="flex justify-between text-green-700">
-                        <span className="text-sm">Member Discount ({memberDiscount * 100}%):</span>
-                        <span className="font-semibold">-${memberSavings.toLocaleString()}</span>
+              {/* Member Benefits Banner (if service member) */}
+              {isServiceMember && memberDiscount > 0 && (
+                <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-purple-900 mb-2">
+                        🌟 Member Benefit: Premium Contractor Network
+                      </p>
+                      <p className="text-sm text-purple-800 mb-2">
+                        As a service member, you get access to our vetted contractor network with negotiated rates.
+                      </p>
+                      <div className="text-sm text-purple-900">
+                        <p className="font-semibold">Your benefits on this project:</p>
+                        <p>• Pre-negotiated pricing (typically {memberDiscount * 100}% below market)</p>
+                        <p>• Free project coordination & oversight</p>
+                        <p>• Quality guarantee backed by your operator</p>
+                        <p>• No bidding hassle - we handle everything</p>
                       </div>
-                      <div className="flex justify-between border-t border-blue-200 pt-2">
-                        <span className="font-semibold">Total Investment:</span>
-                        <span className="font-bold text-lg">${Math.round(netCost).toLocaleString()}</span>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Non-Member Upsell */}
+              {!isServiceMember && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-bold text-blue-900 mb-2">
+                        💡 Save Big with HomeCare/PropertyCare Service
+                      </p>
+                      <p className="text-sm text-blue-800 mb-3">
+                        Members save 5-15% on all upgrades through our contractor network plus get free project management.
+                      </p>
+                      <div className="text-sm text-blue-900 mb-3">
+                        <p className="font-semibold">On this ${investment.toLocaleString()} project, you could save:</p>
+                        <p>• Essential Members: ~${Math.round(investment * 0.05).toLocaleString()}</p>
+                        <p>• Premium Members: ~${Math.round(investment * 0.10).toLocaleString()}</p>
+                        <p>• Elite Members: ~${Math.round(investment * 0.15).toLocaleString()}</p>
+                      </div>
+                      <Button
+                        asChild
+                        size="sm"
+                        style={{ backgroundColor: '#3B82F6', minHeight: '40px' }}
+                      >
+                        <a href="/services" target="_blank">
+                          Learn About Service Plans →
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Property Value Impact */}
               <div>
@@ -434,11 +464,11 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                 </h3>
                 <div className="space-y-2 bg-green-50 p-4 rounded-lg">
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Investment:</span>
-                    <span className="font-semibold">${Math.round(netCost).toLocaleString()}</span>
+                    <span className="text-sm">Your Investment:</span>
+                    <span className="font-semibold">${investment.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Value Added:</span>
+                    <span className="text-sm">Expected Value Added:</span>
                     <span className="font-semibold text-green-700">+${equityGained.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between border-t border-green-200 pt-2">
@@ -452,13 +482,17 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                     <span className="font-bold text-green-700">{roiPercent}%</span>
                   </div>
                 </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  💡 You invest ${investment.toLocaleString()} but gain ${equityGained.toLocaleString()} in property value = 
+                  {netEquity >= 0 ? ` only $${Math.round(netEquity).toLocaleString()} true cost` : ` negative cost (pays for itself!)`}
+                </p>
               </div>
 
               {/* Energy Savings */}
               {projectData.annual_savings > 0 && (
                 <div>
                   <h3 className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                    ⚡ Energy Savings
+                    ⚡ Energy Savings Bonus
                   </h3>
                   <div className="space-y-2 bg-yellow-50 p-4 rounded-lg">
                     <div className="flex justify-between">
@@ -472,10 +506,13 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
                     <div className="flex justify-between">
                       <span className="text-sm">Payback Period:</span>
                       <span className="font-semibold">
-                        {Math.round(netCost / projectData.annual_savings)} years
+                        {Math.round(investment / projectData.annual_savings)} years
                       </span>
                     </div>
                   </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    This project pays for itself through energy savings alone!
+                  </p>
                 </div>
               )}
 
