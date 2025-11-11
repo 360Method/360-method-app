@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -68,10 +69,14 @@ export default function Upgrade() {
   const currentTier = user?.subscription_tier || 'free';
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
 
-  const memberDiscount = currentTier.includes('essential') ? 0.05 
-    : currentTier.includes('premium') ? 0.10 
-    : currentTier.includes('elite') ? 0.15 
-    : 0;
+  // Pass tier name instead of simple percentage for new discount structure
+  const memberDiscountTier = isServiceMember ? currentTier : 0;
+
+  // This old calculation is no longer needed since we are passing the tier name
+  // const memberDiscount = currentTier.includes('essential') ? 0.05 
+  //   : currentTier.includes('premium') ? 0.10 
+  //   : currentTier.includes('elite') ? 0.15 
+  //   : 0;
 
   const handleFormComplete = () => {
     setShowNewProjectForm(false);
@@ -89,7 +94,7 @@ export default function Upgrade() {
             properties={properties}
             project={editingProject}
             templateId={templateId}
-            memberDiscount={memberDiscount}
+            memberDiscount={memberDiscountTier} // Updated here
             onComplete={handleFormComplete}
             onCancel={handleFormComplete}
           />
@@ -97,6 +102,13 @@ export default function Upgrade() {
       </div>
     );
   }
+
+  // Determine the actual percentage for display purposes in the banner, if needed.
+  // This is separate from the value passed to components, which is the tier name.
+  const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05 
+    : currentTier.includes('premium') ? 0.10 
+    : currentTier.includes('elite') ? 0.15 
+    : 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -269,15 +281,15 @@ export default function Upgrade() {
                 </Badge>
                 <div>
                   <p className="font-semibold text-purple-900 mb-1">
-                    💰 {memberDiscount * 100}% Discount on ALL Upgrades
+                    💰 {displayMemberDiscountPercentage * 100}% Discount on ALL Upgrades
                   </p>
                   <p className="text-sm text-purple-700 mb-2">
                     Save thousands on contractor coordination fees through your operator.
                   </p>
                   <div className="text-sm text-purple-800">
-                    <p>• $25K kitchen remodel → Save ${(25000 * memberDiscount).toLocaleString()}</p>
-                    <p>• $45K addition → Save ${(45000 * memberDiscount).toLocaleString()}</p>
-                    <p>• $8K HVAC upgrade → Save ${(8000 * memberDiscount).toLocaleString()}</p>
+                    <p>• $25K kitchen remodel → Save ${(25000 * displayMemberDiscountPercentage).toLocaleString()}</p>
+                    <p>• $45K addition → Save ${(45000 * displayMemberDiscountPercentage).toLocaleString()}</p>
+                    <p>• $8K HVAC upgrade → Save ${(8000 * displayMemberDiscountPercentage).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -387,7 +399,7 @@ export default function Upgrade() {
                   key={project.id}
                   project={project}
                   properties={properties}
-                  memberDiscount={memberDiscount}
+                  memberDiscount={memberDiscountTier} // Updated here
                   onEdit={() => setEditingProject(project)}
                 />
               ))}
@@ -440,7 +452,7 @@ export default function Upgrade() {
                   key={project.id}
                   project={project}
                   properties={properties}
-                  memberDiscount={memberDiscount}
+                  memberDiscount={memberDiscountTier} // Updated here
                   onEdit={() => setEditingProject(project)}
                 />
               ))}

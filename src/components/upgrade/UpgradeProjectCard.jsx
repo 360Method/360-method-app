@@ -1,10 +1,10 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target, FileText } from "lucide-react";
+import { calculateMemberDiscount } from "../shared/MemberDiscountCalculator";
 
 export default function UpgradeProjectCard({ project, properties, memberDiscount, onEdit }) {
   const property = properties.find(p => p.id === project.property_id);
@@ -26,7 +26,14 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
   };
 
   const estimatedCost = project.actual_cost || project.investment_required || 0;
-  const costWithDiscount = memberDiscount > 0 ? estimatedCost * (1 - memberDiscount) : estimatedCost;
+  
+  // Use new discount calculation if memberDiscount is passed as string (tier name)
+  const discountInfo = typeof memberDiscount === 'string' 
+    ? calculateMemberDiscount(estimatedCost, memberDiscount)
+    : null;
+  const actualSavings = discountInfo?.actualSavings || (typeof memberDiscount === 'number' ? estimatedCost * memberDiscount : 0);
+  const costWithDiscount = estimatedCost - actualSavings;
+  
   const equityGain = project.property_value_impact || 0;
   const netCost = estimatedCost - equityGain;
   const roiPercent = estimatedCost > 0 ? ((equityGain / estimatedCost) * 100) : 0;
@@ -99,9 +106,10 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
             <p className="font-bold" style={{ color: '#1B365D' }}>
               ${estimatedCost.toLocaleString()}
             </p>
-            {memberDiscount > 0 && project.status !== 'Completed' && (
+            {actualSavings > 0 && project.status !== 'Completed' && (
               <p className="text-xs text-green-700">
-                Save ${(estimatedCost - costWithDiscount).toLocaleString()} ({(memberDiscount * 100).toFixed(0)}% off)
+                Save ${actualSavings.toLocaleString()}
+                {discountInfo && ` (${discountInfo.percent}%)`}
               </p>
             )}
           </div>
@@ -194,28 +202,26 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
         )}
 
         {/* Documents & Photos */}
-        {((documentCount > 0) || (project.before_photo_urls?.length > 0) || (project.after_photo_urls?.length > 0)) && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {documentCount > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <FileText className="w-3 h-3" />
-                  {documentCount} Document{documentCount !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {project.before_photo_urls?.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {project.after_photo_urls?.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {documentCount > 0 && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                {documentCount} Document{documentCount !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {project.before_photo_urls?.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {project.after_photo_urls?.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
