@@ -1,113 +1,97 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle, AlertTriangle, Eye, Layers, List } from "lucide-react";
+import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft } from "lucide-react";
+// Removed createPageUrl and Link as they are not used in this component's logic.
 import AreaInspection from "./AreaInspection";
 
-// Map inspection areas to their related baseline system types
-const AREA_TO_SYSTEMS_MAP = {
-  'exterior': ['Exterior Siding & Envelope', 'Foundation & Structure'],
-  'driveways': ['Driveways & Hardscaping'],
-  'gutters': ['Gutters & Downspouts'],
-  'foundation': ['Foundation & Structure'],
-  'hvac': ['HVAC System'],
-  'plumbing': ['Plumbing System', 'Water & Sewer/Septic'],
-  'bathrooms': ['Plumbing System'],
-  'kitchen': ['Plumbing System', 'Refrigerator', 'Range/Oven', 'Dishwasher', 'Microwave', 'Garbage Disposal'],
-  'roof': ['Roof System'],
-  'attic': ['Attic & Insulation'],
-  'windows': ['Windows & Doors'],
-  'electrical': ['Electrical System'],
-  'safety': ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Radon Test', 'Security System']
-};
-
-const INSPECTION_AREAS = [
-  { 
-    id: 'exterior', 
-    name: 'Exterior (Front & Sides)', 
-    icon: '🏠',
-    whatToCheck: 'Siding condition, paint, foundation cracks, drainage, grading'
+// Physical zone-based routing for efficient inspection
+const INSPECTION_ZONES = [
+  {
+    id: 'mechanical',
+    name: '🔧 Mechanical Room',
+    areas: ['hvac', 'plumbing', 'electrical'],
+    estimatedTime: '10-15 min',
+    why: 'Start here - most critical systems in one place'
   },
-  { 
-    id: 'driveways', 
-    name: 'Driveways & Hardscaping', 
-    icon: '🚗',
-    whatToCheck: 'Surface cracks, potholes, heaving, drainage, edges, walkways, patios'
+  {
+    id: 'basement',
+    name: '🏚️ Basement/Foundation',
+    areas: ['foundation'], // 'basement' was added in outline but not in INSPECTION_AREAS, so keeping only 'foundation' here
+    estimatedTime: '5-8 min',
+    why: 'While you\'re downstairs'
   },
-  { 
-    id: 'gutters', 
-    name: 'Gutters & Downspouts', 
-    icon: '🌧️',
-    whatToCheck: 'Debris, sagging, leaks, proper drainage away from foundation'
+  {
+    id: 'interior',
+    name: '🏠 Interior Spaces',
+    areas: ['kitchen', 'bathrooms'],
+    estimatedTime: '10-12 min',
+    why: 'Living areas and fixtures'
   },
-  { 
-    id: 'foundation', 
-    name: 'Foundation & Grading', 
-    icon: '🏗️',
-    whatToCheck: 'Cracks, settling, water pooling, proper slope away from home'
+  {
+    id: 'upper',
+    name: '🏚️ Upper Level', // Reusing '🏚️' icon for attic
+    areas: ['attic'],
+    estimatedTime: '5-8 min',
+    why: 'Check attic and insulation'
   },
-  { 
-    id: 'hvac', 
-    name: 'HVAC Systems', 
-    icon: '❄️',
-    whatToCheck: 'Filters, airflow, sounds, AC test'
+  {
+    id: 'exterior',
+    name: '🌳 Exterior Walk',
+    areas: ['exterior', 'gutters', 'roof', 'driveways', 'windows'],
+    estimatedTime: '15-20 min',
+    why: 'Walk the perimeter'
   },
-  { 
-    id: 'plumbing', 
-    name: 'Plumbing Systems', 
-    icon: '🚿',
-    whatToCheck: 'Leaks, water heater, hoses, fixtures'
-  },
-  { 
-    id: 'bathrooms', 
-    name: 'Interior - Bathrooms', 
-    icon: '🚽',
-    whatToCheck: 'Caulk, fixtures, ventilation, water pressure'
-  },
-  { 
-    id: 'kitchen', 
-    name: 'Interior - Kitchen', 
-    icon: '🍳',
-    whatToCheck: 'Appliances, plumbing, outlets, cabinets'
-  },
-  { 
-    id: 'roof', 
-    name: 'Roof (from ground)', 
-    icon: '🏠',
-    whatToCheck: 'Shingles, flashing, chimney, visible damage'
-  },
-  { 
-    id: 'attic', 
-    name: 'Attic/Crawlspace', 
-    icon: '🔦',
-    whatToCheck: 'Insulation, moisture, pests, ventilation'
-  },
-  { 
-    id: 'windows', 
-    name: 'Windows & Doors', 
-    icon: '🚪',
-    whatToCheck: 'Seals, operation, weatherstripping, locks'
-  },
-  { 
-    id: 'electrical', 
-    name: 'Electrical Systems', 
-    icon: '⚡',
-    whatToCheck: 'Panel, outlets, GFCI tests, breakers'
-  },
-  { 
-    id: 'safety', 
-    name: 'Safety Systems', 
-    icon: '🚨',
-    whatToCheck: 'Detectors, extinguishers, emergency supplies'
+  {
+    id: 'safety',
+    name: '🚨 Safety Check',
+    areas: ['safety'],
+    estimatedTime: '5-10 min',
+    why: 'Final safety systems check'
   }
 ];
 
-export default function InspectionWalkthrough({ inspection, property, baselineSystems, onComplete, onCancel }) {
-  const [inspectedAreas, setInspectedAreas] = React.useState(() => {
+const AREA_TO_SYSTEM_MAP = {
+  'hvac': ['HVAC System'],
+  'plumbing': ['Plumbing System', 'Water & Sewer/Septic'],
+  'electrical': ['Electrical System'],
+  'gutters': ['Gutters & Downspouts'],
+  'roof': ['Roof System'],
+  'foundation': ['Foundation & Structure'],
+  'exterior': ['Exterior Siding & Envelope', 'Foundation & Structure'],
+  'driveways': ['Driveways & Hardscaping'],
+  'attic': ['Attic & Insulation'],
+  'windows': ['Windows & Doors'],
+  'kitchen': ['Plumbing System', 'Refrigerator', 'Range/Oven', 'Dishwasher', 'Microwave', 'Garbage Disposal'],
+  'bathrooms': ['Plumbing System'],
+  'safety': ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System', 'Radon Test']
+};
+
+const INSPECTION_AREAS = [
+  { id: 'hvac', name: 'HVAC & Heating', icon: '❄️', whatToCheck: 'filter condition, airflow, unusual sounds, thermostat operation' },
+  { id: 'plumbing', name: 'Plumbing', icon: '🚿', whatToCheck: 'leaks, water pressure, drains, water heater, shutoff valves' },
+  { id: 'electrical', name: 'Electrical', icon: '⚡', whatToCheck: 'panel condition, GFCI outlets, lights, switches, exposed wiring' },
+  { id: 'gutters', name: 'Gutters & Downspouts', icon: '🌧️', whatToCheck: 'debris, sagging, proper drainage, attachments' },
+  { id: 'roof', name: 'Roof', icon: '🏠', whatToCheck: 'missing shingles, flashing, vents, moss growth, general condition' },
+  { id: 'foundation', name: 'Foundation', icon: '🧱', whatToCheck: 'cracks, settling, moisture, drainage' },
+  { id: 'exterior', name: 'Exterior Siding', icon: '🏡', whatToCheck: 'damage, rot, caulking, paint condition' },
+  { id: 'driveways', name: 'Driveways & Hardscaping', icon: '🚗', whatToCheck: 'cracks, settling, drainage, trip hazards' },
+  { id: 'attic', name: 'Attic & Insulation', icon: '🏚️', whatToCheck: 'insulation depth, ventilation, moisture, roof deck' },
+  { id: 'windows', name: 'Windows & Doors', icon: '🪟', whatToCheck: 'seals, operation, locks, weatherstripping' },
+  { id: 'kitchen', name: 'Kitchen', icon: '🍳', whatToCheck: 'appliances, plumbing fixtures, garbage disposal' },
+  { id: 'bathrooms', name: 'Bathrooms', icon: '🚽', whatToCheck: 'fixtures, caulking, ventilation, water pressure' },
+  { id: 'safety', name: 'Safety Systems', icon: '🚨', whatToCheck: 'smoke detectors, CO detectors, fire extinguishers, test dates' }
+];
+
+export default function InspectionWalkthrough({ inspection, property, onComplete, onBack }) {
+  const [currentAreaIndex, setCurrentAreaIndex] = React.useState(null);
+  const [inspectionData, setInspectionData] = React.useState(() => {
+    // Initialize inspectionData from existing checklist items if available
     const existingItems = inspection.checklist_items || [];
     const groupedByArea = {};
     existingItems.forEach(item => {
@@ -120,11 +104,15 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
     });
     return groupedByArea;
   });
-  const [currentArea, setCurrentArea] = React.useState(null);
-  const [startTime] = React.useState(new Date());
-  const [viewMode, setViewMode] = React.useState('areas'); // 'areas' or 'systems'
+  const [routeMode, setRouteMode] = React.useState('physical'); // 'physical' or 'traditional'
+  const [completedZones, setCompletedZones] = React.useState([]);
 
   const queryClient = useQueryClient();
+
+  const { data: baselineSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', property.id],
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+  });
 
   const updateInspectionMutation = useMutation({
     mutationFn: async (data) => {
@@ -132,80 +120,13 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      // The outline specified onComplete() without args. Original passed updatedInspection.
+      // Adhering to outline for now.
+      onComplete(); 
     },
   });
 
-  const completeInspectionMutation = useMutation({
-    mutationFn: async () => {
-      const allIssues = Object.values(inspectedAreas).flat();
-      const urgentCount = allIssues.filter(i => i.severity === 'Urgent').length;
-      const flagCount = allIssues.filter(i => i.severity === 'Flag').length;
-      const monitorCount = allIssues.filter(i => i.severity === 'Monitor').length;
-      
-      const endTime = new Date();
-      const durationMinutes = Math.round((endTime - startTime) / 60000);
-
-      return base44.entities.Inspection.update(inspection.id, {
-        status: 'Completed',
-        inspection_date: new Date().toISOString().split('T')[0],
-        completion_percentage: 100,
-        issues_found: allIssues.length,
-        checklist_items: allIssues,
-        duration_minutes: durationMinutes,
-        urgent_count: urgentCount,
-        flag_count: flagCount,
-        monitor_count: monitorCount
-      });
-    },
-    onSuccess: (updatedInspection) => {
-      queryClient.invalidateQueries({ queryKey: ['inspections'] });
-      onComplete(updatedInspection);
-    },
-  });
-
-  React.useEffect(() => {
-    const allIssues = Object.values(inspectedAreas).flat();
-    const totalAreas = INSPECTION_AREAS.length;
-    const completedAreas = Object.keys(inspectedAreas).length;
-    const percentage = Math.round((completedAreas / totalAreas) * 100);
-
-    if (allIssues.length > 0 || completedAreas > 0) {
-      updateInspectionMutation.mutate({
-        status: 'In Progress',
-        checklist_items: allIssues,
-        completion_percentage: percentage,
-        issues_found: allIssues.length
-      });
-    }
-  }, [inspectedAreas]);
-
-  const handleAreaInspected = (areaId, issues) => {
-    setInspectedAreas(prev => ({
-      ...prev,
-      [areaId]: issues
-    }));
-    setCurrentArea(null);
-  };
-
-  const handleCompleteInspection = () => {
-    completeInspectionMutation.mutate();
-  };
-
-  const handlePauseInspection = () => {
-    onCancel();
-  };
-
-  const handleBackFromArea = () => {
-    setCurrentArea(null);
-  };
-
-  // Group areas by their related systems for system-based view
-  const getSystemsForArea = (areaId) => {
-    const systemTypes = AREA_TO_SYSTEMS_MAP[areaId] || [];
-    return baselineSystems.filter(sys => systemTypes.includes(sys.system_type));
-  };
-
-  // Group baseline systems by type
+  // Get systems grouped by baseline for smart grouping
   const systemsByType = baselineSystems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
       acc[system.system_type] = [];
@@ -214,393 +135,342 @@ export default function InspectionWalkthrough({ inspection, property, baselineSy
     return acc;
   }, {});
 
-  // Get unique system types that have documentation
-  const documentedSystemTypes = Object.keys(systemsByType);
+  // Calculate progress by zones or areas
+  const getProgress = () => {
+    if (routeMode === 'physical') {
+      const totalZones = INSPECTION_ZONES.length;
+      const completedCount = completedZones.length;
+      return { completed: completedCount, total: totalZones, percent: Math.round((completedCount / totalZones) * 100) };
+    } else {
+      const completedAreas = Object.keys(inspectionData).length;
+      return { completed: completedAreas, total: INSPECTION_AREAS.length, percent: Math.round((completedAreas / INSPECTION_AREAS.length) * 100) };
+    }
+  };
 
-  // Get areas that have related documented systems
-  const areasWithSystems = INSPECTION_AREAS.map(area => ({
-    ...area,
-    relatedSystems: getSystemsForArea(area.id),
-    systemCount: getSystemsForArea(area.id).length
-  })).filter(area => area.systemCount > 0);
+  const progress = getProgress();
 
-  // Get areas without related systems
-  const areasWithoutSystems = INSPECTION_AREAS.filter(area => 
-    getSystemsForArea(area.id).length === 0
-  );
+  // Handle zone completion
+  const handleZoneComplete = (zoneId) => {
+    if (!completedZones.includes(zoneId)) {
+      setCompletedZones(prev => [...prev, zoneId]);
+    }
+  };
 
-  if (currentArea) {
+  // Group areas by physical zones for efficient routing
+  const getAreasInZone = (zoneId) => {
+    const zone = INSPECTION_ZONES.find(z => z.id === zoneId);
+    if (!zone) return [];
+    return INSPECTION_AREAS.filter(area => zone.areas.includes(area.id));
+  };
+
+  const handleAreaComplete = (areaId, data) => {
+    setInspectionData(prev => ({
+      ...prev,
+      [areaId]: data
+    }));
+    setCurrentAreaIndex(null); // Return to the list after an area is completed
+  };
+
+  const handleFinishInspection = async () => {
+    const allIssues = Object.values(inspectionData).flat();
+    const issuesCount = allIssues.length;
+    const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
+
+    await updateInspectionMutation.mutateAsync({
+      checklist_items: allIssues,
+      issues_found: issuesCount,
+      completion_percentage: completionPercent,
+      status: 'Completed',
+      inspection_date: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  if (currentAreaIndex !== null) {
+    const currentArea = INSPECTION_AREAS[currentAreaIndex];
+    const existingIssues = inspectionData[currentArea.id] || [];
+
     return (
       <AreaInspection
         area={currentArea}
         inspection={inspection}
         property={property}
         baselineSystems={baselineSystems}
-        existingIssues={inspectedAreas[currentArea.id] || []}
-        onComplete={(issues) => handleAreaInspected(currentArea.id, issues)}
-        onBack={handleBackFromArea}
+        existingIssues={existingIssues}
+        onComplete={(data) => handleAreaComplete(currentArea.id, data)}
+        onBack={() => setCurrentAreaIndex(null)}
       />
     );
   }
 
-  const totalAreas = INSPECTION_AREAS.length;
-  const completedAreas = Object.keys(inspectedAreas).length;
-  const allIssues = Object.values(inspectedAreas).flat();
-  const urgentCount = allIssues.filter(i => i.severity === 'Urgent').length;
-  const flagCount = allIssues.filter(i => i.severity === 'Flag').length;
-  const monitorCount = allIssues.filter(i => i.severity === 'Monitor').length;
+  // Physical Zone View
+  if (routeMode === 'physical') {
+    return (
+      <div className="min-h-screen bg-white pb-24">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            className="mb-4"
+            style={{ minHeight: '44px' }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Inspection Setup
+          </Button>
 
-  const currentTime = new Date();
-  const elapsed = Math.floor((currentTime - startTime) / 60000);
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+              Physical Walkthrough
+            </h1>
+            <p className="text-gray-600">Follow the optimal route through your property</p>
+          </div>
 
+          {/* Progress Card */}
+          <Card className="border-2 border-blue-300 shadow-lg mb-6">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Navigation className="w-5 h-5" />
+                  <CardTitle>Inspection Progress</CardTitle>
+                </div>
+                <Badge className="bg-white text-blue-900">
+                  Zone {completedZones.length + 1} of {INSPECTION_ZONES.length}
+                </Badge>
+              </div>
+              <Progress value={progress.percent} className="h-2 bg-blue-200" />
+              <p className="text-blue-100 text-sm mt-2">
+                {progress.completed} zones complete • {INSPECTION_ZONES.length - progress.completed} remaining
+              </p>
+            </CardHeader>
+          </Card>
+
+          {/* Zone Cards */}
+          <div className="space-y-4 mb-6">
+            {INSPECTION_ZONES.map((zone, zoneIdx) => {
+              const areasInZone = getAreasInZone(zone.id);
+              const allAreasInZoneChecked = areasInZone.every(area => inspectionData[area.id]);
+              const isZoneComplete = completedZones.includes(zone.id);
+
+              return (
+                <Card 
+                  key={zone.id} 
+                  className={`border-2 ${
+                    isZoneComplete ? 'border-green-300 bg-green-50' : 
+                    'border-gray-300'
+                  }`}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">{zone.name.split(' ')[0]}</div>
+                        <div>
+                          <CardTitle className="text-lg">
+                            {zone.name.replace(/[^a-zA-Z\s]/g, '').trim()}
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">{zone.why}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-600 mb-1">{zone.estimatedTime}</div>
+                        {isZoneComplete && (
+                          <Badge className="bg-green-600 text-white">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Complete
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {areasInZone.map((area, idx) => {
+                        const areaIndex = INSPECTION_AREAS.findIndex(a => a.id === area.id);
+                        const isAreaComplete = inspectionData[area.id];
+                        const issueCount = (inspectionData[area.id] || []).length;
+
+                        // Get relevant systems for this area
+                        const relevantSystemTypes = AREA_TO_SYSTEM_MAP[area.id] || [];
+                        const systemsInArea = relevantSystemTypes.flatMap(type => systemsByType[type] || []);
+
+                        return (
+                          <div
+                            key={area.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+                              isAreaComplete ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-blue-300'
+                            } transition-colors cursor-pointer`}
+                            onClick={() => setCurrentAreaIndex(areaIndex)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{area.icon}</span>
+                              <div>
+                                <p className="font-semibold text-gray-900">{area.name}</p>
+                                {systemsInArea.length > 0 && (
+                                  <p className="text-xs text-gray-600">
+                                    {systemsInArea.length} system{systemsInArea.length > 1 ? 's' : ''} documented
+                                  </p>
+                                )}
+                                {issueCount > 0 && (
+                                  <Badge className="bg-orange-600 text-white text-xs mt-1">
+                                    {issueCount} issue{issueCount > 1 ? 's' : ''} found
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isAreaComplete ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <ChevronRight className="w-5 h-5 text-gray-400" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!isZoneComplete && allAreasInZoneChecked && (
+                      <Button
+                        onClick={() => handleZoneComplete(zone.id)}
+                        className="w-full mt-4 gap-2"
+                        style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Mark Zone Complete
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <Button
+              onClick={() => setRouteMode('traditional')}
+              variant="outline"
+              className="w-full"
+              style={{ minHeight: '48px' }}
+            >
+              Switch to Traditional View
+            </Button>
+
+            {progress.percent >= 80 && (
+              <Button
+                onClick={handleFinishInspection}
+                className="w-full gap-2"
+                style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                disabled={updateInspectionMutation.isPending}
+              >
+                {updateInspectionMutation.isPending ? 'Saving...' : 'Complete Inspection'}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Traditional Area View
   return (
-    <div className="min-h-screen bg-white pb-8">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+    <div className="min-h-screen bg-white pb-24">
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
         <Button
           variant="ghost"
-          onClick={handlePauseInspection}
+          onClick={onBack}
           className="mb-4"
           style={{ minHeight: '44px' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Pause & Save Inspection
+          Back to Setup
         </Button>
 
-        <Card className="border-2 mobile-card" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
-          <CardContent className="p-4 md:p-6">
-            <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '22px', lineHeight: '1.2' }}>
-              {inspection.season} Inspection - In Progress
-            </h1>
-            <p className="text-gray-600 mb-4" style={{ fontSize: '14px' }}>
-              Started: {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} | {elapsed} minutes elapsed
-            </p>
-            
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium">Progress: {completedAreas} of {totalAreas} areas</span>
-                <span className="font-bold">{Math.round((completedAreas / totalAreas) * 100)}%</span>
-              </div>
-              <Progress value={(completedAreas / totalAreas) * 100} className="h-3" />
-            </div>
+        <div className="mb-6">
+          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+            {inspection.season} {inspection.year} Inspection
+          </h1>
+          <p className="text-gray-600">Check off each area as you go</p>
+        </div>
 
-            <div className="flex flex-wrap gap-3 text-sm">
-              <span>
-                <strong>Issues found:</strong> {allIssues.length} total
-              </span>
-              {urgentCount > 0 && <span className="text-red-600">🚨 {urgentCount} urgent</span>}
-              {flagCount > 0 && <span className="text-orange-600">⚠️ {flagCount} flag</span>}
-              {monitorCount > 0 && <span className="text-green-600">✅ {monitorCount} monitor</span>}
+        <Card className="border-2 border-blue-300 shadow-lg mb-6">
+          <CardHeader className="bg-blue-50">
+            <div className="flex items-center justify-between">
+              <CardTitle>Progress</CardTitle>
+              <Badge className="bg-blue-600 text-white">
+                {progress.completed} of {progress.total} areas
+              </Badge>
             </div>
-
-            <div className="mt-3 pt-3 border-t border-gray-300">
-              <p className="text-xs text-green-700 flex items-center gap-2">
-                <CheckCircle className="w-3 h-3" />
-                Progress auto-saved
-              </p>
-            </div>
-          </CardContent>
+            <Progress value={progress.percent} className="mt-2 h-2" />
+          </CardHeader>
         </Card>
 
-        {/* View Mode Toggle */}
-        {documentedSystemTypes.length > 0 && (
-          <Card className="border-2 border-purple-300 bg-purple-50 mt-6">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-purple-900 mb-1">💡 Smart Inspection Mode</h3>
-                  <p className="text-sm text-gray-700">
-                    {viewMode === 'systems' 
-                      ? `Inspecting by your documented systems (${documentedSystemTypes.length} types)`
-                      : 'Inspecting all areas'}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setViewMode(viewMode === 'areas' ? 'systems' : 'areas')}
-                  variant="outline"
-                  className="gap-2"
-                  style={{ minHeight: '44px' }}
-                >
-                  {viewMode === 'areas' ? (
-                    <>
-                      <Layers className="w-4 h-4" />
-                      Group by Systems
-                    </>
-                  ) : (
-                    <>
-                      <List className="w-4 h-4" />
-                      Show All Areas
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <div className="space-y-4 mb-6">
+          {INSPECTION_AREAS.map((area, idx) => {
+            const isComplete = inspectionData[area.id];
+            const issueCount = (inspectionData[area.id] || []).length;
+            const relevantSystemTypes = AREA_TO_SYSTEM_MAP[area.id] || [];
+            const systemsInArea = relevantSystemTypes.flatMap(type => systemsByType[type] || []);
 
-        <hr className="border-gray-200 my-6" />
-
-        {/* System-Based View */}
-        {viewMode === 'systems' && areasWithSystems.length > 0 && (
-          <>
-            <div className="mb-6">
-              <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                📋 INSPECT BY YOUR DOCUMENTED SYSTEMS:
-              </h2>
-              <p className="text-sm text-gray-600">
-                These inspection areas have systems you've already documented in your baseline
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {areasWithSystems.map((area) => {
-                const isInspected = inspectedAreas[area.id];
-                const issueCount = isInspected ? isInspected.length : 0;
-                
-                return (
-                  <Card 
-                    key={area.id}
-                    className={`border-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                      isInspected ? 'bg-gray-50 border-green-300' : 'border-purple-300'
-                    }`}
-                    onClick={() => setCurrentArea(area)}
-                  >
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                          <span className="text-3xl">{area.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <h3 className="font-semibold" style={{ color: '#1B365D', fontSize: '16px' }}>
-                                {area.name}
-                              </h3>
-                              <Badge className="bg-purple-100 text-purple-800 text-xs">
-                                {area.systemCount} system{area.systemCount > 1 ? 's' : ''}
-                              </Badge>
-                              {isInspected && (
-                                <Badge className="bg-green-100 text-green-800 text-xs">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Inspected
-                                </Badge>
-                              )}
-                              {issueCount > 0 && (
-                                <Badge className="text-xs" style={{ backgroundColor: '#FF6B35', color: 'white' }}>
-                                  {issueCount} issue{issueCount > 1 ? 's' : ''}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            {/* Show documented systems */}
-                            <div className="mb-2">
-                              <p className="text-xs font-semibold text-gray-700 mb-1">Your systems here:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {area.relatedSystems.map((sys, idx) => (
-                                  <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    {sys.nickname || sys.system_type}
-                                    {sys.installation_year && (
-                                      <span className="text-blue-600 ml-1">
-                                        ({new Date().getFullYear() - sys.installation_year}yr)
-                                      </span>
-                                    )}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-
-                            <p className="text-sm text-gray-600" style={{ fontSize: '14px' }}>
-                              <strong>Check:</strong> {area.whatToCheck}
-                            </p>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="hidden md:flex"
-                          style={{ minHeight: '44px' }}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          {isInspected ? 'Re-inspect' : 'Inspect'}
-                        </Button>
+            return (
+              <Card
+                key={area.id}
+                className={`border-2 ${
+                  isComplete ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-blue-300'
+                } transition-colors cursor-pointer`}
+                onClick={() => setCurrentAreaIndex(idx)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{area.icon}</span>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{area.name}</h3>
+                        {systemsInArea.length > 0 && (
+                          <p className="text-sm text-gray-600">
+                            {systemsInArea.length} system{systemsInArea.length > 1 ? 's' : ''} documented
+                          </p>
+                        )}
+                        {issueCount > 0 && (
+                          <Badge className="bg-orange-600 text-white text-xs mt-1">
+                            {issueCount} issue{issueCount > 1 ? 's' : ''} found
+                          </Badge>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isComplete ? (
+                        <CheckCircle2 className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <ChevronRight className="w-6 h-6 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-            {/* Areas without baseline systems */}
-            {areasWithoutSystems.length > 0 && (
-              <>
-                <div className="mt-8 mb-4">
-                  <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                    📝 OTHER AREAS TO INSPECT:
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    These areas don't have documented baseline systems yet
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {areasWithoutSystems.map((area) => {
-                    const isInspected = inspectedAreas[area.id];
-                    const issueCount = isInspected ? isInspected.length : 0;
-                    
-                    return (
-                      <Card 
-                        key={area.id}
-                        className={`border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                          isInspected ? 'bg-gray-50' : ''
-                        }`}
-                        onClick={() => setCurrentArea(area)}
-                      >
-                        <CardContent className="p-4 md:p-6">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                              <span className="text-3xl">{area.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <h3 className="font-semibold" style={{ color: '#1B365D', fontSize: '16px' }}>
-                                    {area.name}
-                                  </h3>
-                                  {isInspected && (
-                                    <Badge className="bg-green-100 text-green-800 text-xs">
-                                      <CheckCircle className="w-3 h-3 mr-1" />
-                                      Inspected
-                                    </Badge>
-                                  )}
-                                  {issueCount > 0 && (
-                                    <Badge className="text-xs" style={{ backgroundColor: '#FF6B35', color: 'white' }}>
-                                      {issueCount} issue{issueCount > 1 ? 's' : ''}
-                                    </Badge>
-                                  )}
-                                  {isInspected && issueCount === 0 && (
-                                    <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                      No issues
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600" style={{ fontSize: '14px' }}>
-                                  <strong>Check:</strong> {area.whatToCheck}
-                                </p>
-                              </div>
-                            </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="hidden md:flex"
-                              style={{ minHeight: '44px' }}
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              {isInspected ? 'Re-inspect' : 'Inspect'}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {/* Traditional Area-Based View */}
-        {viewMode === 'areas' && (
-          <>
-            <div>
-              <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
-                SELECT AREA TO INSPECT:
-              </h2>
-              
-              <div className="space-y-3">
-                {INSPECTION_AREAS.map((area) => {
-                  const isInspected = inspectedAreas[area.id];
-                  const issueCount = isInspected ? isInspected.length : 0;
-                  const systemCount = getSystemsForArea(area.id).length;
-                  
-                  return (
-                    <Card 
-                      key={area.id}
-                      className={`border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                        isInspected ? 'bg-gray-50' : ''
-                      }`}
-                      onClick={() => setCurrentArea(area)}
-                    >
-                      <CardContent className="p-4 md:p-6">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                            <span className="text-3xl">{area.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <h3 className="font-semibold" style={{ color: '#1B365D', fontSize: '16px' }}>
-                                  {area.name}
-                                </h3>
-                                {systemCount > 0 && (
-                                  <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                    {systemCount} system{systemCount > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                                {isInspected && (
-                                  <Badge className="bg-green-100 text-green-800 text-xs">
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Inspected
-                                  </Badge>
-                                )}
-                                {issueCount > 0 && (
-                                  <Badge className="text-xs" style={{ backgroundColor: '#FF6B35', color: 'white' }}>
-                                    {issueCount} issue{issueCount > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                                {isInspected && issueCount === 0 && (
-                                  <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                    No issues
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600" style={{ fontSize: '14px' }}>
-                                <strong>Check:</strong> {area.whatToCheck}
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="hidden md:flex"
-                            style={{ minHeight: '44px' }}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            {isInspected ? 'Re-inspect' : 'Inspect'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="flex flex-col gap-3 pt-6 border-t mt-6">
+        <div className="space-y-3">
           <Button
-            onClick={handleCompleteInspection}
-            disabled={completedAreas === 0 || completeInspectionMutation.isPending}
-            className="w-full font-bold"
-            style={{ 
-              backgroundColor: completedAreas > 0 ? '#28A745' : '#CCCCCC',
-              minHeight: '56px', 
-              fontSize: '16px' 
-            }}
-          >
-            {completeInspectionMutation.isPending ? 'Completing...' : 'Complete Inspection'}
-          </Button>
-          <Button
-            onClick={handlePauseInspection}
+            onClick={() => setRouteMode('physical')}
             variant="outline"
-            className="w-full"
+            className="w-full gap-2"
             style={{ minHeight: '48px' }}
           >
-            Pause & Save Inspection
+            <MapPin className="w-4 h-4" />
+            Switch to Physical Walkthrough
           </Button>
+
+          {progress.percent >= 80 && (
+            <Button
+              onClick={handleFinishInspection}
+              className="w-full gap-2"
+              style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+              disabled={updateInspectionMutation.isPending}
+            >
+              {updateInspectionMutation.isPending ? 'Saving...' : 'Complete Inspection'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

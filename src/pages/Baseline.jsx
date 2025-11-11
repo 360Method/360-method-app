@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 import AddToCartDialog from "../components/cart/AddToCartDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
-import BaselineWizard from "../components/baseline/BaselineWizard"; // New import
+import BaselineWizard from "../components/baseline/BaselineWizard";
+import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -29,7 +30,7 @@ const RECOMMENDED_SYSTEMS = [
   "Windows & Doors",
   "Gutters & Downspouts",
   "Landscaping & Grading",
-  "Driveways & Hardscaping", // Added new system
+  "Driveways & Hardscaping",
   "Attic & Insulation",
   "Basement/Crawlspace",
   "Garage & Overhead Door"
@@ -57,7 +58,7 @@ const MULTI_INSTANCE_SYSTEMS = [
   "HVAC System",
   "Garage & Overhead Door",
   "Basement/Crawlspace",
-  "Driveways & Hardscaping", // Added new system
+  "Driveways & Hardscaping",
   ...APPLIANCE_TYPES,
   ...SAFETY_TYPES
 ];
@@ -113,7 +114,7 @@ const SYSTEM_DESCRIPTIONS = {
     why: "Poor grading = water toward foundation = flooding + cracks + structural damage = $15K-50K+.",
     lifespan: "Ongoing"
   },
-  "Driveways & Hardscaping": { // Added new system description
+  "Driveways & Hardscaping": {
     what: "Driveways, walkways, patios, retaining walls - all hard surfaces and structures",
     why: "Cracks expand = water infiltration = foundation damage + trip hazards + major replacement $10K-30K+.",
     lifespan: "15-30 years"
@@ -197,14 +198,14 @@ export default function Baseline() {
   const [showDialog, setShowDialog] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
-  // Removed showCelebration, using recentMilestone instead
   const [scrollPosition, setScrollPosition] = React.useState(0);
   const [lastAddedSystemType, setLastAddedSystemType] = React.useState(null);
   const [deletingSystem, setDeletingSystem] = React.useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   // const [viewMode, setViewMode] = React.useState('cards'); // 'cards' or 'compact' - Not yet used in this implementation
-  const [showWizard, setShowWizard] = React.useState(false); // New state
-  const [recentMilestone, setRecentMilestone] = React.useState(null); // New state
+  const [showWizard, setShowWizard] = React.useState(false);
+  const [showPhysicalWalkthrough, setShowPhysicalWalkthrough] = React.useState(false);
+  const [recentMilestone, setRecentMilestone] = React.useState(null);
 
   const queryClient = useQueryClient();
 
@@ -251,20 +252,13 @@ export default function Baseline() {
   const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
   
   // Check if user just hit a milestone
-  const prevTotalSystemTypes = React.useRef(0);
   React.useEffect(() => {
-    // Only check if property is selected and systems data is loaded
-    if (selectedProperty && !isLoading) {
-      if (totalSystemTypes > prevTotalSystemTypes.current) {
-        const newMilestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
-        if (newMilestone) {
-          setRecentMilestone(newMilestone);
-          setTimeout(() => setRecentMilestone(null), 10000); // Clear after 10 seconds
-        }
-      }
-      prevTotalSystemTypes.current = totalSystemTypes;
+    const milestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
+    if (milestone && !recentMilestone) {
+      setRecentMilestone(milestone);
+      setTimeout(() => setRecentMilestone(null), 10000);
     }
-  }, [totalSystemTypes, selectedProperty, isLoading]);
+  }, [totalSystemTypes, recentMilestone]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.SystemBaseline.delete(id),
@@ -449,7 +443,6 @@ export default function Baseline() {
 
   const renderSystemGroup = (systemType, instances, isRequired) => {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
-    const description = SYSTEM_DESCRIPTIONS[systemType];
     
     if (instances.length === 0) {
       // No instances - show add button
@@ -582,6 +575,21 @@ export default function Baseline() {
     );
   }
 
+  // Conditional render for the Physical Walkthrough Wizard
+  if (showPhysicalWalkthrough && selectedProperty) {
+    return (
+      <PhysicalWalkthroughWizard
+        propertyId={selectedProperty}
+        property={currentProperty}
+        onComplete={() => {
+          setShowPhysicalWalkthrough(false);
+          queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+        }}
+        onSkip={() => setShowPhysicalWalkthrough(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
@@ -623,234 +631,6 @@ export default function Baseline() {
           </Card>
         )}
 
-        {/* Why Baseline Matters - Full Educational Section (only when systems.length === 0) */}
-        {systems.length === 0 && (
-          <Card className="border-2 border-blue-300 bg-blue-50">
-            <CardContent className="p-6">
-              <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-                <BookOpen className="w-8 h-8 text-blue-600" />
-                Why Complete Your Baseline? (The Real Story)
-              </h3>
-              
-              {/* The Big Picture */}
-              <div className="bg-white p-6 rounded-lg mb-6">
-                <h4 className="font-bold mb-3 text-lg" style={{ color: '#1B365D' }}>
-                  💡 Here's What Most People Don't Know:
-                </h4>
-                <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                  Your baseline isn't just a list—it's your home's <strong>financial defense system</strong>. 
-                  Without knowing what you have, when it was installed, and how long it should last, you're 
-                  flying blind with the largest investment of your life.
-                </p>
-                <div className="border-l-4 border-orange-500 pl-4 bg-orange-50 p-3 rounded">
-                  <p className="font-semibold text-orange-900 mb-2">
-                    Real Example: The $43,000 Difference
-                  </p>
-                  <p className="text-sm text-gray-800 leading-relaxed">
-                    Homeowner A has no baseline. Their 15-year-old HVAC dies in July = $12K emergency replacement. 
-                    Unknown roof age leads to leak = $8K interior damage. Water heater fails = $4K flood cleanup. 
-                    Foundation crack ignored = $19K structural repair. <strong>Total: $43,000 in preventable disasters.</strong>
-                  </p>
-                  <p className="text-sm text-green-800 font-semibold mt-3">
-                    Homeowner B has complete baseline. Replaces HVAC at 13 years = $6K planned. Roof renewed at 18 years = 
-                    $9K scheduled. Water heater at 10 years = $1.2K no emergency. Foundation monitored = $0 caught early. 
-                    <strong>Total: $16,200 invested strategically.</strong> Saved $26,800 and avoided all disasters.
-                  </p>
-                </div>
-              </div>
-
-              {/* The Concrete Benefits */}
-              <div className="grid md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white p-5 rounded-lg border-2 border-green-300">
-                  <div className="text-3xl mb-3">💰</div>
-                  <h5 className="font-bold mb-2" style={{ color: '#28A745' }}>Avoid Financial Disasters</h5>
-                  <ul className="text-sm text-gray-700 space-y-2">
-                    <li>• Budget for replacements 2-3 years ahead</li>
-                    <li>• Never caught off-guard by failures</li>
-                    <li>• Plan = save 40-60% vs. emergency</li>
-                    <li>• Prevent cascade failures ($20K-50K+)</li>
-                  </ul>
-                </div>
-
-                <div className="bg-white p-5 rounded-lg border-2 border-blue-300">
-                  <div className="text-3xl mb-3">🏆</div>
-                  <h5 className="font-bold mb-2" style={{ color: '#3B82F6' }}>Maximize Home Value</h5>
-                  <ul className="text-sm text-gray-700 space-y-2">
-                    <li>• Prove maintenance = +$5-15K sale price</li>
-                    <li>• Pass inspections with confidence</li>
-                    <li>• Eliminate buyer negotiation leverage</li>
-                    <li>• Show you're a serious owner</li>
-                  </ul>
-                </div>
-
-                <div className="bg-white p-5 rounded-lg border-2 border-purple-300">
-                  <div className="text-3xl mb-3">🎯</div>
-                  <h5 className="font-bold mb-2" style={{ color: '#8B5CF6' }}>Strategic Control</h5>
-                  <ul className="text-sm text-gray-700 space-y-2">
-                    <li>• Know exactly what needs attention</li>
-                    <li>• Budget accurately for 5-10 years</li>
-                    <li>• Make informed upgrade decisions</li>
-                    <li>• Sleep well knowing your home</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Without vs. With Comparison */}
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-red-50 border-2 border-red-300 p-5 rounded-lg">
-                  <p className="font-bold mb-3 text-red-800 text-lg flex items-center gap-2">
-                    <span className="text-2xl">❌</span> WITHOUT BASELINE
-                  </p>
-                  <ul className="text-sm text-gray-800 space-y-2">
-                    <li><strong>→</strong> 20-year-old water heater fails unexpectedly</li>
-                    <li><strong>=</strong> $6,500 emergency + $3,000 flood damage</li>
-                    <li className="pt-2 border-t border-red-200"></li>
-                    <li><strong>→</strong> Unknown roof age, surprise leak during rain</li>
-                    <li><strong>=</strong> $8,000 interior damage + $12,000 emergency roof</li>
-                    <li className="pt-2 border-t border-red-200"></li>
-                    <li><strong>→</strong> Selling home with no maintenance records</li>
-                    <li><strong>=</strong> Buyers negotiate -$10K to -$20K discount</li>
-                    <li className="pt-2 border-t border-red-200"></li>
-                    <li><strong>→</strong> Can't budget for upcoming replacements</li>
-                    <li><strong>=</strong> Living paycheck-to-paycheck with home emergencies</li>
-                    <li className="pt-2 border-t border-red-200 mt-3"></li>
-                    <li className="font-bold text-red-900 pt-2">
-                      TOTAL COST: $39,500+ in preventable disasters over 10 years
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="bg-green-50 border-2 border-green-300 p-5 rounded-lg">
-                  <p className="font-bold mb-3 text-green-800 text-lg flex items-center gap-2">
-                    <span className="text-2xl">✅</span> WITH COMPLETE BASELINE
-                  </p>
-                  <ul className="text-sm text-gray-800 space-y-2">
-                    <li><strong>→</strong> Know water heater is 12 years old, replace proactively</li>
-                    <li><strong>=</strong> $1,400 planned replacement, zero emergencies</li>
-                    <li className="pt-2 border-t border-green-200"></li>
-                    <li><strong>→</strong> Track roof installed 2005, budget for 2028 replacement</li>
-                    <li><strong>=</strong> $10,000 planned vs. $20,000 emergency with damage</li>
-                    <li className="pt-2 border-t border-green-200"></li>
-                    <li><strong>→</strong> Selling with complete system documentation</li>
-                    <li><strong>=</strong> Buyers confident, sell $8K-15K above asking</li>
-                    <li className="pt-2 border-t border-green-200"></li>
-                    <li><strong>→</strong> Budget spreadsheet shows exactly what's coming</li>
-                    <li><strong>=</strong> Save $200-400/month with confidence, no surprises</li>
-                    <li className="pt-2 border-t border-green-200 mt-3"></li>
-                    <li className="font-bold text-green-900 pt-2">
-                      TOTAL SAVINGS: $28,100+ avoided costs + peace of mind
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Time Investment Reality */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 p-5 rounded-lg mb-6">
-                <h4 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
-                  ⏱️ "But This Looks Like A Lot of Work..."
-                </h4>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="font-semibold mb-2 text-gray-900">Reality Check:</p>
-                    <ul className="text-sm text-gray-800 space-y-1">
-                      <li>• <strong>Essential systems (6):</strong> 2-3 hours total</li>
-                      <li>• <strong>Per system:</strong> 15-30 minutes average</li>
-                      <li>• <strong>Complete baseline (16):</strong> 4-6 hours one-time</li> {/* Updated count */}
-                      <li>• <strong>After setup:</strong> 5 min updates per year</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-2 text-gray-900">Compare That To:</p>
-                    <ul className="text-sm text-gray-800 space-y-1">
-                      <li>• Researching emergency plumber at 2am: <strong>3 hours stress</strong></li>
-                      <li>• Getting insurance quotes after flood: <strong>8 hours chaos</strong></li>
-                      <li>• Negotiating with buyer over mystery systems: <strong>$10K+ loss</strong></li>
-                      <li>• Worrying about unknown home issues: <strong>Priceless anxiety</strong></li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-blue-300">
-                  <p className="text-center font-bold text-blue-900">
-                    💎 Invest 4-6 hours once = Save $25,000-50,000+ over homeownership + eliminate stress
-                  </p>
-                </div>
-              </div>
-
-              {/* Getting Started Path */}
-              <div className="bg-white p-5 rounded-lg border-2 border-green-300">
-                <h4 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
-                  🚀 Your Path: Start Small, Build Complete Protection
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded">
-                    <Badge className="bg-red-600 text-white flex-shrink-0">Step 1</Badge>
-                    <div>
-                      <p className="font-semibold text-gray-900">Document 4 Essential Systems (unlock ACT phase)</p>
-                      <p className="text-sm text-gray-700">Start with the big ones: HVAC, Plumbing, Roof, Electrical. Takes 1-2 hours.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded">
-                    <Badge className="bg-blue-600 text-white flex-shrink-0">Step 2</Badge>
-                    <div>
-                      <p className="font-semibold text-gray-900">Add Remaining Essential + Recommended (complete protection)</p>
-                      <p className="text-sm text-gray-700">Foundation, Water/Sewer, Exterior, Gutters. Another 1-2 hours.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded">
-                    <Badge className="bg-purple-600 text-white flex-shrink-0">Step 3</Badge>
-                    <div>
-                      <p className="font-semibold text-gray-900">Complete with Appliances & Safety (Baseline Boss status)</p>
-                      <p className="text-sm text-gray-700">Document all appliances and safety systems. Final 1-2 hours.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resource Links */}
-              <div className="border-t border-blue-300 pt-6 mt-6">
-                <p className="font-semibold mb-4" style={{ color: '#1B365D', fontSize: '16px' }}>
-                  📚 Still Not Convinced? Learn More:
-                </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start h-auto py-3"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=Getting Started"}>
-                      <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="text-left">Complete Baseline Guide<br/><span className="text-xs text-gray-600">15-min read</span></span>
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start h-auto py-3"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=Getting Started"}>
-                      <Video className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="text-left">Video Walkthrough<br/><span className="text-xs text-gray-600">23-min tutorial</span></span>
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start h-auto py-3"
-                  >
-                    <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="text-left">Calculate Your Savings<br/><span className="text-xs text-gray-600">Interactive tool</span></span>
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Property Selector */}
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">
@@ -871,15 +651,25 @@ export default function Baseline() {
                     </SelectContent>
                   </Select>
                 </div>
-                {currentProperty && systems.length === 0 && ( // New Quick Start Wizard button
-                  <Button
-                    onClick={() => setShowWizard(true)}
-                    className="gap-2"
-                    style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Quick Start Wizard
-                  </Button>
+                {currentProperty && systems.length === 0 && (
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setShowWizard(true)}
+                      className="gap-2"
+                      style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Quick Start
+                    </Button>
+                    <Button
+                      onClick={() => setShowPhysicalWalkthrough(true)}
+                      className="gap-2"
+                      style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                    >
+                      <MapPin className="w-5 h-5" />
+                      Physical Walkthrough
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -948,7 +738,7 @@ export default function Baseline() {
               </CardContent>
             </Card>
 
-            {/* Professional Service CTA - ALWAYS VISIBLE */}
+            {/* Professional Service CTA */}
             <Card className="border-2 border-blue-300 bg-blue-50">
               <CardContent className="p-6">
                 <div className="flex items-start gap-3 mb-3">
@@ -957,43 +747,22 @@ export default function Baseline() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-bold text-blue-900 mb-1">
-                      {essentialProgress === 100 
-                        ? "Want professional verification of your documentation?"
-                        : "Feeling overwhelmed? Let us handle it."}
+                      Want help documenting your property?
                     </p>
-                    <p className="text-xs text-gray-700 mb-2">
-                      {essentialProgress === 100
-                        ? "Our certified technicians can verify your existing documentation and fill any gaps - ensuring your baseline is comprehensive and accurate."
-                        : "Our certified technicians will document every system in your home - age, condition, photos, and maintenance recommendations. Complete baseline in 2 hours, delivered as a professional report."}
+                    <p className="text-xs text-gray-700 mb-3">
+                      Our certified technicians will walk through your home and document everything - taking 2-3 hours of work off your plate.
                     </p>
-                    <div className="bg-white rounded p-2 mb-3 border border-blue-200">
-                      <p className="text-xs font-semibold text-blue-900 mb-1">✅ What's Included:</p>
-                      <ul className="text-xs text-gray-700 space-y-1">
-                        <li>• All {REQUIRED_SYSTEMS.length + RECOMMENDED_SYSTEMS.length} essential & recommended systems</li>
-                        <li>• Age verification (permits, receipts, model numbers)</li>
-                        <li>• Current condition assessment with photos</li>
-                        <li>• Maintenance history documentation</li>
-                        <li>• Priority recommendations for immediate needs</li>
-                        <li>• Professional report + digital system portfolio</li>
-                      </ul>
-                    </div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge className="bg-green-600 text-white">
-                        Fixed Price: $299
-                      </Badge>
-                      <span className="text-xs text-gray-600">2-3 hour service</span>
-                    </div>
+                    <Button
+                      onClick={handleRequestProService}
+                      variant="default"
+                      className="gap-2"
+                      style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Add Professional Baseline to Cart ($299)
+                    </Button>
                   </div>
                 </div>
-                <Button
-                  onClick={handleRequestProService}
-                  variant="default"
-                  className="w-full md:w-auto gap-2"
-                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Add Professional Baseline to Cart ($299)
-                </Button>
               </CardContent>
             </Card>
 
@@ -1120,13 +889,12 @@ export default function Baseline() {
             property_id: selectedProperty,
             source_type: "custom",
             title: "Professional Baseline Assessment",
-            description: "Complete system documentation service by certified technician. Includes:\n\n✅ All essential & recommended systems documented\n✅ Age verification (permits, receipts, model numbers)\n✅ Current condition assessment with photos\n✅ Maintenance history documentation\n✅ Priority recommendations for immediate needs\n✅ Professional report + digital system portfolio\n\n📋 Service takes 2-3 hours and provides comprehensive baseline documentation for your entire property.",
+            description: "Complete system documentation service.",
             system_type: "General",
             priority: "Medium",
             estimated_hours: 2.5,
             estimated_cost_min: 299,
-            estimated_cost_max: 299,
-            customer_notes: "Professional baseline documentation service - Fixed price $299"
+            estimated_cost_max: 299
           }}
         />
 
