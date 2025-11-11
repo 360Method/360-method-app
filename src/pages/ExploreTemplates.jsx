@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -40,7 +39,6 @@ export default function ExploreTemplates() {
     { value: 'Energy Efficiency', label: 'Energy Efficiency', icon: Lightbulb },
     { value: 'Rental Income Boosters', label: 'Rental Income', icon: DollarSign },
     { value: 'Preventive Replacements', label: 'Preventive', icon: Shield },
-    // { value: 'Curb Appeal', label: 'Curb Appeal', icon: Home }, // Home icon removed
   ];
 
   let filteredTemplates = templates;
@@ -312,7 +310,6 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              // Changed Home icon to Sparkles or a generic placeholder as Home was removed from imports
               <Sparkles className="w-16 h-16 text-gray-400" />
             )}
           </div>
@@ -428,8 +425,7 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
               >
                 <Link to={createPageUrl("TemplateDetail") + `?id=${template.id}`}>
                   View Details
-                  {/* ChevronRight was removed from imports, using generic arrow or removing */}
-                  <ArrowUpDown className="w-4 h-4 ml-1 rotate-90" /> {/* Using ArrowUpDown as a placeholder, ideally a right arrow should be used if re-imported */}
+                  <ArrowUpDown className="w-4 h-4 ml-1 rotate-90" />
                 </Link>
               </Button>
             </div>
