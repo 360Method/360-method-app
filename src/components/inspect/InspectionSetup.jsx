@@ -34,10 +34,6 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
 
   const createInspectionMutation = useMutation({
     mutationFn: async () => {
-      if (!property?.id) {
-        throw new Error('Property ID is required to create an inspection');
-      }
-      
       return base44.entities.Inspection.create({
         property_id: property.id,
         season: selectedSeason,
@@ -53,36 +49,11 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
     onSuccess: (inspection) => {
       onComplete(inspection);
     },
-    onError: (error) => {
-      console.error('Failed to create inspection:', error);
-      alert('Failed to create inspection. Please try again.');
-    }
   });
 
   const handleBeginWalkthrough = () => {
-    if (!property?.id) {
-      alert('No property selected. Please go back and select a property.');
-      return;
-    }
     createInspectionMutation.mutate();
   };
-
-  // If no property, show error
-  if (!property) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <Card className="border-none shadow-lg max-w-2xl w-full">
-          <CardContent className="p-12 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Property Selected</h1>
-            <p className="text-gray-600 mb-6">Please select a property before starting an inspection.</p>
-            <Button onClick={onCancel} style={{ backgroundColor: '#1B365D' }}>
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -241,7 +212,7 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
         {/* Begin Button */}
         <Button
           onClick={handleBeginWalkthrough}
-          disabled={createInspectionMutation.isPending || !property?.id}
+          disabled={createInspectionMutation.isPending}
           className="w-full h-14 text-lg font-bold"
           style={{ backgroundColor: '#28A745', minHeight: '56px' }}
         >

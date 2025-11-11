@@ -1,40 +1,28 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb, Shield, DollarSign } from "lucide-react";
-import { base44 } from "@/api/base44Client";
-import { generatePreservationRecommendations } from "../shared/PreservationAnalyzer";
-import { useQuery } from "@tanstack/react-query";
+import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb } from "lucide-react"; // Added Lightbulb
 
 export default function InspectionComplete({ inspection, property, onViewPriorityQueue, onViewReport, onDone }) {
   const [aiSummary, setAiSummary] = React.useState(null);
-  const [preservationOpportunities, setPreservationOpportunities] = React.useState(null);
   const [generatingSummary, setGeneratingSummary] = React.useState(false);
 
-  const allIssues = inspection?.checklist_items || [];
-  const urgentCount = inspection?.urgent_count || 0;
-  const flagCount = inspection?.flag_count || 0;
-  const monitorCount = inspection?.monitor_count || 0;
+  const allIssues = inspection.checklist_items || [];
+  const urgentCount = inspection.urgent_count || 0;
+  const flagCount = inspection.flag_count || 0;
+  const monitorCount = inspection.monitor_count || 0;
   const quickFixesCompleted = allIssues.filter(i => i.is_quick_fix && i.status === 'Completed').length;
-  const durationMinutes = inspection?.duration_minutes || 0;
+  const durationMinutes = inspection.duration_minutes || 0;
 
   const tasksCreated = urgentCount + flagCount;
 
-  // Fetch baseline systems for preservation analysis - only if property exists
-  const { data: systems = [] } = useQuery({
-    queryKey: ['systemBaselines', property?.id],
-    queryFn: () => {
-      if (!property?.id) return Promise.resolve([]);
-      return base44.entities.SystemBaseline.filter({ property_id: property.id });
-    },
-    enabled: !!property?.id,
-  });
-
-  // Generate AI summary and preservation opportunities
+  // Generate AI summary of inspection
   React.useEffect(() => {
-    const generateAnalysis = async () => {
-      if (allIssues.length === 0 || !property || !inspection) return;
+    const generateSummary = async () => {
+      // Only generate if there are issues and no summary has been generated yet
+      if (allIssues.length === 0 || aiSummary) return;
       
       setGeneratingSummary(true);
       try {
@@ -56,6 +44,7 @@ Provide:
 
 Be clear, actionable, and help the homeowner understand what matters most.`;
 
+        // Assuming base44.integrations.Core.InvokeLLM is available in the global scope or imported context
         const summary = await base44.integrations.Core.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
@@ -70,41 +59,18 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
         });
 
         setAiSummary(summary);
-
-        // Generate preservation opportunities
-        if (systems.length > 0) {
-          const preservation = await generatePreservationRecommendations(systems);
-          if (preservation) {
-            setPreservationOpportunities(preservation);
-          }
-        }
       } catch (error) {
-        console.error('Failed to generate AI analysis:', error);
+        console.error('Failed to generate AI summary:', error);
       } finally {
         setGeneratingSummary(false);
       }
     };
 
-    if (allIssues.length > 0 && !aiSummary && property && inspection) {
-      generateAnalysis();
+    // Trigger summary generation if conditions are met
+    if (allIssues.length > 0 && !aiSummary) {
+      generateSummary();
     }
-  }, [allIssues, inspection, property, systems, aiSummary]);
-
-  if (!inspection) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <Card className="border-none shadow-lg max-w-2xl w-full">
-          <CardContent className="p-12 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Inspection Data</h1>
-            <p className="text-gray-600">Unable to load inspection results.</p>
-            <Button onClick={onDone} className="mt-6">
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  }, [allIssues, inspection.season, property.address, aiSummary]); // Include aiSummary in dependencies to prevent re-runs after generation
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -117,8 +83,7 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
               Inspection Complete!
             </h1>
             <p className="text-xl text-gray-600">
-              {inspection.season} {inspection.year} Inspection
-              {property && ` - ${property.address}`}
+              {inspection.season} {inspection.year} Inspection - {property.address}
             </p>
             <p className="text-gray-600">Duration: {durationMinutes} minutes</p>
           </div>
@@ -183,89 +148,7 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
             </Card>
           )}
 
-          {/* Preservation Opportunities */}
-          {preservationOpportunities && preservationOpportunities.opportunities.length > 0 && (
-            <Card className="border-2" style={{ borderColor: '#28A745', backgroundColor: '#F0FFF4' }}>
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-4 flex items-center justify-center gap-2 text-green-900">
-                  <Shield className="w-6 h-6 text-green-700" />
-                  🛡️ PRESERVATION OPPORTUNITIES
-                </h2>
-                
-                <p className="text-center text-gray-800 mb-6">
-                  You have <strong>{preservationOpportunities.opportunities.length} aging system{preservationOpportunities.opportunities.length > 1 ? 's' : ''}</strong> where 
-                  preservation can save thousands:
-                </p>
-
-                <div className="space-y-4">
-                  {preservationOpportunities.opportunities.slice(0, 3).map((opp, idx) => (
-                    <div key={idx} className="bg-white p-4 rounded-lg border-2 border-green-200 text-left">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-gray-900">
-                            {opp.system.nickname || opp.system.system_type}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {opp.age} years old ({opp.percentLifespan}% of {opp.lifespan}-year lifespan)
-                          </p>
-                        </div>
-                        <Badge className={
-                          opp.priority === 'HIGH' ? 'bg-red-600' :
-                          opp.priority === 'MEDIUM' ? 'bg-orange-600' :
-                          'bg-blue-600'
-                        }>
-                          {opp.priority}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-gray-600">Preservation Cost</p>
-                          <p className="font-bold text-green-700">${opp.investment}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Extends Life</p>
-                          <p className="font-bold text-green-700">{opp.extensionYears} years</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Replacement Avoided</p>
-                          <p className="font-bold text-green-700">${opp.replacementCost.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Annual Savings</p>
-                          <p className="font-bold text-green-700">${Math.round(opp.annualSavings).toLocaleString()}/yr</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-                  <p className="font-bold text-blue-900 mb-2 flex items-center justify-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    TOTAL PRESERVATION OPPORTUNITY
-                  </p>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="text-center">
-                      <p className="text-gray-700">Invest</p>
-                      <p className="text-2xl font-bold text-blue-900">${preservationOpportunities.totalInvestment.toLocaleString()}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-700">Avoid</p>
-                      <p className="text-2xl font-bold text-blue-900">${preservationOpportunities.totalSavings.toLocaleString()}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-700">ROI</p>
-                      <p className="text-2xl font-bold text-blue-900">{preservationOpportunities.totalROI.toFixed(1)}:1</p>
-                    </div>
-                  </div>
-                  <p className="text-center text-xs text-gray-600 mt-3">
-                    Avoid ${preservationOpportunities.totalSavings.toLocaleString()} in replacements (next 2-4 years) with ${preservationOpportunities.totalInvestment.toLocaleString()} preservation
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <hr className="border-gray-200" />
 
           {/* Issues Found Summary */}
           <div>
@@ -304,48 +187,46 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
             </div>
 
             {/* Issue Details */}
-            {allIssues.length > 0 && (
-              <div className="space-y-3 text-left">
-                {urgentCount > 0 && (
-                  <div>
-                    <h3 className="font-bold text-red-700 mb-2">🚨 URGENT ({urgentCount}):</h3>
-                    <ul className="ml-6 space-y-1">
-                      {allIssues
-                        .filter(i => i.severity === 'Urgent')
-                        .map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {flagCount > 0 && (
-                  <div>
-                    <h3 className="font-bold text-orange-700 mb-2">⚠️ FLAG ({flagCount}):</h3>
-                    <ul className="ml-6 space-y-1">
-                      {allIssues
-                        .filter(i => i.severity === 'Flag')
-                        .map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {monitorCount > 0 && (
-                  <div>
-                    <h3 className="font-bold text-green-700 mb-2">✅ MONITOR ({monitorCount}):</h3>
-                    <ul className="ml-6 space-y-1">
-                      {allIssues
-                        .filter(i => i.severity === 'Monitor')
-                        .map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="space-y-3 text-left">
+              {urgentCount > 0 && (
+                <div>
+                  <h3 className="font-bold text-red-700 mb-2">🚨 URGENT ({urgentCount}):</h3>
+                  <ul className="ml-6 space-y-1">
+                    {allIssues
+                      .filter(i => i.severity === 'Urgent')
+                      .map((issue, idx) => (
+                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              
+              {flagCount > 0 && (
+                <div>
+                  <h3 className="font-bold text-orange-700 mb-2">⚠️ FLAG ({flagCount}):</h3>
+                  <ul className="ml-6 space-y-1">
+                    {allIssues
+                      .filter(i => i.severity === 'Flag')
+                      .map((issue, idx) => (
+                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              
+              {monitorCount > 0 && (
+                <div>
+                  <h3 className="font-bold text-green-700 mb-2">✅ MONITOR ({monitorCount}):</h3>
+                  <ul className="ml-6 space-y-1">
+                    {allIssues
+                      .filter(i => i.severity === 'Monitor')
+                      .map((issue, idx) => (
+                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           <hr className="border-gray-200" />
@@ -361,7 +242,7 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
                   {allIssues
                     .filter(i => i.is_quick_fix && i.status === 'Completed')
                     .map((issue, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}</li>
+                      <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}</li>
                     ))}
                 </ul>
               </CardContent>

@@ -9,10 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2, Shield, DollarSign } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { analyzePreservationOpportunity, generateAIPreservationPlan } from "../shared/PreservationAnalyzer";
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
@@ -127,7 +126,6 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [showAddAnother, setShowAddAnother] = React.useState(false);
   const [scanningBarcode, setScanningBarcode] = React.useState(false);
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
-  const [preservationPlan, setPreservationPlan] = React.useState(null);
   const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
 
   const queryClient = useQueryClient();
@@ -143,7 +141,6 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       )); // Sync manuals state
       setShowAddAnother(false); // Reset this flag when dialog opens
       setAiAnalysis(null); // Reset AI analysis when dialog opens
-      setPreservationPlan(null); // Reset preservation plan
     }
   }, [editingSystem, open, getInitialFormData]);
 
@@ -214,7 +211,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     setWarnings(newWarnings);
   }, [formData]);
 
-  // Generate AI risk analysis and preservation plan after system is saved
+  // Generate AI risk analysis after system is saved
   const generateAiAnalysis = React.useCallback(async (savedSystem) => {
     if (!savedSystem.installation_year || !savedSystem.system_type) return;
 
@@ -260,24 +257,10 @@ Be specific, practical, and focus on preventing expensive failures.`;
       });
 
       setAiAnalysis(analysis);
-
-      // Check for preservation opportunity
-      const preservation = analyzePreservationOpportunity({
-        system_type: savedSystem.system_type,
-        installation_year: savedSystem.installation_year,
-        estimated_lifespan_years: savedSystem.estimated_lifespan_years,
-        replacement_cost_estimate: savedSystem.replacement_cost_estimate,
-      });
-
-      if (preservation) {
-        const aiPlan = await generateAIPreservationPlan(savedSystem, preservation);
-        setPreservationPlan({ ...preservation, aiPlan });
-      }
     } catch (error) {
       console.error('AI analysis failed:', error);
       // Optionally show an error message to the user
       alert("Failed to generate AI analysis. Please try again later.");
-      throw error; // Re-throw to indicate failure in onSuccess
     } finally {
       setGeneratingAnalysis(false);
     }
@@ -302,30 +285,19 @@ Be specific, practical, and focus on preventing expensive failures.`;
         return base44.entities.SystemBaseline.create(submitData);
       }
     },
-    onSuccess: async (savedSystem) => {
+    onSuccess: (savedSystem) => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
 
-      let analysisWasAttemptedAndSuccessful = false;
-      if (savedSystem.installation_year && savedSystem.system_type) {
-        try {
-          await generateAiAnalysis(savedSystem);
-          analysisWasAttemptedAndSuccessful = true;
-        } catch (error) {
-          console.error("AI analysis failed in onSuccess, proceeding without it:", error);
-          // If AI analysis fails, we don't want to block the user or prevent the dialog from closing.
-        }
+      // Only generate AI analysis for *new* systems that have an installation_year
+      if (!editingSystem?.id && savedSystem.installation_year && savedSystem.system_type) {
+        generateAiAnalysis(savedSystem);
+      } else if (!editingSystem?.id && allowsMultiple) {
+        // If it's a new system, allows multiple, but no year for AI analysis (or analysis failed)
+        setShowAddAnother(true);
+      } else {
+        // If it's an existing system, or a new single system, or new multi-system without year for AI analysis
+        onClose();
       }
-
-      // Only proceed to close or "add another" if AI analysis wasn't successfully generated or if there's nothing to analyze.
-      if (!analysisWasAttemptedAndSuccessful) {
-        if (allowsMultiple) {
-          setShowAddAnother(true);
-        } else {
-          onClose();
-        }
-      }
-      // If analysisWasAttemptedAndSuccessful is true, the component will re-render
-      // and the AI analysis dialog will be shown, handling the next steps (onClose or setShowAddAnother)
     },
     onError: (error) => {
       console.error("Save failed:", error);
@@ -1034,8 +1006,8 @@ Be specific, practical, and focus on preventing expensive failures.`;
     }
   };
 
-  // Show AI analysis with preservation opportunity before "Add Another" screen
-  if ((aiAnalysis || preservationPlan) && !showAddAnother) {
+  // Show AI analysis before "Add Another" screen
+  if (aiAnalysis && !showAddAnother) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
@@ -1046,160 +1018,73 @@ Be specific, practical, and focus on preventing expensive failures.`;
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {aiAnalysis && (
-              <>
-                {/* Risk Score */}
-                <Card className={`border-2 ${
-                  aiAnalysis.risk_score >= 7 ? 'border-red-300 bg-red-50' :
-                  aiAnalysis.risk_score >= 4 ? 'border-orange-300 bg-orange-50' :
-                  'border-green-300 bg-green-50'
-                }`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-lg">Risk Assessment</h3>
-                      <Badge className={
-                        aiAnalysis.risk_score >= 7 ? 'bg-red-600' :
-                        aiAnalysis.risk_score >= 4 ? 'bg-orange-600' :
-                        'bg-green-600'
-                      }>
-                        Risk Score: {aiAnalysis.risk_score}/10
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-800">{aiAnalysis.risk_explanation}</p>
-                  </CardContent>
-                </Card>
+            {/* Risk Score */}
+            <Card className={`border-2 ${
+              aiAnalysis.risk_score >= 7 ? 'border-red-300 bg-red-50' :
+              aiAnalysis.risk_score >= 4 ? 'border-orange-300 bg-orange-50' :
+              'border-green-300 bg-green-50'
+            }`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-lg">Risk Assessment</h3>
+                  <Badge className={
+                    aiAnalysis.risk_score >= 7 ? 'bg-red-600' :
+                    aiAnalysis.risk_score >= 4 ? 'bg-orange-600' :
+                    'bg-green-600'
+                  }>
+                    Risk Score: {aiAnalysis.risk_score}/10
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-800">{aiAnalysis.risk_explanation}</p>
+              </CardContent>
+            </Card>
 
-                {/* Warning Signs to Watch */}
-                {aiAnalysis.warning_signs?.length > 0 && (
-                  <Card className="border-2 border-yellow-300 bg-yellow-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-700" />
-                        Warning Signs to Watch For
-                      </h3>
-                      <ul className="space-y-2">
-                        {aiAnalysis.warning_signs.map((sign, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
-                            <span className="text-yellow-700 font-bold mt-0.5">•</span>
-                            <span>{sign}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Recommended Actions */}
-                {aiAnalysis.recommended_actions?.length > 0 && (
-                  <Card className="border-2 border-blue-300 bg-blue-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-blue-700" />
-                        Recommended Actions (Next 6-12 Months)
-                      </h3>
-                      <ul className="space-y-2">
-                        {aiAnalysis.recommended_actions.map((action, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
-                            <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 flex-shrink-0" />
-                            <span>{action}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Replacement Timeline */}
-                {aiAnalysis.replacement_timeline && (
-                  <Card className="border-2 border-purple-300 bg-purple-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold text-lg mb-2">Replacement Planning</h3>
-                      <p className="text-sm text-gray-800">{aiAnalysis.replacement_timeline}</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+            {/* Warning Signs to Watch */}
+            {aiAnalysis.warning_signs?.length > 0 && (
+              <Card className="border-2 border-yellow-300 bg-yellow-50">
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-700" />
+                    Warning Signs to Watch For
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiAnalysis.warning_signs.map((sign, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <span className="text-yellow-700 font-bold mt-0.5">•</span>
+                        <span>{sign}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
             )}
 
-            {/* Preservation Opportunity */}
-            {preservationPlan && (
-              <Card className="border-2 border-green-300 bg-green-50">
+            {/* Recommended Actions */}
+            {aiAnalysis.recommended_actions?.length > 0 && (
+              <Card className="border-2 border-blue-300 bg-blue-50">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="w-6 h-6 text-green-700" />
-                    <h3 className="font-bold text-lg text-green-900">🛡️ PRESERVATION OPPORTUNITY</h3>
-                    <Badge className={
-                      preservationPlan.priority === 'HIGH' ? 'bg-red-600' :
-                      preservationPlan.priority === 'MEDIUM' ? 'bg-orange-600' :
-                      'bg-blue-600'
-                    }>
-                      {preservationPlan.priority} PRIORITY
-                    </Badge>
-                  </div>
-
-                  <p className="text-sm text-gray-800 mb-4">
-                    Your {formData.system_type} is at <strong>{preservationPlan.percentLifespan}%</strong> of typical lifespan
-                    ({preservationPlan.age} of {preservationPlan.lifespan} years).
-                  </p>
-
-                  {preservationPlan.aiPlan?.why_now && (
-                    <div className="mb-4 p-3 bg-white rounded border border-green-200">
-                      <h4 className="font-semibold text-green-900 mb-2">Why Preserve Now:</h4>
-                      <p className="text-sm text-gray-800">{preservationPlan.aiPlan.why_now}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-2 mb-4">
-                    <h4 className="font-semibold text-green-900">Preservation Plan:</h4>
-                    {preservationPlan.strategies.map((strategy, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm bg-white p-2 rounded">
-                        <CheckCircle2 className="w-4 h-4 text-green-700 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="font-medium">{strategy.name} - ${strategy.cost}</p>
-                          <p className="text-gray-600">{strategy.description}</p>
-                        </div>
-                      </div>
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-blue-700" />
+                    Recommended Actions (Next 6-12 Months)
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiAnalysis.recommended_actions.map((action, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 flex-shrink-0" />
+                        <span>{action}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="text-xs text-gray-600">Total Investment</p>
-                      <p className="text-xl font-bold text-green-700">${preservationPlan.investment}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="text-xs text-gray-600">Extends Life</p>
-                      <p className="text-xl font-bold text-green-700">{preservationPlan.extensionYears} years</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="text-xs text-gray-600">Replacement Avoided</p>
-                      <p className="text-xl font-bold text-green-700">${preservationPlan.replacementCost.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="text-xs text-gray-600">Annual Savings</p>
-                      <p className="text-xl font-bold text-green-700">${Math.round(preservationPlan.annualSavings).toLocaleString()}/yr</p>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                    <p className="text-sm font-bold text-blue-900 mb-1">
-                      💰 Your ROI: {preservationPlan.roi.toFixed(1)}:1
-                    </p>
-                    <p className="text-xs text-gray-700">
-                      Invest ${preservationPlan.investment} now to avoid ${preservationPlan.replacementCost.toLocaleString()}
-                      replacement for {preservationPlan.extensionYears} more years
-                    </p>
-                  </div>
-
-                  {preservationPlan.aiPlan?.consequences_of_skipping && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                      <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        If You Skip This:
-                      </h4>
-                      <p className="text-sm text-gray-800">{preservationPlan.aiPlan.consequences_of_skipping}</p>
-                    </div>
-                  )}
+            {/* Replacement Timeline */}
+            {aiAnalysis.replacement_timeline && (
+              <Card className="border-2 border-purple-300 bg-purple-50">
+                <CardContent className="p-4">
+                  <h3 className="font-bold text-lg mb-2">Replacement Planning</h3>
+                  <p className="text-sm text-gray-800">{aiAnalysis.replacement_timeline}</p>
                 </CardContent>
               </Card>
             )}
@@ -1211,7 +1096,6 @@ Be specific, practical, and focus on preventing expensive failures.`;
                   <Button
                     onClick={() => {
                       setAiAnalysis(null); // Clear AI analysis to show add another screen
-                      setPreservationPlan(null); // Clear preservation plan
                       setShowAddAnother(true);
                     }}
                     className="w-full gap-2"
