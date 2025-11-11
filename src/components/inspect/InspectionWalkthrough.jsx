@@ -265,7 +265,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                         <div className="text-3xl">{zone.name.split(' ')[0]}</div>
                         <div>
                           <CardTitle className="text-lg">
-                            {zone.name.replace(/[^a-zA-Z\s]/g, '').trim()}
+                            {zone.name.replace(/[^a-zA-Z\s\/]/g, '').trim()}
                           </CardTitle>
                           <p className="text-sm text-gray-600">{zone.why}</p>
                         </div>
