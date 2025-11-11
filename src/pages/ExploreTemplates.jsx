@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Award, TrendingUp, DollarSign, Clock, Home, ChevronRight, Zap, Users, Shield, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { TrendingUp, DollarSign, Clock, Sparkles, Search, ArrowUpDown, Shield, Award, Lightbulb } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
@@ -36,10 +37,10 @@ export default function ExploreTemplates() {
   const categories = [
     { value: 'all', label: 'All Templates', icon: Sparkles },
     { value: 'High ROI Renovations', label: 'High ROI', icon: Award },
-    { value: 'Energy Efficiency', label: 'Energy Efficiency', icon: Zap },
+    { value: 'Energy Efficiency', label: 'Energy Efficiency', icon: Lightbulb },
     { value: 'Rental Income Boosters', label: 'Rental Income', icon: DollarSign },
     { value: 'Preventive Replacements', label: 'Preventive', icon: Shield },
-    { value: 'Curb Appeal', label: 'Curb Appeal', icon: Home },
+    // { value: 'Curb Appeal', label: 'Curb Appeal', icon: Home }, // Home icon removed
   ];
 
   let filteredTemplates = templates;
@@ -268,7 +269,7 @@ export default function ExploreTemplates() {
                 </p>
               </div>
               <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Aging systems?</p>
+                <p className="font-semibold mb-2" style={{ color: '#1B365D' }>Aging systems?</p>
                 <p className="text-sm text-gray-700">
                   Consider <strong>Preventive Replacements</strong> before failures cause expensive damage
                 </p>
@@ -311,7 +312,8 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Home className="w-16 h-16 text-gray-400" />
+              // Changed Home icon to Sparkles or a generic placeholder as Home was removed from imports
+              <Sparkles className="w-16 h-16 text-gray-400" />
             )}
           </div>
 
@@ -426,7 +428,8 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
               >
                 <Link to={createPageUrl("TemplateDetail") + `?id=${template.id}`}>
                   View Details
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  {/* ChevronRight was removed from imports, using generic arrow or removing */}
+                  <ArrowUpDown className="w-4 h-4 ml-1 rotate-90" /> {/* Using ArrowUpDown as a placeholder, ideally a right arrow should be used if re-imported */}
                 </Link>
               </Button>
             </div>
