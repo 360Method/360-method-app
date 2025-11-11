@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Mail, Printer, CheckCircle, AlertTriangle, Edit } from "lucide-react";
+import { ArrowLeft, Download, Mail, Printer, CheckCircle, AlertTriangle, Edit, Camera, DollarSign } from "lucide-react";
 
 export default function InspectionReport({ inspection, property, baselineSystems, onBack, onEdit }) {
   const allIssues = inspection.checklist_items || [];
@@ -10,6 +10,7 @@ export default function InspectionReport({ inspection, property, baselineSystems
   const flagIssues = allIssues.filter(i => i.severity === 'Flag');
   const monitorIssues = allIssues.filter(i => i.severity === 'Monitor');
   const completedQuickFixes = allIssues.filter(i => i.is_quick_fix && i.status === 'Completed');
+  const issuesWithPhotos = allIssues.filter(i => i.photo_urls && i.photo_urls.length > 0);
 
   // Calculate costs
   const totalEstimatedCost = allIssues.reduce((sum, issue) => {
@@ -143,6 +144,7 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       {urgentIssues.length > 0 && <p>• {urgentIssues.length} Urgent (safety)</p>}
                       {flagIssues.length > 0 && <p>• {flagIssues.length} Flag (preventive)</p>}
                       {monitorIssues.length > 0 && <p>• {monitorIssues.length} Monitor (planning)</p>}
+                      {completedQuickFixes.length > 0 && <p className="text-green-700">• {completedQuickFixes.length} Fixed during visit</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -154,6 +156,7 @@ export default function InspectionReport({ inspection, property, baselineSystems
                   <p className="font-bold text-gray-800" style={{ fontSize: '20px' }}>
                     ${totalEstimatedCost.toLocaleString()}
                   </p>
+                  <p className="text-xs text-gray-600 mt-1">To address all identified issues</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Prevented Future Costs:</p>
@@ -163,96 +166,75 @@ export default function InspectionReport({ inspection, property, baselineSystems
                   <p className="text-xs text-gray-600 mt-1">(if issues addressed promptly)</p>
                 </div>
               </div>
+
+              {issuesWithPhotos.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    {issuesWithPhotos.length} issue{issuesWithPhotos.length > 1 ? 's' : ''} documented with photos
+                  </p>
+                </div>
+              )}
             </div>
 
             <hr className="border-gray-300" />
 
-            {/* Findings by Area */}
+            {/* Detailed Findings */}
             <div>
               <h2 className="font-bold mb-4 md:mb-6" style={{ color: '#1B365D', fontSize: '22px' }}>
-                FINDINGS BY AREA:
+                DETAILED FINDINGS:
               </h2>
               
-              <div className="space-y-4 md:space-y-6">
-                {/* Group issues by area */}
-                {Array.from(new Set(allIssues.map(i => i.area))).map((areaName) => {
-                  const areaIssues = allIssues.filter(i => i.area === areaName);
-                  const hasIssues = areaIssues.length > 0;
-
-                  return (
-                    <div key={areaName}>
-                      <h3 className="font-semibold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
-                        {areaName}:
-                      </h3>
-                      {hasIssues ? (
-                        <ul className="space-y-2">
-                          {areaIssues.map((issue, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              {issue.severity === 'Urgent' && <span className="text-red-600">🚨</span>}
-                              {issue.severity === 'Flag' && <span className="text-orange-600">⚠️</span>}
-                              {issue.severity === 'Monitor' && <span className="text-green-600">✅</span>}
-                              <span className="text-gray-700">{issue.description}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-gray-600 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          No issues found - area in good condition
-                        </p>
-                      )}
+              <div className="space-y-6">
+                {/* Urgent Issues */}
+                {urgentIssues.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4 text-red-700 flex items-center gap-2" style={{ fontSize: '20px' }}>
+                      <span className="text-2xl">🚨</span>
+                      URGENT ISSUES ({urgentIssues.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {urgentIssues.map((issue, idx) => (
+                        <IssueDetailCard key={idx} issue={issue} number={idx + 1} />
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+
+                {/* Flag Issues */}
+                {flagIssues.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4 text-orange-700 flex items-center gap-2" style={{ fontSize: '20px' }}>
+                      <span className="text-2xl">⚠️</span>
+                      FLAG ISSUES ({flagIssues.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {flagIssues.map((issue, idx) => (
+                        <IssueDetailCard key={idx} issue={issue} number={urgentIssues.length + idx + 1} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Monitor Issues */}
+                {monitorIssues.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-4 text-green-700 flex items-center gap-2" style={{ fontSize: '20px' }}>
+                      <span className="text-2xl">✅</span>
+                      MONITOR ITEMS ({monitorIssues.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {monitorIssues.map((issue, idx) => (
+                        <IssueDetailCard 
+                          key={idx} 
+                          issue={issue} 
+                          number={urgentIssues.length + flagIssues.length + idx + 1} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-
-            <hr className="border-gray-300" />
-
-            {/* Recommended Actions */}
-            <div>
-              <h2 className="font-bold mb-4 md:mb-6" style={{ color: '#1B365D', fontSize: '22px' }}>
-                RECOMMENDED ACTIONS:
-              </h2>
-              
-              {urgentIssues.length > 0 && (
-                <div className="mb-4 md:mb-6">
-                  <h3 className="font-semibold mb-3 text-red-700" style={{ fontSize: '18px' }}>
-                    URGENT (This Week):
-                  </h3>
-                  <ol className="list-decimal ml-6 space-y-2">
-                    {urgentIssues.map((issue, idx) => (
-                      <li key={idx} className="text-gray-700">{issue.description}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-
-              {flagIssues.length > 0 && (
-                <div className="mb-4 md:mb-6">
-                  <h3 className="font-semibold mb-3 text-orange-700" style={{ fontSize: '18px' }}>
-                    FLAG (Next 30-90 Days):
-                  </h3>
-                  <ol className="list-decimal ml-6 space-y-2" start={urgentIssues.length + 1}>
-                    {flagIssues.map((issue, idx) => (
-                      <li key={idx} className="text-gray-700">{issue.description}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-
-              {monitorIssues.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3 text-green-700" style={{ fontSize: '18px' }}>
-                    MONITOR (Next Inspection):
-                  </h3>
-                  <ol className="list-decimal ml-6 space-y-2" start={urgentIssues.length + flagIssues.length + 1}>
-                    {monitorIssues.map((issue, idx) => (
-                      <li key={idx} className="text-gray-700">{issue.description}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
             </div>
 
             {/* Maintenance Completed */}
@@ -261,26 +243,107 @@ export default function InspectionReport({ inspection, property, baselineSystems
                 <hr className="border-gray-300" />
                 <div>
                   <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-                    MAINTENANCE COMPLETED DURING VISIT:
+                    ✓ MAINTENANCE COMPLETED DURING VISIT:
                   </h2>
-                  <ul className="ml-6 space-y-1">
+                  <div className="space-y-3">
                     {completedQuickFixes.map((fix, idx) => (
-                      <li key={idx} className="text-gray-700 flex items-start gap-2">
-                        <span className="text-green-600">✓</span>
-                        {fix.description}
-                      </li>
+                      <Card key={idx} className="border-2 border-green-300 bg-green-50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-900">{fix.area}</p>
+                              <p className="text-sm text-gray-700 mt-1">{fix.description}</p>
+                              {fix.photo_urls && fix.photo_urls.length > 0 && (
+                                <div className="flex gap-2 mt-3">
+                                  {fix.photo_urls.map((url, photoIdx) => (
+                                    <img
+                                      key={photoIdx}
+                                      src={url}
+                                      alt={`Fixed issue ${photoIdx + 1}`}
+                                      className="w-20 h-20 object-cover rounded border"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </>
             )}
 
             <hr className="border-gray-300" />
 
+            {/* Recommended Actions Summary */}
+            <div>
+              <h2 className="font-bold mb-4 md:mb-6" style={{ color: '#1B365D', fontSize: '22px' }}>
+                RECOMMENDED ACTIONS TIMELINE:
+              </h2>
+              
+              <div className="space-y-4">
+                {urgentIssues.length > 0 && (
+                  <Card className="border-2 border-red-300 bg-red-50">
+                    <CardContent className="p-4">
+                      <p className="font-bold text-red-800 mb-2">THIS WEEK:</p>
+                      <ol className="list-decimal ml-5 space-y-1">
+                        {urgentIssues.map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-800">
+                            {issue.area}: {issue.description.substring(0, 100)}
+                            {issue.description.length > 100 ? '...' : ''}
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {flagIssues.length > 0 && (
+                  <Card className="border-2 border-orange-300 bg-orange-50">
+                    <CardContent className="p-4">
+                      <p className="font-bold text-orange-800 mb-2">NEXT 30-90 DAYS:</p>
+                      <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + 1}>
+                        {flagIssues.map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-800">
+                            {issue.area}: {issue.description.substring(0, 100)}
+                            {issue.description.length > 100 ? '...' : ''}
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {monitorIssues.length > 0 && (
+                  <Card className="border-2 border-green-300 bg-green-50">
+                    <CardContent className="p-4">
+                      <p className="font-bold text-green-800 mb-2">MONITOR AT NEXT INSPECTION:</p>
+                      <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + flagIssues.length + 1}>
+                        {monitorIssues.map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-800">
+                            {issue.area}: {issue.description.substring(0, 100)}
+                            {issue.description.length > 100 ? '...' : ''}
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+
+            <hr className="border-gray-300" />
+
             {/* Next Inspection */}
             <div className="text-center py-4">
-              <p className="font-semibold text-gray-700" style={{ fontSize: '16px' }}>
-                Next Inspection Due: {
+              <p className="font-semibold text-gray-700 mb-2" style={{ fontSize: '16px' }}>
+                Next Inspection Due:
+              </p>
+              <p className="font-bold" style={{ color: '#1B365D', fontSize: '20px' }}>
+                {
                   inspection.season === 'Spring' ? 'Summer' :
                   inspection.season === 'Summer' ? 'Fall' :
                   inspection.season === 'Fall' ? 'Winter' : 'Spring'
@@ -302,5 +365,85 @@ export default function InspectionReport({ inspection, property, baselineSystems
         </div>
       </div>
     </div>
+  );
+}
+
+function IssueDetailCard({ issue, number }) {
+  const costMap = {
+    'free': 'Free (DIY)',
+    '1-50': '$1-50',
+    '50-200': '$50-200',
+    '200-500': '$200-500',
+    '500-1500': '$500-1,500',
+    '1500+': '$1,500+',
+    'unknown': 'Unknown'
+  };
+
+  const severityColors = {
+    'Urgent': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-800' },
+    'Flag': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-800' },
+    'Monitor': { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-800' }
+  };
+
+  const colors = severityColors[issue.severity] || severityColors['Monitor'];
+
+  return (
+    <Card className={`border-2 ${colors.border} ${colors.bg}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className={`${colors.text} bg-white border-2 ${colors.border}`}>
+                Issue #{number}
+              </Badge>
+              <Badge variant="outline">
+                {issue.area}
+              </Badge>
+            </div>
+            <p className="font-semibold text-gray-900 mb-1">
+              {issue.system_name || issue.area}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-gray-800 mb-3">{issue.description}</p>
+
+        {/* Cost and Action */}
+        <div className="flex flex-wrap gap-3 mb-3">
+          {issue.estimated_cost && (
+            <div className="flex items-center gap-1 text-sm">
+              <DollarSign className="w-4 h-4 text-gray-600" />
+              <span className="font-semibold">Est. Cost:</span>
+              <span>{costMap[issue.estimated_cost]}</span>
+            </div>
+          )}
+          {issue.who_will_fix && issue.who_will_fix !== 'not_sure' && (
+            <Badge variant="outline" className="text-xs">
+              {issue.who_will_fix === 'diy' ? '🔧 DIY' : '👷 Professional'}
+            </Badge>
+          )}
+        </div>
+
+        {/* Photos */}
+        {issue.photo_urls && issue.photo_urls.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-600 mb-2 flex items-center gap-1">
+              <Camera className="w-3 h-3" />
+              Documentation Photos:
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {issue.photo_urls.map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  alt={`Issue ${number} photo ${idx + 1}`}
+                  className="w-24 h-24 object-cover rounded border-2 border-gray-200"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

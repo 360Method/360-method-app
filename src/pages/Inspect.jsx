@@ -1,80 +1,77 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, Eye, CheckCircle, AlertTriangle, Clock, Wrench, ChevronRight, Edit, BookOpen, Video, Calculator } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  ClipboardCheck, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock,
+  Plus,
+  Eye,
+  PlayCircle,
+  FileText,
+  Wrench
+} from "lucide-react";
 import { createPageUrl } from "@/utils";
-import InspectionSetup from "../components/inspect/InspectionSetup.jsx";
-import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough.jsx";
-import InspectionComplete from "../components/inspect/InspectionComplete.jsx";
-import InspectionReport from "../components/inspect/InspectionReport.jsx";
-import ServiceRequestDialog from "../components/services/ServiceRequestDialog.jsx";
+
+import InspectionSetup from "../components/inspect/InspectionSetup";
+import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
+import InspectionComplete from "../components/inspect/InspectionComplete";
+import InspectionReport from "../components/inspect/InspectionReport";
+import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 
 export default function Inspect() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const propertyIdFromUrl = urlParams.get('property');
-  
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [currentView, setCurrentView] = React.useState('history');
-  const [activeInspection, setActiveInspection] = React.useState(null);
-  const [viewingReport, setViewingReport] = React.useState(null);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const propertyIdFromUrl = searchParams.get('property');
 
-  const queryClient = useQueryClient();
+  const [currentView, setCurrentView] = React.useState('main');
+  const [selectedPropertyId, setSelectedPropertyId] = React.useState(propertyIdFromUrl || '');
+  const [activeInspection, setActiveInspection] = React.useState(null);
+  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: () => base44.entities.Property.list(),
   });
 
   const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.Inspection.filter({ property_id: selectedProperty })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
+    queryKey: ['inspections', selectedPropertyId],
+    queryFn: () => base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date'),
+    enabled: !!selectedPropertyId,
+    initialData: [],
   });
 
   const { data: baselineSystems = [] } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
+    queryKey: ['baseline-systems', selectedPropertyId],
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+    initialData: [],
   });
 
   React.useEffect(() => {
-    if (!selectedProperty && properties.length > 0) {
-      setSelectedProperty(properties[0].id);
+    if (properties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(properties[0].id);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedPropertyId]);
 
-  const currentProperty = properties.find(p => p.id === selectedProperty);
+  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+  const hasBaselineSystems = baselineSystems.length > 0;
+  const inProgressInspection = inspections.find(i => i.status === 'In Progress');
 
-  const sortedInspections = inspections
-    .sort((a, b) => new Date(b.inspection_date || b.created_date) - new Date(a.inspection_date || a.created_date));
-
-  const handleStartInspection = () => {
+  const handleStartNewInspection = () => {
     setCurrentView('setup');
+    setActiveInspection(null);
   };
 
-  const handleInspectionSetup = (inspectionData) => {
-    setActiveInspection(inspectionData);
+  const handleInspectionSetupComplete = (inspection) => {
+    setActiveInspection(inspection);
     setCurrentView('walkthrough');
-  };
-
-  const handleCompleteInspection = (completedInspection) => {
-    setActiveInspection(completedInspection);
-    setCurrentView('complete');
-  };
-
-  const handleViewReport = (inspection) => {
-    setViewingReport(inspection);
-    setCurrentView('report');
   };
 
   const handleContinueInspection = (inspection) => {
@@ -82,42 +79,38 @@ export default function Inspect() {
     setCurrentView('walkthrough');
   };
 
+  const handleInspectionComplete = (inspection) => {
+    setActiveInspection(inspection);
+    setCurrentView('complete');
+  };
+
+  const handleViewPriorityQueue = () => {
+    window.location.href = createPageUrl("Prioritize") + `?property=${selectedPropertyId}`;
+  };
+
+  const handleViewReport = (inspection) => {
+    setActiveInspection(inspection || activeInspection);
+    setCurrentView('report');
+  };
+
+  const handleBackToMain = () => {
+    setCurrentView('main');
+    setActiveInspection(null);
+  };
+
   const handleEditInspection = (inspection) => {
     setActiveInspection(inspection);
     setCurrentView('walkthrough');
   };
 
-  const handleBackToHistory = () => {
-    setCurrentView('history');
-    setActiveInspection(null);
-    setViewingReport(null);
-    queryClient.invalidateQueries({ queryKey: ['inspections'] });
-    queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-  };
-
-  if (!selectedProperty) {
-    return (
-      <div className="min-h-screen bg-white p-4">
-        <div className="max-w-2xl mx-auto pt-8">
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-8 text-center">
-              <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#1B365D' }}>No Property Selected</h3>
-              <p className="text-gray-600">Please select a property to start inspections</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
+  // Render different views
   if (currentView === 'setup') {
     return (
       <InspectionSetup
-        property={currentProperty}
+        property={selectedProperty}
         baselineSystems={baselineSystems}
-        onStart={handleInspectionSetup}
-        onCancel={handleBackToHistory}
+        onComplete={handleInspectionSetupComplete}
+        onCancel={handleBackToMain}
       />
     );
   }
@@ -126,10 +119,10 @@ export default function Inspect() {
     return (
       <InspectionWalkthrough
         inspection={activeInspection}
-        property={currentProperty}
+        property={selectedProperty}
         baselineSystems={baselineSystems}
-        onComplete={handleCompleteInspection}
-        onCancel={handleBackToHistory}
+        onComplete={handleInspectionComplete}
+        onCancel={handleBackToMain}
       />
     );
   }
@@ -138,311 +131,329 @@ export default function Inspect() {
     return (
       <InspectionComplete
         inspection={activeInspection}
-        property={currentProperty}
-        onViewPriorityQueue={() => {
-          handleBackToHistory();
-        }}
-        onViewReport={() => {
-          setViewingReport(activeInspection);
-          setCurrentView('report');
-        }}
-        onDone={handleBackToHistory}
+        property={selectedProperty}
+        onViewPriorityQueue={handleViewPriorityQueue}
+        onViewReport={() => handleViewReport(activeInspection)}
+        onDone={handleBackToMain}
       />
     );
   }
 
-  if (currentView === 'report' && viewingReport) {
+  if (currentView === 'report' && activeInspection) {
     return (
       <InspectionReport
-        inspection={viewingReport}
-        property={currentProperty}
+        inspection={activeInspection}
+        property={selectedProperty}
         baselineSystems={baselineSystems}
-        onBack={handleBackToHistory}
-        onEdit={() => handleEditInspection(viewingReport)}
+        onBack={handleBackToMain}
+        onEdit={() => handleEditInspection(activeInspection)}
       />
     );
   }
 
-  // Main history view - Mobile first
+  // Main inspection dashboard view
   return (
-    <div className="min-h-screen bg-white pb-4">
-      <div className="mobile-container md:max-w-4xl md:mx-auto">
-        {/* Header - Mobile optimized */}
+    <div className="min-h-screen bg-white">
+      <div className="mobile-container md:max-w-6xl md:mx-auto">
+        {/* Header */}
         <div className="mb-6">
-          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-            INSPECT
-          </h1>
-          <p className="text-gray-600" style={{ fontSize: '16px', lineHeight: '1.5' }}>
-            Visual Property Walkthrough
+          <div className="flex items-center gap-3 mb-2">
+            <ClipboardCheck className="w-8 h-8 text-blue-600" />
+            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+              Seasonal Diagnostics
+            </h1>
+          </div>
+          <p className="text-gray-600" style={{ fontSize: '16px' }}>
+            Proactive inspections to catch problems early
           </p>
         </div>
 
-        {/* Why Seasonal Diagnostics Matter - Educational Section */}
-        {inspections.length === 0 && baselineSystems.length > 0 && (
-          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+        {/* Educational Section */}
+        {inspections.length === 0 && hasBaselineSystems && (
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
             <CardContent className="p-6">
               <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <Eye className="w-6 h-6 text-green-600" />
-                Why Seasonal Diagnostics Matter
+                <Eye className="w-6 h-6 text-blue-600" />
+                Why Seasonal Inspections Matter
               </h3>
               <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Your home changes with the seasons - and so do its maintenance needs. Quarterly inspections catch small problems when they're $50 fixes, not $5,000 disasters.
+                Most home disasters are 100% preventable with regular inspections. A dirty filter caught today prevents a $6K HVAC failure tomorrow.
               </p>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-red-600">❌ Reactive Approach</p>
+                  <p className="font-semibold mb-2 text-red-600">❌ Without Inspections</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Small roof leak becomes $30K disaster</li>
-                    <li>• Clogged gutters cause foundation damage</li>
-                    <li>• Missed HVAC issue = system failure in heatwave</li>
-                    <li>• No documentation for insurance claims</li>
+                    <li>• Small leaks become $30K water damage</li>
+                    <li>• Worn parts cause system failures</li>
+                    <li>• Emergency repairs cost 3X more</li>
+                    <li>• Insurance often won't cover neglect</li>
                   </ul>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-green-600">✅ Proactive Diagnostics</p>
+                  <p className="font-semibold mb-2 text-green-600">✅ With Seasonal Inspections</p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Catch leak early = $200 repair</li>
-                    <li>• Gutter cleaning prevents $15K foundation fix</li>
-                    <li>• Service HVAC before failure = no emergency</li>
-                    <li>• Photo history proves maintenance to buyers</li>
+                    <li>• Catch issues when they're cheap to fix</li>
+                    <li>• Systems last their full lifespan</li>
+                    <li>• Budget for repairs, no surprises</li>
+                    <li>• Documentation for insurance claims</li>
                   </ul>
                 </div>
               </div>
+              <p className="text-sm text-gray-700 font-medium">
+                💡 Pro Tip: 45 minutes per season = avoid 95% of home disasters
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="border-t border-green-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
-                </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=AWARE Phase"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Seasonal Diagnostic Guide
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=AWARE Phase"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Inspection Walkthrough (15 min)
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("Resources")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Download Checklist
-                    </Link>
-                  </Button>
+        {/* Property Selector */}
+        {properties.length > 1 && (
+          <Card className="border-none shadow-sm mb-6">
+            <CardContent className="p-4">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property:</label>
+              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                  <SelectValue placeholder="Choose a property" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.address}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* In-Progress Inspection Alert */}
+        {inProgressInspection && (
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Clock className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-orange-900 mb-2">
+                    📋 Inspection In Progress
+                  </p>
+                  <p className="text-sm text-orange-800 mb-3">
+                    {inProgressInspection.season} {inProgressInspection.year} inspection started{' '}
+                    {new Date(inProgressInspection.created_date).toLocaleDateString()}.{' '}
+                    {inProgressInspection.completion_percentage}% complete. Your progress is automatically saved.
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Button
+                      onClick={() => handleContinueInspection(inProgressInspection)}
+                      style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
+                    >
+                      <PlayCircle className="w-4 h-4 mr-2" />
+                      Continue Inspection
+                    </Button>
+                    <Button
+                      onClick={() => handleViewReport(inProgressInspection)}
+                      variant="outline"
+                      style={{ minHeight: '48px' }}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      View Current Progress
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Property Selector - Full width on mobile */}
-        <Card className="border-none shadow-sm mobile-card">
-          <CardContent className="p-4">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
-            <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-              <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons - Stacked on mobile, side-by-side on desktop */}
-        <div className="space-y-3 mb-6 md:flex md:gap-4 md:space-y-0">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3 mb-6">
           <Button
-            onClick={handleStartInspection}
-            className="w-full font-bold text-base"
-            style={{ backgroundColor: '#28A745', minHeight: '56px' }}
-            disabled={baselineSystems.length === 0}
+            onClick={handleStartNewInspection}
+            disabled={!hasBaselineSystems}
+            className="w-full font-bold"
+            style={{ 
+              backgroundColor: hasBaselineSystems ? '#3B82F6' : '#CCCCCC',
+              minHeight: '56px',
+              fontSize: '16px'
+            }}
           >
-            <Plus className="w-6 h-6 mr-2" />
-            Start DIY Inspection
+            <Plus className="w-5 h-5 mr-2" />
+            Start New Inspection
           </Button>
+          
           <Button
             onClick={() => setShowServiceDialog(true)}
             variant="outline"
-            className="w-full font-bold text-base"
-            style={{ borderColor: '#28A745', color: '#28A745', minHeight: '56px' }}
+            style={{ minHeight: '48px' }}
           >
-            <Wrench className="w-6 h-6 mr-2" />
-            Get Professional Help
+            <Wrench className="w-4 h-4 mr-2" />
+            Request Professional Inspection
           </Button>
         </div>
 
-        {/* Baseline Warning - Mobile optimized */}
-        {baselineSystems.length === 0 && (
-          <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
-            <CardContent className="p-4">
+        {/* Baseline System Warning */}
+        {!hasBaselineSystems && (
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
+            <CardContent className="p-6">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#FF6B35' }} />
+                <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '18px' }}>
-                    Complete Baseline First
-                  </h3>
-                  <p className="text-gray-700 mb-0" style={{ fontSize: '16px', lineHeight: '1.5' }}>
-                    Document your property systems in the Baseline module first. This personalizes your inspection walkthrough.
+                  <p className="font-semibold text-orange-900 mb-2">
+                    Baseline Documentation Required
                   </p>
+                  <p className="text-sm text-gray-700 mb-4">
+                    Before inspecting, document your home's systems in the Baseline phase. This creates a reference point for tracking changes over time.
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = createPageUrl("Baseline") + `?property=${selectedPropertyId}`}
+                    style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
+                  >
+                    Complete Baseline First
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <hr className="border-gray-200 my-6" />
-
         {/* Inspection History */}
-        <div>
-          <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-            Inspection History
-          </h2>
-          
-          {sortedInspections.length === 0 ? (
-            <Card className="border-none shadow-sm">
-              <CardContent className="p-8 text-center">
-                <Eye className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl font-semibold mb-2 text-gray-700">No Inspections Yet</h3>
-                <p className="text-gray-600">Start your first inspection to begin tracking your property's condition</p>
-              </CardContent>
-            </Card>
-          ) : (
+        {inspections.length > 0 && (
+          <div>
+            <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
+              Inspection History
+            </h2>
+            
             <div className="space-y-4">
-              {sortedInspections.map((inspection) => {
-                const urgentCount = (inspection.checklist_items || []).filter(item => 
-                  item.severity === 'Urgent' || item.condition_rating === 'Urgent'
-                ).length;
-                const flagCount = (inspection.checklist_items || []).filter(item => 
-                  item.severity === 'Flag' || item.condition_rating === 'Poor'
-                ).length;
-                const completedTasks = (inspection.checklist_items || []).filter(item => 
-                  item.completed || item.status === 'Completed'
-                ).length;
-                const totalTasks = (inspection.checklist_items || []).length;
+              {inspections
+                .sort((a, b) => new Date(b.inspection_date || b.created_date) - new Date(a.inspection_date || a.created_date))
+                .map((inspection) => {
+                  const isInProgress = inspection.status === 'In Progress';
+                  const isCompleted = inspection.status === 'Completed';
+                  const hasUrgentIssues = (inspection.urgent_count || 0) > 0;
+                  
+                  return (
+                    <Card 
+                      key={inspection.id}
+                      className={`border-2 hover:shadow-lg transition-shadow ${
+                        isInProgress ? 'border-orange-300 bg-orange-50' :
+                        hasUrgentIssues ? 'border-red-300 bg-red-50' :
+                        'border-gray-200'
+                      }`}
+                    >
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
+                                {inspection.season} {inspection.year}
+                              </h3>
+                              <Badge style={{ 
+                                backgroundColor: isCompleted ? '#28A745' : isInProgress ? '#FF6B35' : '#666666'
+                              }}>
+                                {inspection.status}
+                              </Badge>
+                              {isInProgress && (
+                                <Badge variant="outline">
+                                  {inspection.completion_percentage}% Complete
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <p className="text-sm text-gray-600 mb-3">
+                              {new Date(inspection.inspection_date || inspection.created_date).toLocaleDateString('en-US', {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                              {inspection.duration_minutes > 0 && ` • ${inspection.duration_minutes} minutes`}
+                            </p>
 
-                return (
-                  <Card 
-                    key={inspection.id} 
-                    className="border-none shadow-sm hover:shadow-md transition-shadow"
-                    style={{ minHeight: '80px' }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div 
-                          className="flex-1 min-w-0 cursor-pointer" 
-                          onClick={() => handleViewReport(inspection)}
-                        >
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '18px' }}>
-                              {inspection.season} {inspection.year}
-                            </h3>
-                            {inspection.status === 'Completed' && (
-                              <Badge className="bg-green-100 text-green-800 flex items-center gap-1" style={{ minHeight: '24px' }}>
-                                <CheckCircle className="w-3 h-3" />
-                                <span style={{ fontSize: '12px' }}>Complete</span>
-                              </Badge>
-                            )}
-                            {inspection.status === 'In Progress' && (
-                              <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1" style={{ minHeight: '24px' }}>
-                                <Clock className="w-3 h-3" />
-                                <span style={{ fontSize: '12px' }}>In Progress</span>
-                              </Badge>
+                            {isCompleted && (
+                              <div className="flex flex-wrap gap-4 text-sm">
+                                {(inspection.urgent_count || 0) > 0 && (
+                                  <span className="text-red-600 font-semibold">
+                                    🚨 {inspection.urgent_count} Urgent
+                                  </span>
+                                )}
+                                {(inspection.flag_count || 0) > 0 && (
+                                  <span className="text-orange-600 font-semibold">
+                                    ⚠️ {inspection.flag_count} Flag
+                                  </span>
+                                )}
+                                {(inspection.monitor_count || 0) > 0 && (
+                                  <span className="text-green-600 font-semibold">
+                                    ✅ {inspection.monitor_count} Monitor
+                                  </span>
+                                )}
+                                {inspection.issues_found === 0 && (
+                                  <span className="text-green-600 font-semibold flex items-center gap-1">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    No Issues Found
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
-                          
-                          <p className="text-sm text-gray-600 mb-2" style={{ fontSize: '14px' }}>
-                            {inspection.inspection_date 
-                              ? new Date(inspection.inspection_date).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric', 
-                                  year: 'numeric' 
-                                })
-                              : 'Date not recorded'}
-                          </p>
-                          
-                          <div className="flex flex-wrap gap-3 text-sm" style={{ fontSize: '14px' }}>
-                            {urgentCount > 0 && <span>🚨 <strong>{urgentCount}</strong> urgent</span>}
-                            {flagCount > 0 && <span>⚠️ <strong>{flagCount}</strong> flag</span>}
-                            {totalTasks > 0 && (
-                              <span className="text-gray-600">
-                                {completedTasks}/{totalTasks} addressed
-                              </span>
+
+                          <div className="flex flex-col gap-2">
+                            {isInProgress ? (
+                              <Button
+                                onClick={() => handleContinueInspection(inspection)}
+                                size="sm"
+                                style={{ backgroundColor: '#FF6B35', minHeight: '44px' }}
+                              >
+                                Continue
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={() => handleViewReport(inspection)}
+                                variant="outline"
+                                size="sm"
+                                style={{ minHeight: '44px' }}
+                              >
+                                <FileText className="w-4 h-4 mr-1" />
+                                View Report
+                              </Button>
                             )}
                           </div>
                         </div>
-                        
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditInspection(inspection);
-                            }}
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-2"
-                            style={{ minHeight: '44px', minWidth: '44px' }}
-                            title="Edit inspection"
-                          >
-                            <Edit className="w-5 h-5 text-blue-600" />
-                          </Button>
-                          <ChevronRight 
-                            className="w-5 h-5 text-gray-400 cursor-pointer" 
-                            onClick={() => handleViewReport(inspection)}
-                          />
-                        </div>
-                      </div>
-                      
-                      {inspection.status === 'In Progress' && (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleContinueInspection(inspection);
-                          }}
-                          className="w-full mt-3"
-                          style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                        >
-                          Continue Inspection
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {inspections.length === 0 && hasBaselineSystems && (
+          <Card className="border-none shadow-sm">
+            <CardContent className="p-12 text-center">
+              <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-xl font-semibold mb-2">No Inspections Yet</h3>
+              <p className="text-gray-600 mb-6">
+                Start your first seasonal inspection to catch problems early
+              </p>
+              <Button
+                onClick={handleStartNewInspection}
+                style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Start Your First Inspection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <ServiceRequestDialog
         open={showServiceDialog}
         onClose={() => setShowServiceDialog(false)}
         prefilledData={{
-          property_id: selectedProperty,
-          service_type: "Seasonal Inspection",
-          description: "I would like to schedule a professional seasonal property inspection with issue identification and reporting."
+          property_id: selectedPropertyId,
+          service_type: "Professional Inspection",
+          description: "Request professional seasonal inspection service",
+          urgency: "Medium"
         }}
       />
     </div>
