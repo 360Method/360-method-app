@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, Clock } from "lucide-react";
-import { CLIMATE_ZONES } from "../../utils/climateZones";
+import { CLIMATE_ZONES } from "@/utils/climateZones";
 
 const SEASONS = ["Spring", "Summer", "Fall", "Winter"];
 
