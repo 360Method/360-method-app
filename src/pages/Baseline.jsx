@@ -759,52 +759,6 @@ export default function Baseline() {
                           </div>
                         </div>
                       )}
-                      
-                      {/* Professional Service CTA for incomplete baseline */}
-                      {essentialProgress < 100 && (
-                        <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
-                              💼
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-bold text-blue-900 mb-1">
-                                Feeling overwhelmed? Let us handle it.
-                              </p>
-                              <p className="text-xs text-gray-700 mb-2">
-                                Our certified technicians will document every system in your home - age, condition, photos, and maintenance recommendations. Complete baseline in 2 hours, delivered as a professional report.
-                              </p>
-                              <div className="bg-white rounded p-2 mb-3 border border-blue-200">
-                                <p className="text-xs font-semibold text-blue-900 mb-1">✅ What's Included:</p>
-                                <ul className="text-xs text-gray-700 space-y-1">
-                                  {/* Update the count here as well for clarity */}
-                                  <li>• All {REQUIRED_SYSTEMS.length + RECOMMENDED_SYSTEMS.length} essential & recommended systems</li>
-                                  <li>• Age verification (permits, receipts, model numbers)</li>
-                                  <li>• Current condition assessment with photos</li>
-                                  <li>• Maintenance history documentation</li>
-                                  <li>• Priority recommendations for immediate needs</li>
-                                  <li>• Professional report + digital system portfolio</li>
-                                </ul>
-                              </div>
-                              <div className="flex items-center gap-2 mb-3">
-                                <Badge className="bg-green-600 text-white">
-                                  Fixed Price: $299
-                                </Badge>
-                                <span className="text-xs text-gray-600">2-3 hour service</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={handleRequestProService}
-                            variant="default"
-                            className="w-full md:w-auto gap-2"
-                            style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                            Add Professional Baseline to Cart ($299)
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -812,6 +766,55 @@ export default function Baseline() {
                     <p className="text-sm text-gray-600">Overall Complete</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Professional Service CTA - ALWAYS VISIBLE */}
+            <Card className="border-2 border-blue-300 bg-blue-50">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
+                    💼
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-blue-900 mb-1">
+                      {essentialProgress === 100 
+                        ? "Want professional verification of your documentation?"
+                        : "Feeling overwhelmed? Let us handle it."}
+                    </p>
+                    <p className="text-xs text-gray-700 mb-2">
+                      {essentialProgress === 100
+                        ? "Our certified technicians can verify your existing documentation and fill any gaps - ensuring your baseline is comprehensive and accurate."
+                        : "Our certified technicians will document every system in your home - age, condition, photos, and maintenance recommendations. Complete baseline in 2 hours, delivered as a professional report."}
+                    </p>
+                    <div className="bg-white rounded p-2 mb-3 border border-blue-200">
+                      <p className="text-xs font-semibold text-blue-900 mb-1">✅ What's Included:</p>
+                      <ul className="text-xs text-gray-700 space-y-1">
+                        <li>• All {REQUIRED_SYSTEMS.length + RECOMMENDED_SYSTEMS.length} essential & recommended systems</li>
+                        <li>• Age verification (permits, receipts, model numbers)</li>
+                        <li>• Current condition assessment with photos</li>
+                        <li>• Maintenance history documentation</li>
+                        <li>• Priority recommendations for immediate needs</li>
+                        <li>• Professional report + digital system portfolio</li>
+                      </ul>
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className="bg-green-600 text-white">
+                        Fixed Price: $299
+                      </Badge>
+                      <span className="text-xs text-gray-600">2-3 hour service</span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleRequestProService}
+                  variant="default"
+                  className="w-full md:w-auto gap-2"
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Add Professional Baseline to Cart ($299)
+                </Button>
               </CardContent>
             </Card>
 

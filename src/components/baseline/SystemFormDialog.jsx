@@ -42,6 +42,217 @@ const SYSTEM_IMPORTANCE = {
   "Security System": "Documented security systems can reduce insurance premiums 5-20%. Knowing installation date and monitoring status helps maintain protection. Failed systems mean no alert during break-ins."
 };
 
+const WHAT_TO_LOOK_FOR = {
+  "HVAC System": [
+    "Model/serial number plate on furnace or outdoor AC unit",
+    "Installation date sticker (usually near unit or on wall)",
+    "Filter size written on filter frame",
+    "Thermostat model and settings",
+    "Recent service stickers from HVAC company",
+    "Yellow EnergyGuide label showing SEER rating"
+  ],
+  "Plumbing System": [
+    "Water heater data plate (shows brand, model, year, capacity)",
+    "Main water shutoff valve location (basement, garage, crawlspace, or exterior)",
+    "Washing machine supply hoses (check if rubber or braided stainless steel)",
+    "Under-sink shutoff valves in all bathrooms and kitchen",
+    "Visible pipe materials (copper, PEX, galvanized)",
+    "Water pressure regulator location and PSI setting"
+  ],
+  "Electrical System": [
+    "Main panel label showing amperage (60, 100, 150, 200 amp)",
+    "Panel brand (Square D, Siemens, GE, etc.)",
+    "GFCI outlets in bathrooms and kitchen (test button)",
+    "Circuit breaker list/labels (often inside panel door)",
+    "Visible wiring type if accessible (copper, aluminum)",
+    "Any outdated fuses or knob-and-tube wiring"
+  ],
+  "Roof System": [
+    "Roofing material type visible from ground (asphalt, metal, tile, slate)",
+    "Installation date (check permits, receipts, or ask previous owner)",
+    "Number of layers (visible from attic or roof edge)",
+    "Flashing condition around chimneys, vents, skylights",
+    "Any visible damage: curling, missing, or cracked shingles",
+    "Moss or algae growth (common in Pacific Northwest)"
+  ],
+  "Foundation & Structure": [
+    "Visible cracks in foundation walls (width, location)",
+    "Signs of water intrusion or moisture in basement/crawlspace",
+    "Foundation material (poured concrete, block, brick)",
+    "Any bowing, bulging, or leaning walls",
+    "Floor level changes or sloping",
+    "Support posts and beams in basement/crawlspace"
+  ],
+  "Water & Sewer/Septic": [
+    "Water meter location and condition",
+    "Sewer cleanout location (for camera inspections)",
+    "Septic tank location and last pumping date",
+    "Tree roots near sewer line path",
+    "Any history of backups or slow drains",
+    "Age of main water service line (lead, copper, PEX)"
+  ],
+  "Exterior Siding & Envelope": [
+    "Siding material (vinyl, wood, fiber cement, brick, stucco)",
+    "Condition of caulking around windows and doors",
+    "Paint condition and last painting date",
+    "Any rot, cracks, or damage to siding",
+    "Condition of exterior trim and soffits",
+    "Moisture or water stains on siding"
+  ],
+  "Windows & Doors": [
+    "Window brand/model if visible on glass corner",
+    "Installation date (check receipts or permits)",
+    "Single pane, double pane, or triple pane glass",
+    "Condition of weatherstripping around doors",
+    "Any condensation between window panes (seal failure)",
+    "Lock functionality and security features"
+  ],
+  "Gutters & Downspouts": [
+    "Gutter material (aluminum, steel, copper, vinyl)",
+    "Installation date or age estimate",
+    "Debris accumulation (leaves, moss)",
+    "Sagging sections or detachment from fascia",
+    "Downspout locations and where water discharges",
+    "Gutter guards or screens installed"
+  ],
+  "Landscaping & Grading": [
+    "Ground slope direction around foundation",
+    "Low spots where water pools near house",
+    "Trees within 10 feet of foundation or sewer line",
+    "Drainage swales and their condition",
+    "Retaining walls and their condition",
+    "Irrigation system components and zones"
+  ],
+  "Driveways & Hardscaping": [
+    "Surface material (asphalt, concrete, pavers, gravel)",
+    "Visible cracks, potholes, or heaving",
+    "Last sealing date for asphalt",
+    "Drainage patterns and water pooling",
+    "Edges eroding or separating",
+    "Trip hazards from uneven surfaces"
+  ],
+  "Attic & Insulation": [
+    "Insulation type (fiberglass batts, blown-in, spray foam)",
+    "Insulation R-value or thickness",
+    "Ventilation: soffit vents, ridge vents, gable vents",
+    "Moisture stains or mold on decking",
+    "Roof deck condition visible from inside",
+    "Any pest activity or droppings"
+  ],
+  "Basement/Crawlspace": [
+    "Foundation wall condition and any cracks",
+    "Moisture or water stains on walls/floor",
+    "Sump pump location and operation",
+    "Floor drain location and functionality",
+    "Support posts and beam condition",
+    "Insulation on walls or ceiling"
+  ],
+  "Garage & Overhead Door": [
+    "Door brand and model (often on motor)",
+    "Installation date or age estimate",
+    "Spring type (torsion or extension)",
+    "Opener brand and horsepower",
+    "Safety sensor alignment and function",
+    "Last maintenance date and lubricant used"
+  ],
+  "Refrigerator": [
+    "Model/serial plate (inside fridge or on back)",
+    "Manufacturing date on plate",
+    "Capacity (cubic feet)",
+    "Energy Star rating",
+    "Water filter model if has ice/water",
+    "Any unusual noises or temperature issues"
+  ],
+  "Range/Oven": [
+    "Model/serial plate (drawer under oven or side)",
+    "Fuel type (gas or electric)",
+    "Self-cleaning feature",
+    "Convection capability",
+    "Last professional cleaning",
+    "Burner igniter or element condition"
+  ],
+  "Dishwasher": [
+    "Model/serial plate (top edge or side of door)",
+    "Installation date",
+    "Energy Star rating",
+    "Special wash cycles available",
+    "Last professional service",
+    "Any leaks or drainage issues"
+  ],
+  "Washing Machine": [
+    "Model/serial plate (back or inside lid)",
+    "Top load vs. front load",
+    "Capacity (cubic feet)",
+    "Energy Star rating",
+    "Supply hose material (CRITICAL: rubber vs. stainless)",
+    "Any vibration or drainage issues"
+  ],
+  "Dryer": [
+    "Model/serial plate (back or inside door)",
+    "Gas vs. electric",
+    "Vent material (flexible vs. rigid metal)",
+    "Last vent cleaning date",
+    "Lint trap condition",
+    "Any unusual noises or heating issues"
+  ],
+  "Microwave": [
+    "Model/serial plate (inside door or back)",
+    "Installation type (countertop, over-range, built-in)",
+    "Wattage",
+    "Ventilation type if over-range",
+    "Any sparking or unusual operation",
+    "Door seal condition"
+  ],
+  "Garbage Disposal": [
+    "Brand visible on disposal body",
+    "Horsepower (usually 1/3, 1/2, or 3/4 HP)",
+    "Installation date",
+    "Reset button location (bottom of unit)",
+    "Allen wrench hole for manual rotation",
+    "Any jamming or unusual noises"
+  ],
+  "Smoke Detector": [
+    "Installation date written on detector",
+    "Battery type (9V, AA, 10-year sealed)",
+    "Last battery change date",
+    "Test button functionality",
+    "Interconnected vs. standalone",
+    "Location relative to bedrooms (required within 15 feet)"
+  ],
+  "CO Detector": [
+    "Installation date (expires after 5-7 years)",
+    "Digital display vs. alarm-only",
+    "Battery or hardwired",
+    "Test button functionality",
+    "Location relative to sleeping areas and fuel-burning appliances",
+    "Any past alarms or readings"
+  ],
+  "Fire Extinguisher": [
+    "Type rating (ABC, BC, K for kitchen)",
+    "Size (pounds)",
+    "Last inspection date on tag",
+    "Pressure gauge reading (should be in green zone)",
+    "Mounting location and accessibility",
+    "Expiration date (usually 10-12 years)"
+  ],
+  "Radon Test": [
+    "Last test date (should test every 2 years)",
+    "Test result in pCi/L (4.0+ needs mitigation)",
+    "Test location (usually basement)",
+    "Short-term vs. long-term test",
+    "Mitigation system if installed",
+    "Post-mitigation test results"
+  ],
+  "Security System": [
+    "System brand and model (panel)",
+    "Installation date",
+    "Monitoring company and contract",
+    "Sensor locations (doors, windows, motion)",
+    "Monthly monitoring cost",
+    "Insurance discount amount"
+  ]
+};
+
 export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription, allowsMultiple }) {
   // Initialize form data based on whether we're editing or creating
   const getInitialFormData = React.useCallback(() => {
@@ -254,7 +465,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
             warning_signs: { type: "array", items: { type: "string" } },
             recommended_actions: { type: "array", items: { type: "string" } },
             replacement_timeline: { type: "string" }
-          },
+        },
           required: ["risk_score", "risk_explanation", "warning_signs", "recommended_actions", "replacement_timeline"]
         }
       });
@@ -1131,7 +1342,8 @@ Be specific, practical, and focus on preventing expensive failures.`;
                     <Badge className={
                       preservationPlan.priority === 'HIGH' ? 'bg-red-600' :
                       preservationPlan.priority === 'MEDIUM' ? 'bg-orange-600' :
-                      'bg-blue-600'
+                      preservationPlan.priority === 'LOW' ? 'bg-blue-600' :
+                      'bg-gray-600'
                     }>
                       {preservationPlan.priority} PRIORITY
                     </Badge>
@@ -1318,6 +1530,26 @@ Be specific, practical, and focus on preventing expensive failures.`;
                   <p className="text-gray-800 leading-relaxed">
                     {SYSTEM_IMPORTANCE[formData.system_type]}
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* What to Look For - Prominent Guidance Section */}
+          {!editingSystem?.id && WHAT_TO_LOOK_FOR[formData.system_type] && (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-5">
+              <div className="flex items-start gap-3">
+                <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-blue-900 text-lg mb-3">🔍 What to Look For:</h3>
+                  <ul className="space-y-2">
+                    {WHAT_TO_LOOK_FOR[formData.system_type].map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
