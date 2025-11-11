@@ -1,24 +1,66 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Plus, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import { Home, Plus, AlertTriangle, CheckCircle2, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PropertyWizard from "../components/properties/PropertyWizard";
+import PropertyEditDialog from "../components/properties/PropertyEditDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Properties() {
   const [showWizard, setShowWizard] = React.useState(false);
+  const [editingProperty, setEditingProperty] = React.useState(null);
+  const [deletingProperty, setDeletingProperty] = React.useState(null);
+  const queryClient = useQueryClient();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
   });
 
+  const deletePropertyMutation = useMutation({
+    mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      setDeletingProperty(null);
+    },
+  });
+
   const handleWizardComplete = () => {
     setShowWizard(false);
+  };
+
+  const handleEdit = (property) => {
+    setEditingProperty(property);
+  };
+
+  const handleDelete = (property) => {
+    setDeletingProperty(property);
+  };
+
+  const confirmDelete = () => {
+    if (deletingProperty) {
+      deletePropertyMutation.mutate(deletingProperty.id);
+    }
   };
 
   if (showWizard) {
@@ -78,7 +120,7 @@ export default function Properties() {
           <div className="space-y-4">
             {properties.map((property) => {
               const setupProgress = property.baseline_completion || 0;
-              const isSetupComplete = setupProgress >= 66; // 4 of 6 required systems
+              const isSetupComplete = setupProgress >= 66;
               const needsAttention = setupProgress < 66;
 
               return (
@@ -106,6 +148,32 @@ export default function Properties() {
                           </Badge>
                         </div>
                       </div>
+                      
+                      {/* Actions Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            style={{ minHeight: '44px', minWidth: '44px' }}
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white">
+                          <DropdownMenuItem onClick={() => handleEdit(property)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Property
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(property)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Property
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
 
                     {/* Setup Progress */}
@@ -244,6 +312,48 @@ export default function Properties() {
           </Card>
         )}
       </div>
+
+      {/* Edit Property Dialog */}
+      {editingProperty && (
+        <PropertyEditDialog
+          property={editingProperty}
+          onClose={() => setEditingProperty(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingProperty} onOpenChange={() => setDeletingProperty(null)}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Property?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingProperty?.address}</strong>?
+              <br /><br />
+              <span className="text-red-600 font-semibold">
+                ⚠️ This will permanently delete:
+              </span>
+              <ul className="mt-2 ml-4 text-sm space-y-1">
+                <li>• All property information</li>
+                <li>• All system baselines</li>
+                <li>• All inspection records</li>
+                <li>• All maintenance tasks</li>
+                <li>• All service requests</li>
+              </ul>
+              <br />
+              <strong>This action cannot be undone.</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Property
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
