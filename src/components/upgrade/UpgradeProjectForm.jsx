@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -8,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles, Shield } from "lucide-react";
+import { CheckCircle2, TrendingUp, DollarSign, Calendar, ArrowLeft, ArrowRight, Sparkles, Shield, FileText } from "lucide-react";
+import UpgradeDocuments from "./UpgradeDocuments";
 
 export default function UpgradeProjectForm({ properties, project, templateId, memberDiscount = 0, onComplete, onCancel }) {
   const queryClient = useQueryClient();
@@ -154,14 +156,59 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
               : 'Your custom upgrade project has been saved.'
             }
           </p>
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={onComplete}
+              style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+            >
+              View All Projects
+            </Button>
+            {project && (
+              <Button
+                onClick={() => setCurrentStep(4)}
+                variant="outline"
+                style={{ minHeight: '48px' }}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Manage Documents & Quotes
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Step 4: Documents Management (only for existing projects)
+  if (currentStep === 4 && project) {
+    return (
+      <div className="space-y-6">
+        <Button
+          onClick={() => setCurrentStep(3)}
+          variant="ghost"
+          className="mb-4"
+          style={{ minHeight: '44px' }}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+
+        <UpgradeDocuments 
+          project={project} 
+          onUpdate={() => {
+            // Optionally refresh or callback
+          }}
+        />
+
+        <div className="flex justify-center">
           <Button
             onClick={onComplete}
             style={{ backgroundColor: '#28A745', minHeight: '48px' }}
           >
-            View All Projects
+            Done
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 

@@ -1,9 +1,10 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target } from "lucide-react";
+import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target, FileText } from "lucide-react";
 
 export default function UpgradeProjectCard({ project, properties, memberDiscount, onEdit }) {
   const property = properties.find(p => p.id === project.property_id);
@@ -32,6 +33,8 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
 
   const annualSavings = project.annual_savings || 0;
   const paybackMonths = project.roi_timeline_months || 0;
+
+  const documentCount = project.quote_documents?.length || 0;
 
   return (
     <Card className="border-2 border-gray-200 mobile-card hover:shadow-lg transition-shadow">
@@ -190,19 +193,24 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
           </div>
         )}
 
-        {/* Photos */}
-        {((project.before_photo_urls?.length > 0) || (project.after_photo_urls?.length > 0)) && (
+        {/* Documents & Photos */}
+        {((documentCount > 0) || (project.before_photo_urls?.length > 0) || (project.after_photo_urls?.length > 0)) && (
           <div className="mb-4">
-            <p className="text-sm font-semibold mb-2">Photos:</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {documentCount > 0 && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <FileText className="w-3 h-3" />
+                  {documentCount} Document{documentCount !== 1 ? 's' : ''}
+                </Badge>
+              )}
               {project.before_photo_urls?.length > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  {project.before_photo_urls.length} Before
+                  {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
                 </Badge>
               )}
               {project.after_photo_urls?.length > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  {project.after_photo_urls.length} After
+                  {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
                 </Badge>
               )}
             </div>
