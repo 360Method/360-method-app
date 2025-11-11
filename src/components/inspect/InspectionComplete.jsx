@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,16 +21,17 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
 
   const tasksCreated = urgentCount + flagCount;
 
-  // Fetch baseline systems for preservation analysis
+  // Fetch baseline systems for preservation analysis - only if property exists
   const { data: systems = [] } = useQuery({
-    queryKey: ['systemBaselines', property.id],
+    queryKey: ['systemBaselines', property?.id],
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+    enabled: !!property?.id,
   });
 
   // Generate AI summary and preservation opportunities
   React.useEffect(() => {
     const generateAnalysis = async () => {
-      if (allIssues.length === 0) return;
+      if (allIssues.length === 0 || !property) return;
       
       setGeneratingSummary(true);
       try {
@@ -82,10 +82,10 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
       }
     };
 
-    if (allIssues.length > 0 && !aiSummary) {
+    if (allIssues.length > 0 && !aiSummary && property) {
       generateAnalysis();
     }
-  }, [allIssues, inspection.season, property.address, systems, aiSummary]);
+  }, [allIssues, inspection.season, property, systems, aiSummary]);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -98,7 +98,8 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
               Inspection Complete!
             </h1>
             <p className="text-xl text-gray-600">
-              {inspection.season} {inspection.year} Inspection - {property.address}
+              {inspection.season} {inspection.year} Inspection
+              {property && ` - ${property.address}`}
             </p>
             <p className="text-gray-600">Duration: {durationMinutes} minutes</p>
           </div>
@@ -201,7 +202,7 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-gray-600">Preservation Cost</p>
-                          <p className="font-bold text-green-700">${opp.investment.toLocaleString()}</p>
+                          <p className="font-bold text-green-700">${opp.investment}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Extends Life</p>
@@ -246,8 +247,6 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
               </CardContent>
             </Card>
           )}
-
-          <hr className="border-gray-200" />
 
           {/* Issues Found Summary */}
           <div>
