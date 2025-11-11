@@ -1,11 +1,12 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { 
-  LayoutDashboard, 
-  Home, 
-  Eye, 
-  Zap, 
+import {
+  LayoutDashboard,
+  Home,
+  Eye,
+  Zap,
   TrendingUp,
   Search,
   ClipboardCheck,
@@ -22,7 +23,8 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
-  Lightbulb
+  Lightbulb,
+  BookOpen
 } from "lucide-react";
 import BottomNav from "./components/navigation/BottomNav";
 
@@ -36,6 +38,11 @@ const navigationItems = [
     title: "Dashboard",
     url: createPageUrl("Dashboard"),
     icon: LayoutDashboard,
+  },
+  {
+    title: "Resources",
+    url: createPageUrl("Resources"),
+    icon: BookOpen,
   },
   {
     title: "AWARE",
@@ -104,29 +111,29 @@ export default function Layout({ children }) {
           --alert: #DC3545;
           --background: #FAFAF9;
         }
-        
+
         /* Mobile-first base styles */
         * {
           -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
         }
-        
+
         html {
           font-size: 16px;
           -webkit-text-size-adjust: 100%;
         }
-        
+
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
           line-height: 1.5;
         }
-        
+
         /* Typography mobile-first */
         h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }
         h2 { font-size: 22px; font-weight: 600; line-height: 1.3; }
         h3 { font-size: 18px; font-weight: 600; line-height: 1.4; }
         p, div { font-size: 16px; line-height: 1.5; }
         small { font-size: 14px; line-height: 1.4; }
-        
+
         /* Touch targets minimum 44px */
         button, a, [role="button"] {
           min-height: 44px;
@@ -135,27 +142,27 @@ export default function Layout({ children }) {
           align-items: center;
           justify-content: center;
         }
-        
+
         /* Form elements minimum 48px */
         input, textarea, select {
           min-height: 48px;
           font-size: 16px;
         }
-        
+
         /* Disable zoom on input focus iOS */
         @media screen and (-webkit-min-device-pixel-ratio: 0) {
           select, textarea, input {
             font-size: 16px;
           }
         }
-        
+
         /* CRITICAL: Solid background styling for all modals and popups */
         [data-radix-dialog-overlay] {
           background-color: rgba(0, 0, 0, 0.75) !important;
           backdrop-filter: none !important;
           z-index: 100 !important;
         }
-        
+
         [data-radix-dialog-content] {
           background-color: #FFFFFF !important;
           opacity: 1 !important;
@@ -167,7 +174,7 @@ export default function Layout({ children }) {
           overflow-y: auto !important;
           z-index: 101 !important;
         }
-        
+
         @media (min-width: 768px) {
           [data-radix-dialog-content] {
             padding: 24px !important;
@@ -175,13 +182,13 @@ export default function Layout({ children }) {
             max-width: 600px !important;
           }
         }
-        
+
         [data-radix-dialog-title] {
           color: #1B365D !important;
           font-size: 22px !important;
           font-weight: 700 !important;
         }
-        
+
         [data-radix-dialog-content] input,
         [data-radix-dialog-content] textarea,
         [data-radix-dialog-content] select {
@@ -191,14 +198,14 @@ export default function Layout({ children }) {
           opacity: 1 !important;
           min-height: 48px !important;
         }
-        
+
         [data-radix-dialog-content] input:focus,
         [data-radix-dialog-content] textarea:focus,
         [data-radix-dialog-content] select:focus {
           border-color: #FF6B35 !important;
           outline: none !important;
         }
-        
+
         [data-radix-select-content],
         [data-radix-popover-content],
         [data-radix-dropdown-menu-content] {
@@ -208,40 +215,40 @@ export default function Layout({ children }) {
           box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
           z-index: 102 !important;
         }
-        
+
         /* Mobile spacing */
         @media (max-width: 767px) {
           .mobile-container {
             padding: 16px;
           }
-          
+
           .mobile-section {
             margin-bottom: 24px;
           }
-          
+
           .mobile-card {
             padding: 16px;
             border-radius: 8px;
             margin-bottom: 16px;
           }
         }
-        
+
         /* Smooth scrolling */
         html {
           scroll-behavior: smooth;
         }
-        
+
         /* Hide scrollbar but keep functionality */
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        
+
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
       `}</style>
-      
+
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
         {/* Desktop Sidebar - Hidden on mobile */}
         <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
@@ -256,7 +263,7 @@ export default function Layout({ children }) {
               </div>
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-2">
             {navigationItems.map((item) => {
               if (item.subItems) {
@@ -294,7 +301,7 @@ export default function Layout({ children }) {
                   </div>
                 );
               }
-              
+
               return (
                 <Link
                   key={item.title}
@@ -326,14 +333,14 @@ export default function Layout({ children }) {
 
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
-          <div 
+          <div
             className="md:hidden fixed inset-0 bg-black/75 z-[60]"
             onClick={() => setMobileMenuOpen(false)}
           />
         )}
 
         {/* Mobile Slide-out Menu */}
-        <div 
+        <div
           className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] transform transition-transform duration-300 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
@@ -356,7 +363,7 @@ export default function Layout({ children }) {
               <X className="w-6 h-6 text-gray-600" />
             </button>
           </div>
-          
+
           <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 160px)' }}>
             {navigationItems.map((item) => {
               if (item.subItems) {
@@ -397,7 +404,7 @@ export default function Layout({ children }) {
                   </div>
                 );
               }
-              
+
               return (
                 <Link
                   key={item.title}

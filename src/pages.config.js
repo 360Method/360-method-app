@@ -23,6 +23,7 @@ import TemplateDetail from './pages/TemplateDetail';
 import Resources from './pages/Resources';
 import ResourceGuides from './pages/ResourceGuides';
 import VideoTutorials from './pages/VideoTutorials';
+import ROICalculators from './pages/ROICalculators';
 import Layout from './Layout.jsx';
 
 
@@ -52,6 +53,7 @@ export const PAGES = {
     "Resources": Resources,
     "ResourceGuides": ResourceGuides,
     "VideoTutorials": VideoTutorials,
+    "ROICalculators": ROICalculators,
 }
 
 export const pagesConfig = {
