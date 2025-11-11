@@ -18,6 +18,8 @@ import Checkout from './pages/Checkout';
 import Welcome from './pages/Welcome';
 import Waitlist from './pages/Waitlist';
 import Pricing from './pages/Pricing';
+import ExploreTemplates from './pages/ExploreTemplates';
+import TemplateDetail from './pages/TemplateDetail';
 import Layout from './Layout.jsx';
 
 
@@ -42,6 +44,8 @@ export const PAGES = {
     "Welcome": Welcome,
     "Waitlist": Waitlist,
     "Pricing": Pricing,
+    "ExploreTemplates": ExploreTemplates,
+    "TemplateDetail": TemplateDetail,
 }
 
 export const pagesConfig = {

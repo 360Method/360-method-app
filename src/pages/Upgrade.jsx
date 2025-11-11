@@ -1,18 +1,16 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Wrench } from "lucide-react";
+import { Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard.jsx";
 import UpgradeProjectForm from "../components/upgrade/UpgradeProjectForm.jsx";
 
 export default function Upgrade() {
-  const queryClient = useQueryClient();
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState(null);
 
@@ -35,6 +33,9 @@ export default function Upgrade() {
     u.status === 'Planned' || u.status === 'In Progress'
   );
 
+  const plannedProjects = allUpgrades.filter(u => u.status === 'Planned');
+  const inProgressProjects = allUpgrades.filter(u => u.status === 'In Progress');
+
   const completedProjects = allUpgrades.filter(u => 
     u.status === 'Completed'
   );
@@ -46,6 +47,8 @@ export default function Upgrade() {
   const totalEquityGained = completedProjects.reduce((sum, p) => 
     sum + (p.property_value_impact || 0), 0
   );
+
+  const netEquityGrowth = totalEquityGained - totalInvestment;
 
   const currentTier = user?.subscription_tier || 'free';
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
@@ -88,96 +91,189 @@ export default function Upgrade() {
             </h1>
           </div>
           <p className="text-gray-600" style={{ fontSize: '16px' }}>
-            Transform your property, track ROI, and build equity
+            Transform your property strategically
+          </p>
+          <p className="text-sm font-semibold" style={{ color: '#28A745' }}>
+            Small investments today = Big returns tomorrow
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 text-center">
-              <Clock className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-              <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
-                {activeProjects.length}
-              </p>
-              <p className="text-sm text-gray-600">Active</p>
-            </CardContent>
-          </Card>
+        {/* Dashboard Summary */}
+        {allUpgrades.length > 0 && (
+          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle style={{ color: '#1B365D', fontSize: '20px' }}>
+                📊 Your Upgrade Dashboard
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                      {activeProjects.length}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-700">Active</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                      {plannedProjects.length}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-700">Planned</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                      {completedProjects.length}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-700">Completed</p>
+                </div>
+              </div>
 
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 text-center">
-              <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-green-600" />
-              <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
-                {completedProjects.length}
-              </p>
-              <p className="text-sm text-gray-600">Completed</p>
+              {completedProjects.length > 0 && (
+                <div className="border-t border-green-300 pt-4 grid md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600 mb-1">Total Invested</p>
+                    <p className="text-xl font-bold text-blue-700">
+                      ${totalInvestment.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600 mb-1">Equity Gained</p>
+                    <p className="text-xl font-bold text-green-700">
+                      ${totalEquityGained.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600 mb-1">Net Equity Growth</p>
+                    <p className="text-xl font-bold" style={{ color: netEquityGrowth >= 0 ? '#28A745' : '#DC3545' }}>
+                      {netEquityGrowth >= 0 ? '+' : ''}${netEquityGrowth.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 text-center">
-              <DollarSign className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-              <p className="text-2xl font-bold text-blue-700">
-                ${(totalInvestment / 1000).toFixed(0)}k
-              </p>
-              <p className="text-sm text-gray-600">Invested</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 text-center">
-              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-green-600" />
-              <p className="text-2xl font-bold text-green-700">
-                ${(totalEquityGained / 1000).toFixed(0)}k
-              </p>
-              <p className="text-sm text-gray-600">Equity Gained</p>
-            </CardContent>
-          </Card>
-        </div>
+        )}
 
         {/* Member Discount Banner */}
         {isServiceMember && (
-          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <Badge style={{ backgroundColor: '#28A745' }} className="flex-shrink-0">
+                <Badge style={{ backgroundColor: '#8B5CF6' }} className="flex-shrink-0">
                   MEMBER BENEFIT
                 </Badge>
                 <div>
-                  <p className="font-semibold text-green-900 mb-1">
-                    {memberDiscount * 100}% Contractor Discount
+                  <p className="font-semibold text-purple-900 mb-1">
+                    💰 {memberDiscount * 100}% Discount on ALL Upgrades
                   </p>
-                  <p className="text-sm text-green-700">
-                    Get {memberDiscount * 100}% off contractor coordination fees on all upgrade projects through your operator.
+                  <p className="text-sm text-purple-700 mb-2">
+                    Save thousands on contractor coordination fees through your operator.
                   </p>
+                  <div className="text-sm text-purple-800">
+                    <p>• $25K kitchen remodel → Save ${(25000 * memberDiscount).toLocaleString()}</p>
+                    <p>• $45K addition → Save ${(45000 * memberDiscount).toLocaleString()}</p>
+                    <p>• $8K HVAC upgrade → Save ${(8000 * memberDiscount).toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Add New Project Button */}
+        {/* Explore Ideas - Primary CTA */}
         <Card className="border-2 border-blue-300 mb-6">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                  💡 Explore Upgrade Ideas
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  Get inspired by 48+ high-ROI improvements with real numbers, success stories, and member savings
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    className="font-bold"
+                    style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
+                  >
+                    <Link to={createPageUrl("ExploreTemplates")}>
+                      <Award className="w-5 h-5 mr-2" />
+                      Browse Popular Upgrades
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Link to={createPageUrl("ExploreTemplates") + "?featured=true"}>
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      Highest ROI Projects
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Link to={createPageUrl("ExploreTemplates") + "?category=Energy Efficiency"}>
+                      <Zap className="w-5 h-5 mr-2" />
+                      Energy Savings
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Start New Project */}
+        <Card className="border-2 border-green-300 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
                 <Plus className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                  Start a New Upgrade Project
+                  Start a New Project
                 </h3>
                 <p className="text-gray-700 mb-4">
-                  Track renovations, remodels, and strategic improvements with ROI calculations
+                  Track renovations, calculate ROI, and manage your property improvements
                 </p>
-                <Button
-                  onClick={() => setShowNewProjectForm(true)}
-                  className="font-bold"
-                  style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  New Upgrade Project
-                </Button>
+                <div className="flex flex-col md:flex-row gap-3">
+                  <Button
+                    asChild
+                    className="font-bold"
+                    style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                  >
+                    <Link to={createPageUrl("ExploreTemplates")}>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Use Pre-Built Template
+                    </Link>
+                  </Button>
+                  <Button
+                    onClick={() => setShowNewProjectForm(true)}
+                    variant="outline"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Custom Project
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -210,9 +306,12 @@ export default function Upgrade() {
               ✅ Completed Projects
             </h2>
             
-            {/* Equity Summary */}
+            {/* Lifetime Equity Summary */}
             <Card className="border-2 border-green-300 bg-green-50 mb-4">
               <CardContent className="p-6">
+                <h3 className="font-semibold mb-4 text-center" style={{ color: '#1B365D' }}>
+                  📈 Lifetime Equity Summary
+                </h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <p className="text-sm text-gray-600 mb-1">Total Investment</p>
@@ -229,10 +328,13 @@ export default function Upgrade() {
                   <div className="text-center">
                     <p className="text-sm text-gray-600 mb-1">Net Equity</p>
                     <p className="text-3xl font-bold text-green-700">
-                      +${(totalEquityGained - totalInvestment).toLocaleString()}
+                      +${netEquityGrowth.toLocaleString()}
                     </p>
                   </div>
                 </div>
+                <p className="text-xs text-center text-gray-600 mt-4">
+                  💡 You've increased your property value by ${totalEquityGained.toLocaleString()} while only spending ${totalInvestment.toLocaleString()}
+                </p>
               </CardContent>
             </Card>
 
@@ -256,48 +358,69 @@ export default function Upgrade() {
             <CardContent className="p-12 text-center">
               <Lightbulb className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2">No Upgrade Projects Yet</h3>
-              <p className="text-gray-600 mb-6">
-                Start tracking strategic improvements to build equity and increase property value
+              <p className="text-gray-600 mb-2">
+                Start building equity and increasing property value
               </p>
-              <Button
-                onClick={() => setShowNewProjectForm(true)}
-                style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Start Your First Project
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Request Work CTA for Service Members */}
-        {isServiceMember && user?.operator_name && (
-          <Card className="border-2 border-purple-300 bg-purple-50">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
-                  <Wrench className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                    Need Help with an Upgrade?
-                  </h3>
-                  <p className="text-gray-700 mb-4">
-                    Get expert help from {user.operator_name} with your {memberDiscount * 100}% member discount
-                  </p>
-                  <Button
-                    asChild
-                    style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                  >
-                    <Link to={createPageUrl("Services")}>
-                      Request Quote from Operator
-                    </Link>
-                  </Button>
-                </div>
+              <p className="text-sm text-gray-500 mb-6">
+                Browse 48+ inspiring project templates with real ROI data
+              </p>
+              <div className="flex flex-col md:flex-row gap-3 justify-center">
+                <Button
+                  asChild
+                  style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
+                >
+                  <Link to={createPageUrl("ExploreTemplates")}>
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Explore Upgrade Templates
+                  </Link>
+                </Button>
+                <Button
+                  onClick={() => setShowNewProjectForm(true)}
+                  variant="outline"
+                  style={{ minHeight: '56px' }}
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Custom Project
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Educational CTA */}
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-6">
+            <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+              📚 Why Upgrade Strategically?
+            </h3>
+            <p className="text-gray-700 mb-4">
+              Most homeowners wait until something breaks. Smart homeowners invest strategically.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div className="bg-white p-4 rounded-lg">
+                <p className="font-semibold mb-2" style={{ color: '#DC3545' }}>❌ Reactive Thinking</p>
+                <p className="text-sm text-gray-700">
+                  20-year-old water heater floods basement = $6,500 emergency
+                </p>
+              </div>
+              <div className="bg-white p-4 rounded-lg">
+                <p className="font-semibold mb-2" style={{ color: '#28A745' }}>✅ Strategic Upgrade</p>
+                <p className="text-sm text-gray-700">
+                  Proactive replacement at 12 years = $1,400 + avoid disaster
+                </p>
+              </div>
+            </div>
+            <Button
+              asChild
+              variant="outline"
+              style={{ minHeight: '48px' }}
+            >
+              <Link to={createPageUrl("ExploreTemplates")}>
+                Learn About Strategic Upgrades →
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
