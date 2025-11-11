@@ -7,11 +7,14 @@ import { ShoppingCart, X, Trash2, Edit, ChevronRight, Image as ImageIcon } from 
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import EditCartItemDialog from "./EditCartItemDialog";
+import ConfirmDialog from "../ui/confirm-dialog";
 
 export default function CartDrawer() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState(null);
   const [showEditDialog, setShowEditDialog] = React.useState(false);
+  const [deletingItem, setDeletingItem] = React.useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -41,6 +44,19 @@ export default function CartDrawer() {
   const handleEditItem = (item) => {
     setEditingItem(item);
     setShowEditDialog(true);
+  };
+
+  const handleDeleteClick = (item) => {
+    setDeletingItem(item);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletingItem) {
+      await deleteItemMutation.mutateAsync(deletingItem.id);
+      setDeletingItem(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const totalEstimatedCost = cartItems.reduce((sum, item) => {
@@ -170,11 +186,7 @@ export default function CartDrawer() {
                       Edit
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm('Remove this item from cart?')) {
-                          deleteItemMutation.mutate(item.id);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(item)}
                       className="flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors"
                       style={{ minHeight: '40px', minWidth: '40px' }}
                     >
@@ -221,6 +233,21 @@ export default function CartDrawer() {
           setEditingItem(null);
         }}
         item={editingItem}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Remove from Cart?"
+        message={`Are you sure you want to remove "${deletingItem?.title}" from your cart? This action cannot be undone.`}
+        confirmText="Yes, Remove"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </>
   );

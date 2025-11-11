@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { estimateCartItems } from "../components/cart/AIEstimator";
 import EditCartItemDialog from "../components/cart/EditCartItemDialog";
+import ConfirmDialog from "../components/ui/confirm-dialog";
 import { format } from "date-fns";
 import { createPageUrl } from "@/utils";
 
@@ -39,6 +40,8 @@ export default function CartReview() {
   const [submitting, setSubmitting] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState(null);
   const [showEditDialog, setShowEditDialog] = React.useState(false);
+  const [deletingItem, setDeletingItem] = React.useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -138,6 +141,19 @@ export default function CartReview() {
   const handleEditItem = (item) => {
     setEditingItem(item);
     setShowEditDialog(true);
+  };
+
+  const handleDeleteClick = (item) => {
+    setDeletingItem(item);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletingItem) {
+      await deleteItemMutation.mutateAsync(deletingItem.id);
+      setDeletingItem(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -394,11 +410,7 @@ View in app: ServicePackage #${servicePackage.id}
                           <Edit className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm('Remove this item from cart?')) {
-                              deleteItemMutation.mutate(item.id);
-                            }
-                          }}
+                          onClick={() => handleDeleteClick(item)}
                           className="text-red-600 hover:bg-red-50 rounded p-2 transition-colors"
                           style={{ minHeight: '40px', minWidth: '40px' }}
                         >
@@ -621,6 +633,20 @@ View in app: ServicePackage #${servicePackage.id}
           setEditingItem(null);
         }}
         item={editingItem}
+      />
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Remove from Cart?"
+        message={`Are you sure you want to remove "${deletingItem?.title}" from your cart? This action cannot be undone.`}
+        confirmText="Yes, Remove"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   );
