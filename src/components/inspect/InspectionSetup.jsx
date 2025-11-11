@@ -22,7 +22,7 @@ const SEASON_ICONS = {
   Winter: "❄️"
 };
 
-export default function InspectionSetup({ property, baselineSystems, onStart, onCancel }) {
+export default function InspectionSetup({ property, baselineSystems, onComplete, onCancel }) {
   const [inspectionType, setInspectionType] = React.useState('seasonal');
   const [selectedSeason, setSelectedSeason] = React.useState(() => {
     const month = new Date().getMonth();
@@ -47,7 +47,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
       });
     },
     onSuccess: (inspection) => {
-      onStart(inspection);
+      onComplete(inspection);
     },
   });
 
@@ -62,6 +62,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           variant="ghost"
           onClick={onCancel}
           className="mb-4"
+          style={{ minHeight: '44px' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
@@ -92,6 +93,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
                 checked={inspectionType === 'seasonal'}
                 onChange={(e) => setInspectionType(e.target.value)}
                 className="mt-1"
+                style={{ minHeight: '20px', minWidth: '20px' }}
               />
               <div className="flex-1">
                 <p className="font-semibold" style={{ color: '#1B365D' }}>Seasonal Walkthrough (Best practice - quarterly)</p>
@@ -107,6 +109,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
                 checked={inspectionType === 'quick'}
                 onChange={(e) => setInspectionType(e.target.value)}
                 className="mt-1"
+                style={{ minHeight: '20px', minWidth: '20px' }}
               />
               <div className="flex-1">
                 <p className="font-semibold" style={{ color: '#1B365D' }}>Quick Check (Spot inspection of one area)</p>
@@ -122,6 +125,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
                 checked={inspectionType === 'post-work'}
                 onChange={(e) => setInspectionType(e.target.value)}
                 className="mt-1"
+                style={{ minHeight: '20px', minWidth: '20px' }}
               />
               <div className="flex-1">
                 <p className="font-semibold" style={{ color: '#1B365D' }}>Post-Work Verification (After repairs completed)</p>
@@ -149,8 +153,9 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
                     }`}
                     style={selectedSeason === season ? { 
                       borderColor: '#1B365D', 
-                      backgroundColor: '#F0F4F8' 
-                    } : {}}
+                      backgroundColor: '#F0F4F8',
+                      minHeight: '44px'
+                    } : { minHeight: '44px' }}
                   >
                     <div className="text-3xl mb-2">{SEASON_ICONS[season]}</div>
                     <div className="font-semibold" style={selectedSeason === season ? { color: '#1B365D' } : {}}>
@@ -209,7 +214,7 @@ export default function InspectionSetup({ property, baselineSystems, onStart, on
           onClick={handleBeginWalkthrough}
           disabled={createInspectionMutation.isPending}
           className="w-full h-14 text-lg font-bold"
-          style={{ backgroundColor: '#28A745' }}
+          style={{ backgroundColor: '#28A745', minHeight: '56px' }}
         >
           {createInspectionMutation.isPending ? 'Starting...' : 'Begin Walkthrough'}
         </Button>
