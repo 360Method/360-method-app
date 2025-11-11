@@ -26,6 +26,14 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
     onChange(updated);
   };
 
+  const handleNext = () => {
+    onNext();
+  };
+
+  const handleBack = () => {
+    onBack();
+  };
+
   const recommendedBudget = formData.current_value
     ? {
         min: Math.round(formData.current_value * 0.01),
@@ -205,9 +213,10 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
       </Card>
 
       {/* Navigation */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-8">
         <Button
-          onClick={onBack}
+          type="button"
+          onClick={handleBack}
           variant="outline"
           className="flex-1"
           style={{ minHeight: '56px' }}
@@ -215,7 +224,8 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
           ← Back
         </Button>
         <Button
-          onClick={onNext}
+          type="button"
+          onClick={handleNext}
           className="flex-1 font-bold"
           style={{ backgroundColor: '#28A745', minHeight: '56px' }}
         >

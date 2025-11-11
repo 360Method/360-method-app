@@ -82,6 +82,10 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
     onNext();
   };
 
+  const handleBack = () => {
+    onBack();
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
@@ -422,9 +426,10 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
       </Card>
 
       {/* Navigation */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-8">
         <Button
-          onClick={onBack}
+          type="button"
+          onClick={handleBack}
           variant="outline"
           className="flex-1"
           style={{ minHeight: '56px' }}
@@ -432,6 +437,7 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
           ← Back
         </Button>
         <Button
+          type="button"
           onClick={handleNext}
           className="flex-1"
           style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
