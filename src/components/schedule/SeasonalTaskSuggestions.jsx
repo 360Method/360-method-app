@@ -26,7 +26,6 @@ const getCurrentSeason = () => {
 
 export default function SeasonalTaskSuggestions({ propertyId, property, compact = false }) {
   const [dismissed, setDismissed] = React.useState(false);
-  const [addedTemplates, setAddedTemplates] = React.useState(new Set());
   
   const queryClient = useQueryClient();
   const currentSeason = getCurrentSeason();
@@ -61,13 +60,12 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-      setAddedTemplates(prev => new Set([...prev, variables.templateId]));
       
       // Update template usage count
-      if (variables.templateId) {
-        const template = templates.find(t => t.id === variables.templateId);
+      if (variables.template_origin_id) {
+        const template = templates.find(t => t.id === variables.template_origin_id);
         if (template) {
-          base44.entities.MaintenanceTemplate.update(variables.templateId, {
+          base44.entities.MaintenanceTemplate.update(variables.template_origin_id, {
             usage_count: (template.usage_count || 0) + 1
           });
         }
@@ -84,23 +82,22 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
       priority: template.priority,
       status: "Identified",
       execution_type: template.is_diy_friendly ? "DIY" : "Not Decided",
-      templateId: template.id
+      template_origin_id: template.id
     };
 
     createTaskMutation.mutate(taskData);
   };
 
-  // Filter out templates that have already been added as tasks recently (within 30 days)
+  // Filter out templates that have already been converted to tasks
+  // Check if any existing MaintenanceTask has a template_origin_id matching this template's id
   const availableTemplates = templates.filter(template => {
-    if (addedTemplates.has(template.id)) return false;
-    
-    const recentTask = existingTasks.find(task => 
-      task.title === template.title && 
-      task.created_date &&
-      (new Date() - new Date(task.created_date)) < 30 * 24 * 60 * 60 * 1000 // 30 days
+    // Check if any existing task was created from this template
+    const taskFromTemplate = existingTasks.find(task => 
+      task.template_origin_id === template.id
     );
     
-    return !recentTask;
+    // Only show template if no task exists from it
+    return !taskFromTemplate;
   });
 
   if (dismissed || !property || availableTemplates.length === 0) {
@@ -181,13 +178,15 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
 
         <div className="space-y-4">
           {displayTemplates.map((template) => {
-            const isAdded = addedTemplates.has(template.id);
+            // Check if this template has been converted to a task
+            const convertedTask = existingTasks.find(task => task.template_origin_id === template.id);
+            const isConverted = !!convertedTask;
             
             return (
               <div
                 key={template.id}
                 className={`p-4 border-2 rounded-lg transition-all ${
-                  isAdded 
+                  isConverted 
                     ? 'border-green-400 bg-green-50' 
                     : 'border-gray-200 hover:border-green-300 hover:shadow-md'
                 }`}
@@ -266,16 +265,26 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
                 </div>
 
                 <div className="flex gap-2 mt-3">
-                  {isAdded ? (
-                    <Button
-                      disabled
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 bg-green-100 border-green-400"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
-                      Added to Tasks
-                    </Button>
+                  {isConverted ? (
+                    <div className="flex-1">
+                      <Button
+                        disabled
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-green-100 border-green-400 w-full"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        In Your Task List
+                      </Button>
+                      {convertedTask && (
+                        <p className="text-xs text-gray-600 mt-2 text-center">
+                          Status: <span className="font-semibold">{convertedTask.status}</span>
+                          {convertedTask.scheduled_date && (
+                            <> • Scheduled: {new Date(convertedTask.scheduled_date).toLocaleDateString()}</>
+                          )}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <Button
                       onClick={() => handleAddTemplate(template)}
