@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Award, TrendingUp, DollarSign, Clock, Home, ChevronRight, Zap, Users, Shield, Sparkles } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateMemberSavings, getAllTierSavings, getTierDisplayName } from "@/utils/memberDiscounts";
 
 export default function ExploreTemplates() {
   const location = useLocation();
@@ -32,6 +31,10 @@ export default function ExploreTemplates() {
 
   const currentTier = user?.subscription_tier || 'free';
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
+  const memberDiscount = currentTier.includes('essential') ? 0.05 
+    : currentTier.includes('premium') ? 0.10 
+    : currentTier.includes('elite') ? 0.15 
+    : 0;
 
   const categories = [
     { value: 'all', label: 'All Templates', icon: Sparkles },
@@ -80,13 +83,13 @@ export default function ExploreTemplates() {
         </div>
 
         {/* Member Savings Banner */}
-        {isServiceMember && (
+        {isServiceMember && memberDiscount > 0 && (
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge style={{ backgroundColor: '#8B5CF6' }}>MEMBER BENEFIT</Badge>
                 <p className="text-sm font-semibold text-purple-900">
-                  🌟 All projects coordinated through your vetted contractor network with negotiated savings
+                  🌟 All projects coordinated through your vetted contractor network with {memberDiscount * 100}% negotiated savings
                 </p>
               </div>
             </CardContent>
@@ -101,7 +104,7 @@ export default function ExploreTemplates() {
                 <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-blue-900 mb-2">
-                    💰 Members save on ALL upgrades through our contractor network
+                    💰 Members save 5-15% on ALL upgrades through our contractor network
                   </p>
                   <p className="text-sm text-blue-700">
                     Plus: free project coordination, quality guarantee, and no bidding hassle
@@ -168,7 +171,7 @@ export default function ExploreTemplates() {
                   </Button>
                   <Button
                     onClick={() => setSortBy('cost')}
-                    variant={sortBy === 'cost' ? "default" : "outline"}
+                    variant={sortBy === 'cost' ? "outline" : "outline"}
                     size="sm"
                     style={{ minHeight: '40px' }}
                   >
@@ -210,7 +213,7 @@ export default function ExploreTemplates() {
                     <TemplateCard
                       key={template.id}
                       template={template}
-                      currentTier={currentTier}
+                      memberDiscount={memberDiscount}
                       isServiceMember={isServiceMember}
                     />
                   ))}
@@ -234,7 +237,7 @@ export default function ExploreTemplates() {
                 <TemplateCard
                   key={template.id}
                   template={template}
-                  currentTier={currentTier}
+                  memberDiscount={memberDiscount}
                   isServiceMember={isServiceMember}
                 />
               ))}
@@ -291,12 +294,9 @@ export default function ExploreTemplates() {
 }
 
 // Template Card Component
-function TemplateCard({ template, currentTier, isServiceMember }) {
+function TemplateCard({ template, memberDiscount, isServiceMember }) {
   const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-  
-  // Use new discount calculator
-  const memberSavings = calculateMemberSavings(avgCost, currentTier);
-  const allTierSavings = getAllTierSavings(avgCost);
+  const savingsAmount = avgCost * memberDiscount;
 
   return (
     <Card className="border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer">
@@ -331,8 +331,13 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
               <div>
                 <p className="text-xs text-gray-600">Investment Range</p>
                 <p className="font-bold text-sm" style={{ color: '#1B365D' }}>
-                  ${template.average_cost_min.toLocaleString()}-${template.average_cost_max.toLocaleString()}
+                  ${template.average_cost_min.toLocaleString()}-{template.average_cost_max.toLocaleString()}
                 </p>
+                {isServiceMember && savingsAmount > 100 && (
+                  <p className="text-xs text-purple-700">
+                    💎 Save ~${Math.round(savingsAmount).toLocaleString()}
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-gray-600">Average ROI</p>
@@ -341,34 +346,6 @@ function TemplateCard({ template, currentTier, isServiceMember }) {
                 </p>
               </div>
             </div>
-
-            {/* Member Savings Display */}
-            {isServiceMember && memberSavings.savings > 0 && (
-              <div className="mb-3 p-2 bg-purple-50 border border-purple-300 rounded">
-                <p className="text-xs font-semibold text-purple-900 mb-1">
-                  💎 Your Member Savings:
-                </p>
-                <p className="font-bold text-purple-700">
-                  ~${memberSavings.savings.toLocaleString()}
-                </p>
-                <p className="text-xs text-purple-600">
-                  {getTierDisplayName(currentTier)} rate
-                </p>
-              </div>
-            )}
-
-            {/* Non-Member: Show potential savings */}
-            {!isServiceMember && (
-              <div className="mb-3 p-2 bg-blue-50 border border-blue-300 rounded">
-                <p className="text-xs font-semibold text-blue-900 mb-1">
-                  Member Savings:
-                </p>
-                <div className="text-xs text-blue-700 space-y-0.5">
-                  <p>Premium: ~${allTierSavings.premium.savings.toLocaleString()}</p>
-                  <p>Elite: ~${allTierSavings.elite.savings.toLocaleString()}</p>
-                </div>
-              </div>
-            )}
 
             {/* Value added */}
             {template.typical_value_added && (
