@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Home } from "lucide-react";
+import AddressAutocomplete from "./AddressAutocomplete";
+import AddressVerificationMap from "./AddressVerificationMap";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -64,8 +66,16 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
     city: data.city || "",
     state: data.state || "WA",
     zip_code: data.zip_code || "",
-    property_type: data.property_type || ""
+    county: data.county || "",
+    property_type: data.property_type || "",
+    coordinates: data.coordinates || null,
+    place_id: data.place_id || "",
+    address_verified: data.address_verified || false,
+    formatted_address: data.formatted_address || ""
   });
+
+  const [locationConfirmed, setLocationConfirmed] = React.useState(false);
+  const [useManualEntry, setUseManualEntry] = React.useState(false);
 
   const updateField = (field, value) => {
     const updated = { ...formData, [field]: value };
@@ -73,11 +83,27 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
     onChange(updated);
   };
 
+  const handleAddressSelect = (addressData) => {
+    const updated = {
+      ...formData,
+      ...addressData
+    };
+    setFormData(updated);
+    onChange(updated);
+    setUseManualEntry(false);
+  };
+
   const handleNext = () => {
     if (!formData.street_address || !formData.city || !formData.state || !formData.zip_code || !formData.property_type) {
       alert("Please fill in all required fields");
       return;
     }
+
+    if (formData.address_verified && !locationConfirmed) {
+      alert("Please verify the property location on the map");
+      return;
+    }
+
     onNext();
   };
 
@@ -99,7 +125,7 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
         </div>
       </div>
 
-      {/* Property Address */}
+      {/* Property Address with Autocomplete */}
       <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#1B365D' }}>
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -109,72 +135,144 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
             </h3>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label className="font-semibold">Street Address *</Label>
-              <Input
-                value={formData.street_address}
-                onChange={(e) => updateField('street_address', e.target.value)}
-                placeholder="123 Main Street"
-                className="mt-2"
-                style={{ minHeight: '48px' }}
+          {!useManualEntry && !formData.address_verified && (
+            <div className="mb-6">
+              <Label className="font-semibold mb-2 block">
+                Start typing your address and select from suggestions:
+              </Label>
+              <AddressAutocomplete
+                onAddressSelect={handleAddressSelect}
+                initialValue={formData.street_address}
               />
+              <Button
+                onClick={() => setUseManualEntry(true)}
+                variant="link"
+                className="mt-2 text-sm"
+              >
+                Or enter address manually
+              </Button>
             </div>
+          )}
 
-            <div>
-              <Label className="font-semibold">Unit/Apt # (if applicable)</Label>
-              <Input
-                value={formData.unit_number}
-                onChange={(e) => updateField('unit_number', e.target.value)}
-                placeholder="Leave blank for single-family homes"
-                className="mt-2"
-                style={{ minHeight: '48px' }}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
+          {(useManualEntry || formData.address_verified) && (
+            <div className="space-y-4">
               <div>
-                <Label className="font-semibold">City *</Label>
+                <Label className="font-semibold">Street Address *</Label>
                 <Input
-                  value={formData.city}
-                  onChange={(e) => updateField('city', e.target.value)}
-                  placeholder="Vancouver"
+                  value={formData.street_address}
+                  onChange={(e) => updateField('street_address', e.target.value)}
+                  placeholder="123 Main Street"
+                  className="mt-2"
+                  style={{ minHeight: '48px' }}
+                  disabled={formData.address_verified}
+                />
+              </div>
+
+              <div>
+                <Label className="font-semibold">Unit/Apt # (if applicable)</Label>
+                <Input
+                  value={formData.unit_number}
+                  onChange={(e) => updateField('unit_number', e.target.value)}
+                  placeholder="Leave blank for single-family homes"
                   className="mt-2"
                   style={{ minHeight: '48px' }}
                 />
               </div>
 
-              <div>
-                <Label className="font-semibold">State *</Label>
-                <Select
-                  value={formData.state}
-                  onValueChange={(value) => updateField('state', value)}
-                >
-                  <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white max-h-60">
-                    {US_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-semibold">City *</Label>
+                  <Input
+                    value={formData.city}
+                    onChange={(e) => updateField('city', e.target.value)}
+                    placeholder="Vancouver"
+                    className="mt-2"
+                    style={{ minHeight: '48px' }}
+                    disabled={formData.address_verified}
+                  />
+                </div>
 
-            <div className="md:w-1/2">
-              <Label className="font-semibold">ZIP Code *</Label>
-              <Input
-                value={formData.zip_code}
-                onChange={(e) => updateField('zip_code', e.target.value)}
-                placeholder="98660"
-                className="mt-2"
-                style={{ minHeight: '48px' }}
-              />
+                <div>
+                  <Label className="font-semibold">State *</Label>
+                  <Select
+                    value={formData.state}
+                    onValueChange={(value) => updateField('state', value)}
+                    disabled={formData.address_verified}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white max-h-60">
+                      {US_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="md:w-1/2">
+                <Label className="font-semibold">ZIP Code *</Label>
+                <Input
+                  value={formData.zip_code}
+                  onChange={(e) => updateField('zip_code', e.target.value)}
+                  placeholder="98660"
+                  className="mt-2"
+                  style={{ minHeight: '48px' }}
+                  disabled={formData.address_verified}
+                />
+              </div>
+
+              {formData.county && (
+                <div className="md:w-1/2">
+                  <Label className="font-semibold">County</Label>
+                  <Input
+                    value={formData.county}
+                    disabled
+                    className="mt-2 bg-gray-50"
+                    style={{ minHeight: '48px' }}
+                  />
+                </div>
+              )}
+
+              {formData.address_verified && (
+                <Button
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      street_address: "",
+                      city: "",
+                      state: "WA",
+                      zip_code: "",
+                      county: "",
+                      coordinates: null,
+                      place_id: "",
+                      address_verified: false,
+                      formatted_address: ""
+                    });
+                    setLocationConfirmed(false);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Clear & Search Again
+                </Button>
+              )}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Map Verification */}
+      {formData.coordinates && formData.address_verified && (
+        <div className="mb-6">
+          <AddressVerificationMap
+            coordinates={formData.coordinates}
+            address={formData.formatted_address || `${formData.street_address}, ${formData.city}, ${formData.state}`}
+            onConfirm={() => setLocationConfirmed(true)}
+          />
+        </div>
+      )}
 
       {/* Property Type */}
       <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#28A745' }}>
