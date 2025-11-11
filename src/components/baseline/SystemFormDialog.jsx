@@ -39,54 +39,75 @@ const SYSTEM_IMPORTANCE = {
   "Security System": "Documented security systems can reduce insurance premiums 5-20%. Knowing installation date and monitoring status helps maintain protection. Failed systems mean no alert during break-ins."
 };
 
-const getInitialFormData = (editingSystem) => {
-  const baseDefaults = {
-    system_type: "",
-    nickname: "",
-    brand_model: "",
-    installation_year: "",
-    warranty_info: "",
-    last_service_date: "",
-    next_service_date: "",
-    last_battery_change: "",
-    last_test_date: "",
-    condition: "Good",
-    condition_notes: "",
-    warning_signs_present: [],
-    photo_urls: [],
-    estimated_lifespan_years: "",
-    replacement_cost_estimate: "",
-    key_components: {},
-    is_required: false // Default to false
-  };
-
-  if (editingSystem?.id) {
-    // Editing an existing system - load all its data
-    return {
-      ...baseDefaults, // Start with all keys defaulted
-      ...editingSystem, // Override with existing values
-      // Ensure nested arrays/objects are not null/undefined
-      warning_signs_present: editingSystem.warning_signs_present || [],
-      photo_urls: editingSystem.photo_urls || [],
-      key_components: editingSystem.key_components || {},
-      is_required: editingSystem.is_required || false
-    };
-  } else if (editingSystem?.system_type) {
-    // Adding new system - just set the type and is_required
-    return {
-      ...baseDefaults,
-      system_type: editingSystem.system_type,
-      is_required: editingSystem.is_required || false
-    };
-  }
-  
-  // Default empty state for a completely new, unspecified system
-  return baseDefaults;
-};
-
 export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription, allowsMultiple }) {
-  const [formData, setFormData] = React.useState(() => getInitialFormData(editingSystem));
-  const [photos, setPhotos] = React.useState(() => getInitialFormData(editingSystem).photo_urls || []);
+  // Initialize form data based on whether we're editing or creating
+  const getInitialFormData = React.useCallback(() => {
+    if (editingSystem?.id) {
+      // Editing existing system - load all its data
+      return {
+        system_type: editingSystem.system_type || "",
+        nickname: editingSystem.nickname || "",
+        brand_model: editingSystem.brand_model || "",
+        installation_year: editingSystem.installation_year || "",
+        warranty_info: editingSystem.warranty_info || "",
+        last_service_date: editingSystem.last_service_date || "",
+        next_service_date: editingSystem.next_service_date || "",
+        last_battery_change: editingSystem.last_battery_change || "",
+        last_test_date: editingSystem.last_test_date || "",
+        condition: editingSystem.condition || "Good",
+        condition_notes: editingSystem.condition_notes || "",
+        warning_signs_present: editingSystem.warning_signs_present || [],
+        photo_urls: editingSystem.photo_urls || [],
+        estimated_lifespan_years: editingSystem.estimated_lifespan_years || "",
+        replacement_cost_estimate: editingSystem.replacement_cost_estimate || "",
+        key_components: editingSystem.key_components || {}
+      };
+    } else if (editingSystem?.system_type) {
+      // Adding new system - just set the type
+      return {
+        system_type: editingSystem.system_type,
+        nickname: "",
+        brand_model: "",
+        installation_year: "",
+        warranty_info: "",
+        last_service_date: "",
+        next_service_date: "",
+        last_battery_change: "",
+        last_test_date: "",
+        condition: "Good",
+        condition_notes: "",
+        warning_signs_present: [],
+        photo_urls: [],
+        estimated_lifespan_years: "",
+        replacement_cost_estimate: "",
+        key_components: {},
+        is_required: editingSystem.is_required
+      };
+    }
+    
+    // Default empty state
+    return {
+      system_type: "",
+      nickname: "",
+      brand_model: "",
+      installation_year: "",
+      warranty_info: "",
+      last_service_date: "",
+      next_service_date: "",
+      last_battery_change: "",
+      last_test_date: "",
+      condition: "Good",
+      condition_notes: "",
+      warning_signs_present: [],
+      photo_urls: [],
+      estimated_lifespan_years: "",
+      replacement_cost_estimate: "",
+      key_components: {}
+    };
+  }, [editingSystem]); // Dependency array for useCallback
+
+  const [formData, setFormData] = React.useState(getInitialFormData);
+  const [photos, setPhotos] = React.useState(() => getInitialFormData().photo_urls || []);
   const [uploading, setUploading] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
   const [showAddAnother, setShowAddAnother] = React.useState(false);
@@ -96,12 +117,12 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   // Effect to reset form data when dialog opens or editingSystem changes
   React.useEffect(() => {
     if (open) { 
-      const initialData = getInitialFormData(editingSystem);
+      const initialData = getInitialFormData();
       setFormData(initialData);
       setPhotos(initialData.photo_urls || []); // Sync photos state with formData's photos
       setShowAddAnother(false); // Reset this flag when dialog opens
     }
-  }, [editingSystem, open]);
+  }, [editingSystem, open, getInitialFormData]);
 
   // Check for warnings based on form data
   React.useEffect(() => {
