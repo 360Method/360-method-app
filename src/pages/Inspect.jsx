@@ -1,6 +1,6 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,27 @@ import {
   Eye,
   PlayCircle,
   FileText,
-  Wrench
+  Wrench,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import InspectionSetup from "../components/inspect/InspectionSetup";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
@@ -34,6 +52,9 @@ export default function Inspect() {
   const [selectedPropertyId, setSelectedPropertyId] = React.useState(propertyIdFromUrl || '');
   const [activeInspection, setActiveInspection] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [inspectionToDelete, setInspectionToDelete] = React.useState(null);
+
+  const queryClient = useQueryClient();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -52,6 +73,16 @@ export default function Inspect() {
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId }),
     enabled: !!selectedPropertyId,
     initialData: [],
+  });
+
+  const deleteInspectionMutation = useMutation({
+    mutationFn: async (inspectionId) => {
+      return base44.entities.Inspection.delete(inspectionId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      setInspectionToDelete(null);
+    },
   });
 
   React.useEffect(() => {
@@ -101,6 +132,16 @@ export default function Inspect() {
   const handleEditInspection = (inspection) => {
     setActiveInspection(inspection);
     setCurrentView('walkthrough');
+  };
+
+  const handleDeleteInspection = (inspection) => {
+    setInspectionToDelete(inspection);
+  };
+
+  const confirmDelete = () => {
+    if (inspectionToDelete) {
+      deleteInspectionMutation.mutate(inspectionToDelete.id);
+    }
   };
 
   // Render different views
@@ -164,44 +205,38 @@ export default function Inspect() {
             </h1>
           </div>
           <p className="text-gray-600" style={{ fontSize: '16px' }}>
-            Proactive inspections to catch problems early
+            Regular inspections catch problems while they're cheap to fix
           </p>
         </div>
 
-        {/* Educational Section */}
+        {/* Connection Explanation */}
         {inspections.length === 0 && hasBaselineSystems && (
           <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
             <CardContent className="p-6">
               <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
                 <Eye className="w-6 h-6 text-blue-600" />
-                Why Seasonal Inspections Matter
+                How Baseline & Inspections Work Together
               </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Most home disasters are 100% preventable with regular inspections. A dirty filter caught today prevents a $6K HVAC failure tomorrow.
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-red-600">❌ Without Inspections</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Small leaks become $30K water damage</li>
-                    <li>• Worn parts cause system failures</li>
-                    <li>• Emergency repairs cost 3X more</li>
-                    <li>• Insurance often won't cover neglect</li>
+              <div className="space-y-3 text-gray-800" style={{ fontSize: '15px', lineHeight: '1.6' }}>
+                <p>
+                  <strong>Baseline</strong> = One-time documentation of your systems (age, specs, initial condition)
+                </p>
+                <p>
+                  <strong>Inspections</strong> = Regular seasonal checks to see what's changed since baseline
+                </p>
+                <div className="bg-white p-4 rounded-lg mt-4">
+                  <p className="font-semibold mb-2 text-blue-900">🎯 How they connect:</p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li>• Baseline creates the reference point ("HVAC installed 2015, working well")</li>
+                    <li>• Inspections track changes ("2025: Filter dirty, airflow reduced 30%")</li>
+                    <li>• Issues found update baseline system condition automatically</li>
+                    <li>• History shows how systems degrade over time</li>
                   </ul>
                 </div>
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-green-600">✅ With Seasonal Inspections</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Catch issues when they're cheap to fix</li>
-                    <li>• Systems last their full lifespan</li>
-                    <li>• Budget for repairs, no surprises</li>
-                    <li>• Documentation for insurance claims</li>
-                  </ul>
-                </div>
+                <p className="text-sm font-medium text-blue-900 mt-4">
+                  💡 Think of Baseline as your "Day 1 photo" and Inspections as "progress check-ins" every 3 months
+                </p>
               </div>
-              <p className="text-sm text-gray-700 font-medium">
-                💡 Pro Tip: 45 minutes per season = avoid 95% of home disasters
-              </p>
             </CardContent>
           </Card>
         )}
@@ -299,7 +334,7 @@ export default function Inspect() {
                 <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-orange-900 mb-2">
-                    Baseline Documentation Required
+                    Baseline Documentation Required First
                   </p>
                   <p className="text-sm text-gray-700 mb-4">
                     Before inspecting, document your home's systems in the Baseline phase. This creates a reference point for tracking changes over time.
@@ -395,7 +430,7 @@ export default function Inspect() {
                             )}
                           </div>
 
-                          <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
                             {isInProgress ? (
                               <Button
                                 onClick={() => handleContinueInspection(inspection)}
@@ -412,9 +447,32 @@ export default function Inspect() {
                                 style={{ minHeight: '44px' }}
                               >
                                 <FileText className="w-4 h-4 mr-1" />
-                                View Report
+                                View
                               </Button>
                             )}
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" style={{ minHeight: '44px', minWidth: '44px' }}>
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white">
+                                {isCompleted && (
+                                  <DropdownMenuItem onClick={() => handleEditInspection(inspection)}>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Edit/Review
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteInspection(inspection)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </CardContent>
@@ -456,6 +514,29 @@ export default function Inspect() {
           urgency: "Medium"
         }}
       />
+
+      <AlertDialog open={!!inspectionToDelete} onOpenChange={() => setInspectionToDelete(null)}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Inspection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the {inspectionToDelete?.season} {inspectionToDelete?.year} inspection?
+              This will permanently remove the inspection report and all documented issues.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteInspectionMutation.isPending}
+            >
+              {deleteInspectionMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
