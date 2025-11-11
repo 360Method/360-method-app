@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,14 @@ export default function PropertyWizardStep3({ data, onChange, onNext, onBack }) 
     const updated = { ...formData, [field]: value };
     setFormData(updated);
     onChange(updated);
+  };
+
+  const handleNext = () => {
+    onNext();
+  };
+
+  const handleBack = () => {
+    onBack();
   };
 
   const climateInfo = CLIMATE_ZONES[formData.climate_zone];
@@ -268,9 +277,10 @@ export default function PropertyWizardStep3({ data, onChange, onNext, onBack }) 
       </Card>
 
       {/* Navigation */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-8">
         <Button
-          onClick={onBack}
+          type="button"
+          onClick={handleBack}
           variant="outline"
           className="flex-1"
           style={{ minHeight: '56px' }}
@@ -278,7 +288,8 @@ export default function PropertyWizardStep3({ data, onChange, onNext, onBack }) 
           ← Back
         </Button>
         <Button
-          onClick={onNext}
+          type="button"
+          onClick={handleNext}
           className="flex-1"
           style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
         >
