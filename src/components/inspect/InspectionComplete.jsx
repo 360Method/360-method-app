@@ -12,26 +12,29 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
   const [preservationOpportunities, setPreservationOpportunities] = React.useState(null);
   const [generatingSummary, setGeneratingSummary] = React.useState(false);
 
-  const allIssues = inspection.checklist_items || [];
-  const urgentCount = inspection.urgent_count || 0;
-  const flagCount = inspection.flag_count || 0;
-  const monitorCount = inspection.monitor_count || 0;
+  const allIssues = inspection?.checklist_items || [];
+  const urgentCount = inspection?.urgent_count || 0;
+  const flagCount = inspection?.flag_count || 0;
+  const monitorCount = inspection?.monitor_count || 0;
   const quickFixesCompleted = allIssues.filter(i => i.is_quick_fix && i.status === 'Completed').length;
-  const durationMinutes = inspection.duration_minutes || 0;
+  const durationMinutes = inspection?.duration_minutes || 0;
 
   const tasksCreated = urgentCount + flagCount;
 
   // Fetch baseline systems for preservation analysis - only if property exists
   const { data: systems = [] } = useQuery({
     queryKey: ['systemBaselines', property?.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+    queryFn: () => {
+      if (!property?.id) return Promise.resolve([]);
+      return base44.entities.SystemBaseline.filter({ property_id: property.id });
+    },
     enabled: !!property?.id,
   });
 
   // Generate AI summary and preservation opportunities
   React.useEffect(() => {
     const generateAnalysis = async () => {
-      if (allIssues.length === 0 || !property) return;
+      if (allIssues.length === 0 || !property || !inspection) return;
       
       setGeneratingSummary(true);
       try {
@@ -82,10 +85,26 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
       }
     };
 
-    if (allIssues.length > 0 && !aiSummary && property) {
+    if (allIssues.length > 0 && !aiSummary && property && inspection) {
       generateAnalysis();
     }
-  }, [allIssues, inspection.season, property, systems, aiSummary]);
+  }, [allIssues, inspection, property, systems, aiSummary]);
+
+  if (!inspection) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <Card className="border-none shadow-lg max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">No Inspection Data</h1>
+            <p className="text-gray-600">Unable to load inspection results.</p>
+            <Button onClick={onDone} className="mt-6">
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -285,46 +304,48 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
             </div>
 
             {/* Issue Details */}
-            <div className="space-y-3 text-left">
-              {urgentCount > 0 && (
-                <div>
-                  <h3 className="font-bold text-red-700 mb-2">🚨 URGENT ({urgentCount}):</h3>
-                  <ul className="ml-6 space-y-1">
-                    {allIssues
-                      .filter(i => i.severity === 'Urgent')
-                      .map((issue, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-              
-              {flagCount > 0 && (
-                <div>
-                  <h3 className="font-bold text-orange-700 mb-2">⚠️ FLAG ({flagCount}):</h3>
-                  <ul className="ml-6 space-y-1">
-                    {allIssues
-                      .filter(i => i.severity === 'Flag')
-                      .map((issue, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-              
-              {monitorCount > 0 && (
-                <div>
-                  <h3 className="font-bold text-green-700 mb-2">✅ MONITOR ({monitorCount}):</h3>
-                  <ul className="ml-6 space-y-1">
-                    {allIssues
-                      .filter(i => i.severity === 'Monitor')
-                      .map((issue, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}...</li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            {allIssues.length > 0 && (
+              <div className="space-y-3 text-left">
+                {urgentCount > 0 && (
+                  <div>
+                    <h3 className="font-bold text-red-700 mb-2">🚨 URGENT ({urgentCount}):</h3>
+                    <ul className="ml-6 space-y-1">
+                      {allIssues
+                        .filter(i => i.severity === 'Urgent')
+                        .map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {flagCount > 0 && (
+                  <div>
+                    <h3 className="font-bold text-orange-700 mb-2">⚠️ FLAG ({flagCount}):</h3>
+                    <ul className="ml-6 space-y-1">
+                      {allIssues
+                        .filter(i => i.severity === 'Flag')
+                        .map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {monitorCount > 0 && (
+                  <div>
+                    <h3 className="font-bold text-green-700 mb-2">✅ MONITOR ({monitorCount}):</h3>
+                    <ul className="ml-6 space-y-1">
+                      {allIssues
+                        .filter(i => i.severity === 'Monitor')
+                        .map((issue, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}...</li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <hr className="border-gray-200" />
@@ -340,7 +361,7 @@ Be clear, actionable, and help the homeowner understand what matters most.`;
                   {allIssues
                     .filter(i => i.is_quick_fix && i.status === 'Completed')
                     .map((issue, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">- {issue.description.substring(0, 80)}</li>
+                      <li key={idx} className="text-sm text-gray-700">- {issue.description?.substring(0, 80) || 'No description'}</li>
                     ))}
                 </ul>
               </CardContent>
