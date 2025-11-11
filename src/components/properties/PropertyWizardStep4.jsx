@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DollarSign } from "lucide-react";
+import { DollarSign, Loader2 } from "lucide-react";
 
-export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) {
+export default function PropertyWizardStep4({ data, onChange, onNext, onBack, isCreating }) {
   const [formData, setFormData] = React.useState({
     property_use: data.property_use || "Primary Residence",
     purchase_date: data.purchase_date || "",
@@ -26,11 +26,14 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
     onChange(updated);
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    e.preventDefault();
+    console.log('Step 4 handleNext called, formData:', formData);
     onNext();
   };
 
-  const handleBack = () => {
+  const handleBack = (e) => {
+    e.preventDefault();
     onBack();
   };
 
@@ -220,6 +223,7 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
           variant="outline"
           className="flex-1"
           style={{ minHeight: '56px' }}
+          disabled={isCreating}
         >
           ← Back
         </Button>
@@ -228,8 +232,16 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack }) 
           onClick={handleNext}
           className="flex-1 font-bold"
           style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+          disabled={isCreating}
         >
-          Save Property & Continue →
+          {isCreating ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Save Property & Continue →'
+          )}
         </Button>
       </div>
     </div>

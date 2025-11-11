@@ -11,10 +11,12 @@ export default function PropertyWizard({ onComplete, onCancel }) {
   const [currentStep, setCurrentStep] = React.useState(1);
   const [propertyData, setPropertyData] = React.useState({});
   const [createdProperty, setCreatedProperty] = React.useState(null);
+  const [isCreating, setIsCreating] = React.useState(false);
   const queryClient = useQueryClient();
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data) => {
+      console.log('Creating property with data:', data);
       const fullAddress = `${data.street_address}${data.unit_number ? ` #${data.unit_number}` : ''}, ${data.city}, ${data.state} ${data.zip_code}`;
       
       return base44.entities.Property.create({
@@ -25,21 +27,34 @@ export default function PropertyWizard({ onComplete, onCancel }) {
       });
     },
     onSuccess: (property) => {
+      console.log('Property created successfully:', property);
       setCreatedProperty(property);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      setIsCreating(false);
       setCurrentStep(5);
     },
+    onError: (error) => {
+      console.error('Error creating property:', error);
+      setIsCreating(false);
+      alert('Error creating property: ' + (error.message || 'Unknown error'));
+    }
   });
 
   const handleStep1Next = () => setCurrentStep(2);
   const handleStep2Next = () => setCurrentStep(3);
   const handleStep3Next = () => setCurrentStep(4);
   const handleStep4Next = () => {
+    console.log('Step 4 Next clicked, propertyData:', propertyData);
+    setIsCreating(true);
     createPropertyMutation.mutate(propertyData);
   };
 
   const handleDataChange = (stepData) => {
-    setPropertyData(prev => ({ ...prev, ...stepData }));
+    setPropertyData(prev => {
+      const updated = { ...prev, ...stepData };
+      console.log('Property data updated:', updated);
+      return updated;
+    });
   };
 
   if (currentStep === 1) {
@@ -82,6 +97,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         onChange={handleDataChange}
         onNext={handleStep4Next}
         onBack={() => setCurrentStep(3)}
+        isCreating={isCreating}
       />
     );
   }
