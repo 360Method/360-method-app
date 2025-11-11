@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart } from "lucide-react";
+import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart, Sparkles, Brain, TrendingDown, Zap } from "lucide-react";
 import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -20,6 +20,8 @@ export default function Track() {
   const [filterDate, setFilterDate] = React.useState('all');
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [viewMode, setViewMode] = React.useState('timeline'); // 'timeline', 'analytics', 'systems'
+  const [aiInsights, setAiInsights] = React.useState(null);
+  const [generatingAI, setGeneratingAI] = React.useState(false);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -175,6 +177,118 @@ export default function Track() {
 
   const averageMonthlySpend = Object.values(monthlySpending).reduce((sum, val) => sum + val, 0) / 12;
 
+  // Generate AI Insights
+  const generateAIInsights = async () => {
+    if (systems.length === 0 && tasks.length === 0) {
+      alert("Please document some systems and maintenance tasks first to generate AI insights.");
+      return;
+    }
+
+    setGeneratingAI(true);
+    try {
+      const prompt = `You are an expert home maintenance analyst. Analyze this property's maintenance data and provide actionable insights.
+
+PROPERTY DATA:
+- Total systems documented: ${systems.length}
+- Total maintenance tasks completed: ${tasks.filter(t => t.status === 'Completed').length}
+- Total inspections completed: ${inspections.filter(i => i.status === 'Completed').length}
+- Total spent on maintenance: $${totalCost.toLocaleString()}
+- Average monthly spend (last 12 months): $${Math.round(averageMonthlySpend).toLocaleString()}
+
+SYSTEMS WITH AGE DATA:
+${systemHealthData.filter(s => s.age).map(s => 
+  `- ${s.system.system_type}: ${s.age} years old (${s.lifespanPercent.toFixed(0)}% of ${s.lifespan}-year lifespan), spent $${s.totalTaskCost.toLocaleString()}, condition: ${s.system.condition || 'Good'}`
+).join('\n')}
+
+SPENDING BY SYSTEM:
+${topCostSystems.map(([system, cost]) => `- ${system}: $${cost.toLocaleString()}`).join('\n')}
+
+MONTHLY SPENDING (Last 12 months):
+${Object.entries(monthlySpending).map(([month, amount]) => `${month}: $${amount.toLocaleString()}`).join('\n')}
+
+Provide comprehensive analysis in the following structure:
+1. Overall Assessment (2-3 sentences on property maintenance health)
+2. Top 3 Risks (systems/areas that need attention, with specific reasons)
+3. Spending Forecast (predict next 12 months spending based on patterns, system ages, and upcoming needs)
+4. Cost Optimization Tips (3-4 specific ways to reduce spending without compromising quality)
+5. Proactive Actions (3-4 specific preventive tasks to do in next 3-6 months based on system ages and patterns)
+6. Pattern Insights (notable patterns in spending, timing, or maintenance habits)
+
+Be specific, practical, and data-driven. Reference actual numbers and system names.`;
+
+      const analysis = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            overall_assessment: { type: "string" },
+            top_risks: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  system: { type: "string" },
+                  risk_level: { type: "string", enum: ["HIGH", "MEDIUM", "LOW"] },
+                  reason: { type: "string" },
+                  action: { type: "string" }
+                }
+              }
+            },
+            spending_forecast: {
+              type: "object",
+              properties: {
+                next_12_months_estimate: { type: "number" },
+                monthly_average_forecast: { type: "number" },
+                explanation: { type: "string" },
+                major_expenses_upcoming: { 
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      item: { type: "string" },
+                      timeframe: { type: "string" },
+                      estimated_cost: { type: "number" }
+                    }
+                  }
+                }
+              }
+            },
+            cost_optimization: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  tip: { type: "string" },
+                  potential_savings: { type: "string" }
+                }
+              }
+            },
+            proactive_actions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  action: { type: "string" },
+                  timeframe: { type: "string" },
+                  prevents: { type: "string" }
+                }
+              }
+            },
+            pattern_insights: { type: "array", items: { type: "string" } }
+          },
+          required: ["overall_assessment", "top_risks", "spending_forecast", "cost_optimization", "proactive_actions", "pattern_insights"]
+        }
+      });
+
+      setAiInsights(analysis);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      alert('Failed to generate AI insights. Please try again.');
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
   // Apply filters
   let filteredItems = timelineItems;
   
@@ -277,6 +391,227 @@ export default function Track() {
                   </Select>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Insights Button */}
+        {selectedProperty && (systems.length > 0 || tasks.length > 0) && !aiInsights && (
+          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Brain className="w-8 h-8 text-purple-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-purple-900 text-lg">AI-Powered Insights Available</h3>
+                    <p className="text-purple-800 text-sm mt-1">
+                      Get personalized analysis of your maintenance patterns, spending forecast, risk assessment, and optimization tips
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={generateAIInsights}
+                  disabled={generatingAI}
+                  className="gap-2 whitespace-nowrap"
+                  style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
+                >
+                  {generatingAI ? (
+                    <>
+                      <span className="animate-spin">⚙️</span>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Generate AI Insights
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Insights Display */}
+        {aiInsights && (
+          <Card className="border-2 border-purple-400 bg-gradient-to-r from-purple-50 to-blue-50 shadow-xl">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-purple-900">
+                  <Brain className="w-6 h-6" />
+                  AI-Powered Insights
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAiInsights(null)}
+                  className="text-purple-600"
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Overall Assessment */}
+              <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                <h4 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Overall Assessment
+                </h4>
+                <p className="text-gray-800">{aiInsights.overall_assessment}</p>
+              </div>
+
+              {/* Top Risks */}
+              {aiInsights.top_risks?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
+                  <h4 className="font-bold text-red-900 mb-3 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Top Risks to Address
+                  </h4>
+                  <div className="space-y-3">
+                    {aiInsights.top_risks.map((risk, idx) => (
+                      <div key={idx} className={`p-3 rounded border-l-4 ${
+                        risk.risk_level === 'HIGH' ? 'bg-red-50 border-red-500' :
+                        risk.risk_level === 'MEDIUM' ? 'bg-orange-50 border-orange-500' :
+                        'bg-yellow-50 border-yellow-500'
+                      }`}>
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="font-semibold text-gray-900">{risk.system}</span>
+                          <Badge className={
+                            risk.risk_level === 'HIGH' ? 'bg-red-600 text-white' :
+                            risk.risk_level === 'MEDIUM' ? 'bg-orange-600 text-white' :
+                            'bg-yellow-600 text-white'
+                          }>
+                            {risk.risk_level} RISK
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-2">{risk.reason}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          ✓ Action: {risk.action}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Spending Forecast */}
+              {aiInsights.spending_forecast && (
+                <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
+                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Spending Forecast (Next 12 Months)
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <p className="text-sm text-blue-800 mb-1">Total Estimated</p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        ${aiInsights.spending_forecast.next_12_months_estimate?.toLocaleString() || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <p className="text-sm text-blue-800 mb-1">Monthly Average</p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        ${aiInsights.spending_forecast.monthly_average_forecast?.toLocaleString() || 'N/A'}/mo
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-800 mb-3">{aiInsights.spending_forecast.explanation}</p>
+                  
+                  {aiInsights.spending_forecast.major_expenses_upcoming?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="font-semibold text-gray-900 mb-2">Major Expenses to Plan For:</p>
+                      <div className="space-y-2">
+                        {aiInsights.spending_forecast.major_expenses_upcoming.map((expense, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200">
+                            <div>
+                              <p className="font-medium text-gray-900">{expense.item}</p>
+                              <p className="text-xs text-gray-600">{expense.timeframe}</p>
+                            </div>
+                            <p className="font-bold text-gray-900">${expense.estimated_cost?.toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cost Optimization */}
+              {aiInsights.cost_optimization?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                  <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                    <TrendingDown className="w-5 h-5" />
+                    Cost Optimization Opportunities
+                  </h4>
+                  <div className="space-y-3">
+                    {aiInsights.cost_optimization.map((opt, idx) => (
+                      <div key={idx} className="flex items-start gap-3 p-3 bg-green-50 rounded border border-green-200">
+                        <DollarSign className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-800">{opt.tip}</p>
+                          <p className="text-xs font-semibold text-green-800 mt-1">
+                            💰 Potential savings: {opt.potential_savings}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Proactive Actions */}
+              {aiInsights.proactive_actions?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-200">
+                  <h4 className="font-bold text-orange-900 mb-3 flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Proactive Actions (Next 3-6 Months)
+                  </h4>
+                  <div className="space-y-3">
+                    {aiInsights.proactive_actions.map((action, idx) => (
+                      <div key={idx} className="p-3 bg-orange-50 rounded border border-orange-200">
+                        <div className="flex items-start justify-between mb-2">
+                          <p className="font-medium text-gray-900">{action.action}</p>
+                          <Badge variant="outline" className="text-xs bg-white">
+                            {action.timeframe}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          🛡️ Prevents: {action.prevents}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pattern Insights */}
+              {aiInsights.pattern_insights?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                  <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Pattern Insights
+                  </h4>
+                  <ul className="space-y-2">
+                    {aiInsights.pattern_insights.map((insight, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                        <span className="text-purple-600 font-bold mt-0.5">📊</span>
+                        <span>{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <Button
+                onClick={generateAIInsights}
+                disabled={generatingAI}
+                variant="outline"
+                className="w-full gap-2"
+                style={{ minHeight: '48px' }}
+              >
+                {generatingAI ? 'Regenerating...' : 'Regenerate Insights'}
+              </Button>
             </CardContent>
           </Card>
         )}
