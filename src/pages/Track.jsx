@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -5,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, DollarSign, Calendar, Download, Filter } from "lucide-react";
+import { Activity, DollarSign, Calendar, Download, Filter, BookOpen, Video, Calculator } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
 
@@ -178,6 +181,62 @@ export default function Track() {
             Export Report
           </Button>
         </div>
+
+        {/* Why Maintenance History Matters - Educational Section */}
+        {timelineItems.length > 0 && (
+          <Card className="border-2 border-blue-300 bg-blue-50">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <Activity className="w-6 h-6 text-blue-600" />
+                Why Maintenance History Matters
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Your maintenance history is proof of care. When selling, buyers pay $5-15K more for homes with documented maintenance. 
+                For insurance claims, photos + dates = faster payouts.
+              </p>
+              <div className="border-t border-blue-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=AWARE Phase"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Documentation Best Practices
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=AWARE Phase"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      Using Your Timeline (8 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("Resources")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Home Value Calculator
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">

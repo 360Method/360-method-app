@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -5,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, BookOpen, Video, Calculator } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function Schedule() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -79,6 +82,62 @@ export default function Schedule() {
             <p className="text-gray-600 mt-1">Calendar view of all scheduled maintenance</p>
           </div>
         </div>
+
+        {/* Why Strategic Scheduling Matters - Educational Section */}
+        {scheduledTasks.length > 0 && (
+          <Card className="border-2 border-purple-300 bg-purple-50">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                <CalendarIcon className="w-6 h-6 text-purple-600" />
+                Why Strategic Scheduling Matters
+              </h3>
+              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                Random maintenance = chaos. Strategic scheduling = smooth operations. Batch similar tasks, align with seasons, 
+                avoid peak contractor pricing. Planning saves 20-30% vs. emergency calls.
+              </p>
+              <div className="border-t border-purple-300 pt-4">
+                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
+                  📚 Learn More:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ResourceGuides") + "?category=ACT Phase"}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Strategic Scheduling Guide
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("VideoTutorials") + "?category=ACT Phase"}>
+                      <Video className="w-4 h-4 mr-2" />
+                      Seasonal Planning (14 min)
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <Link to={createPageUrl("ROICalculators")}>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Annual Budget Planner
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">
