@@ -14,17 +14,27 @@ import {
   Zap,
   Plus,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
 import PhaseProgressCard from "../components/dashboard/PhaseProgressCard";
+import UpgradePrompt from "../components/upgrade/UpgradePrompt";
+import TierBadge from "../components/upgrade/TierBadge";
 
 export default function Dashboard() {
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me(),
   });
 
   const { data: allSystems = [] } = useQuery({
@@ -36,6 +46,12 @@ export default function Dashboard() {
     queryKey: ['allMaintenanceTasks'],
     queryFn: () => base44.entities.MaintenanceTask.list(),
   });
+
+  const currentTier = user?.subscription_tier || 'free';
+  const propertyLimit = user?.property_limit || 1;
+  const isFreeTier = currentTier === 'free';
+  const isProTier = currentTier === 'pro';
+  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
 
   const avgHealthScore = properties.length > 0
     ? Math.round(properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length)
@@ -57,13 +73,54 @@ export default function Dashboard() {
   const totalSpent = properties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
   const totalPrevented = properties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
 
+  // Show upgrade prompt if free tier with 1 property and high baseline completion
+  React.useEffect(() => {
+    if (isFreeTier && properties.length === 1 && avgBaselineCompletion >= 66 && !showUpgradePrompt) {
+      const timer = setTimeout(() => setShowUpgradePrompt(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isFreeTier, properties.length, avgBaselineCompletion]);
+
   if (properties.length === 0) {
     return (
       <div className="min-h-screen bg-white">
         <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
-          <h1 className="font-bold mb-6" style={{ color: '#1B365D', fontSize: '28px' }}>
-            Welcome to 360° Method
-          </h1>
+          {/* Welcome Header with Tier Badge */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px' }}>
+              Welcome to 360° Method
+            </h1>
+            <TierBadge tier={currentTier} />
+          </div>
+          
+          {/* Free Tier Notice */}
+          {isFreeTier && (
+            <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">
+                      You're on the Free Tier
+                    </p>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Limited to 1 property. Upgrade to Pro for 3 properties or get unlimited with HomeCare/PropertyCare service.
+                    </p>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-100"
+                    >
+                      <Link to={createPageUrl("Upgrade")}>
+                        View Upgrade Options
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <Card className="border-none shadow-sm">
             <CardContent className="p-8 text-center">
@@ -92,15 +149,57 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white">
       <div className="mobile-container md:max-w-6xl md:mx-auto">
-        {/* Header */}
+        {/* Header with Tier Badge */}
         <div className="mb-6">
-          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-            Dashboard
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+              Dashboard
+            </h1>
+            <TierBadge tier={currentTier} />
+          </div>
           <p className="text-gray-600" style={{ fontSize: '16px' }}>
             Your property portfolio at a glance
           </p>
         </div>
+
+        {/* Contextual Upgrade Prompt */}
+        {showUpgradePrompt && isFreeTier && (
+          <div className="mb-6">
+            <UpgradePrompt
+              context="cascade_alerts"
+              onDismiss={() => setShowUpgradePrompt(false)}
+            />
+          </div>
+        )}
+
+        {/* Service Member Status */}
+        {isServiceMember && user?.operator_name && (
+          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-green-900 mb-1">
+                    ✨ Service Member
+                  </p>
+                  <p className="text-sm text-green-700">
+                    Your operator: <strong>{user.operator_name}</strong>
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="border-green-600 text-green-600"
+                >
+                  <Link to={createPageUrl("Services")}>
+                    Manage
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Today's Mission Card */}
         <Card className="border-none shadow-md mb-6" style={{ backgroundColor: '#FFF5F2' }}>
@@ -123,7 +222,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Key Metrics - Stack on mobile, grid on desktop */}
+        {/* Key Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
           <Card className="border-none shadow-sm">
             <CardContent className="p-4 text-center">
@@ -131,7 +230,9 @@ export default function Dashboard() {
               <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>
                 {properties.length}
               </p>
-              <p className="text-sm text-gray-600">Properties</p>
+              <p className="text-sm text-gray-600">
+                {isFreeTier ? `of ${propertyLimit}` : 'Properties'}
+              </p>
             </CardContent>
           </Card>
 
@@ -166,12 +267,19 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Health Score - Full width on mobile */}
+        {/* Health Score */}
         <Card className="border-none shadow-sm mb-6">
           <CardHeader className="pb-3">
-            <CardTitle style={{ color: '#1B365D', fontSize: '18px' }}>
-              Portfolio Health Score
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle style={{ color: '#1B365D', fontSize: '18px' }}>
+                Portfolio Health Score
+              </CardTitle>
+              {isFreeTier && (
+                <Badge variant="outline" className="text-xs">
+                  Limited on Free
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <HealthScoreGauge score={avgHealthScore} />
@@ -215,7 +323,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Phase Progress Cards - Stack on mobile */}
+        {/* Phase Progress Cards */}
         <div className="space-y-4 md:grid md:grid-cols-3 md:gap-4 md:space-y-0 mb-6">
           <PhaseProgressCard
             phase="AWARE"
@@ -248,9 +356,9 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* High Priority Alert - Mobile optimized */}
+        {/* High Priority Alert */}
         {highPriorityTasks > 0 && (
-          <Card className="border-2 mobile-card" style={{ borderColor: '#DC3545', backgroundColor: '#FFF5F5' }}>
+          <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#DC3545', backgroundColor: '#FFF5F5' }}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 flex-shrink-0 text-red-600 mt-1" />
@@ -271,6 +379,40 @@ export default function Dashboard() {
                     </Link>
                   </Button>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Free Tier CTA at bottom */}
+        {isFreeTier && !showUpgradePrompt && avgBaselineCompletion >= 33 && (
+          <Card className="border-2 border-purple-300 bg-purple-50">
+            <CardContent className="p-6 text-center">
+              <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-600" />
+              <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                Ready for More?
+              </h3>
+              <p className="text-gray-700 mb-4">
+                Unlock advanced features, add more properties, or get professional help.
+              </p>
+              <div className="flex flex-col md:flex-row gap-3 justify-center">
+                <Button
+                  asChild
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Upgrade")}>
+                    Upgrade to Pro - $8/month
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("HomeCare")}>
+                    Explore HomeCare Service
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
