@@ -29,30 +29,44 @@ const UPGRADE_IMPORTANCE = {
 };
 
 export default function UpgradeCard({ upgrade, onEdit }) {
+  // Safety checks for upgrade object
+  if (!upgrade) {
+    return null;
+  }
+
   const paybackMonths = upgrade.roi_timeline_months || 0;
   const paybackYears = (paybackMonths / 12).toFixed(1);
+  const investmentRequired = upgrade.investment_required || 0;
+  const annualSavings = upgrade.annual_savings || 0;
+  const propertyValueImpact = upgrade.property_value_impact || 0;
 
   return (
     <Card className="border-none shadow-lg hover:shadow-xl transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between mb-2">
-          <CardTitle className="text-xl">{upgrade.title}</CardTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onEdit}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
+          <CardTitle className="text-xl">{upgrade.title || 'Untitled Upgrade'}</CardTitle>
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onEdit}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         <div className="flex gap-2">
-          <Badge className={CATEGORY_COLORS[upgrade.category]}>
-            {upgrade.category}
-          </Badge>
-          <Badge className={STATUS_COLORS[upgrade.status]}>
-            {upgrade.status}
-          </Badge>
+          {upgrade.category && (
+            <Badge className={CATEGORY_COLORS[upgrade.category] || "bg-gray-100 text-gray-800"}>
+              {upgrade.category}
+            </Badge>
+          )}
+          {upgrade.status && (
+            <Badge className={STATUS_COLORS[upgrade.status] || "bg-gray-100 text-gray-800"}>
+              {upgrade.status}
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
@@ -62,17 +76,19 @@ export default function UpgradeCard({ upgrade, onEdit }) {
         )}
 
         {/* Why Upgrade Section */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-bold text-blue-900 mb-2">💡 Why Upgrade:</h4>
-              <p className="text-sm text-gray-800 leading-relaxed">
-                {UPGRADE_IMPORTANCE[upgrade.category]}
-              </p>
+        {upgrade.category && UPGRADE_IMPORTANCE[upgrade.category] && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-blue-900 mb-2">💡 Why Upgrade:</h4>
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {UPGRADE_IMPORTANCE[upgrade.category]}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {(upgrade.current_state || upgrade.upgraded_state) && (
           <div className="grid md:grid-cols-2 gap-4">
@@ -97,7 +113,7 @@ export default function UpgradeCard({ upgrade, onEdit }) {
             <div>
               <p className="text-xs text-gray-600">Investment</p>
               <p className="font-bold text-gray-900">
-                ${(upgrade.investment_required || 0).toLocaleString()}
+                ${investmentRequired.toLocaleString()}
               </p>
             </div>
           </div>
@@ -107,13 +123,13 @@ export default function UpgradeCard({ upgrade, onEdit }) {
             <div>
               <p className="text-xs text-gray-600">Annual Savings</p>
               <p className="font-bold text-green-700">
-                ${(upgrade.annual_savings || 0).toLocaleString()}
+                ${annualSavings.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
-        {paybackMonths > 0 && upgrade.annual_savings > 0 && (
+        {paybackMonths > 0 && annualSavings > 0 && investmentRequired > 0 && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -125,16 +141,16 @@ export default function UpgradeCard({ upgrade, onEdit }) {
               </span>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              ROI: {((upgrade.annual_savings / upgrade.investment_required) * 100).toFixed(1)}% per year
+              ROI: {((annualSavings / investmentRequired) * 100).toFixed(1)}% per year
             </p>
           </div>
         )}
 
-        {upgrade.property_value_impact > 0 && (
+        {propertyValueImpact > 0 && (
           <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <span className="text-sm font-medium text-gray-700">Property Value Impact:</span>
             <span className="text-lg font-bold text-blue-700">
-              +${upgrade.property_value_impact.toLocaleString()}
+              +${propertyValueImpact.toLocaleString()}
             </span>
           </div>
         )}
