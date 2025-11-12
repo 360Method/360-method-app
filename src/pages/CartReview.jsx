@@ -1134,6 +1134,21 @@ www.360method.com
           {/* Right Column - Summary & Actions */}
           <div className="lg:col-span-1">
             <div className="sticky top-4 space-y-4">
+              {/* AI Disclaimer at Top */}
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-red-900 mb-1">
+                      AI Estimates - Not Final Quotes
+                    </p>
+                    <p className="text-xs text-red-800 leading-relaxed">
+                      All estimates are AI-generated for planning. Your operator provides official pricing after reviewing conditions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Cost Summary */}
               <Card className="border-2 border-purple-300">
                 <CardHeader className="bg-purple-50">
@@ -1171,9 +1186,12 @@ www.360method.com
                     )}
                   </div>
                   <div className="flex justify-between text-lg font-bold pt-3 border-t" style={{ color: '#8B5CF6' }}>
-                    <span>Your Cost:</span>
+                    <span>Est. Total:</span>
                     <span>${Math.round((finalCostMin + finalCostMax) / 2).toLocaleString()}</span>
                   </div>
+                  <p className="text-xs text-orange-600 font-semibold italic">
+                    * AI estimate - not a binding quote
+                  </p>
                   {isMember && (memberDiscountAmount + hourBucketSavings) > 0 && (
                     <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
                       <p className="text-sm font-semibold text-green-900">You Save</p>
