@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -811,19 +810,21 @@ export default function Inspect() {
         }}
       />
 
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onClose={() => {
-          setDeleteConfirmOpen(false);
-          setInspectionToDelete(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Inspection?"
-        message={getDeleteMessage()}
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
-        variant="destructive"
-      />
+      {deleteConfirmOpen && (
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          onClose={() => {
+            setDeleteConfirmOpen(false);
+            setInspectionToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          title="Delete Inspection?"
+          message={getDeleteMessage()}
+          confirmText="Yes, Delete"
+          cancelText="Cancel"
+          variant="destructive"
+        />
+      )}
     </div>
   );
 }

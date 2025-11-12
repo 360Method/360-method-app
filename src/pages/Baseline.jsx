@@ -1223,19 +1223,21 @@ export default function Baseline() {
           }}
         />
 
-        <ConfirmDialog
-          open={showDeleteDialog}
-          onClose={() => {
-            setShowDeleteDialog(false);
-            setDeletingSystem(null);
-          }}
-          onConfirm={handleConfirmDelete}
-          title="Delete System Documentation?"
-          message={getDeleteMessage()}
-          confirmText="Yes, Delete"
-          cancelText="Cancel"
-          variant="destructive"
-        />
+        {showDeleteDialog && (
+          <ConfirmDialog
+            open={showDeleteDialog}
+            onClose={() => {
+              setShowDeleteDialog(false);
+              setDeletingSystem(null);
+            }}
+            onConfirm={handleConfirmDelete}
+            title="Delete System Documentation?"
+            message={getDeleteMessage()}
+            confirmText="Yes, Delete"
+            cancelText="Cancel"
+            variant="destructive"
+          />
+        )}
       </div>
     </div>
   );

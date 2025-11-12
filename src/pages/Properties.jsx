@@ -548,16 +548,18 @@ This action cannot be undone.`;
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={!!deletingProperty}
-        onClose={() => setDeletingProperty(null)}
-        onConfirm={confirmDelete}
-        title="Delete Property?"
-        message={getDeleteMessage()}
-        confirmText="Yes, Delete Property"
-        cancelText="Cancel"
-        variant="destructive"
-      />
+      {deletingProperty && (
+        <ConfirmDialog
+          open={!!deletingProperty}
+          onClose={() => setDeletingProperty(null)}
+          onConfirm={confirmDelete}
+          title="Delete Property?"
+          message={getDeleteMessage()}
+          confirmText="Yes, Delete Property"
+          cancelText="Cancel"
+          variant="destructive"
+        />
+      )}
     </div>
   );
 }
