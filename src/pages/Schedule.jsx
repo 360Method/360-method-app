@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,10 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Lightbulb, Target, Clock, CheckCircle2, List, Grid3x3, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday, isValid, parseISO } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
+
+// Helper function to safely parse and validate dates
+const safeParseDate = (dateValue) => {
+  if (!dateValue) return null;
+  
+  try {
+    const date = typeof dateValue === 'string' ? parseISO(dateValue) : new Date(dateValue);
+    return isValid(date) ? date : null;
+  } catch (error) {
+    console.error('Error parsing date:', dateValue, error);
+    return null;
+  }
+};
 
 // Helper function to format estimated hours - with null safety
 const formatEstimatedTime = (hours) => {
@@ -61,9 +73,9 @@ export default function Schedule() {
   const [showDialog, setShowDialog] = React.useState(false);
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [taskFormDate, setTaskFormDate] = React.useState(null);
-  const [viewMode, setViewMode] = React.useState('month'); // 'month' or 'week'
-  const [expandedGroups, setExpandedGroups] = React.useState({}); // Track which groups are expanded
-  const [schedulePopoverStates, setSchedulePopoverStates] = React.useState({}); // Track popover states per task
+  const [viewMode, setViewMode] = React.useState('month');
+  const [expandedGroups, setExpandedGroups] = React.useState({});
+  const [schedulePopoverStates, setSchedulePopoverStates] = React.useState({});
 
   const queryClient = useQueryClient();
 
@@ -86,7 +98,6 @@ export default function Schedule() {
     }
   }, [properties, selectedProperty]);
 
-  // Calculate date ranges based on view mode
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const weekStart = startOfWeek(currentMonth);
@@ -96,16 +107,14 @@ export default function Schedule() {
     ? eachDayOfInterval({ start: monthStart, end: monthEnd })
     : eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  // Get scheduled tasks (not completed)
   const scheduledTasks = tasks.filter(t => t.scheduled_date && t.status !== 'Completed');
   const unscheduledTasks = tasks.filter(t => !t.scheduled_date && t.status !== 'Completed');
   const completedThisMonth = tasks.filter(t => {
     if (t.status !== 'Completed' || !t.completion_date) return false;
-    const completionDate = new Date(t.completion_date);
-    return isSameMonth(completionDate, currentMonth);
+    const completionDate = safeParseDate(t.completion_date);
+    return completionDate && isSameMonth(completionDate, currentMonth);
   }).length;
 
-  // NEW: Group unscheduled tasks by system_type
   const groupedUnscheduledTasks = React.useMemo(() => {
     const groups = {};
     
@@ -117,12 +126,10 @@ export default function Schedule() {
       groups[systemType].push(task);
     });
 
-    // Sort groups: prioritize groups with High priority tasks, then by task count
     const sortedGroups = Object.entries(groups).sort((a, b) => {
       const [systemA, tasksA] = a;
       const [systemB, tasksB] = b;
       
-      // Count high priority tasks in each group
       const highPriorityA = tasksA.filter(t => t.priority === 'High').length;
       const highPriorityB = tasksB.filter(t => t.priority === 'High').length;
       
@@ -130,14 +137,12 @@ export default function Schedule() {
         return highPriorityB - highPriorityA;
       }
       
-      // Then by total task count
       return tasksB.length - tasksA.length;
     });
 
     return sortedGroups;
   }, [unscheduledTasks]);
 
-  // Initialize all groups as expanded
   React.useEffect(() => {
     const initialExpanded = {};
     groupedUnscheduledTasks.forEach(([systemType]) => {
@@ -167,8 +172,8 @@ export default function Schedule() {
 
   const getTasksForDate = (date) => {
     return scheduledTasks.filter(t => {
-      const taskDate = new Date(t.scheduled_date);
-      return isSameDay(taskDate, date);
+      const taskDate = safeParseDate(t.scheduled_date);
+      return taskDate && isSameDay(taskDate, date);
     });
   };
 
@@ -194,27 +199,35 @@ export default function Schedule() {
   };
 
   const handleQuickSchedule = (taskId, date) => {
-    updateTaskMutation.mutate({
-      taskId,
-      updates: {
-        scheduled_date: format(date, 'yyyy-MM-dd'),
-        status: 'Scheduled'
-      }
-    });
-    // Close the popover for this task
-    setSchedulePopoverStates(prev => ({ ...prev, [taskId]: false }));
+    if (!date) return;
+    
+    try {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      updateTaskMutation.mutate({
+        taskId,
+        updates: {
+          scheduled_date: formattedDate,
+          status: 'Scheduled'
+        }
+      });
+      setSchedulePopoverStates(prev => ({ ...prev, [taskId]: false }));
+    } catch (error) {
+      console.error('Error scheduling task:', error);
+    }
   };
 
   const tasksThisWeek = scheduledTasks.filter(t => {
-    const taskDate = new Date(t.scheduled_date);
+    const taskDate = safeParseDate(t.scheduled_date);
+    if (!taskDate) return false;
+    
     const today = new Date();
     const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     return taskDate >= today && taskDate <= weekFromNow;
   }).length;
 
   const tasksThisMonth = scheduledTasks.filter(t => {
-    const taskDate = new Date(t.scheduled_date);
-    return isSameMonth(taskDate, currentMonth);
+    const taskDate = safeParseDate(t.scheduled_date);
+    return taskDate && isSameMonth(taskDate, currentMonth);
   }).length;
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
@@ -245,7 +258,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        {/* Why Scheduling Matters - PROMINENT */}
+        {/* Why Scheduling Matters */}
         <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl" style={{ color: '#1B365D' }}>
@@ -313,7 +326,7 @@ export default function Schedule() {
           </CardContent>
         </Card>
 
-        {/* Property Selector & Stats - Mobile First */}
+        {/* Property Selector */}
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">
             <CardContent className="p-4 md:p-6">
@@ -334,7 +347,6 @@ export default function Schedule() {
                   </Select>
                 </div>
 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center border-2 border-blue-300">
                     <p className="text-xs text-gray-600 mb-1">This Week</p>
@@ -363,7 +375,7 @@ export default function Schedule() {
           />
         )}
 
-        {/* NEW: Enhanced Unscheduled Tasks - Grouped by System */}
+        {/* Enhanced Unscheduled Tasks */}
         {unscheduledTasks.length > 0 && (
           <Card className="border-2 border-orange-300 bg-orange-50 shadow-xl">
             <CardHeader className="pb-3">
@@ -395,7 +407,6 @@ export default function Schedule() {
                           : 'border-orange-200 bg-white'
                       }`}
                     >
-                      {/* Group Header - Clickable */}
                       <button
                         onClick={() => toggleGroup(systemType)}
                         className="w-full p-4 flex items-center justify-between hover:bg-orange-50 transition-colors rounded-t-lg"
@@ -429,7 +440,6 @@ export default function Schedule() {
                         )}
                       </button>
 
-                      {/* Group Content - Collapsible */}
                       {isExpanded && (
                         <div className="px-4 pb-4 space-y-2 border-t border-orange-200">
                           {tasksInGroup.map(task => {
@@ -460,7 +470,6 @@ export default function Schedule() {
                                   </Badge>
                                 </div>
 
-                                {/* Time Estimate Display */}
                                 {estimatedTime && (
                                   <div className="flex items-center gap-1 mb-2">
                                     <Clock className="w-3 h-3 text-blue-600" />
@@ -503,7 +512,6 @@ export default function Schedule() {
                 })}
               </div>
 
-              {/* Summary Stats at Bottom */}
               <div className="mt-4 bg-white rounded-lg p-3 border-2 border-orange-200">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-700">
@@ -553,7 +561,6 @@ export default function Schedule() {
               </CardTitle>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {/* View Mode Toggle */}
                 <div className="flex bg-white rounded-lg border-2 border-gray-300 overflow-hidden">
                   <Button
                     variant={viewMode === 'month' ? 'default' : 'ghost'}
@@ -577,7 +584,6 @@ export default function Schedule() {
                   </Button>
                 </div>
 
-                {/* Navigation */}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -610,7 +616,6 @@ export default function Schedule() {
           
           <CardContent className="p-2 md:p-4">
             <div className={`grid ${viewMode === 'month' ? 'grid-cols-7' : 'grid-cols-1'} gap-2`}>
-              {/* Day headers for month view */}
               {viewMode === 'month' && ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="text-center font-semibold text-xs md:text-sm text-gray-600 py-2">
                   <span className="hidden md:inline">{day}</span>
@@ -618,12 +623,10 @@ export default function Schedule() {
                 </div>
               ))}
 
-              {/* Empty cells for days before month starts (month view only) */}
               {viewMode === 'month' && Array.from({ length: monthStart.getDay() }).map((_, i) => (
                 <div key={`empty-${i}`} className="h-20 md:h-28 border rounded-lg bg-gray-50" />
               ))}
 
-              {/* Calendar days */}
               {daysToShow.map(date => {
                 const tasksForDay = getTasksForDate(date);
                 const isDateToday = isToday(date);
@@ -679,7 +682,6 @@ export default function Schedule() {
                   );
                 }
 
-                // Month view
                 return (
                   <div
                     key={date.toISOString()}

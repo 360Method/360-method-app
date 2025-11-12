@@ -5,7 +5,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, CheckCircle2, Edit, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
+
+// Safe date formatting helper
+const safeFormatDate = (date, formatString) => {
+  if (!date) return '';
+  
+  try {
+    const parsedDate = typeof date === 'string' ? parseISO(date) : new Date(date);
+    return isValid(parsedDate) ? format(parsedDate, formatString) : '';
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return '';
+  }
+};
 
 export default function TaskDialog({ open, onClose, selectedDate, propertyId, existingTasks, onAddTask }) {
   const queryClient = useQueryClient();
@@ -26,11 +39,14 @@ export default function TaskDialog({ open, onClose, selectedDate, propertyId, ex
   });
 
   const handleCompleteTask = (taskId) => {
+    const today = new Date();
+    const formattedDate = format(today, 'yyyy-MM-dd');
+    
     updateTaskMutation.mutate({
       taskId,
       updates: {
         status: 'Completed',
-        completion_date: format(new Date(), 'yyyy-MM-dd')
+        completion_date: formattedDate
       }
     });
   };
@@ -47,13 +63,16 @@ export default function TaskDialog({ open, onClose, selectedDate, propertyId, ex
 
   if (!selectedDate) return null;
 
+  const dateDisplay = safeFormatDate(selectedDate, 'EEEE, MMMM d, yyyy');
+  const shortDateDisplay = safeFormatDate(selectedDate, 'MMM d');
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-white max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl" style={{ color: '#1B365D' }}>
             <Calendar className="w-6 h-6 text-blue-600" />
-            {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            {dateDisplay || 'Selected Date'}
           </DialogTitle>
         </DialogHeader>
 
@@ -168,7 +187,7 @@ export default function TaskDialog({ open, onClose, selectedDate, propertyId, ex
                 style={{ backgroundColor: '#28A745', minHeight: '48px' }}
               >
                 <Plus className="w-5 h-5" />
-                Schedule Task for {format(selectedDate, 'MMM d')}
+                Schedule Task for {shortDateDisplay || 'This Date'}
               </Button>
             </div>
           )}

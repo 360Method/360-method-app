@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 import AddToCartDialog from "../cart/AddToCartDialog";
 
@@ -40,6 +40,19 @@ const GENERIC_CASCADE_EXAMPLES = {
   "General": "Small issue → Secondary damage → Tertiary failures → Emergency repair at 3X cost"
 };
 
+// Safe date formatting
+const safeFormatDate = (dateValue, formatString) => {
+  if (!dateValue) return null;
+  
+  try {
+    const date = typeof dateValue === 'string' ? parseISO(dateValue) : new Date(dateValue);
+    return isValid(date) ? format(date, formatString) : null;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return null;
+  }
+};
+
 export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, propertyId }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
@@ -53,10 +66,18 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
     || GENERIC_CASCADE_EXAMPLES["General"];
 
   const handleDateSelect = (date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    onStatusChange(task.id, 'Scheduled', formattedDate);
-    setSchedulePopoverOpen(false);
+    if (!date) return;
+    
+    try {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      onStatusChange(task.id, 'Scheduled', formattedDate);
+      setSchedulePopoverOpen(false);
+    } catch (error) {
+      console.error('Error selecting date:', error);
+    }
   };
+
+  const scheduledDateDisplay = safeFormatDate(task.scheduled_date, 'MMM d');
 
   return (
     <>
@@ -85,9 +106,9 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                       ⚠️ Cascade
                     </Badge>
                   )}
-                  {task.scheduled_date && (
+                  {task.scheduled_date && scheduledDateDisplay && (
                     <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
-                      📅 {format(new Date(task.scheduled_date), 'MMM d')}
+                      📅 {scheduledDateDisplay}
                     </Badge>
                   )}
                 </div>
@@ -151,7 +172,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={task.scheduled_date ? new Date(task.scheduled_date) : new Date()}
+                  selected={task.scheduled_date ? safeFormatDate(task.scheduled_date, 'yyyy-MM-dd') : new Date()}
                   onSelect={handleDateSelect}
                 />
               </PopoverContent>
