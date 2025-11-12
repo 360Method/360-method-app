@@ -66,15 +66,20 @@ export default function CartDrawer() {
 
   return (
     <>
-      {/* Floating Cart Button */}
+      {/* Floating Cart Button - Mobile Optimized */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 md:bottom-6 right-6 bg-purple-600 text-white rounded-full p-4 shadow-lg hover:bg-purple-700 transition-all hover:scale-110 z-[60]"
-        style={{ minHeight: '56px', minWidth: '56px' }}
+        className="fixed bottom-24 md:bottom-8 right-4 md:right-6 bg-purple-600 text-white rounded-full shadow-xl hover:bg-purple-700 transition-all hover:scale-110 z-[90]"
+        style={{ 
+          minHeight: '64px', 
+          minWidth: '64px',
+          padding: '16px'
+        }}
+        aria-label="Shopping Cart"
       >
-        <ShoppingCart className="w-6 h-6" />
+        <ShoppingCart className="w-8 h-8" />
         {cartItems.length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-sm font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center px-2 shadow-lg animate-pulse">
             {cartItems.length}
           </span>
         )}
@@ -84,13 +89,13 @@ export default function CartDrawer() {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/50 z-[70] md:hidden"
+          className="fixed inset-0 bg-black/60 z-[95]"
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[80] ${
+        className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[100] ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
