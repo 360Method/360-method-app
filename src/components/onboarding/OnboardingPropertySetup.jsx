@@ -68,7 +68,8 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
     });
   };
 
-  const handleOperatorFound = (operator) => {
+  const handleOperatorCheck = (operator) => {
+    // Always set operator data, even if no operator found
     setOperatorData({
       operator_id: operator?.id || null,
       operator_available: !!operator,
@@ -187,7 +188,7 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
           {selectedPlace.zip_code && (
             <OperatorAvailabilityCheck
               zipCode={selectedPlace.zip_code}
-              onOperatorFound={handleOperatorFound}
+              onOperatorFound={handleOperatorCheck}
             />
           )}
         </>
