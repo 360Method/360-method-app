@@ -57,6 +57,20 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
   const [appliedFields, setAppliedFields] = React.useState({});
 
+  // Reset AI property data state when returning to this step
+  React.useEffect(() => {
+    if (data.address_verified && !propertyDataFetched && !loadingPropertyData && data.formatted_address) {
+      // Automatically fetch property data if address is already verified
+      fetchPropertyData({
+        street_address: data.street_address,
+        unit_number: data.unit_number,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zip_code
+      });
+    }
+  }, []);
+
   const handleAddressSelect = async (addressData) => {
     const climateZone = getClimateZone(addressData.state);
     
