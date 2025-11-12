@@ -371,7 +371,14 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
 
           {formData.coordinates && (
             <div className="mt-4">
-              <AddressVerificationMap coordinates={formData.coordinates} />
+              <AddressVerificationMap 
+                coordinates={formData.coordinates} 
+                address={formData.formatted_address}
+                onConfirm={() => {
+                  // Optional: Handle map confirmation if needed
+                  console.log('Map location confirmed');
+                }}
+              />
             </div>
           )}
         </CardContent>

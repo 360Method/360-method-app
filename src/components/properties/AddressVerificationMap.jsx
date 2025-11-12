@@ -10,6 +10,13 @@ export default function AddressVerificationMap({ coordinates, address, onConfirm
   const mapRef = React.useRef(null);
   const fullscreenMapRef = React.useRef(null);
 
+  // Debug: Check if onConfirm is provided
+  React.useEffect(() => {
+    if (onConfirm && typeof onConfirm !== 'function') {
+      console.error('AddressVerificationMap: onConfirm is not a function', typeof onConfirm);
+    }
+  }, [onConfirm]);
+
   React.useEffect(() => {
     if (!coordinates || !window.google) return;
 
@@ -54,7 +61,10 @@ export default function AddressVerificationMap({ coordinates, address, onConfirm
 
   const handleConfirm = () => {
     setConfirmed(true);
-    onConfirm();
+    // Only call onConfirm if it's provided and is a function
+    if (onConfirm && typeof onConfirm === 'function') {
+      onConfirm();
+    }
   };
 
   if (!coordinates) return null;
