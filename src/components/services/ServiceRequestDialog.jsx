@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -41,14 +42,27 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData = {}
     queryFn: () => base44.auth.me(),
   });
 
+  // Update form data when prefilledData changes and dialog is open
   React.useEffect(() => {
-    if (prefilledData.property_id && !formData.property_id) {
-      setFormData(prev => ({ ...prev, property_id: prefilledData.property_id }));
+    if (open && prefilledData) {
+      setFormData(prev => ({
+        ...prev,
+        property_id: prefilledData.property_id || prev.property_id || "",
+        task_id: prefilledData.task_id || null,
+        service_type: prefilledData.service_type || prev.service_type || "",
+        description: prefilledData.description || prev.description || "",
+        urgency: prefilledData.urgency || prev.urgency || "Medium"
+      }));
     }
-  }, [prefilledData.property_id]);
+  }, [open, prefilledData]);
 
   const createServiceRequestMutation = useMutation({
     mutationFn: async (data) => {
+      // Validate property_id exists
+      if (!data.property_id) {
+        throw new Error('Property ID is required');
+      }
+
       const serviceRequest = await base44.entities.ServiceRequest.create({
         property_id: data.property_id,
         task_id: data.task_id,
@@ -121,6 +135,13 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate property_id before submission
+    if (!formData.property_id) {
+      console.error('Cannot submit: property_id is required');
+      return;
+    }
+    
     createServiceRequestMutation.mutate(formData);
   };
 
@@ -181,7 +202,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
           </div>
 
           {/* Pre-filled task details if from Priority Queue */}
-          {prefilledData.task_id && (
+          {prefilledData?.task_id && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4" style={{ backgroundColor: '#EFF6FF', opacity: 1 }}>
               <h4 className="font-semibold text-blue-900 mb-2">Task Details (auto-filled)</h4>
               <p className="text-sm text-gray-800 mb-2">
@@ -209,7 +230,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               required
               style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
             />
-            {prefilledData.notes && (
+            {prefilledData?.notes && (
               <p className="text-xs text-gray-600 mt-1">
                 Your notes: "{prefilledData.notes}"
               </p>
@@ -413,7 +434,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
             </Button>
             <Button
               type="submit"
-              disabled={createServiceRequestMutation.isPending}
+              disabled={createServiceRequestMutation.isPending || !formData.property_id}
               className="flex-1"
               style={{ backgroundColor: '#28A745', color: '#FFFFFF' }}
             >
