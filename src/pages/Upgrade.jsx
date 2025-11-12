@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -38,13 +37,14 @@ export default function Upgrade() {
   const searchParams = new URLSearchParams(location.search);
   const showNewForm = searchParams.get('new') === 'true';
   const templateIdFromUrl = searchParams.get('template');
+  const propertyIdFromUrl = searchParams.get('property');
 
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);
   const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
 
   // New states for filters and educational section
-  const [selectedProperty, setSelectedProperty] = React.useState(null);
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedUpgrade, setSelectedUpgrade] = React.useState(null);
@@ -70,9 +70,18 @@ export default function Upgrade() {
   });
 
   const { data: allUpgrades = [] } = useQuery({
-    queryKey: ['upgrades'],
-    queryFn: () => base44.entities.Upgrade.list('-created_date'),
+    queryKey: ['upgrades', selectedProperty],
+    queryFn: () => selectedProperty 
+      ? base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date')
+      : base44.entities.Upgrade.list('-created_date'),
+    enabled: !!selectedProperty || properties.length === 0,
   });
+
+  React.useEffect(() => {
+    if (!selectedProperty && properties.length > 0) {
+      setSelectedProperty(properties[0].id);
+    }
+  }, [properties, selectedProperty]);
 
   const activeProjects = allUpgrades.filter(u =>
     u.status === 'Planned' || u.status === 'In Progress'
@@ -159,6 +168,27 @@ export default function Upgrade() {
             Strategic improvements that increase property value and ROI
           </p>
         </div>
+
+        {/* Property Selector */}
+        {properties.length > 0 && (
+          <Card className="border-none shadow-lg mb-6">
+            <CardContent className="p-4 md:p-6">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
+              <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
+                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                  <SelectValue placeholder="Select a property" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.address}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Why This Step Matters - Educational Card */}
         <Card className="mb-6 border-2 border-green-200 bg-green-50">
