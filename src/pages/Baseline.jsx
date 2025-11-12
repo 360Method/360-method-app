@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
@@ -206,6 +206,7 @@ export default function Baseline() {
   const [showWizard, setShowWizard] = React.useState(false);
   const [showPhysicalWalkthrough, setShowPhysicalWalkthrough] = React.useState(false);
   const [recentMilestone, setRecentMilestone] = React.useState(null);
+  const [whyExpanded, setWhyExpanded] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -619,6 +620,55 @@ export default function Baseline() {
             Document your property's systems to unlock powerful insights
           </p>
         </div>
+
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Why Baseline Matters</h3>
+                <p className="text-sm text-blue-800">
+                  Your baseline is the foundation of the 360° Method. Without knowing what you have, you can't protect it, plan for it, or improve it effectively.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Baseline is Step 1 of the AWARE phase. It creates your property's "digital twin" - a complete inventory of every major system with age, condition, and maintenance history. This knowledge powers every subsequent step in the method.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 What This Unlocks:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Inspect</strong> becomes faster - you know what to check and where</li>
+                    <li>• <strong>Track</strong> can show trends - system age vs. maintenance costs</li>
+                    <li>• <strong>Prioritize</strong> gets smarter - AI understands your property's unique profile</li>
+                    <li>• <strong>Preserve</strong> forecasts accurately - based on real system ages and lifespans</li>
+                  </ul>
+                </div>
+                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
+                  <p className="text-xs text-blue-900">
+                    <strong>Pro Tip:</strong> Document at least the 6 required systems to unlock ACT phase features. Complete all systems for full 360° Method capabilities.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Property Selector - MOVED UP */}
         {properties.length > 0 && (
