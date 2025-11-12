@@ -7,20 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress"; // New import
+import { Progress } from "@/components/ui/progress";
 import {
   Shield,
   AlertTriangle,
-  Clock, // New import
+  Clock,
   DollarSign,
   TrendingUp,
-  Home, // New import
+  Home,
   Calendar,
-  Lightbulb, // Preserved as it's used
-  CheckCircle2, // Preserved as it's used
-  Sparkles, // Preserved as it's used
-  ChevronRight, // New import
-  ChevronDown // New import
+  Lightbulb,
+  CheckCircle2,
+  Sparkles,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import SystemLifecycleCard from "../components/preserve/SystemLifecycleCard";
 import ExpenseForecast from "../components/preserve/ExpenseForecast";
@@ -32,11 +32,11 @@ export default function Preserve() {
   const propertyIdFromUrl = urlParams.get('property');
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [systemFilter, setSystemFilter] = React.useState("all"); // New state
-  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state
+  const [systemFilter, setSystemFilter] = React.useState("all");
+  const [whyExpanded, setWhyExpanded] = React.useState(false);
   const [preservationData, setPreservationData] = React.useState(null);
   const [loadingPreservation, setLoadingPreservation] = React.useState(false);
-  const [selectedOpportunity, setSelectedOpportunity] = React.useRef(null); // Changed to useRef to avoid re-renders for selectedOpportunity
+  const [selectedOpportunity, setSelectedOpportunity] = React.useState(null); // Changed from useRef to useState as per outline
   const [aiPlan, setAiPlan] = React.useState(null);
   const [loadingAiPlan, setLoadingAiPlan] = React.useState(false);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
@@ -124,12 +124,6 @@ export default function Preserve() {
   const preservationScore = preservationData ? Math.min(10, 10 - (preservationData.opportunities.length * 1.5)).toFixed(1) : 0;
 
   const handleViewDetails = async (opportunity) => {
-    setSelectedOpportunity(opportunity); // This might cause an issue with state not updating immediately for the dialog due to useRef
-    // For dialog to open, it needs to be a state, so reverting to useState or making a separate state for dialog control
-    // Reverting `selectedOpportunity` to useState to properly control the dialog opening
-    // This is a correction to my earlier thought process. Dialog needs to re-render when selectedOpportunity changes.
-    // However, the original code used setSelectedOpportunity as a state, I will stick to that or use a separate state to control the dialog visibility.
-    // The previous outline was referencing `setSelectedOpportunity` as a useState, so I'll keep it as useState and modify the dialog open prop.
     setSelectedOpportunity(opportunity);
     setLoadingAiPlan(true);
     
@@ -147,7 +141,6 @@ export default function Preserve() {
     // Safety check for selectedProperty
     if (!selectedProperty) {
       console.error('No property selected');
-      // Optionally, show a user-friendly message
       return;
     }
 
@@ -222,11 +215,11 @@ Please provide a quote for these preservation services.`
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Lifecycle Intelligence:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Replacement forecasting:</strong> See when major systems will need replacement (2-15 years out)</li>
-                    <li>• <strong>Budget planning:</strong> Understand capital expense needs by year</li>
-                    <li>• <strong>Lifespan optimization:</strong> Proper maintenance extends system life 30-50%</li>
-                    <li>• <strong>Total Cost of Ownership:</strong> Calculate true costs including maintenance + replacement</li>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                    <li><strong>Replacement forecasting:</strong> See when major systems will need replacement (2-15 years out)</li>
+                    <li><strong>Budget planning:</strong> Understand capital expense needs by year</li>
+                    <li><strong>Lifespan optimization:</strong> Proper maintenance extends system life 30-50%</li>
+                    <li><strong>Total Cost of Ownership:</strong> Calculate true costs including maintenance + replacement</li>
                   </ul>
                 </div>
                 <div className="bg-green-50 rounded p-3 border-l-4 border-green-600">
@@ -240,7 +233,7 @@ Please provide a quote for these preservation services.`
         </Card>
 
         {properties.length > 0 && (
-          <Card className="border-none shadow-lg">
+          <Card className="border-none shadow-lg mb-6"> {/* Added mb-6 as per outline */}
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                 <div className="flex-1">
@@ -628,10 +621,10 @@ Please provide a quote for these preservation services.`
                   <Button
                     onClick={() => {
                       // Preserve the selectedOpportunity before clearing it to pass to handleRequestService
-                      const currentSelectedOpportunity = selectedOpportunity;
+                      const currentOpportunity = selectedOpportunity; // Corrected variable name from currentSelectedOpportunity to currentOpportunity
                       setSelectedOpportunity(null); // Close the learn more dialog
                       setAiPlan(null);
-                      handleRequestService(currentSelectedOpportunity); // Then open the service request dialog
+                      handleRequestService(currentOpportunity); // Then open the service request dialog
                     }}
                     className="w-full"
                     style={{ backgroundColor: '#28A745' }}
