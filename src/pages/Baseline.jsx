@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Trophy, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
@@ -303,7 +303,7 @@ export default function Baseline() {
   
   const actPhaseUnlocked = requiredComplete >= 4;
   const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
-  const baselineBoss = totalSystemTypes >= 14;
+  const baselineBoss = totalSystemTypes >= MILESTONES[MILESTONES.length - 1].threshold; // Dynamically check for baseline boss based on last milestone threshold
 
   // Get next milestone
   const nextMilestone = MILESTONES.find(m => m.threshold > totalSystemTypes);
@@ -322,7 +322,7 @@ export default function Baseline() {
     statusSubtext = "You have comprehensive documentation. This is elite-level homeownership.";
     statusBorderColor = "border-purple-300";
     statusBgColor = "bg-purple-50";
-    statusIconElement = <Trophy className="w-8 h-8 text-purple-600" />;
+    statusIconElement = <Award className="w-8 h-8 text-purple-600" />; 
     whyItMattersReminder = {
       icon: <TrendingUp className="w-4 h-4 text-purple-600" />,
       text: "Your complete baseline = strategic control + maximum home value + peace of mind. You're prepared for anything.",
