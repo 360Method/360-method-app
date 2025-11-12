@@ -1,13 +1,15 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, X, CheckCircle2, Edit } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Upload, X, CheckCircle2, Edit, Sparkles, Clock, DollarSign, AlertCircle, Crown } from "lucide-react";
 
 export default function EditCartItemDialog({ open, onClose, item }) {
   const queryClient = useQueryClient();
@@ -25,6 +27,31 @@ export default function EditCartItemDialog({ open, onClose, item }) {
   const [photos, setPhotos] = React.useState([]);
   const [uploading, setUploading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
+  const [estimating, setEstimating] = React.useState(false);
+  const [aiEstimate, setAiEstimate] = React.useState(null);
+
+  // Get user for membership info
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // Get property for estimation context
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list(),
+  });
+
+  const isMember = user && (
+    user.subscription_tier?.includes('homecare') || 
+    user.subscription_tier?.includes('propertycare')
+  );
+
+  const memberDiscountPercent = user?.subscription_tier?.includes('elite') ? 20 :
+                                 user?.subscription_tier?.includes('premium') ? 15 :
+                                 user?.subscription_tier?.includes('essential') ? 10 : 0;
+
+  const hourBucket = user?.hour_bucket || { total: 0, used: 0, remaining: 0 };
 
   React.useEffect(() => {
     if (open && item) {
@@ -48,6 +75,18 @@ export default function EditCartItemDialog({ open, onClose, item }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+      
+      // Update original source if applicable
+      if (item.source_type && item.source_id) {
+        if (item.source_type === 'task') {
+          base44.entities.MaintenanceTask.update(item.source_id, {
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority
+          }).catch(err => console.error('Failed to update source task:', err));
+        }
+      }
+      
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -87,9 +126,142 @@ export default function EditCartItemDialog({ open, onClose, item }) {
     }));
   };
 
+  const handleGetAIEstimate = async () => {
+    if (!formData.title || !formData.description) {
+      alert('Please fill in title and description first');
+      return;
+    }
+
+    setEstimating(true);
+    try {
+      const property = properties.find(p => p.id === item.property_id);
+      if (!property) {
+        throw new Error('Property not found');
+      }
+
+      // Check if this is a baseline assessment (fixed cost)
+      const isBaselineAssessment = formData.title.toLowerCase().includes('baseline') || 
+                                    formData.source_type === 'baseline_assessment';
+
+      if (isBaselineAssessment) {
+        setAiEstimate({
+          estimated_hours: 2.5,
+          cost_min: 299,
+          cost_max: 299,
+          work_description: "Complete professional baseline system documentation service",
+          materials_note: "All documentation tools and reports included",
+          is_fixed_price: true
+        });
+        setEstimating(false);
+        return;
+      }
+
+      const estimationPrompt = `You are estimating a home service request for Handy Pioneers (internal rate: $150/hour, not shown to customer).
+
+PROPERTY CONTEXT:
+Address: ${property.address}
+Type: ${property.property_type || 'Not specified'}
+Climate: ${property.climate_zone || 'Pacific Northwest'}
+
+SERVICE REQUEST:
+Title: ${formData.title}
+System: ${formData.system_type || 'General'}
+Priority: ${formData.priority}
+
+DETAILED DESCRIPTION:
+${formData.description}
+
+${formData.customer_notes ? `CUSTOMER NOTES:\n${formData.customer_notes}` : ''}
+
+${formData.photo_urls?.length > 0 ? `PHOTOS PROVIDED: ${formData.photo_urls.length} (analyze for scope accuracy)` : 'NO PHOTOS - estimate conservatively'}
+
+ESTIMATION REQUIREMENTS:
+
+1. ESTIMATED_HOURS: Total professional time including:
+   - Travel to/from site (0.5 hrs standard)
+   - Setup and preparation
+   - Actual work time
+   - Cleanup and documentation
+   - Buffer for typical complications (15-20%)
+
+2. COST_MIN: Best case scenario
+   - Hours × $150 base rate
+   - Basic materials estimate
+   - Minimal complications assumed
+
+3. COST_MAX: With typical complications
+   - Hours × $150 base rate
+   - Materials + 20% buffer
+   - Common issue discoveries
+   - Weather/access delays
+
+4. DETAILED_SCOPE: Professional statement of work (2-3 sentences)
+   - What will be inspected/repaired/replaced
+   - Method and approach
+   - Quality standards
+
+5. MATERIALS_LIST: Key materials needed (list 3-5 items)
+
+6. TOOLS_REQUIRED: Specialized tools needed (if any)
+
+7. PERMIT_REQUIRED: Does this need permits? (yes/no)
+
+8. TIMELINE: Estimated completion time once started
+
+9. RISK_FACTORS: Potential complications that could increase cost
+
+10. RECOMMENDATIONS: Any prep work customer should do before service
+
+PRICING MODIFIERS:
+- Emergency priority: +50% urgency fee
+- High priority: +25% urgency fee
+- Multiple floors: +0.5 hours per additional floor
+- Difficult access: +1-2 hours
+- Aged systems (15+ years): +20% for complications
+
+Provide realistic, professional estimates. Be conservative - better to over-estimate slightly than under-deliver.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: estimationPrompt,
+        add_context_from_internet: false,
+        file_urls: formData.photo_urls?.length > 0 ? formData.photo_urls : undefined,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            estimated_hours: { type: "number" },
+            cost_min: { type: "number" },
+            cost_max: { type: "number" },
+            detailed_scope: { type: "string" },
+            materials_list: { type: "array", items: { type: "string" } },
+            tools_required: { type: "array", items: { type: "string" } },
+            permit_required: { type: "boolean" },
+            estimated_timeline: { type: "string" },
+            risk_factors: { type: "array", items: { type: "string" } },
+            recommendations: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setAiEstimate(result);
+    } catch (error) {
+      console.error('AI estimation failed:', error);
+      alert('Failed to get AI estimate. Please try again.');
+    } finally {
+      setEstimating(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateCartItemMutation.mutate(formData);
+    
+    const updates = {
+      ...formData,
+      estimated_hours: aiEstimate?.estimated_hours || item.estimated_hours,
+      estimated_cost_min: aiEstimate?.cost_min || item.estimated_cost_min,
+      estimated_cost_max: aiEstimate?.cost_max || item.estimated_cost_max
+    };
+    
+    updateCartItemMutation.mutate(updates);
   };
 
   if (!item) return null;
@@ -263,17 +435,169 @@ export default function EditCartItemDialog({ open, onClose, item }) {
             )}
           </div>
 
-          {/* Additional Notes */}
-          <div>
-            <Label>Additional Notes for Operator</Label>
+          {/* Additional Notes - Emphasized */}
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+            <Label className="text-base font-bold text-yellow-900 mb-2 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Be As Detailed As Possible
+            </Label>
+            <p className="text-sm text-gray-700 mb-3">
+              💡 The more details you provide, the more accurate your estimate will be. Include:
+            </p>
+            <ul className="text-xs text-gray-700 space-y-1 mb-3 ml-4">
+              <li>• Access instructions (gate codes, parking, entry points)</li>
+              <li>• Exact location of issue (room, floor, specific area)</li>
+              <li>• Any known complications or special considerations</li>
+              <li>• Preferred materials, brands, or quality levels</li>
+              <li>• Timeline flexibility and scheduling constraints</li>
+            </ul>
             <Textarea
               value={formData.customer_notes}
               onChange={(e) => setFormData({ ...formData, customer_notes: e.target.value })}
-              placeholder="Access instructions, special requirements, preferred materials, etc."
-              rows={3}
-              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '72px' }}
+              placeholder="Example: Gate code 1234, issue is in main floor master bathroom. Water is shut off at main. Prefer OEM parts if available. Can't do work on weekends due to tenant schedule."
+              rows={4}
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '96px' }}
             />
           </div>
+
+          {/* AI Estimate Button */}
+          <div className="border-t pt-4">
+            <Button
+              type="button"
+              onClick={handleGetAIEstimate}
+              disabled={estimating || !formData.title || !formData.description}
+              className="w-full gap-2 mb-4"
+              style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
+            >
+              {estimating ? (
+                <>
+                  <Sparkles className="w-5 h-5 animate-spin" />
+                  AI Analyzing Your Request...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Get AI Estimate
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-center text-gray-600 mb-4">
+              Click to analyze your request and get estimated hours, costs, and scope
+            </p>
+          </div>
+
+          {/* AI Estimate Results */}
+          {aiEstimate && (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-blue-900">AI Estimate Results</h3>
+                {aiEstimate.is_fixed_price && (
+                  <Badge className="bg-green-600 text-white">Fixed Price</Badge>
+                )}
+              </div>
+
+              {/* Time & Cost */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    <span className="text-xs font-semibold text-gray-600">Estimated Time</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{aiEstimate.estimated_hours.toFixed(1)} hrs</p>
+                </div>
+                <div className="bg-white rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-gray-600" />
+                    <span className="text-xs font-semibold text-gray-600">Cost Range</span>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">
+                    ${aiEstimate.cost_min.toLocaleString()} - ${aiEstimate.cost_max.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Member Benefits */}
+              {isMember && !aiEstimate.is_fixed_price && (
+                <div className="bg-green-50 border border-green-300 rounded p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="w-4 h-4 text-green-700" />
+                    <span className="text-sm font-bold text-green-900">Your Member Benefits</span>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Discount ({memberDiscountPercent}%):</span>
+                      <span className="font-semibold text-green-700">
+                        -${Math.round(((aiEstimate.cost_min + aiEstimate.cost_max) / 2) * (memberDiscountPercent / 100)).toLocaleString()}
+                      </span>
+                    </div>
+                    {hourBucket.remaining > 0 && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Available Hours:</span>
+                          <span className="font-semibold text-green-700">{hourBucket.remaining.toFixed(1)} / {hourBucket.total} hrs</span>
+                        </div>
+                        {aiEstimate.estimated_hours <= hourBucket.remaining && (
+                          <div className="bg-green-100 border border-green-300 rounded p-2 mt-2">
+                            <p className="text-xs font-bold text-green-900">
+                              ✓ Fully covered by your hour bucket!
+                            </p>
+                            <p className="text-xs text-gray-700">You only pay for materials</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <Progress 
+                      value={(hourBucket.remaining / hourBucket.total) * 100} 
+                      className="h-2 mt-2"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Scope of Work */}
+              {aiEstimate.detailed_scope && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 mb-1">Scope of Work:</p>
+                  <p className="text-sm text-gray-800">{aiEstimate.detailed_scope}</p>
+                </div>
+              )}
+
+              {/* Materials */}
+              {aiEstimate.materials_list && aiEstimate.materials_list.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 mb-1">Materials Needed:</p>
+                  <ul className="text-xs text-gray-800 space-y-1">
+                    {aiEstimate.materials_list.map((material, idx) => (
+                      <li key={idx}>• {material}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Risk Factors */}
+              {aiEstimate.risk_factors && aiEstimate.risk_factors.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded p-2">
+                  <p className="text-xs font-semibold text-orange-900 mb-1">⚠️ Potential Complications:</p>
+                  <ul className="text-xs text-gray-800 space-y-1">
+                    {aiEstimate.risk_factors.map((risk, idx) => (
+                      <li key={idx}>• {risk}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {aiEstimate.permit_required && (
+                <div className="bg-yellow-50 border border-yellow-300 rounded p-2">
+                  <p className="text-xs font-bold text-yellow-900">🏛️ Permit may be required for this work</p>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-600 italic">
+                ⚠️ AI-generated estimate. Final pricing after operator site assessment.
+              </p>
+            </div>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex gap-3 pt-4 border-t">
