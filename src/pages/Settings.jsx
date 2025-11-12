@@ -1,6 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ const Label = ({ children, className = "", ...props }) => (
 );
 
 export default function Settings() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [formData, setFormData] = React.useState({
     full_name: "",
@@ -79,11 +81,18 @@ export default function Settings() {
   };
 
   const handleRestartOnboarding = async () => {
-    await updateUserMutation.mutateAsync({
-      onboarding_completed: false,
-      onboarding_skipped: false
-    });
-    window.location.href = createPageUrl("Onboarding");
+    try {
+      await updateUserMutation.mutateAsync({
+        onboarding_completed: false,
+        onboarding_skipped: false
+      });
+      // Force refetch to ensure state is updated
+      await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Use navigate instead of window.location
+      navigate(createPageUrl("Onboarding"));
+    } catch (error) {
+      console.error("Failed to restart onboarding:", error);
+    }
   };
 
   const handleLogout = () => {
@@ -348,9 +357,19 @@ export default function Settings() {
                 variant="outline"
                 className="gap-2"
                 style={{ minHeight: '48px' }}
+                disabled={updateUserMutation.isPending}
               >
-                <RefreshCw className="w-4 h-4" />
-                {user?.onboarding_completed ? 'Restart Onboarding' : 'Complete Onboarding'}
+                {updateUserMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    {user?.onboarding_completed ? 'Restart Onboarding' : 'Complete Onboarding'}
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
