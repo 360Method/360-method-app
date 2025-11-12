@@ -39,6 +39,7 @@ import PhaseProgressCard from "../components/dashboard/PhaseProgressCard";
 import UpgradePrompt from "../components/upgrade/UpgradePrompt";
 import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
+import MiniCalendar from "../components/dashboard/MiniCalendar";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -180,7 +181,7 @@ export default function Dashboard() {
     recommendations.push({
       title: "Time for Seasonal Inspection",
       description: lastInspection 
-        ? `Last inspection was ${monthsSinceInceInspection} months ago. Stay ahead of issues.`
+        ? `Last inspection was ${monthsSinceInspection} months ago. Stay ahead of issues.`
         : "Start your first quarterly property inspection to catch issues early.",
       action: "Inspect",
       url: createPageUrl("Inspect"),
@@ -648,6 +649,9 @@ export default function Dashboard() {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
+            {/* Mini Calendar */}
+            <MiniCalendar tasks={allTasks} properties={properties} />
+
             {/* Health Score Gauge */}
             <Card className="border-none shadow-md">
               <CardHeader className="pb-3">
