@@ -175,7 +175,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
   }
 
   // Step 5: Confirmation
-  if (currentStep === 5 && !createdProperty) {
+  if (currentStep === 5) {
     return (
       <PropertyConfirmation
         data={propertyData}
