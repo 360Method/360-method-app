@@ -310,21 +310,21 @@ export default function Dashboard() {
                           <span className="text-lg">📝</span>
                           <p className="font-semibold text-sm">1. Baseline</p>
                         </div>
-                        <p className="text-xs text-gray-600">Document all systems</p>
+                        <p className="text-xs text-gray-600">Document all your home's main parts</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-blue-200">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">🔍</span>
                           <p className="font-semibold text-sm">2. Inspect</p>
                         </div>
-                        <p className="text-xs text-gray-600">Seasonal checkups</p>
+                        <p className="text-xs text-gray-600">Find tiny problems early</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-blue-200">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">📊</span>
                           <p className="font-semibold text-sm">3. Track</p>
                         </div>
-                        <p className="text-xs text-gray-600">Maintenance Notes</p>
+                        <p className="text-xs text-gray-600">Keep notes of everything you do</p>
                       </div>
                     </div>
                   </div>
@@ -351,14 +351,14 @@ export default function Dashboard() {
                           <span className="text-lg">🎯</span>
                           <p className="font-semibold text-sm">4. Prioritize</p>
                         </div>
-                        <p className="text-xs text-gray-600">Rank by risk & ROI</p>
+                        <p className="text-xs text-gray-600">Focus on urgent fixes first & ROI</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-orange-200">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">📅</span>
                           <p className="font-semibold text-sm">5. Schedule</p>
                         </div>
-                        <p className="text-xs text-gray-600">Plan your timeline</p>
+                        <p className="text-xs text-gray-600">Plan when tasks and repairs will be done</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-orange-200">
                         <div className="flex items-center gap-2 mb-1">
@@ -392,21 +392,21 @@ export default function Dashboard() {
                           <span className="text-lg">🛡️</span>
                           <p className="font-semibold text-sm">7. Preserve</p>
                         </div>
-                        <p className="text-xs text-gray-600">Lifecycle forecasting</p>
+                        <p className="text-xs text-gray-600">Plan for future needs and costs</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-green-200">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">💡</span>
                           <p className="font-semibold text-sm">8. Upgrade</p>
                         </div>
-                        <p className="text-xs text-gray-600">Strategic improvements</p>
+                        <p className="text-xs text-gray-600">Make smart improvements to your home</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-green-200">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">🏢</span>
                           <p className="font-semibold text-sm">9. Scale</p>
                         </div>
-                        <p className="text-xs text-gray-600">Grow your portfolio</p>
+                        <p className="text-xs text-gray-600">Evaluate performance and make big decisions</p>
                       </div>
                     </div>
                   </div>
