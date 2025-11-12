@@ -659,7 +659,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Prioritize")}>
+          <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-orange-50 to-red-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -681,7 +681,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Preserve")}>
+          <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-green-50 to-emerald-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -699,7 +699,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Track")}>
+          <Link to={createPageUrl("Track") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -784,7 +784,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Know what you have</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Baseline")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Baseline") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {avgBaselineCompletion >= 66 ? '✓' : '1'}
                     </span>
@@ -794,7 +794,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Inspect")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Inspect") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allInspections.length > 0 ? '✓' : '2'}
                     </span>
@@ -804,7 +804,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Track")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Track") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalSpent > 0 ? '✓' : '3'}
                     </span>
@@ -818,7 +818,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-blue-600 text-blue-600 hover:bg-blue-50">
 
-                  <Link to={createPageUrl("Baseline")}>
+                  <Link to={createPageUrl("Baseline") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -834,7 +834,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Prioritize")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allTasks.length > 0 ? '✓' : '4'}
                     </span>
@@ -844,7 +844,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Schedule")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Schedule") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {scheduledTasks.length > 0 ? '✓' : '5'}
                     </span>
@@ -854,7 +854,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Execute")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Execute") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {completedTasksThisMonth > 0 ? '✓' : '6'}
                     </span>
@@ -871,7 +871,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-orange-600 text-orange-600 hover:bg-orange-50">
 
-                  <Link to={createPageUrl("Prioritize")}>
+                  <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -887,14 +887,14 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Preserve")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalPrevented > 0 ? '✓' : '7'}
                     </span>
                     <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Upgrade")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Upgrade") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                       8
                     </span>
@@ -918,7 +918,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-green-600 text-green-600 hover:bg-green-50">
 
-                  <Link to={createPageUrl("Preserve")}>
+                  <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -993,7 +993,7 @@ export default function Dashboard() {
                 {upcomingTasks.slice(0, 3).map((task) =>
               <Link
                 key={task.id}
-                to={createPageUrl("Execute")}
+                to={createPageUrl("Execute") + `?property=${task.property_id}`}
                 className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 hover:border-blue-300 border border-transparent transition-all">
 
                     <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
@@ -1063,7 +1063,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full justify-start gap-2">
 
-                  <Link to={createPageUrl("Inspect")}>
+                  <Link to={createPageUrl("Inspect") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
                     <ClipboardCheck className="w-4 h-4" />
                     Start Inspection
                   </Link>
@@ -1110,7 +1110,7 @@ export default function Dashboard() {
                   {recentActivity.slice(0, 3).map((activity, idx) =>
                 <Link
                   key={idx}
-                  to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track')}
+                  to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track') + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}
                   className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors group">
 
                       <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
