@@ -25,22 +25,13 @@ import { createPageUrl } from "@/utils";
 import PropertyWizard from "../components/properties/PropertyWizard";
 import PropertyEditDialog from "../components/properties/PropertyEditDialog";
 import UpgradePrompt from "../components/upgrade/UpgradePrompt";
+import ConfirmDialog from "../components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export default function Properties() {
   const [showWizard, setShowWizard] = React.useState(false);
@@ -83,9 +74,9 @@ export default function Properties() {
     setDeletingProperty(property);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingProperty) {
-      deletePropertyMutation.mutate(deletingProperty.id);
+      await deletePropertyMutation.mutateAsync(deletingProperty.id);
     }
   };
 
@@ -107,6 +98,21 @@ export default function Properties() {
       </div>
     );
   }
+
+  const getDeleteMessage = () => {
+    if (!deletingProperty) return '';
+    
+    return `Are you sure you want to delete ${deletingProperty.address}?
+
+⚠️ This will permanently delete:
+• All property information
+• All system baselines
+• All inspection records
+• All maintenance tasks
+• All service requests
+
+This action cannot be undone.`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 pb-20">
@@ -542,38 +548,16 @@ export default function Properties() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingProperty} onOpenChange={() => setDeletingProperty(null)}>
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Property?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deletingProperty?.address}</strong>?
-              <br /><br />
-              <span className="text-red-600 font-semibold">
-                ⚠️ This will permanently delete:
-              </span>
-              <ul className="mt-2 ml-4 text-sm space-y-1">
-                <li>• All property information</li>
-                <li>• All system baselines</li>
-                <li>• All inspection records</li>
-                <li>• All maintenance tasks</li>
-                <li>• All service requests</li>
-              </ul>
-              <br />
-              <strong>This action cannot be undone.</strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete Property
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!deletingProperty}
+        onClose={() => setDeletingProperty(null)}
+        onConfirm={confirmDelete}
+        title="Delete Property?"
+        message={getDeleteMessage()}
+        confirmText="Yes, Delete Property"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }
