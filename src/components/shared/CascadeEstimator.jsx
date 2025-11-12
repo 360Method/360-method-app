@@ -20,7 +20,7 @@ ISSUE DETAILS:
 - User-Rated Severity: ${issueData.severity}
 - User-Estimated Cost Range: ${issueData.estimated_cost}
 
-Your task is to provide:
+Your task is to provide a realistic analysis:
 
 1. CASCADE RISK SCORE (1-10): How likely this issue triggers a domino effect of failures
    - 1-3: Low risk, isolated issue
@@ -35,12 +35,13 @@ Your task is to provide:
    Format as: "Initial issue → Secondary failure → Tertiary damage → Final outcome ($XX-$XXK)"
 
 3. CURRENT FIX COST: Realistic estimate to fix NOW (in dollars, whole number)
-   - Consider labor, materials, typical regional pricing
+   - Consider labor, materials, typical US market rates
    - Professional service pricing (not DIY)
+   - If user selected a cost range, use that as baseline
 
 4. DELAYED FIX COST: Realistic estimate if delayed 3-6 months (in dollars, whole number)
    - Include cascaded damage
-   - Emergency pricing premium
+   - Emergency pricing premium (1.5-3X for urgent)
    - Secondary repairs needed
 
 5. COST IMPACT REASON: A clear, specific explanation (2-3 sentences) of:
@@ -50,21 +51,17 @@ Your task is to provide:
 
 IMPORTANT GUIDELINES:
 - Be realistic with cost estimates based on typical US market rates
-- If the user selected a cost range like "$50-200", use that as a baseline for current_fix_cost
-- Delayed costs should be 3-10X higher for cascade risks, less for simple issues
-- Use specific system knowledge (e.g., HVAC compressor failure, foundation settling)
-- Be educational but concise
 - Focus on the SPECIFIC issue described, not generic examples
+- Be educational but concise
 
-IMPORTANT DISCLAIMER:
-All cost estimates are averages based on typical scenarios. Actual costs may vary significantly based on:
-- Property condition and accessibility
-- Extent of damage discovered during work
-- Local contractor rates and market conditions
-- Materials required and availability
-- Unforeseen complications
-
-Return your analysis as a JSON object.`;
+Provide your response in valid JSON format with these exact keys:
+{
+  "cascade_risk_score": number (1-10),
+  "cascade_risk_reason": "string",
+  "current_fix_cost": number,
+  "delayed_fix_cost": number,
+  "cost_impact_reason": "string"
+}`;
 
   try {
     const result = await base44.integrations.Core.InvokeLLM({
@@ -75,36 +72,44 @@ Return your analysis as a JSON object.`;
         properties: {
           cascade_risk_score: {
             type: "number",
-            description: "Risk score from 1-10"
+            minimum: 1,
+            maximum: 10
           },
           cascade_risk_reason: {
-            type: "string",
-            description: "Explanation of cascade pattern with dollar amounts"
+            type: "string"
           },
           current_fix_cost: {
             type: "number",
-            description: "Estimated cost to fix now in dollars"
+            minimum: 0
           },
           delayed_fix_cost: {
             type: "number",
-            description: "Estimated cost if delayed in dollars"
+            minimum: 0
           },
           cost_impact_reason: {
-            type: "string",
-            description: "Explanation of why delaying increases cost"
+            type: "string"
           }
-        }
+        },
+        required: ["cascade_risk_score", "cascade_risk_reason", "current_fix_cost", "delayed_fix_cost", "cost_impact_reason"]
       }
     });
 
-    return {
-      cascade_risk_score: Math.min(10, Math.max(1, result.cascade_risk_score || 5)),
+    // Validate and sanitize the response
+    const sanitizedResult = {
+      cascade_risk_score: Math.min(10, Math.max(1, Math.round(result.cascade_risk_score || 5))),
       cascade_risk_reason: result.cascade_risk_reason || "Small issue can lead to larger problems over time, increasing repair costs.",
-      current_fix_cost: Math.max(0, result.current_fix_cost || 200),
-      delayed_fix_cost: Math.max(0, result.delayed_fix_cost || 2000),
+      current_fix_cost: Math.max(0, Math.round(result.current_fix_cost || 200)),
+      delayed_fix_cost: Math.max(0, Math.round(result.delayed_fix_cost || 2000)),
       cost_impact_reason: result.cost_impact_reason || "Delaying repairs allows the problem to worsen, requiring more extensive work and emergency service premiums.",
       cost_disclaimer: "⚠️ Cost estimates are AI-generated averages based on typical scenarios. Actual costs may vary significantly based on property condition, scope of work, contractor rates, and unforeseen complications. Get professional estimates for accurate pricing."
     };
+
+    // Ensure delayed cost is at least as much as current cost
+    if (sanitizedResult.delayed_fix_cost < sanitizedResult.current_fix_cost) {
+      sanitizedResult.delayed_fix_cost = sanitizedResult.current_fix_cost * 1.5;
+    }
+
+    return sanitizedResult;
   } catch (error) {
     console.error("AI estimation error:", error);
     
@@ -133,7 +138,7 @@ Return your analysis as a JSON object.`;
       current_fix_cost: costs.current,
       delayed_fix_cost: costs.delayed,
       cost_impact_reason: `Delaying ${issueData.system_type} repairs allows the problem to compound, often requiring emergency service with premium pricing and additional damage restoration.`,
-      cost_disclaimer: "⚠️ Cost estimates are AI-generated averages. Actual costs may vary based on property condition, scope of work, and contractor rates. Get professional estimates for accurate pricing."
+      cost_disclaimer: "⚠️ AI estimation temporarily unavailable. Using fallback estimates based on typical scenarios. Get professional estimates for accurate pricing."
     };
   }
 }
