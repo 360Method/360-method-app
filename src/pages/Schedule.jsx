@@ -14,20 +14,25 @@ import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 
-// Helper function to format estimated hours
+// Helper function to format estimated hours - with null safety
 const formatEstimatedTime = (hours) => {
-  if (!hours || hours === 0) return null;
+  if (!hours || typeof hours !== 'number' || hours === 0) return null;
   
-  if (hours < 1) {
-    const minutes = Math.round(hours * 60);
-    return `~${minutes} min`;
-  } else if (hours === 1) {
-    return '~1 hr';
-  } else if (hours < 8) {
-    return `~${hours.toFixed(1)} hrs`;
-  } else {
-    const days = Math.ceil(hours / 8);
-    return `~${days} day${days > 1 ? 's' : ''}`;
+  try {
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `~${minutes} min`;
+    } else if (hours === 1) {
+      return '~1 hr';
+    } else if (hours < 8) {
+      return `~${hours.toFixed(1)} hrs`;
+    } else {
+      const days = Math.ceil(hours / 8);
+      return `~${days} day${days > 1 ? 's' : ''}`;
+    }
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return null;
   }
 };
 
@@ -379,7 +384,7 @@ export default function Schedule() {
                   const isExpanded = expandedGroups[systemType];
                   const icon = SYSTEM_ICONS[systemType] || SYSTEM_ICONS['General'];
                   const highPriorityCount = tasksInGroup.filter(t => t.priority === 'High').length;
-                  const totalEstimatedTime = tasksInGroup.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+                  const totalEstimatedTime = tasksInGroup.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
 
                   return (
                     <Card 
@@ -412,7 +417,7 @@ export default function Schedule() {
                             {totalEstimatedTime > 0 && (
                               <p className="text-xs text-gray-600 flex items-center gap-1 mt-1">
                                 <Clock className="w-3 h-3" />
-                                Total time: {formatEstimatedTime(totalEstimatedTime)}
+                                Total time: {formatEstimatedTime(totalEstimatedTime) || `${totalEstimatedTime.toFixed(1)} hrs`}
                               </p>
                             )}
                           </div>
