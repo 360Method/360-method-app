@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar } from "lucide-react";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -18,18 +17,25 @@ const PRIORITY_COLORS = {
   Routine: "bg-gray-100 text-gray-800 border-gray-200"
 };
 
+const PRIORITY_ICONS = {
+  High: "🔴",
+  Medium: "🟡",
+  Low: "🔵",
+  Routine: "⚪"
+};
+
 // Generic cascade examples by system type
 const GENERIC_CASCADE_EXAMPLES = {
-  "HVAC": "Small refrigerant leak → Compressor works harder → Compressor burns out → Full system replacement ($5K-8K)",
-  "Plumbing": "Small leak → Water damage → Mold growth → Structural damage → $8K-15K repair",
-  "Electrical": "Loose connection → Arcing → Fire hazard → Electrical fire → $20K-50K+ damage",
-  "Roof": "Small leak → Rotted deck → Interior damage → Mold growth → Structural issues → $30K+ disaster",
-  "Foundation": "Small crack → Water intrusion → Foundation settling → Structural damage → $15K-40K repair",
-  "Gutters": "Clog → Overflow → Foundation damage → Basement flooding → Landscaping erosion → $10K-30K damage",
-  "Exterior": "Damaged siding → Water intrusion → Insulation damage → Mold → Interior damage → $8K-20K repair",
-  "Windows/Doors": "Seal failure → Water intrusion → Frame rot → Wall damage → Mold → $5K-15K repair",
+  "HVAC System": "Small refrigerant leak → Compressor works harder → Compressor burns out → Full system replacement ($5K-8K)",
+  "Plumbing System": "Small leak → Water damage → Mold growth → Structural damage → $8K-15K repair",
+  "Electrical System": "Loose connection → Arcing → Fire hazard → Electrical fire → $20K-50K+ damage",
+  "Roof System": "Small leak → Rotted deck → Interior damage → Mold growth → Structural issues → $30K+ disaster",
+  "Foundation & Structure": "Small crack → Water intrusion → Foundation settling → Structural damage → $15K-40K repair",
+  "Gutters & Downspouts": "Clog → Overflow → Foundation damage → Basement flooding → Landscaping erosion → $10K-30K damage",
+  "Exterior Siding & Envelope": "Damaged siding → Water intrusion → Insulation damage → Mold → Interior damage → $8K-20K repair",
+  "Windows & Doors": "Seal failure → Water intrusion → Frame rot → Wall damage → Mold → $5K-15K repair",
   "Appliances": "Worn hose → Burst → Flood → Water damage → Mold → $8K-15K cleanup",
-  "Landscaping": "Poor grading → Water pools → Foundation damage → Basement issues → $10K-25K repair",
+  "Landscaping & Grading": "Poor grading → Water pools → Foundation damage → Basement issues → $10K-25K repair",
   "General": "Small issue → Secondary damage → Tertiary failures → Emergency repair at 3X cost"
 };
 
@@ -43,7 +49,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
 
   const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
 
-  // Get cascade example - use custom reason if provided, otherwise generic
+  // Get cascade example
   const cascadeExample = task.cascade_risk_reason 
     || GENERIC_CASCADE_EXAMPLES[task.system_type] 
     || GENERIC_CASCADE_EXAMPLES["General"];
@@ -53,96 +59,116 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
   };
 
   const handleConfirmSchedule = () => {
-    // Update task with both status and scheduled date
     onStatusChange(task.id, 'Scheduled', scheduledDate);
     setShowScheduleDialog(false);
   };
 
   return (
     <>
-      <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3 flex-1">
-              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-700 flex-shrink-0">
+      <Card className="border-2 border-gray-200 hover:border-orange-300 hover:shadow-xl transition-all">
+        <CardHeader className="pb-3 bg-gradient-to-r from-white to-gray-50">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Rank Badge */}
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0 text-sm md:text-base">
                 #{rank}
               </div>
+              
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-lg mb-2">{task.title}</CardTitle>
+                <CardTitle className="text-base md:text-lg mb-2 break-words">
+                  {task.title}
+                </CardTitle>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className={PRIORITY_COLORS[task.priority]}>
-                    {task.priority} Priority
+                  <Badge className={`${PRIORITY_COLORS[task.priority]} text-xs`}>
+                    {PRIORITY_ICONS[task.priority]} {task.priority}
                   </Badge>
                   {task.system_type && (
-                    <Badge variant="outline">{task.system_type}</Badge>
+                    <Badge variant="outline" className="text-xs">{task.system_type}</Badge>
                   )}
                   {task.has_cascade_alert && (
-                    <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-                      ⚠️ Cascade Risk
+                    <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+                      ⚠️ Cascade
                     </Badge>
                   )}
                   {task.scheduled_date && (
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      📅 {format(new Date(task.scheduled_date), 'MMM d, yyyy')}
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                      📅 {format(new Date(task.scheduled_date), 'MMM d')}
                     </Badge>
                   )}
                 </div>
               </div>
             </div>
+            
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex-shrink-0"
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
-              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-6">
-          {/* Quick Stats Row - Always Visible */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-orange-600" />
-              <div>
-                <p className="text-xs text-gray-600">Risk Score</p>
-                <p className="font-semibold">{task.cascade_risk_score || 0}/10</p>
-              </div>
+        <CardContent className="p-3 md:p-4">
+          {/* Quick Stats Row - Always Visible - Mobile Optimized */}
+          <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3">
+            <div className="bg-orange-50 rounded-lg p-2 md:p-3 text-center border border-orange-200">
+              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-600 mx-auto mb-1" />
+              <p className="text-xs text-gray-600">Risk</p>
+              <p className="font-bold text-sm md:text-base text-orange-700">{task.cascade_risk_score || 0}/10</p>
             </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-green-600" />
-              <div>
-                <p className="text-xs text-gray-600">Fix Now</p>
-                <p className="font-semibold">${(task.current_fix_cost || 0).toLocaleString()}</p>
-              </div>
+            <div className="bg-green-50 rounded-lg p-2 md:p-3 text-center border border-green-200">
+              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-green-600 mx-auto mb-1" />
+              <p className="text-xs text-gray-600">Fix Now</p>
+              <p className="font-bold text-sm md:text-base text-green-700">${((task.current_fix_cost || 0)/1000).toFixed(1)}K</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <div>
-                <p className="text-xs text-gray-600">Timeline</p>
-                <p className="font-semibold text-sm">{task.urgency_timeline || 'ASAP'}</p>
-              </div>
+            <div className="bg-blue-50 rounded-lg p-2 md:p-3 text-center border border-blue-200">
+              <Clock className="w-4 h-4 md:w-5 md:h-5 text-blue-600 mx-auto mb-1" />
+              <p className="text-xs text-gray-600">Timeline</p>
+              <p className="font-bold text-xs md:text-sm text-blue-700">{task.urgency_timeline || 'ASAP'}</p>
             </div>
+          </div>
+
+          {/* Primary Action Buttons - Always Visible */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => setShowCartDialog(true)}
+              className="gap-2 w-full"
+              style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="text-sm">Add to Cart</span>
+            </Button>
+            <Button
+              onClick={handleScheduleTask}
+              variant="outline"
+              className="gap-2 w-full border-2 border-blue-400 text-blue-700 hover:bg-blue-50"
+              style={{ minHeight: '48px' }}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm">{task.scheduled_date ? 'Reschedule' : 'Schedule'}</span>
+            </Button>
           </div>
 
           {/* Expanded Details */}
           {isExpanded && (
-            <div className="mt-6 space-y-4 pt-4 border-t">
+            <div className="mt-4 space-y-4 pt-4 border-t-2 border-gray-200">
               {task.description && (
-                <div>
-                  <p className="text-sm text-gray-700">{task.description}</p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
                 </div>
               )}
 
               {/* Cascade Risk Explanation */}
               {task.has_cascade_alert && (
-                <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg p-4 shadow-md">
                   <div className="flex items-start gap-3">
-                    <TrendingDown className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                    <TrendingDown className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
                     <div className="flex-1">
-                      <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
-                        💥 Cascade Risk: Why This Matters
+                      <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2 flex-wrap">
+                        💥 Cascade Risk Alert
                         {task.cascade_risk_score && (
                           <Badge className="bg-orange-600 text-white">
                             {task.cascade_risk_score}/10 Risk
@@ -150,14 +176,14 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                         )}
                       </h4>
                       <p className="text-sm text-gray-800 leading-relaxed mb-3">
-                        This problem triggers a chain reaction of increasingly expensive damage if left unaddressed.
+                        This triggers a chain reaction of increasingly expensive damage if ignored.
                       </p>
-                      <div className="bg-white rounded-lg p-3 border border-orange-200">
+                      <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
                         <p className="text-xs font-semibold text-orange-900 mb-2 flex items-center gap-1">
                           <Info className="w-3 h-3" />
                           Typical Cascade Pattern:
                         </p>
-                        <p className="text-sm text-gray-800 font-mono leading-relaxed">
+                        <p className="text-xs md:text-sm text-gray-800 leading-relaxed break-words">
                           {cascadeExample}
                         </p>
                       </div>
@@ -168,105 +194,65 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
 
               {/* Cost Impact */}
               {(task.current_fix_cost || task.delayed_fix_cost) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg p-4 shadow-md">
                   <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                     <DollarSign className="w-5 h-5" />
-                    Cost Impact: Why Acting Now Saves Money
+                    Cost Impact
                   </h4>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="bg-white rounded-lg p-3 border-2 border-green-300">
                       <p className="text-xs text-gray-600 mb-1">Fix Now:</p>
-                      <p className="text-2xl font-bold text-green-700">
+                      <p className="text-xl md:text-2xl font-bold text-green-700">
                         ${(task.current_fix_cost || 0).toLocaleString()}
                       </p>
                     </div>
-                    <div>
+                    <div className="bg-white rounded-lg p-3 border-2 border-red-300">
                       <p className="text-xs text-gray-600 mb-1">Fix Later:</p>
-                      <p className="text-2xl font-bold text-red-700">
+                      <p className="text-xl md:text-2xl font-bold text-red-700">
                         ${(task.delayed_fix_cost || 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
 
-                  {task.cost_impact_reason && (
-                    <div className="bg-white rounded-lg p-3 border border-blue-200 mb-3">
-                      <p className="text-xs font-semibold text-blue-900 mb-2 flex items-center gap-1">
-                        <Info className="w-3 h-3" />
-                        Why Delaying Costs More:
-                      </p>
-                      <p className="text-sm text-gray-800 leading-relaxed">
-                        {task.cost_impact_reason}
-                      </p>
-                    </div>
-                  )}
-
                   {costSavings > 0 && (
-                    <div className="pt-3 border-t border-blue-200">
-                      <p className="text-sm font-medium text-gray-800">
-                        ✅ Act now and save: <span className="text-green-700 font-bold">${costSavings.toLocaleString()}</span>
+                    <div className="bg-white rounded-lg p-3 border-2 border-green-300">
+                      <p className="text-sm font-bold text-green-800 text-center">
+                        ✅ Act now and save: ${costSavings.toLocaleString()}
                       </p>
-                      {task.urgency_timeline && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Timeline: {task.urgency_timeline}
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3 pt-4 border-t">
-                <Button
-                  onClick={() => setShowCartDialog(true)}
-                  className="w-full gap-2"
-                  style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Add to Service Cart
-                </Button>
-
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex-1 min-w-[200px]">
-                    <Label className="text-xs text-gray-600 mb-1 block">Change Priority:</Label>
-                    <Select
-                      value={task.priority}
-                      onValueChange={(value) => onPriorityChange(task.id, value)}
-                    >
-                      <SelectTrigger className="h-9" style={{ minHeight: '48px' }}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Routine">Routine</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleScheduleTask}
-                      className="gap-2"
-                      style={{ minHeight: '48px' }}
-                    >
-                      <Calendar className="w-4 h-4" />
-                      {task.scheduled_date ? 'Reschedule' : 'Schedule'}
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => onStatusChange(task.id, 'Completed')}
-                      style={{ backgroundColor: 'var(--accent)', minHeight: '48px' }}
-                    >
-                      Mark Complete
-                    </Button>
-                  </div>
+              {/* Additional Actions */}
+              <div className="flex flex-col gap-3 pt-3 border-t">
+                <div>
+                  <Label className="text-xs text-gray-600 mb-2 block">Change Priority:</Label>
+                  <Select
+                    value={task.priority}
+                    onValueChange={(value) => onPriorityChange(task.id, value)}
+                  >
+                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High">🔴 High Priority</SelectItem>
+                      <SelectItem value="Medium">🟡 Medium Priority</SelectItem>
+                      <SelectItem value="Low">🔵 Low Priority</SelectItem>
+                      <SelectItem value="Routine">⚪ Routine</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <Button
+                  onClick={() => onStatusChange(task.id, 'Completed')}
+                  className="w-full gap-2"
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Mark Complete
+                </Button>
               </div>
             </div>
           )}
@@ -281,7 +267,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
               Schedule Task
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Set a date to schedule this task on your calendar
+              Set a date to add this task to your calendar
             </p>
             
             <div className="mb-6">
@@ -309,7 +295,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                 style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
               >
                 <Calendar className="w-4 h-4" />
-                Schedule Task
+                Schedule
               </Button>
             </div>
           </div>
