@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DoorOpen, Home, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DoorOpen, Home, Plus, Trash2, Sparkles } from "lucide-react";
 
 export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) {
   const isMultiFamily = data.property_type && ![
@@ -32,6 +33,14 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
     garage_type: data.garage_type || "None",
     units: data.units || []
   });
+
+  // Track which fields were pre-filled by AI
+  const aiPrefilled = {
+    year_built: !!data.year_built,
+    square_footage: !!data.square_footage,
+    bedrooms: !!data.bedrooms,
+    bathrooms: !!data.bathrooms
+  };
 
   React.useEffect(() => {
     // Initialize units array if multi-family
@@ -86,6 +95,8 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
     onBack();
   };
 
+  const hasAiData = Object.values(aiPrefilled).some(v => v);
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
@@ -103,6 +114,26 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
         </div>
       </div>
+
+      {/* AI Pre-fill Notice */}
+      {hasAiData && (
+        <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-purple-900 mb-1">
+                  ✨ AI Pre-filled Some Details
+                </p>
+                <p className="text-sm text-gray-700">
+                  We found public records for this property and pre-filled some fields. 
+                  Please verify accuracy and adjust as needed.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Door Count */}
       <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#FF6B35' }}>
@@ -293,7 +324,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label className="font-semibold">Year Built *</Label>
+                <Label className="font-semibold flex items-center gap-2">
+                  Year Built *
+                  {aiPrefilled.year_built && (
+                    <Badge className="bg-purple-600 text-white text-xs">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI
+                    </Badge>
+                  )}
+                </Label>
                 <Input
                   type="number"
                   value={formData.year_built}
@@ -304,7 +343,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
                 />
               </div>
               <div>
-                <Label className="font-semibold">Square Footage *</Label>
+                <Label className="font-semibold flex items-center gap-2">
+                  Square Footage *
+                  {aiPrefilled.square_footage && (
+                    <Badge className="bg-purple-600 text-white text-xs">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI
+                    </Badge>
+                  )}
+                </Label>
                 <Input
                   type="number"
                   value={formData.square_footage}
@@ -319,7 +366,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
             {!isMultiFamily && (
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="font-semibold">Bedrooms *</Label>
+                  <Label className="font-semibold flex items-center gap-2">
+                    Bedrooms *
+                    {aiPrefilled.bedrooms && (
+                      <Badge className="bg-purple-600 text-white text-xs">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        AI
+                      </Badge>
+                    )}
+                  </Label>
                   <Input
                     type="number"
                     value={formData.bedrooms}
@@ -330,7 +385,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
                   />
                 </div>
                 <div>
-                  <Label className="font-semibold">Bathrooms *</Label>
+                  <Label className="font-semibold flex items-center gap-2">
+                    Bathrooms *
+                    {aiPrefilled.bathrooms && (
+                      <Badge className="bg-purple-600 text-white text-xs">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        AI
+                      </Badge>
+                    )}
+                  </Label>
                   <Input
                     type="number"
                     step="0.5"
