@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -33,7 +32,7 @@ export default function Track() {
   const { data: tasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty],
     queryFn: () => selectedProperty 
-      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty })
+      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date')
       : Promise.resolve([]),
     enabled: !!selectedProperty,
   });
@@ -49,7 +48,7 @@ export default function Track() {
   const { data: inspections = [] } = useQuery({
     queryKey: ['inspections', selectedProperty],
     queryFn: () => selectedProperty 
-      ? base44.entities.Inspection.filter({ property_id: selectedProperty })
+      ? base44.entities.Inspection.filter({ property_id: selectedProperty }, '-created_date')
       : Promise.resolve([]),
     enabled: !!selectedProperty,
   });
@@ -57,7 +56,7 @@ export default function Track() {
   const { data: upgrades = [] } = useQuery({
     queryKey: ['upgrades', selectedProperty],
     queryFn: () => selectedProperty 
-      ? base44.entities.Upgrade.filter({ property_id: selectedProperty })
+      ? base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date')
       : Promise.resolve([]),
     enabled: !!selectedProperty,
   });

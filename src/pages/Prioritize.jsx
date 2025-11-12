@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -51,27 +50,27 @@ export default function PrioritizePage() {
 
   const { data: maintenanceTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty?.id],
-    queryFn: () => base44.entities.MaintenanceTask.list({
-      property_id: selectedProperty?.id
-    }),
+    queryFn: () => selectedProperty?.id 
+      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty.id })
+      : Promise.resolve([]),
     enabled: !!selectedProperty,
     initialData: [],
   });
 
   const { data: systemBaselines = [] } = useQuery({
     queryKey: ['systemBaselines', selectedProperty?.id],
-    queryFn: () => base44.entities.SystemBaseline.list({
-      property_id: selectedProperty?.id
-    }),
+    queryFn: () => selectedProperty?.id
+      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty.id })
+      : Promise.resolve([]),
     enabled: !!selectedProperty,
     initialData: [],
   });
 
   const { data: inspections = [] } = useQuery({
     queryKey: ['inspections', selectedProperty?.id],
-    queryFn: () => base44.entities.Inspection.list({
-      property_id: selectedProperty?.id
-    }),
+    queryFn: () => selectedProperty?.id
+      ? base44.entities.Inspection.filter({ property_id: selectedProperty.id })
+      : Promise.resolve([]),
     enabled: !!selectedProperty,
     initialData: [],
   });
