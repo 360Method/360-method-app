@@ -58,33 +58,36 @@ const navigationItems = [
     icon: BookOpen,
   },
   {
-    title: "AWARE",
+    title: "Phase I - AWARE",
+    phaseNumber: "I",
     icon: Eye,
     color: "text-blue-600",
     subItems: [
-      { title: "Baseline", url: createPageUrl("Baseline"), icon: Search },
-      { title: "Inspect", url: createPageUrl("Inspect"), icon: ClipboardCheck },
-      { title: "Track", url: createPageUrl("Track"), icon: Activity },
+      { title: "Baseline", url: createPageUrl("Baseline"), icon: Search, stepNumber: 1 },
+      { title: "Inspect", url: createPageUrl("Inspect"), icon: ClipboardCheck, stepNumber: 2 },
+      { title: "Track", url: createPageUrl("Track"), icon: Activity, stepNumber: 3 },
     ]
   },
   {
-    title: "ACT",
+    title: "Phase II - ACT",
+    phaseNumber: "II",
     icon: Zap,
     color: "text-orange-600",
     subItems: [
-      { title: "Prioritize", url: createPageUrl("Prioritize"), icon: ListOrdered },
-      { title: "Schedule", url: createPageUrl("Schedule"), icon: Calendar },
-      { title: "Execute", url: createPageUrl("Execute"), icon: CheckCircle2 },
+      { title: "Prioritize", url: createPageUrl("Prioritize"), icon: ListOrdered, stepNumber: 4 },
+      { title: "Schedule", url: createPageUrl("Schedule"), icon: Calendar, stepNumber: 5 },
+      { title: "Execute", url: createPageUrl("Execute"), icon: CheckCircle2, stepNumber: 6 },
     ]
   },
   {
-    title: "ADVANCE",
+    title: "Phase III - ADVANCE",
+    phaseNumber: "III",
     icon: TrendingUp,
     color: "text-green-600",
     subItems: [
-      { title: "Preserve", url: createPageUrl("Preserve"), icon: Shield },
-      { title: "Upgrade", url: createPageUrl("Upgrade"), icon: Lightbulb },
-      { title: "Scale", url: createPageUrl("Scale"), icon: Building2 },
+      { title: "Preserve", url: createPageUrl("Preserve"), icon: Shield, stepNumber: 7 },
+      { title: "Upgrade", url: createPageUrl("Upgrade"), icon: Lightbulb, stepNumber: 8 },
+      { title: "Scale", url: createPageUrl("Scale"), icon: Building2, stepNumber: 9 },
     ]
   },
   {
@@ -101,9 +104,9 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
-    AWARE: true,
-    ACT: true,
-    ADVANCE: true,
+    "Phase I - AWARE": true,
+    "Phase II - ACT": true,
+    "Phase III - ADVANCE": true,
     Services: true
   });
 
@@ -342,7 +345,7 @@ export default function Layout({ children }) {
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <item.icon className={`w-4 h-4 ${item.color || 'text-gray-600'}`} />
-                      <span className="font-semibold flex-1 text-left">{item.title}</span>
+                      <span className="font-semibold flex-1 text-left text-sm">{item.title}</span>
                       {isOpen ? (
                         <ChevronDown className="w-4 h-4 text-gray-500" />
                       ) : (
@@ -359,6 +362,11 @@ export default function Layout({ children }) {
                               location.pathname === subItem.url ? 'bg-gray-100 font-medium' : ''
                             }`}
                           >
+                            {subItem.stepNumber && (
+                              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-xs font-bold text-gray-700 flex-shrink-0">
+                                {subItem.stepNumber}
+                              </span>
+                            )}
                             <subItem.icon className="w-4 h-4 text-gray-500" />
                             <span className="text-sm">{subItem.title}</span>
                           </Link>
@@ -446,7 +454,7 @@ export default function Layout({ children }) {
                       style={{ minHeight: '48px' }}
                     >
                       <item.icon className={`w-5 h-5 ${item.color || 'text-gray-600'}`} />
-                      <span className="font-semibold flex-1 text-left text-lg">{item.title}</span>
+                      <span className="font-semibold flex-1 text-left text-base">{item.title}</span>
                       {isOpen ? (
                         <ChevronDown className="w-5 h-5 text-gray-500" />
                       ) : (
@@ -465,6 +473,11 @@ export default function Layout({ children }) {
                             }`}
                             style={{ minHeight: '48px' }}
                           >
+                            {subItem.stepNumber && (
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-sm font-bold text-gray-700 flex-shrink-0">
+                                {subItem.stepNumber}
+                              </span>
+                            )}
                             <subItem.icon className="w-5 h-5 text-gray-500" />
                             <span className="text-base">{subItem.title}</span>
                           </Link>
