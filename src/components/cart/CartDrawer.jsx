@@ -103,7 +103,10 @@ export default function CartDrawer() {
         <div
           onClick={() => setIsOpen(false)}
           className="fixed inset-0 bg-black/60 z-[998]"
-          style={{ position: 'fixed' }}
+          style={{ 
+            position: 'fixed',
+            touchAction: 'none'
+          }}
         />
       )}
 
@@ -112,6 +115,9 @@ export default function CartDrawer() {
         className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[998] ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{
+          touchAction: 'pan-y'
+        }}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -131,8 +137,16 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Cart Items - Touch Scrollable */}
+          <div 
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain',
+              touchAction: 'pan-y',
+              position: 'relative'
+            }}
+          >
             {cartItems.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <ShoppingCart className="w-16 h-16 mx-auto mb-3 text-gray-400" />
