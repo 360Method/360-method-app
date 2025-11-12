@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -139,6 +140,7 @@ export default function PhysicalWalkthroughWizard({ propertyId, property, onComp
   const { data: existingSystems = [] } = useQuery({
     queryKey: ['systemBaselines', propertyId],
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: propertyId }),
+    enabled: !!propertyId,
   });
 
   const currentZone = PHYSICAL_ZONES[currentZoneIndex];
@@ -168,9 +170,17 @@ export default function PhysicalWalkthroughWizard({ propertyId, property, onComp
       property_id: propertyId,
       zone: currentZone.id,
       description: null,
-      allowsMultiple: ['HVAC System', 'Smoke Detector', 'CO Detector'].includes(systemType)
+      allowsMultiple: ['HVAC System', 'Smoke Detector', 'CO Detector', 'Fire Extinguisher'].includes(systemType)
     });
     setShowSystemDialog(true);
+  };
+
+  const handleSystemDialogClose = () => {
+    setShowSystemDialog(false);
+    setSelectedSystem(null);
+    // Invalidate queries to refresh the displayed systems
+    queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
+    queryClient.invalidateQueries({ queryKey: ['systemBaselines'] }); // Also invalidate general query
   };
 
   const handleNextZone = () => {
@@ -450,11 +460,7 @@ export default function PhysicalWalkthroughWizard({ propertyId, property, onComp
         {showSystemDialog && selectedSystem && (
           <SystemFormDialog
             open={showSystemDialog}
-            onClose={() => {
-              setShowSystemDialog(false);
-              setSelectedSystem(null);
-              queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
-            }}
+            onClose={handleSystemDialogClose}
             propertyId={propertyId}
             editingSystem={selectedSystem}
           />

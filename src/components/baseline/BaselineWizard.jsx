@@ -1,13 +1,14 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X, AlertCircle } from "lucide-react";
 
 const QUICK_START_SYSTEMS = [
   {
@@ -49,18 +50,30 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
 
   const queryClient = useQueryClient();
 
+  // Fetch existing systems to check what's already documented
+  const { data: existingSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', propertyId],
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: propertyId }),
+    enabled: !!propertyId,
+  });
+
   const createSystemMutation = useMutation({
     mutationFn: async (data) => {
       return base44.entities.SystemBaseline.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines'] }); // Also invalidate general query
     },
   });
 
   const currentSystem = QUICK_START_SYSTEMS[currentStep];
   const isLastStep = currentStep === QUICK_START_SYSTEMS.length - 1;
   const progress = ((currentStep + 1) / QUICK_START_SYSTEMS.length) * 100;
+
+  // Check if current system is already documented
+  const existingSystemsForType = existingSystems.filter(s => s.system_type === currentSystem.type);
+  const alreadyDocumented = existingSystemsForType.length > 0;
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -145,8 +158,8 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
   const handleNext = async () => {
     const systemData = formData[currentSystem.id] || {};
     
-    // Only create if user entered some data
-    if (Object.keys(systemData).length > 0 || (photos[currentSystem.id] || []).length > 0) {
+    // Only create if user entered some data AND system isn't already documented
+    if (!alreadyDocumented && (Object.keys(systemData).length > 0 || (photos[currentSystem.id] || []).length > 0)) {
       const baseData = {
         property_id: propertyId,
         system_type: currentSystem.type,
@@ -244,6 +257,34 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
             <Progress value={progress} className="mt-4 h-2 bg-purple-200" />
           </CardHeader>
           <CardContent className="p-6">
+            {/* Already Documented Alert */}
+            {alreadyDocumented && (
+              <Card className="border-2 border-green-300 bg-green-50 mb-6">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="font-bold text-green-900 mb-1">✅ Already Documented!</h3>
+                      <p className="text-sm text-green-800 mb-2">
+                        You already have {existingSystemsForType.length} {currentSystem.type} documented:
+                      </p>
+                      <ul className="text-sm text-green-800 space-y-1">
+                        {existingSystemsForType.map((sys, idx) => (
+                          <li key={idx}>
+                            • {sys.nickname || sys.brand_model || `${currentSystem.type} #${idx + 1}`}
+                            {sys.installation_year && ` (${new Date().getFullYear() - sys.installation_year} years old)`}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-green-700 mt-2 italic">
+                        Skip to next system or exit to view all your documented systems
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="text-center mb-6">
               <div className="text-6xl mb-3">{currentSystem.icon}</div>
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -510,6 +551,18 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
               >
                 {createSystemMutation.isPending ? (
                   'Saving...'
+                ) : alreadyDocumented ? (
+                  isLastStep ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      Finish Setup
+                    </>
+                  ) : (
+                    <>
+                      Skip to Next System
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )
                 ) : isLastStep ? (
                   <>
                     <CheckCircle2 className="w-5 h-5" />

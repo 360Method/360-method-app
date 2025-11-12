@@ -409,6 +409,10 @@ export default function Baseline() {
     setShowDialog(false);
     setEditingSystem(null);
     
+    // Invalidate both specific and general queries
+    queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
+    queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+    
     // Restore scroll position after a short delay to allow DOM updates
     setTimeout(() => {
       window.scrollTo({
@@ -547,13 +551,31 @@ export default function Baseline() {
         property={currentProperty}
         onComplete={() => {
           setShowWizard(false);
+          // Force refresh of systems data
+          queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-          // Optionally trigger a celebration if wizard completes a milestone
-          const milestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
-          if (milestone) {
-            setRecentMilestone(milestone);
-            setTimeout(() => setRecentMilestone(null), 10000);
-          }
+          
+          // Check for milestone after wizard completes
+          setTimeout(() => {
+            const updatedSystems = queryClient.getQueryData(['systemBaselines', selectedProperty]) || systems;
+            const updatedSystemsByType = updatedSystems.reduce((acc, system) => {
+              if (!acc[system.system_type]) acc[system.system_type] = [];
+              acc[system.system_type].push(system);
+              return acc;
+            }, {});
+            
+            const requiredTypes = REQUIRED_SYSTEMS.filter(type => updatedSystemsByType[type]?.length > 0).length;
+            const recommendedTypes = RECOMMENDED_SYSTEMS.filter(type => updatedSystemsByType[type]?.length > 0).length;
+            const applianceTypes = APPLIANCE_TYPES.filter(type => updatedSystemsByType[type]?.length > 0).length;
+            const safetyTypes = SAFETY_TYPES.filter(type => updatedSystemsByType[type]?.length > 0).length;
+            const totalTypes = requiredTypes + recommendedTypes + (applianceTypes > 0 ? 1 : 0) + (safetyTypes > 0 ? 1 : 0);
+            
+            const milestone = MILESTONES.find(m => m.threshold === totalTypes);
+            if (milestone && !recentMilestone) {
+              setRecentMilestone(milestone);
+              setTimeout(() => setRecentMilestone(null), 10000);
+            }
+          }, 500);
         }}
         onSkip={() => setShowWizard(false)}
       />
@@ -568,6 +590,8 @@ export default function Baseline() {
         property={currentProperty}
         onComplete={() => {
           setShowPhysicalWalkthrough(false);
+          // Force refresh of systems data
+          queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
         }}
         onSkip={() => setShowPhysicalWalkthrough(false)}
