@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -5,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Lightbulb, Target, Clock, CheckCircle2, List, Grid3x3, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
@@ -55,6 +58,7 @@ export default function Schedule() {
   const [taskFormDate, setTaskFormDate] = React.useState(null);
   const [viewMode, setViewMode] = React.useState('month'); // 'month' or 'week'
   const [expandedGroups, setExpandedGroups] = React.useState({}); // Track which groups are expanded
+  const [schedulePopoverStates, setSchedulePopoverStates] = React.useState({}); // Track popover states per task
 
   const queryClient = useQueryClient();
 
@@ -192,6 +196,8 @@ export default function Schedule() {
         status: 'Scheduled'
       }
     });
+    // Close the popover for this task
+    setSchedulePopoverStates(prev => ({ ...prev, [taskId]: false }));
   };
 
   const tasksThisWeek = scheduledTasks.filter(t => {
@@ -459,19 +465,29 @@ export default function Schedule() {
                                   </div>
                                 )}
 
-                                <Button
-                                  onClick={() => {
-                                    setSelectedDate(new Date());
-                                    setShowDialog(true);
-                                  }}
-                                  size="sm"
-                                  variant="outline"
-                                  className="w-full gap-2 border-orange-400 text-orange-700 hover:bg-orange-100"
-                                  style={{ minHeight: '40px' }}
+                                <Popover 
+                                  open={schedulePopoverStates[task.id] || false}
+                                  onOpenChange={(open) => setSchedulePopoverStates(prev => ({ ...prev, [task.id]: open }))}
                                 >
-                                  <CalendarIcon className="w-4 h-4" />
-                                  Schedule This Task
-                                </Button>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full gap-2 border-orange-400 text-orange-700 hover:bg-orange-100"
+                                      style={{ minHeight: '40px' }}
+                                    >
+                                      <CalendarIcon className="w-4 h-4" />
+                                      Schedule This Task
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarUI
+                                      mode="single"
+                                      selected={new Date()}
+                                      onSelect={(date) => handleQuickSchedule(task.id, date)}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             );
                           })}

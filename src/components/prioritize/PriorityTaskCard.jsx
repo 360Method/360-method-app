@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar, CheckCircle2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -42,10 +43,7 @@ const GENERIC_CASCADE_EXAMPLES = {
 export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, propertyId }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
-  const [showScheduleDialog, setShowScheduleDialog] = React.useState(false);
-  const [scheduledDate, setScheduledDate] = React.useState(
-    task.scheduled_date ? format(new Date(task.scheduled_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
-  );
+  const [schedulePopoverOpen, setSchedulePopoverOpen] = React.useState(false);
 
   const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
 
@@ -54,13 +52,10 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
     || GENERIC_CASCADE_EXAMPLES[task.system_type] 
     || GENERIC_CASCADE_EXAMPLES["General"];
 
-  const handleScheduleTask = () => {
-    setShowScheduleDialog(true);
-  };
-
-  const handleConfirmSchedule = () => {
-    onStatusChange(task.id, 'Scheduled', scheduledDate);
-    setShowScheduleDialog(false);
+  const handleDateSelect = (date) => {
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    onStatusChange(task.id, 'Scheduled', formattedDate);
+    setSchedulePopoverOpen(false);
   };
 
   return (
@@ -141,15 +136,26 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
               <ShoppingCart className="w-4 h-4" />
               <span className="text-sm">Add to Cart</span>
             </Button>
-            <Button
-              onClick={handleScheduleTask}
-              variant="outline"
-              className="gap-2 w-full border-2 border-blue-400 text-blue-700 hover:bg-blue-50"
-              style={{ minHeight: '48px' }}
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm">{task.scheduled_date ? 'Reschedule' : 'Schedule'}</span>
-            </Button>
+            
+            <Popover open={schedulePopoverOpen} onOpenChange={setSchedulePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="gap-2 w-full border-2 border-blue-400 text-blue-700 hover:bg-blue-50"
+                  style={{ minHeight: '48px' }}
+                >
+                  <CalendarIcon className="w-4 h-4" />
+                  <span className="text-sm">{task.scheduled_date ? 'Reschedule' : 'Schedule'}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={task.scheduled_date ? new Date(task.scheduled_date) : new Date()}
+                  onSelect={handleDateSelect}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Expanded Details */}
@@ -258,49 +264,6 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
           )}
         </CardContent>
       </Card>
-
-      {/* Schedule Date Dialog */}
-      {showScheduleDialog && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
-            <h3 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>
-              Schedule Task
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Set a date to add this task to your calendar
-            </p>
-            
-            <div className="mb-6">
-              <Label className="mb-2 block">Scheduled Date</Label>
-              <Input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowScheduleDialog(false)}
-                className="flex-1"
-                style={{ minHeight: '48px' }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmSchedule}
-                className="flex-1 gap-2"
-                style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
-              >
-                <Calendar className="w-4 h-4" />
-                Schedule
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <AddToCartDialog
         open={showCartDialog}
