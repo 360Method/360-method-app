@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -88,8 +89,15 @@ export default function Prioritize() {
     updateTaskMutation.mutate({ taskId, updates: { priority: newPriority } });
   };
 
-  const handleStatusChange = (taskId, newStatus) => {
-    updateTaskMutation.mutate({ taskId, updates: { status: newStatus } });
+  const handleStatusChange = (taskId, newStatus, scheduledDate = null) => {
+    const updates = { status: newStatus };
+    
+    // If scheduling, include the scheduled_date
+    if (newStatus === 'Scheduled' && scheduledDate) {
+      updates.scheduled_date = scheduledDate;
+    }
+    
+    updateTaskMutation.mutate({ taskId, updates });
   };
 
   // Calculate stats
@@ -284,6 +292,7 @@ export default function Prioritize() {
             systems={baselineSystems}
             inspections={inspections}
             existingTasks={activeTasks}
+            onScheduleTask={handleStatusChange} // Pass the updated handler
           />
         )}
 

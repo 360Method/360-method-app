@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar } from "lucide-react";
+import { format } from "date-fns";
 
 import AddToCartDialog from "../cart/AddToCartDialog";
 
@@ -30,9 +33,13 @@ const GENERIC_CASCADE_EXAMPLES = {
   "General": "Small issue → Secondary damage → Tertiary failures → Emergency repair at 3X cost"
 };
 
-export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange }) {
+export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, propertyId }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = React.useState(false);
+  const [scheduledDate, setScheduledDate] = React.useState(
+    task.scheduled_date ? format(new Date(task.scheduled_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+  );
 
   const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
 
@@ -40,6 +47,16 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
   const cascadeExample = task.cascade_risk_reason 
     || GENERIC_CASCADE_EXAMPLES[task.system_type] 
     || GENERIC_CASCADE_EXAMPLES["General"];
+
+  const handleScheduleTask = () => {
+    setShowScheduleDialog(true);
+  };
+
+  const handleConfirmSchedule = () => {
+    // Update task with both status and scheduled date
+    onStatusChange(task.id, 'Scheduled', scheduledDate);
+    setShowScheduleDialog(false);
+  };
 
   return (
     <>
@@ -62,6 +79,11 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                   {task.has_cascade_alert && (
                     <Badge className="bg-orange-100 text-orange-800 border-orange-200">
                       ⚠️ Cascade Risk
+                    </Badge>
+                  )}
+                  {task.scheduled_date && (
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      📅 {format(new Date(task.scheduled_date), 'MMM d, yyyy')}
                     </Badge>
                   )}
                 </div>
@@ -199,7 +221,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                 <Button
                   onClick={() => setShowCartDialog(true)}
                   className="w-full gap-2"
-                  style={{ backgroundColor: '#8B5CF6' }}
+                  style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Add to Service Cart
@@ -207,12 +229,12 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
 
                 <div className="flex flex-wrap gap-3">
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-xs text-gray-600 mb-1 block">Change Priority:</label>
+                    <Label className="text-xs text-gray-600 mb-1 block">Change Priority:</Label>
                     <Select
                       value={task.priority}
                       onValueChange={(value) => onPriorityChange(task.id, value)}
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-9" style={{ minHeight: '48px' }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -228,17 +250,18 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onStatusChange(task.id, 'Scheduled')}
-                      className="h-9"
+                      onClick={handleScheduleTask}
+                      className="gap-2"
+                      style={{ minHeight: '48px' }}
                     >
-                      Schedule
+                      <Calendar className="w-4 h-4" />
+                      {task.scheduled_date ? 'Reschedule' : 'Schedule'}
                     </Button>
                     <Button
                       variant="default"
                       size="sm"
                       onClick={() => onStatusChange(task.id, 'Completed')}
-                      style={{ backgroundColor: 'var(--accent)' }}
-                      className="h-9"
+                      style={{ backgroundColor: 'var(--accent)', minHeight: '48px' }}
                     >
                       Mark Complete
                     </Button>
@@ -249,6 +272,49 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
           )}
         </CardContent>
       </Card>
+
+      {/* Schedule Date Dialog */}
+      {showScheduleDialog && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
+            <h3 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>
+              Schedule Task
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Set a date to schedule this task on your calendar
+            </p>
+            
+            <div className="mb-6">
+              <Label className="mb-2 block">Scheduled Date</Label>
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowScheduleDialog(false)}
+                className="flex-1"
+                style={{ minHeight: '48px' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmSchedule}
+                className="flex-1 gap-2"
+                style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
+              >
+                <Calendar className="w-4 h-4" />
+                Schedule Task
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AddToCartDialog
         open={showCartDialog}
@@ -262,7 +328,7 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
           system_type: task.system_type,
           priority: task.priority,
           photo_urls: task.photo_urls || [],
-          estimated_hours: Math.ceil((task.current_fix_cost || 500) / 150), // Assuming $150/hour for estimation
+          estimated_hours: Math.ceil((task.current_fix_cost || 500) / 150),
           estimated_cost_min: task.current_fix_cost,
           estimated_cost_max: task.delayed_fix_cost,
           customer_notes: task.cascade_risk_reason ? `⚠️ Cascade Risk: ${task.cascade_risk_reason}` : ''
