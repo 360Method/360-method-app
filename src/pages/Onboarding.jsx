@@ -3,12 +3,15 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 import OnboardingWelcome from "../components/onboarding/OnboardingWelcome";
 import OnboardingUserProfile from "../components/onboarding/OnboardingUserProfile";
 import OnboardingPropertySetup from "../components/onboarding/OnboardingPropertySetup";
 import OnboardingBaselinePrimer from "../components/onboarding/OnboardingBaselinePrimer";
 import OnboardingComplete from "../components/onboarding/OnboardingComplete";
+import OnboardingSkipDialog from "../components/onboarding/OnboardingSkipDialog";
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = React.useState(0);
@@ -17,6 +20,7 @@ export default function Onboarding() {
     property: null,
     selectedPath: null
   });
+  const [showSkipDialog, setShowSkipDialog] = React.useState(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -93,9 +97,18 @@ export default function Onboarding() {
     }
   };
 
-  const handleSkipToEnd = () => {
-    // Mark onboarding as complete and go to dashboard
-    updateUserMutation.mutate({ onboarding_completed: true });
+  const handleSkipRequest = () => {
+    setShowSkipDialog(true);
+  };
+
+  const handleSkipConfirm = async () => {
+    // Mark onboarding as skipped/completed and go to dashboard
+    await updateUserMutation.mutateAsync({ 
+      onboarding_completed: true,
+      onboarding_skipped: true,
+      onboarding_completed_date: new Date().toISOString()
+    });
+    setShowSkipDialog(false);
     navigate(createPageUrl("Dashboard"));
   };
 
@@ -104,6 +117,7 @@ export default function Onboarding() {
     await updateUserMutation.mutateAsync({
       ...finalData,
       onboarding_completed: true,
+      onboarding_skipped: false,
       onboarding_completed_date: new Date().toISOString()
     });
     
@@ -122,6 +136,21 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
+        {/* Skip Button - Only show on non-welcome and non-complete steps */}
+        {currentStep > 0 && currentStep < steps.length - 1 && (
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={handleSkipRequest}
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Skip Setup
+            </Button>
+          </div>
+        )}
+
         {/* Progress Bar */}
         {currentStep > 0 && currentStep < steps.length - 1 && (
           <div className="mb-6">
@@ -149,12 +178,19 @@ export default function Onboarding() {
         <CurrentStepComponent
           onNext={handleStepComplete}
           onBack={currentStep > 0 ? handleBack : null}
-          onSkip={handleSkipToEnd}
+          onSkip={handleSkipRequest}
           onComplete={handleComplete}
           data={onboardingData}
           user={user}
         />
       </div>
+
+      {/* Skip Confirmation Dialog */}
+      <OnboardingSkipDialog
+        open={showSkipDialog}
+        onClose={() => setShowSkipDialog(false)}
+        onConfirm={handleSkipConfirm}
+      />
     </div>
   );
 }
