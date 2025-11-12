@@ -229,7 +229,7 @@ export default function Dashboard() {
   if (properties.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
+        <div className="mobile-container md:max-w-5xl md:mx-auto pt-8">
           {/* Welcome Header with Tier Badge */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -241,44 +241,193 @@ export default function Dashboard() {
             <TierBadge tier={currentTier} />
           </div>
 
-          {/* Onboarding Prompt if not completed */}
-          {!user?.onboarding_completed && (
-            <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-blue-50 mb-6 shadow-lg">
-              <CardContent className="p-6">
+          {/* Quick Start Onboarding Guide - PROMINENT */}
+          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 mb-6 shadow-2xl">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex items-start gap-4 md:gap-6">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-purple-900 mb-2 text-xl md:text-2xl">
+                    🚀 Start Your 5-Minute Quick Setup
+                  </h3>
+                  <p className="text-sm md:text-base text-gray-700 mb-4 leading-relaxed">
+                    Our guided onboarding helps you add your first property, understand how the 360° Method works, 
+                    and choose the best documentation path for your needs. You'll be protecting your investment in minutes!
+                  </p>
+                  <Button
+                    onClick={handleRestartOnboarding}
+                    disabled={updateUserMutation.isPending}
+                    className="gap-2 text-lg font-bold shadow-lg w-full md:w-auto"
+                    style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
+                  >
+                    {updateUserMutation.isPending ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Start Guided Setup Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* The 360° Method Framework - Educational */}
+          <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-center text-2xl md:text-3xl" style={{ color: '#1B365D' }}>
+                Understanding the 360° Method
+              </CardTitle>
+              <p className="text-center text-gray-600 mt-2">
+                A proven framework for property owners and investors to protect, maintain, and grow their assets
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Phase I - AWARE */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-lg border-2 border-blue-300">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    <Sparkles className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <Eye className="w-7 h-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-purple-900 mb-2 text-lg">
-                      🎉 Get Started with Guided Setup
-                    </h3>
+                    <h4 className="font-bold text-blue-900 mb-2 text-xl">
+                      Phase I: AWARE
+                    </h4>
                     <p className="text-sm text-gray-700 mb-3">
-                      Our 5-minute onboarding will help you add your property, choose your documentation path, and get the most value from the 360° Method.
+                      <strong>Know what you have.</strong> Document every system, inspect regularly, and track all maintenance. 
+                      This creates your property's "digital twin" and baseline knowledge.
                     </p>
-                    <Button
-                      onClick={handleRestartOnboarding}
-                      disabled={updateUserMutation.isPending}
-                      className="gap-2"
-                      style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                    >
-                      {updateUserMutation.isPending ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Starting...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          Start Guided Setup
-                        </>
-                      )}
-                    </Button>
+                    <div className="grid md:grid-cols-3 gap-3">
+                      <div className="bg-white p-3 rounded border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">📝</span>
+                          <p className="font-semibold text-sm">1. Baseline</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Document all systems</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">🔍</span>
+                          <p className="font-semibold text-sm">2. Inspect</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Seasonal checkups</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">📊</span>
+                          <p className="font-semibold text-sm">3. Track</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Log all maintenance</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              {/* Phase II - ACT */}
+              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <Zap className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-orange-900 mb-2 text-xl">
+                      Phase II: ACT
+                    </h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>Make smart decisions.</strong> Prioritize what matters most, schedule work strategically, 
+                      and execute maintenance before small issues become expensive disasters.
+                    </p>
+                    <div className="grid md:grid-cols-3 gap-3">
+                      <div className="bg-white p-3 rounded border border-orange-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">🎯</span>
+                          <p className="font-semibold text-sm">4. Prioritize</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Rank by risk & ROI</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-orange-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">📅</span>
+                          <p className="font-semibold text-sm">5. Schedule</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Plan your timeline</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-orange-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">✅</span>
+                          <p className="font-semibold text-sm">6. Execute</p>
+                        </div>
+                        <p className="text-xs text-gray-600">DIY or hire pros</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase III - ADVANCE */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <TrendingUp className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-green-900 mb-2 text-xl">
+                      Phase III: ADVANCE
+                    </h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>Build long-term value.</strong> Forecast future expenses, invest in strategic upgrades, 
+                      and scale your operations across multiple properties for maximum ROI.
+                    </p>
+                    <div className="grid md:grid-cols-3 gap-3">
+                      <div className="bg-white p-3 rounded border border-green-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">🛡️</span>
+                          <p className="font-semibold text-sm">7. Preserve</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Lifecycle forecasting</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-green-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">💡</span>
+                          <p className="font-semibold text-sm">8. Upgrade</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Strategic improvements</p>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-green-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">🏢</span>
+                          <p className="font-semibold text-sm">9. Scale</p>
+                        </div>
+                        <p className="text-xs text-gray-600">Grow your portfolio</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The Bottom Line */}
+              <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-300">
+                <div className="flex items-start gap-3">
+                  <Target className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-purple-900 mb-1">The Result:</h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      <strong>Prevent $25K-50K+ in disasters</strong> • <strong>Add $8K-15K to resale value</strong> • 
+                      <strong> Budget 2-5 years ahead</strong> • <strong>Save 30%+ on maintenance costs</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Free Tier Notice */}
           {isFreeTier && (
@@ -309,19 +458,20 @@ export default function Dashboard() {
             </Card>
           )}
           
-          <Card className="border-none shadow-xl bg-gradient-to-br from-white to-gray-50">
+          {/* Add Property CTA */}
+          <Card className="border-2 border-green-300 shadow-xl bg-gradient-to-br from-white to-green-50">
             <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Home className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>Add Your First Property</h3>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>Ready to Get Started?</h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Start protecting your investment by documenting your property. Our guided wizard makes it easy.
+                Add your first property manually, or use our Quick Setup above for a guided experience.
               </p>
               <Button
                 asChild
                 className="w-full md:w-auto shadow-lg"
-                style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
+                style={{ backgroundColor: '#28A745', minHeight: '56px' }}
               >
                 <Link to={createPageUrl("Properties")}>
                   <Plus className="w-5 h-5 mr-2" />
