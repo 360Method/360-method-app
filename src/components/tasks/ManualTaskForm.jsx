@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
-import { enrichTaskWithAI } from "@/utils/taskEnrichment";
+import { enrichTaskWithAI } from "@/utils";
 
 const SYSTEM_TYPES = [
   "HVAC", "Plumbing", "Electrical", "Roof", "Foundation",
