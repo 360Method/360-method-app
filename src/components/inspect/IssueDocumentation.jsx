@@ -58,10 +58,11 @@ export default function IssueDocumentation({
   inspection,
   area,
   existingIssues = [],
-  onComplete
+  onComplete,
+  preselectedSystem = null // NEW: System to pre-populate
 }) {
   const [formData, setFormData] = React.useState({
-    system: '', // This will be the system_type string
+    system: preselectedSystem || '', // Pre-populate if provided
     description: '',
     severity: 'Flag',
     photo_urls: [],
@@ -75,6 +76,7 @@ export default function IssueDocumentation({
   const [aiEstimating, setAiEstimating] = React.useState(false); // Replaces isEstimating
   const [aiEstimate, setAiEstimate] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [editingFixDecision, setEditingFixDecision] = React.useState(false); // NEW: For editing quick fix decision
 
   const queryClient = useQueryClient();
 
@@ -135,7 +137,8 @@ export default function IssueDocumentation({
 
   const handleQuickFixAnswer = async (isQuickFix) => {
     setFormData(prev => ({ ...prev, is_quick_fix: isQuickFix }));
-    setShowQuickFixQuestion(false); // Hide the question after answering
+    setShowQuickFixQuestion(false);
+    setEditingFixDecision(false); // Reset editing state
 
     if (!isQuickFix) { // If not a quick fix, proceed with AI estimation
       setAiEstimating(true);
@@ -164,6 +167,12 @@ export default function IssueDocumentation({
         setAiEstimating(false);
       }
     }
+  };
+
+  const handleEditFixDecision = () => {
+    setEditingFixDecision(true);
+    setFormData(prev => ({ ...prev, is_quick_fix: null, who_will_fix: '' })); // Reset decision and who_will_fix
+    setAiEstimate(null); // Clear AI estimate as it's no longer relevant
   };
 
   const handleSubmit = async () => {
@@ -411,8 +420,8 @@ export default function IssueDocumentation({
                 </Select>
               </div>
 
-              {/* Quick Fix Question - Only show if form data is valid and question not yet answered */}
-              {formData.is_quick_fix === null && !showQuickFixQuestion && (
+              {/* Quick Fix Question - Show button if not answered and not editing */}
+              {formData.is_quick_fix === null && !showQuickFixQuestion && !editingFixDecision && (
                 <Button
                   onClick={() => setShowQuickFixQuestion(true)}
                   disabled={!canAskQuickFixQuestion}
@@ -424,7 +433,7 @@ export default function IssueDocumentation({
               )}
 
               {/* Display Quick Fix Question */}
-              {showQuickFixQuestion && (
+              {(showQuickFixQuestion || editingFixDecision) && (
                 <Card className="border-2 border-blue-300 bg-blue-50">
                   <CardContent className="p-6">
                     <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
@@ -455,13 +464,23 @@ export default function IssueDocumentation({
               )}
 
               {/* Quick Fix Path - Show only if answered YES to quick fix */}
-              {formData.is_quick_fix === true && (
+              {formData.is_quick_fix === true && !editingFixDecision && (
                 <Card className="border-2 border-green-300 bg-green-50">
                   <CardContent className="p-6">
-                    <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#28A745' }}>
-                      <CheckCircle2 className="w-6 h-6" />
-                      Great! Quick Fix
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold flex items-center gap-2" style={{ color: '#28A745' }}>
+                        <CheckCircle2 className="w-6 h-6" />
+                        Great! Quick Fix
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleEditFixDecision}
+                        className="text-blue-600 hover:text-blue-800 text-xs"
+                      >
+                        Change Decision
+                      </Button>
+                    </div>
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="who-fixed-quick-fix">Who fixed it?</Label>
@@ -493,7 +512,7 @@ export default function IssueDocumentation({
               )}
 
               {/* Priority Queue Path with AI Estimate - Show only if answered NO to quick fix */}
-              {formData.is_quick_fix === false && (
+              {formData.is_quick_fix === false && !editingFixDecision && (
                 <>
                   {aiEstimating && (
                     <Card className="border-2 border-purple-300 bg-purple-50">
@@ -507,10 +526,20 @@ export default function IssueDocumentation({
                   {aiEstimate && (
                     <Card className="border-2 border-orange-300 bg-orange-50">
                       <CardContent className="p-6">
-                        <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#FF6B35' }}>
-                          <AlertTriangle className="w-6 h-6" />
-                          AI Risk Analysis
-                        </h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold flex items-center gap-2" style={{ color: '#FF6B35' }}>
+                            <AlertTriangle className="w-6 h-6" />
+                            AI Risk Analysis
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleEditFixDecision}
+                            className="text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            Change Decision
+                          </Button>
+                        </div>
 
                         {/* Cost Disclaimer */}
                         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">

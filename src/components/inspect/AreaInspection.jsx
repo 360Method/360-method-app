@@ -4,15 +4,16 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Lightbulb, AlertTriangle, X } from "lucide-react"; // Added X icon
+import { ArrowLeft, Lightbulb, AlertTriangle, X } from "lucide-react";
 import IssueDocumentation from "./IssueDocumentation";
 
 export default function AreaInspection({ area, inspection, property, baselineSystems, existingIssues, onComplete, onBack }) {
   const [documentingIssue, setDocumentingIssue] = React.useState(false);
+  const [selectedSystem, setSelectedSystem] = React.useState(null); // NEW: Track which system user clicked
   const [issues, setIssues] = React.useState(existingIssues || []);
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
-  const [prefillFromBaseline, setPrefillFromBaseline] = React.useState(true); // New state variable
+  const [prefillFromBaseline, setPrefillFromBaseline] = React.useState(true);
 
   // Handle null property early
   if (!property) {
@@ -34,18 +35,18 @@ export default function AreaInspection({ area, inspection, property, baselineSys
   // Get systems relevant to this area
   const relevantSystems = baselineSystems.filter(system => {
     if (area.id === 'hvac') return system.system_type === 'HVAC System';
-    if (area.id === 'plumbing') return ['Plumbing System', 'Water & Sewer/Septic'].includes(system.system_type); // Updated
+    if (area.id === 'plumbing') return ['Plumbing System', 'Water & Sewer/Septic'].includes(system.system_type);
     if (area.id === 'electrical') return system.system_type === 'Electrical System';
     if (area.id === 'gutters') return system.system_type === 'Gutters & Downspouts';
     if (area.id === 'roof') return system.system_type === 'Roof System';
     if (area.id === 'foundation') return system.system_type === 'Foundation & Structure';
-    if (area.id === 'exterior') return ['Exterior Siding & Envelope', 'Foundation & Structure'].includes(system.system_type); // Updated
-    if (area.id === 'driveways') return system.system_type === 'Driveways & Hardscaping'; // New
-    if (area.id === 'attic') return system.system_type === 'Attic & Insulation'; // New
-    if (area.id === 'windows') return system.system_type === 'Windows & Doors'; // New
-    if (area.id === 'kitchen') return ['Plumbing System', 'Refrigerator', 'Range/Oven', 'Dishwasher', 'Microwave', 'Garbage Disposal'].includes(system.system_type); // Updated
-    if (area.id === 'bathrooms') return system.system_type === 'Plumbing System'; // Updated
-    if (area.id === 'safety') return ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System', 'Radon Test'].includes(system.system_type); // Updated
+    if (area.id === 'exterior') return ['Exterior Siding & Envelope', 'Foundation & Structure'].includes(system.system_type);
+    if (area.id === 'driveways') return system.system_type === 'Driveways & Hardscaping';
+    if (area.id === 'attic') return system.system_type === 'Attic & Insulation';
+    if (area.id === 'windows') return system.system_type === 'Windows & Doors';
+    if (area.id === 'kitchen') return ['Plumbing System', 'Refrigerator', 'Range/Oven', 'Dishwasher', 'Microwave', 'Garbage Disposal'].includes(system.system_type);
+    if (area.id === 'bathrooms') return system.system_type === 'Plumbing System';
+    if (area.id === 'safety') return ['Smoke Detector', 'CO Detector', 'Fire Extinguisher', 'Security System', 'Radon Test'].includes(system.system_type);
     return false;
   });
 
@@ -54,7 +55,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
     if (!prefillFromBaseline || !relevantSystems.length) return [];
 
     const prefilledIssues = [];
-    
+
     relevantSystems.forEach(system => {
       // Check if system has poor condition
       if (['Poor', 'Urgent', 'Fair'].includes(system.condition)) {
@@ -84,7 +85,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
         if (system.installation_year) {
           const age = new Date().getFullYear() - system.installation_year;
           issue.notes += `\n\nAge: ${age} years old (installed ${system.installation_year})`;
-          
+
           if (system.estimated_lifespan_years) {
             const remainingLife = system.estimated_lifespan_years - age;
             if (remainingLife <= 2) {
@@ -118,7 +119,7 @@ export default function AreaInspection({ area, inspection, property, baselineSys
       if (relevantSystems.length === 0 || aiSuggestions !== null) {
         return;
       }
-      
+
       setLoadingSuggestions(true);
       try {
         const systemsInfo = relevantSystems.map(sys => {
@@ -188,21 +189,57 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
     const newIssues = [...issues, issueData];
     setIssues(newIssues);
     setDocumentingIssue(false);
+    setSelectedSystem(null); // Reset selected system
   };
 
   const handleRemovePrefilledIssue = (index) => {
     setIssues(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDocumentIssueForSystem = (system) => {
+    // Map system_type to the dropdown values in IssueDocumentation
+    const systemTypeMap = {
+      'HVAC System': 'HVAC',
+      'Plumbing System': 'Plumbing',
+      'Water & Sewer/Septic': 'Plumbing',
+      'Electrical System': 'Electrical',
+      'Roof System': 'Roof',
+      'Foundation & Structure': 'Foundation',
+      'Gutters & Downspouts': 'Gutters',
+      'Exterior Siding & Envelope': 'Exterior',
+      'Driveways & Hardscaping': 'General',
+      'Attic & Insulation': 'General',
+      'Windows & Doors': 'Windows/Doors',
+      'Refrigerator': 'Appliances',
+      'Range/Oven': 'Appliances',
+      'Dishwasher': 'Appliances',
+      'Microwave': 'Appliances',
+      'Garbage Disposal': 'Appliances',
+      'Smoke Detector': 'Safety', // Corrected mapping
+      'CO Detector': 'Safety',     // Corrected mapping
+      'Fire Extinguisher': 'Safety',// Corrected mapping
+      'Security System': 'Safety',  // Corrected mapping
+      'Radon Test': 'Safety'        // Corrected mapping
+    };
+
+    const mappedSystemType = systemTypeMap[system.system_type] || 'General';
+    setSelectedSystem(mappedSystemType);
+    setDocumentingIssue(true);
+  };
+
   if (documentingIssue) {
     return (
       <IssueDocumentation
-        area={area}
+        propertyId={property.id}
         inspection={inspection}
-        property={property}
-        relevantSystems={relevantSystems}
-        onSave={handleIssueDocumented}
-        onCancel={() => setDocumentingIssue(false)}
+        area={area}
+        existingIssues={issues}
+        preselectedSystem={selectedSystem} // Pass the preselected system
+        onComplete={handleIssueDocumented}
+        onCancel={() => {
+          setDocumentingIssue(false);
+          setSelectedSystem(null);
+        }}
       />
     );
   }
@@ -387,22 +424,34 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
 
         {/* Documented Systems */}
         {relevantSystems.length > 0 && (
-          <Card className="border-2 mobile-card" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
+          <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
             <CardContent className="p-4">
               <h2 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '18px' }}>
                 Your documented systems:
               </h2>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {relevantSystems.map((system) => (
-                  <li key={system.id} className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">•</span>
-                    <div>
-                      <span className="font-medium">{system.nickname || system.system_type}</span>
-                      {system.brand_model && <span className="text-gray-600"> - {system.brand_model}</span>}
-                      {system.installation_year && (
-                        <span className="text-gray-600"> ({new Date().getFullYear() - system.installation_year} years old)</span>
-                      )}
+                  <li key={system.id} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:border-blue-300 transition-colors">
+                    <div className="flex items-start gap-2 flex-1">
+                      <span className="text-green-600 font-bold">•</span>
+                      <div>
+                        <span className="font-medium">{system.nickname || system.system_type}</span>
+                        {system.brand_model && <span className="text-gray-600"> - {system.brand_model}</span>}
+                        {system.installation_year && (
+                          <span className="text-gray-600"> ({new Date().getFullYear() - system.installation_year} years old)</span>
+                        )}
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDocumentIssueForSystem(system)}
+                      className="ml-2 whitespace-nowrap"
+                      style={{ minHeight: '36px' }}
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Report Issue
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -418,7 +467,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
             <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
               🔍 WHAT TO LOOK FOR:
             </h2>
-            
+
             {relevantSystems.length > 0 ? (
               <div className="space-y-6">
                 {relevantSystems.map((system) => (
@@ -559,7 +608,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
           <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
             Did you find any issues?
           </h2>
-          
+
           <div className="flex flex-col gap-3">
             <Button
               onClick={() => setDocumentingIssue(true)}
@@ -569,7 +618,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
               <AlertTriangle className="w-5 h-5 mr-2" />
               ⚠️ Found an Issue
             </Button>
-            
+
             <Button
               onClick={handleSaveAndContinue}
               className="w-full font-bold"
