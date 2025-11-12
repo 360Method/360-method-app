@@ -696,6 +696,134 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* 360° Method Quick Reference - Compact */}
+        <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 mb-6 shadow-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between" style={{ color: '#1B365D', fontSize: '18px' }}>
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-indigo-600" />
+                The 360° Method Framework
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-3">
+              {/* Phase I - AWARE */}
+              <div className="bg-white p-4 rounded-lg border-2 border-blue-300 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <Eye className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-bold text-blue-900">I. AWARE</h4>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">Know what you have</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {avgBaselineCompletion >= 66 ? '✓' : '1'}
+                    </span>
+                    <span className={avgBaselineCompletion >= 66 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Baseline</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {allInspections.length > 0 ? '✓' : '2'}
+                    </span>
+                    <span className={allInspections.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Inspect</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {totalSpent > 0 ? '✓' : '3'}
+                    </span>
+                    <span className={totalSpent > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Track</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase II - ACT */}
+              <div className="bg-white p-4 rounded-lg border-2 border-orange-300 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-bold text-orange-900">II. ACT</h4>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {allTasks.length > 0 ? '✓' : '4'}
+                    </span>
+                    <span className={allTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Prioritize</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {scheduledTasks.length > 0 ? '✓' : '5'}
+                    </span>
+                    <span className={scheduledTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Schedule</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {completedTasksThisMonth > 0 ? '✓' : '6'}
+                    </span>
+                    <span className={completedTasksThisMonth > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Execute</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase III - ADVANCE */}
+              <div className="bg-white p-4 rounded-lg border-2 border-green-300 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-bold text-green-900">III. ADVANCE</h4>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {totalPrevented > 0 ? '✓' : '7'}
+                    </span>
+                    <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs">
+                      8
+                    </span>
+                    <span className="text-gray-600">Upgrade</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${properties.length > 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                      {properties.length > 1 ? '✓' : '9'}
+                    </span>
+                    <span className={properties.length > 1 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Scale</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress Summary */}
+            <div className="mt-4 p-3 bg-white rounded border border-indigo-200">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-600">Your Progress:</span>
+                <span className="font-bold text-indigo-600">
+                  {[
+                    avgBaselineCompletion >= 66,
+                    allInspections.length > 0,
+                    totalSpent > 0,
+                    allTasks.length > 0,
+                    scheduledTasks.length > 0,
+                    completedTasksThisMonth > 0,
+                    totalPrevented > 0,
+                    false, // Upgrade step
+                    properties.length > 1
+                  ].filter(Boolean).length} of 9 steps completed
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           {/* Left Column - Main Content */}
           <div className="md:col-span-2 space-y-6">
