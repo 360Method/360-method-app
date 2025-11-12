@@ -18,7 +18,9 @@ import {
   Calendar,
   Lightbulb, // Preserved as it's used
   CheckCircle2, // Preserved as it's used
-  Sparkles // Preserved as it's used
+  Sparkles, // Preserved as it's used
+  ChevronRight, // New import
+  ChevronDown // New import
 } from "lucide-react";
 import SystemLifecycleCard from "../components/preserve/SystemLifecycleCard";
 import ExpenseForecast from "../components/preserve/ExpenseForecast";
@@ -30,6 +32,8 @@ export default function Preserve() {
   const propertyIdFromUrl = urlParams.get('property');
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
+  const [systemFilter, setSystemFilter] = React.useState("all"); // New state
+  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state
   const [preservationData, setPreservationData] = React.useState(null);
   const [loadingPreservation, setLoadingPreservation] = React.useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = React.useState(null);
@@ -172,6 +176,55 @@ Please provide a quote for these preservation services.`
             Protect your investment with proactive lifecycle management
           </p>
         </div>
+
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 mb-1">Why Preserve Matters</h3>
+                <p className="text-sm text-green-800">
+                  Preserve launches the ADVANCE phase by shifting you from reactive to proactive. It uses your historical data to predict future needs, preventing surprise expenses and maximizing system lifespans.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Preserve is Step 7 and begins ADVANCE. It leverages your complete AWARE and ACT data to forecast system replacements, estimate future costs, and plan capital reserves. This transforms you from "putting out fires" to "planning for the future."
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Lifecycle Intelligence:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Replacement forecasting:</strong> See when major systems will need replacement (2-15 years out)</li>
+                    <li>• <strong>Budget planning:</strong> Understand capital expense needs by year</li>
+                    <li>• <strong>Lifespan optimization:</strong> Proper maintenance extends system life 30-50%</li>
+                    <li>• <strong>Total Cost of Ownership:</strong> Calculate true costs including maintenance + replacement</li>
+                  </ul>
+                </div>
+                <div className="bg-green-50 rounded p-3 border-l-4 border-green-600">
+                  <p className="text-xs text-green-900">
+                    <strong>Key Insight:</strong> Properties using Preserve avoid 70% of "surprise" major expenses by planning 3-5 years ahead and setting aside appropriate reserves.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {properties.length > 0 && (
           <Card className="border-none shadow-lg">

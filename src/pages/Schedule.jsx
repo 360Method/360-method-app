@@ -13,16 +13,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  X, // Retained: used in TaskFormOverlay
+  X,
   Clock,
   CheckCircle2,
-  List, // Retained: used in view mode buttons
-  Grid3x3, // Retained: used in view mode buttons
+  List,
+  Grid3x3,
   AlertCircle,
-  ChevronDown, // Retained: used in unscheduled tasks
-  ChevronUp, // Retained: used in unscheduled tasks
-  Home, // Added as per outline
-  Sparkles // Added as per outline
+  ChevronDown,
+  ChevronUp,
+  Home,
+  Sparkles,
+  Lightbulb // Added as per outline
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday, isValid, parseISO } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
@@ -83,15 +84,16 @@ export default function Schedule() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
   
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  const [selectedProperty, setSelectedProperty] = React.useState(null); // Changed initial state to null
+  const [currentDate, setCurrentDate] = React.useState(new Date()); // Renamed currentMonth to currentDate
   const [selectedDate, setSelectedDate] = React.useState(null);
-  const [showDialog, setShowDialog] = React.useState(false);
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [taskFormDate, setTaskFormDate] = React.useState(null);
   const [viewMode, setViewMode] = React.useState('month');
   const [expandedGroups, setExpandedGroups] = React.useState({});
   const [schedulePopoverStates, setSchedulePopoverStates] = React.useState({});
+  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false); // Renamed showDialog to taskDialogOpen
+  const [whyExpanded, setWhyExpanded] = React.useState(false); // Added as per outline
 
   const queryClient = useQueryClient();
 
@@ -111,13 +113,15 @@ export default function Schedule() {
   React.useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
+    } else if (propertyIdFromUrl && selectedProperty !== propertyIdFromUrl) {
+      setSelectedProperty(propertyIdFromUrl);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, propertyIdFromUrl]);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const weekStart = startOfWeek(currentMonth);
-  const weekEnd = endOfWeek(currentMonth);
+  const monthStart = startOfMonth(currentDate); // Using currentDate
+  const monthEnd = endOfMonth(currentDate); // Using currentDate
+  const weekStart = startOfWeek(currentDate); // Using currentDate
+  const weekEnd = endOfWeek(currentDate); // Using currentDate
   
   const daysToShow = viewMode === 'month' 
     ? eachDayOfInterval({ start: monthStart, end: monthEnd })
@@ -128,7 +132,7 @@ export default function Schedule() {
   const completedThisMonth = tasks.filter(t => {
     if (t.status !== 'Completed' || !t.completion_date) return false;
     const completionDate = safeParseDate(t.completion_date);
-    return completionDate && isSameMonth(completionDate, currentMonth);
+    return completionDate && isSameMonth(completionDate, currentDate); // Using currentDate
   }).length;
 
   const groupedUnscheduledTasks = React.useMemo(() => {
@@ -195,7 +199,7 @@ export default function Schedule() {
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
-    setShowDialog(true);
+    setTaskDialogOpen(true); // Using taskDialogOpen
   };
 
   const handleAddTask = (date = null) => {
@@ -243,7 +247,7 @@ export default function Schedule() {
 
   const tasksThisMonth = scheduledTasks.filter(t => {
     const taskDate = safeParseDate(t.scheduled_date);
-    return taskDate && isSameMonth(taskDate, currentMonth);
+    return taskDate && isSameMonth(taskDate, currentDate); // Using currentDate
   }).length;
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
@@ -269,19 +273,65 @@ export default function Schedule() {
           </p>
         </div>
 
-        {/* This was the "Mobile-Optimized Header", removed as per instructions */}
-        {/* This was the "Why Scheduling Matters" card, removed as per instructions */}
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-orange-200 bg-orange-50 shadow-lg">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 mb-1">Why Schedule Matters</h3>
+                <p className="text-sm text-orange-800">
+                  Schedule bridges planning and execution. It transforms your priority queue into a realistic, time-boxed plan that prevents overwhelm and ensures critical tasks don't slip through the cracks.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Schedule is Step 5 in the ACT phase. It takes your prioritized queue and maps it to real calendar dates. This creates accountability, prevents task overload, and optimizes for seasonal timing (e.g., roof work in summer, HVAC service before winter).
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Smart Scheduling Strategy:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Seasonal optimization:</strong> System-specific templates suggest ideal months</li>
+                    <li>• <strong>Time-boxed planning:</strong> Spread tasks to avoid burnout</li>
+                    <li>• <strong>Cascade prevention timing:</strong> Address urgent items within their timelines</li>
+                    <li>• <strong>DIY vs. Professional:</strong> Block appropriate time based on execution type</li>
+                  </ul>
+                </div>
+                <div className="bg-orange-50 rounded p-3 border-l-4 border-orange-600">
+                  <p className="text-xs text-orange-900">
+                    <strong>Best Practice:</strong> Schedule high-priority cascade risks immediately. Space routine maintenance across the calendar to avoid concentration risk.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Property Selector */}
         {properties.length > 0 && (
-          <Card className="border-none shadow-lg">
+          <Card className="border-none shadow-lg mb-6">
             <CardContent className="p-4 md:p-6">
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
-                  <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
                     <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                      <SelectValue />
+                      <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
                     <SelectContent>
                       {properties.map((property) => (
@@ -323,7 +373,7 @@ export default function Schedule() {
 
         {/* Enhanced Unscheduled Tasks */}
         {unscheduledTasks.length > 0 && (
-          <Card className="border-2 border-orange-300 bg-orange-50 shadow-xl">
+          <Card className="border-2 border-orange-300 bg-orange-50 shadow-xl mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#1B365D' }}>
                 <AlertCircle className="w-5 h-5 text-orange-600" />
@@ -502,7 +552,7 @@ export default function Schedule() {
               <CardTitle className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-blue-600" />
                 <span style={{ color: '#1B365D' }}>
-                  {format(currentMonth, 'MMMM yyyy')}
+                  {format(currentDate, 'MMMM yyyy')} {/* Using currentDate */}
                 </span>
               </CardTitle>
 
@@ -534,7 +584,7 @@ export default function Schedule() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentMonth(viewMode === 'month' ? subMonths(currentMonth, 1) : new Date(currentMonth.getTime() - 7 * 24 * 60 * 60 * 1000))}
+                    onClick={() => setCurrentDate(viewMode === 'month' ? subMonths(currentDate, 1) : new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000))} // Using currentDate
                     style={{ minHeight: '40px', minWidth: '40px' }}
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -542,7 +592,7 @@ export default function Schedule() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentMonth(new Date())}
+                    onClick={() => setCurrentDate(new Date())} // Using currentDate
                     style={{ minHeight: '40px' }}
                   >
                     Today
@@ -550,7 +600,7 @@ export default function Schedule() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentMonth(viewMode === 'month' ? addMonths(currentMonth, 1) : new Date(currentMonth.getTime() + 7 * 24 * 60 * 60 * 1000))}
+                    onClick={() => setCurrentDate(viewMode === 'month' ? addMonths(currentDate, 1) : new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000))} // Using currentDate
                     style={{ minHeight: '40px', minWidth: '40px' }}
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -676,13 +726,13 @@ export default function Schedule() {
       </div>
 
       <TaskDialog
-        open={showDialog}
-        onClose={() => setShowDialog(false)}
+        open={taskDialogOpen} // Using taskDialogOpen
+        onClose={() => setTaskDialogOpen(false)} // Using setTaskDialogOpen
         selectedDate={selectedDate}
         propertyId={selectedProperty}
         existingTasks={selectedDate ? getTasksForDate(selectedDate) : []}
         onAddTask={() => {
-          setShowDialog(false);
+          setTaskDialogOpen(false); // Using setTaskDialogOpen
           handleAddTask(selectedDate);
         }}
       />

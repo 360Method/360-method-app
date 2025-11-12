@@ -3,26 +3,31 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button"; // Added Button
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress"; // Added Progress
+import { Progress } from "@/components/ui/progress";
 import {
   Building2,
-  Home, // Added Home
-  TrendingDown,
+  Home,
+  TrendingDown, // Kept from original
   TrendingUp,
   DollarSign,
-  AlertTriangle,
-  Users, // Added Users
-  Briefcase, // Added Briefcase
-  Award, // Added Award
-  Plus // Added Plus
+  AlertTriangle, // Kept from original
+  Users,
+  Briefcase,
+  Award,
+  Plus,
+  Lightbulb, // Added
+  ChevronRight, // Added
+  ChevronDown // Added
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
 
 export default function Scale() {
+  const [whyExpanded, setWhyExpanded] = React.useState(false);
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
@@ -85,6 +90,55 @@ export default function Scale() {
             Manage multiple properties with confidence and efficiency
           </p>
         </div>
+
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 mb-1">Why Scale Matters</h3>
+                <p className="text-sm text-green-800">
+                  Scale completes the 360° Method by enabling portfolio growth. Once you've mastered one property, this framework lets you confidently manage 2, 5, 10+ properties with the same rigor.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Scale is Step 9 and the culmination of ADVANCE. It applies everything you've learned (AWARE → ACT → ADVANCE) across multiple properties. The 360° Method becomes your competitive advantage - enabling professional-grade property management at investor-friendly costs.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Portfolio Management Superpowers:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Unified dashboard:</strong> See all properties, tasks, and costs in one place</li>
+                    <li>• <strong>Comparative analytics:</strong> Which properties are most profitable? Most maintenance-intensive?</li>
+                    <li>• <strong>Bulk operations:</strong> Schedule seasonal inspections across entire portfolio</li>
+                    <li>• <strong>Proven playbooks:</strong> Replicate successful strategies property-to-property</li>
+                  </ul>
+                </div>
+                <div className="bg-green-50 rounded p-3 border-l-4 border-green-600">
+                  <p className="text-xs text-green-900">
+                    <strong>Scaling Success:</strong> Investors using the 360° Method across 5+ properties report 60% lower maintenance costs per door and 85% fewer emergency repairs than industry averages.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Portfolio Overview */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">

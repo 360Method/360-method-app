@@ -7,21 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress"; // Added Progress import
+import { Progress } from "@/components/ui/progress";
 import { 
-  Plus, // Kept
-  Calendar, // Added
-  CheckCircle2, // Kept
-  AlertTriangle, // Added (replaces AlertCircle)
-  Clock, // Kept
-  Eye, // Kept
-  FileText, // Kept
-  Trash2, // Kept
-  PlayCircle, // Kept
-  BookOpen, // Added
-  Lightbulb, // Kept
-  Shield // Kept
-  // Removed: ClipboardCheck, AlertCircle, Wrench, MoreVertical, Target, DollarSign, TrendingUp, ArrowRight, MapPin, ListOrdered
+  Plus,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Eye,
+  FileText,
+  Trash2,
+  PlayCircle,
+  BookOpen,
+  Lightbulb,
+  Shield,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import {
@@ -42,12 +43,15 @@ export default function Inspect() {
   const searchParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = searchParams.get('property');
 
-  const [currentView, setCurrentView] = React.useState('main');
+  // Updated state variables as per outline
+  const [inspectionView, setInspectionView] = React.useState('main'); // Replaces currentView
   const [selectedPropertyId, setSelectedPropertyId] = React.useState(propertyIdFromUrl || '');
-  const [activeInspection, setActiveInspection] = React.useState(null);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
+  const [currentInspection, setCurrentInspection] = React.useState(null); // Replaces activeInspection
+  const [serviceRequestOpen, setServiceRequestOpen] = React.useState(false); // Replaces showServiceDialog
   const [inspectionToDelete, setInspectionToDelete] = React.useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false); // Replaces showDeleteDialog
+  const [viewingInspection, setViewingInspection] = React.useState(null); // New state as per outline
+  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state for "Why Inspect Matters" section
 
   const queryClient = useQueryClient();
 
@@ -90,34 +94,34 @@ export default function Inspect() {
   const inProgressInspection = inspections.find(i => i.status === 'In Progress');
 
   const handleStartNewInspection = () => {
-    setCurrentView('setup');
-    setActiveInspection(null);
+    setInspectionView('setup');
+    setCurrentInspection(null);
   };
 
   const handleStartTraditionalInspection = () => {
-    setCurrentView('setup');
-    setActiveInspection(null);
+    setInspectionView('setup');
+    setCurrentInspection(null);
   };
 
   const handleStartPhysicalInspection = () => {
     // Create a new inspection and go directly to physical walkthrough
-    setCurrentView('setup');
-    setActiveInspection({ usePhysicalWalkthrough: true });
+    setInspectionView('setup');
+    setCurrentInspection({ usePhysicalWalkthrough: true });
   };
 
   const handleInspectionSetupComplete = (inspection) => {
-    setActiveInspection(inspection);
-    setCurrentView('walkthrough');
+    setCurrentInspection(inspection);
+    setInspectionView('walkthrough');
   };
 
   const handleContinueInspection = (inspection) => {
-    setActiveInspection(inspection);
-    setCurrentView('walkthrough');
+    setCurrentInspection(inspection);
+    setInspectionView('walkthrough');
   };
 
   const handleInspectionComplete = (inspection) => {
-    setActiveInspection(inspection);
-    setCurrentView('complete');
+    setCurrentInspection(inspection);
+    setInspectionView('complete');
   };
 
   const handleViewPriorityQueue = () => {
@@ -125,30 +129,30 @@ export default function Inspect() {
   };
 
   const handleViewReport = (inspection) => {
-    setActiveInspection(inspection || activeInspection);
-    setCurrentView('report');
+    setCurrentInspection(inspection || currentInspection);
+    setInspectionView('report');
   };
 
   const handleBackToMain = () => {
-    setCurrentView('main');
-    setActiveInspection(null);
+    setInspectionView('main');
+    setCurrentInspection(null);
   };
 
   const handleEditInspection = (inspection) => {
-    setActiveInspection(inspection);
-    setCurrentView('walkthrough');
+    setCurrentInspection(inspection);
+    setInspectionView('walkthrough');
   };
 
   const handleDeleteInspection = (inspection) => {
     setInspectionToDelete(inspection);
-    setShowDeleteDialog(true);
+    setDeleteConfirmOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     if (inspectionToDelete) {
       await deleteInspectionMutation.mutateAsync(inspectionToDelete.id);
       setInspectionToDelete(null);
-      setShowDeleteDialog(false);
+      setDeleteConfirmOpen(false);
     }
   };
 
@@ -171,7 +175,7 @@ export default function Inspect() {
   };
 
   // Render different views
-  if (currentView === 'setup') {
+  if (inspectionView === 'setup') {
     return (
       <InspectionSetup
         property={selectedProperty}
@@ -182,10 +186,10 @@ export default function Inspect() {
     );
   }
 
-  if (currentView === 'walkthrough' && activeInspection) {
+  if (inspectionView === 'walkthrough' && currentInspection) {
     return (
       <InspectionWalkthrough
-        inspection={activeInspection}
+        inspection={currentInspection}
         property={selectedProperty}
         baselineSystems={baselineSystems}
         onComplete={handleInspectionComplete}
@@ -194,26 +198,26 @@ export default function Inspect() {
     );
   }
 
-  if (currentView === 'complete' && activeInspection) {
+  if (inspectionView === 'complete' && currentInspection) {
     return (
       <InspectionComplete
-        inspection={activeInspection}
+        inspection={currentInspection}
         property={selectedProperty}
         onViewPriorityQueue={handleViewPriorityQueue}
-        onViewReport={() => handleViewReport(activeInspection)}
+        onViewReport={() => handleViewReport(currentInspection)}
         onDone={handleBackToMain}
       />
     );
   }
 
-  if (currentView === 'report' && activeInspection) {
+  if (inspectionView === 'report' && currentInspection) {
     return (
       <InspectionReport
-        inspection={activeInspection}
+        inspection={currentInspection}
         property={selectedProperty}
         baselineSystems={baselineSystems}
         onBack={handleBackToMain}
-        onEdit={() => handleEditInspection(activeInspection)}
+        onEdit={() => handleEditInspection(currentInspection)}
       />
     );
   }
@@ -239,6 +243,55 @@ export default function Inspect() {
             Seasonal inspections to catch issues before they cascade
           </p>
         </div>
+
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Why Inspect Matters</h3>
+                <p className="text-sm text-blue-800">
+                  Regular inspections are your early warning system. Small issues caught now prevent expensive disasters later - this is where cascade prevention begins.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Inspect is Step 2 of AWARE. It builds on your Baseline by routinely checking system conditions. This creates a living record that feeds directly into Track (historical trends) and Prioritize (what needs attention now).
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 The Cascade Prevention Strategy:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Seasonal timing:</strong> Catch issues before extreme weather hits</li>
+                    <li>• <strong>AI-assisted detection:</strong> Get cost estimates and cascade risk scores instantly</li>
+                    <li>• <strong>Quick-fix vs. Queue:</strong> Handle simple items immediately, escalate complex ones</li>
+                    <li>• <strong>Updates your baseline:</strong> System conditions reflect latest inspection findings</li>
+                  </ul>
+                </div>
+                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
+                  <p className="text-xs text-blue-900">
+                    <strong>Best Practice:</strong> Inspect quarterly (once per season). This cadence catches 90% of issues before they cascade into major damage.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Property Selector - MOVED UP */}
         {properties.length > 0 && (
@@ -376,7 +429,7 @@ export default function Inspect() {
                       </div>
                     </div>
                     <Button
-                      onClick={() => setShowServiceDialog(true)}
+                      onClick={() => setServiceRequestOpen(true)}
                       variant="outline"
                       className="whitespace-nowrap"
                       style={{ minHeight: '48px' }}
@@ -748,8 +801,8 @@ export default function Inspect() {
       </div>
 
       <ServiceRequestDialog
-        open={showServiceDialog}
-        onClose={() => setShowServiceDialog(false)}
+        open={serviceRequestOpen}
+        onClose={() => setServiceRequestOpen(false)}
         prefilledData={{
           property_id: selectedPropertyId,
           service_type: "Professional Inspection",
@@ -759,9 +812,9 @@ export default function Inspect() {
       />
 
       <ConfirmDialog
-        open={showDeleteDialog}
+        open={deleteConfirmOpen}
         onClose={() => {
-          setShowDeleteDialog(false);
+          setDeleteConfirmOpen(false);
           setInspectionToDelete(null);
         }}
         onConfirm={handleConfirmDelete}

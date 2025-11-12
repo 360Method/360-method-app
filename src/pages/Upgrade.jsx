@@ -7,7 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home, BookOpen, Video, Calculator, Search, Filter
+  Lightbulb as LightbulbIcon, // Renamed Lightbulb to LightbulbIcon to avoid conflict
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  Award,
+  Zap,
+  Home,
+  BookOpen,
+  Video,
+  Calculator,
+  Search,
+  Filter,
+  Plus,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -25,6 +42,14 @@ export default function Upgrade() {
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);
   const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
+
+  // New states for filters and educational section
+  const [selectedProperty, setSelectedProperty] = React.useState(null);
+  const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedUpgrade, setSelectedUpgrade] = React.useState(null);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = React.useState(false);
+  const [whyExpanded, setWhyExpanded] = React.useState(false);
 
   // If URL has template param, show form automatically
   React.useEffect(() => {
@@ -135,82 +160,54 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Why Strategic Upgrades Matter - Educational Section */}
-        {allUpgrades.length === 0 && (
-          <Card className="border-2 border-green-300 bg-green-50 mb-6">
-            <CardContent className="p-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                <TrendingUp className="w-6 h-6 text-green-600" />
-                Why Strategic Upgrades Matter
-              </h3>
-              <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Most homeowners wait until something breaks. Smart homeowners invest strategically.
-                Replace before failure = avoid disasters + maximize ROI.
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-red-600">❌ Reactive Thinking</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• 20-year-old water heater floods basement = $6,500 emergency</li>
-                    <li>• Old HVAC dies in heatwave = 3X emergency replacement cost</li>
-                    <li>• Worn roof leaks = $30K interior damage + mold</li>
-                    <li>• No planning = always at mercy of failures</li>
-                  </ul>
-                </div>
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="font-semibold mb-2 text-green-600">✅ Strategic Upgrades</p>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Replace at 12 years = $1,400 planned + avoid flood</li>
-                    <li>• Upgrade to energy-efficient = $800/yr savings</li>
-                    <li>• Proactive roof = $12K planned vs. $42K emergency</li>
-                    <li>• Budget = control + maximum property value</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="border-t border-green-300 pt-4">
-                <p className="font-semibold mb-3" style={{ color: '#1B365D' }}>
-                  📚 Learn More:
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <LightbulbIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 mb-1">Why Upgrade Matters</h3>
+                <p className="text-sm text-green-800">
+                  Upgrade transforms maintenance from a cost center into an investment strategy. It helps you identify improvements that increase property value, reduce operating costs, and enhance rental appeal.
                 </p>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ResourceGuides") + "?category=ADVANCE Phase"}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Strategic Upgrade Planning
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("VideoTutorials") + "?category=ADVANCE Phase"}>
-                      <Video className="w-4 h-4 mr-2" />
-                      ROI Analysis Guide (18 min)
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                  >
-                    <Link to={createPageUrl("ROICalculators")}>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Upgrade ROI Calculators
-                    </Link>
-                  </Button>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Upgrade is Step 8 in ADVANCE. While Preserve protects your current investment, Upgrade grows it. This step uses your property baseline and market data to recommend improvements with proven ROI - from energy efficiency to curb appeal to rental income boosters.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Strategic Upgrade Categories:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Energy Efficiency:</strong> Reduce ongoing costs (insulation, HVAC, windows)</li>
+                    <li>• <strong>Rental Income Boosters:</strong> Increase rent potential (kitchen, bath upgrades)</li>
+                    <li>• <strong>Property Value:</strong> High-ROI improvements (curb appeal, flooring)</li>
+                    <li>• <strong>Preventive Replacements:</strong> Upgrade aging systems before they fail</li>
+                  </ul>
+                </div>
+                <div className="bg-green-50 rounded p-3 border-l-4 border-green-600">
+                  <p className="text-xs text-green-900">
+                    <strong>ROI Focus:</strong> Target upgrades with 70%+ ROI on resale or 2-3 year payback periods on energy savings. Track results to validate your strategy.
+                  </p>
                 </div>
               </div>
             </CardContent>
-          </Card>
-        )}
+          )}
+        </Card>
 
         {/* Dashboard Summary */}
         {allUpgrades.length > 0 && (
@@ -292,7 +289,7 @@ export default function Upgrade() {
                   <p className="text-sm text-purple-700 mb-2">
                     Save thousands on contractor coordination fees through your operator.
                   </p>
-                  <div classNameName="text-sm text-purple-800">
+                  <div className="text-sm text-purple-800">
                     <p>• $25K kitchen remodel → Save ${(25000 * displayMemberDiscountPercentage).toLocaleString()}</p>
                     <p>• $45K addition → Save ${(45000 * displayMemberDiscountPercentage).toLocaleString()}</p>
                     <p>• $8K HVAC upgrade → Save ${(8000 * displayMemberDiscountPercentage).toLocaleString()}</p>
@@ -470,7 +467,7 @@ export default function Upgrade() {
         {allUpgrades.length === 0 && (
           <Card className="border-none shadow-sm">
             <CardContent className="p-12 text-center">
-              <Lightbulb className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <LightbulbIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2">No Upgrade Projects Yet</h3>
               <p className="text-gray-600 mb-2">
                 Start building equity and increasing property value

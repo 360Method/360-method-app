@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart, Sparkles, Brain, TrendingDown, Zap, Clock, Home, Trophy } from "lucide-react";
+import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart, Sparkles, Brain, TrendingDown, Zap, Clock, Home, Trophy, Lightbulb, ChevronRight, ChevronDown } from "lucide-react";
 import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -16,13 +16,14 @@ export default function Track() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
   
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null); // Changed to null as per outline, but retaining propertyIdFromUrl for initial load
   const [filterType, setFilterType] = React.useState('all');
-  const [filterDate, setFilterDate] = React.useState('all');
+  const [timeFilter, setTimeFilter] = React.useState('all'); // Replaced filterDate with timeFilter
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [viewMode, setViewMode] = React.useState('timeline'); // 'timeline', 'analytics', 'systems'
   const [aiInsights, setAiInsights] = React.useState(null);
   const [generatingAI, setGeneratingAI] = React.useState(false);
+  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state for educational card
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -62,10 +63,15 @@ export default function Track() {
   });
 
   React.useEffect(() => {
+    // If selectedProperty is null or not set, and properties are loaded, default to the first one.
+    // Also handles the initial load from URL param.
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
+    } else if (propertyIdFromUrl && !selectedProperty) {
+      // If there's a property ID in the URL, but not yet selected, set it.
+      setSelectedProperty(propertyIdFromUrl);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, propertyIdFromUrl]);
 
   // Build timeline items
   const timelineItems = [];
@@ -297,14 +303,14 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
     filteredItems = filteredItems.filter(item => item.type === filterType);
   }
 
-  if (filterDate !== 'all') {
+  if (timeFilter !== 'all') { // Updated to use timeFilter
     const cutoffDate = new Date();
     
-    if (filterDate === '30days') {
+    if (timeFilter === '30days') {
       cutoffDate.setDate(now.getDate() - 30);
-    } else if (filterDate === '6months') {
+    } else if (timeFilter === '6months') {
       cutoffDate.setMonth(now.getMonth() - 6);
-    } else if (filterDate === '1year') {
+    } else if (timeFilter === '1year') {
       cutoffDate.setFullYear(now.getFullYear() - 1);
     }
     
@@ -369,6 +375,55 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
           </p>
         </div>
 
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Why Track Matters</h3>
+                <p className="text-sm text-blue-800">
+                  Track completes the AWARE phase by revealing patterns. Your history becomes your guide - showing what works, what's costing you, and what to expect next.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Track is Step 3 and the final step of AWARE. It connects Baseline (what you have) and Inspect (what you found) into a timeline that shows spending patterns, maintenance frequency, and system health over time. This data fuels intelligent decisions in ACT and ADVANCE phases.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 What This Reveals:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc list-inside">
+                    <li><strong>Cost trends:</strong> See if you're spending more or less year-over-year</li>
+                    <li><strong>System patterns:</strong> Which systems need attention most often?</li>
+                    <li><strong>Disaster avoidance:</strong> Calculate savings from preventive maintenance</li>
+                    <li><strong>ROI validation:</strong> Prove your maintenance strategy is working</li>
+                  </ul>
+                </div>
+                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
+                  <p className="text-xs text-blue-900">
+                    <strong>Insight:</strong> Properties with 6+ months of tracking data see 40% better prioritization accuracy in the ACT phase.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
         <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
           <div className="flex gap-3">
             <Button 
@@ -392,9 +447,9 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                 <div className="flex-1">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
-                  <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
                     <SelectTrigger className="w-full md:w-96">
-                      <SelectValue />
+                      <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
                     <SelectContent>
                       {properties.map((property) => (
@@ -935,7 +990,7 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
                       <SelectItem value="system">Systems</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={filterDate} onValueChange={setFilterDate}>
+                  <Select value={timeFilter} onValueChange={setTimeFilter}> {/* Updated to use timeFilter */}
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>

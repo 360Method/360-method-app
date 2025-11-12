@@ -10,15 +10,18 @@ import { Progress } from "@/components/ui/progress";
 import {
   Plus,
   AlertTriangle,
-  TrendingDown, // Added TrendingDown
+  TrendingDown,
   ListOrdered,
   Filter,
-  Home, // Added Home
+  Home,
   Calendar,
-  DollarSign, // Added DollarSign
+  DollarSign,
   Zap,
-  TrendingUp, // Existing
-  ArrowUpDown, // Existing
+  TrendingUp,
+  ArrowUpDown,
+  Lightbulb, // Added Lightbulb
+  ChevronRight, // Added ChevronRight
+  ChevronDown // Added ChevronDown
 } from "lucide-react";
 
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
@@ -36,6 +39,7 @@ export default function PrioritizePage() {
   const [priorityFilter, setPriorityFilter] = React.useState("all");
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [sortBy, setSortBy] = React.useState("smart"); // 'smart', 'cost', 'date'
+  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state for the educational card
 
   const queryClient = useQueryClient();
 
@@ -210,33 +214,53 @@ export default function PrioritizePage() {
           </p>
         </div>
 
-        <Card className="border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-red-50">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-start gap-3 md:gap-4">
-              <ListOrdered className="w-6 h-6 md:w-8 md:h-8 text-orange-600 flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
-                  Why Prioritization Matters
-                </h2>
-                <p className="text-sm md:text-base text-gray-700 mb-3 leading-relaxed">
-                  <strong>Not all maintenance is equal.</strong> Some tasks are ticking time bombs that trigger expensive cascade failures.
-                  Others can wait. This page ranks your tasks using AI analysis of cascade risk, cost impact, and urgency -
-                  so you tackle the right problems at the right time and avoid preventable disasters.
+        {/* Why This Step Matters - Educational Card */}
+        <Card className="mb-6 border-2 border-orange-200 bg-orange-50">
+          <CardHeader className="pb-3">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 mb-1">Why Prioritize Matters</h3>
+                <p className="text-sm text-orange-800">
+                  Prioritize launches the ACT phase. It transforms your awareness into action by ranking tasks based on cascade risk, cost impact, and urgency - ensuring you tackle the right problems first.
                 </p>
-                <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-orange-200">
-                  <p className="text-xs md:text-sm font-semibold text-orange-900 mb-2">
-                    🎯 What you'll see:
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              )}
+            </button>
+          </CardHeader>
+          {whyExpanded && (
+            <CardContent className="pt-0">
+              <div className="bg-white rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Prioritize is Step 4 and begins the ACT phase. It takes everything you learned in AWARE (your baseline, inspection findings, and historical patterns) and uses AI to create an intelligent task queue. This prevents you from wasting time on low-impact work while critical issues grow.
                   </p>
-                  <ul className="space-y-1 text-xs md:text-sm text-gray-800">
-                    <li>• <strong>Cascade Risk Score:</strong> How likely this triggers other failures</li>
-                    <li>• <strong>Cost Impact:</strong> Fix-now vs fix-later comparison</li>
-                    <li>• <strong>Timeline:</strong> How urgent is this really?</li>
-                    <li>• <strong>Smart Ranking:</strong> AI-calculated priority order</li>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 The Smart Ranking Algorithm:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+                    <li>• <strong>Cascade Risk Score (1-10):</strong> How likely is this to trigger chain failures?</li>
+                    <li>• <strong>Cost Impact:</strong> Current fix cost vs. delayed fix cost</li>
+                    <li>• <strong>Urgency Timeline:</strong> How much time before this becomes critical?</li>
+                    <li>• <strong>System Dependencies:</strong> What else could this affect?</li>
                   </ul>
                 </div>
+                <div className="bg-orange-50 rounded p-3 border-l-4 border-orange-600">
+                  <p className="text-xs text-orange-900">
+                    <strong>Key Insight:</strong> Tasks with cascade risk scores of 7+ should be addressed immediately - they can trigger $10K-50K+ in additional damage if delayed.
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {properties.length === 0 ? (
@@ -256,7 +280,7 @@ export default function PrioritizePage() {
           </Card>
         ) : (
           <>
-            <div>
+            <div className="mb-6"> {/* Added margin bottom for spacing */}
               <Label className="mb-2 block">Select Property:</Label>
               <Select
                 value={selectedProperty?.id}
@@ -277,7 +301,7 @@ export default function PrioritizePage() {
 
             {selectedProperty && (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6"> {/* Added margin bottom */}
                   <Card className="border-2 border-red-200 bg-red-50">
                     <CardContent className="p-3 md:p-4 text-center">
                       <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-600 mx-auto mb-2" />
@@ -315,7 +339,7 @@ export default function PrioritizePage() {
                   </Card>
                 </div>
 
-                <Card className="border-2 border-blue-300 bg-blue-50">
+                <Card className="border-2 border-blue-300 bg-blue-50 mb-6"> {/* Added margin bottom */}
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                       <Calendar className="w-5 h-5 md:w-6 md:h-6" />
