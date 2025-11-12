@@ -256,6 +256,32 @@ export default function Dashboard() {
                     Our guided onboarding helps you add your first property, understand how the 360° Method works, 
                     and choose the best documentation path for your needs. You'll be protecting your investment in minutes!
                   </p>
+
+                  {/* Value Props */}
+                  <div className="grid md:grid-cols-3 gap-3 mb-4">
+                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield className="w-4 h-4 text-green-600" />
+                        <p className="font-semibold text-sm text-gray-900">Protect Your Asset</p>
+                      </div>
+                      <p className="text-xs text-gray-600">Prevent $25K-50K+ in disasters through proactive maintenance</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="w-4 h-4 text-blue-600" />
+                        <p className="font-semibold text-sm text-gray-900">Increase Value</p>
+                      </div>
+                      <p className="text-xs text-gray-600">Documentation adds $8K-15K to resale value</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-purple-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Target className="w-4 h-4 text-purple-600" />
+                        <p className="font-semibold text-sm text-gray-900">Plan Ahead</p>
+                      </div>
+                      <p className="text-xs text-gray-600">Budget 2-5 years ahead with lifecycle forecasting</p>
+                    </div>
+                  </div>
+
                   <Button
                     onClick={handleRestartOnboarding}
                     disabled={updateUserMutation.isPending}
@@ -458,42 +484,22 @@ export default function Dashboard() {
             </Card>
           }
           
-          {/* Add Property CTA */}
-          <Card className="border-2 border-green-300 shadow-xl bg-gradient-to-br from-white to-green-50">
-            <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Home className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>Ready to Get Started?</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Add your first property manually, or use our Quick Setup above for a guided experience.
-              </p>
-              <Button
-                asChild
-                className="w-full md:w-auto shadow-lg"
-                style={{ backgroundColor: '#28A745', minHeight: '56px' }}>
-
-                <Link to={createPageUrl("Properties")}>
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Your First Property
-                </Link>
-              </Button>
-              <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t">
-                <div>
-                  <Shield className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                  <p className="text-xs text-gray-600">Prevent disasters</p>
-                </div>
-                <div>
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                  <p className="text-xs text-gray-600">Increase value</p>
-                </div>
-                <div>
-                  <DollarSign className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                  <p className="text-xs text-gray-600">Save money</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Manual Property Add Option - Bottom of Page */}
+          <div className="text-center pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-3">
+              Prefer to add your property manually?
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="gap-2">
+              <Link to={createPageUrl("Properties")}>
+                <Plus className="w-4 h-4" />
+                Add Property Manually
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>);
 
