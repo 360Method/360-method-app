@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Edit, Home } from "lucide-react";
 
 export default function PropertyConfirmation({ data, onEdit, onConfirm, isCreating }) {
+  // Debug: Log the data being confirmed
+  React.useEffect(() => {
+    console.log('PropertyConfirmation - Received data:', data);
+  }, [data]);
   const getPropertyUseLabel = (type) => {
     const labels = {
       'primary': 'Primary Residence',

@@ -23,9 +23,19 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     mutationFn: async (data) => {
       console.log('Creating property with data:', data);
       
+      // Ensure required address field exists
+      if (!data.street_address && !data.address && !data.formatted_address) {
+        throw new Error('Address is required');
+      }
+
+      // Use formatted_address as the main address if street_address is missing
+      const mainAddress = data.address || data.formatted_address || 
+                         `${data.street_address}${data.unit_number ? ` #${data.unit_number}` : ''}, ${data.city}, ${data.state} ${data.zip_code}`;
+      
       // Clean up the data before sending
       const cleanData = {
         ...data,
+        address: mainAddress, // Ensure address field is set
         year_built: data.year_built ? parseInt(data.year_built) : undefined,
         square_footage: data.square_footage ? parseInt(data.square_footage) : undefined,
         bedrooms: data.bedrooms !== undefined && data.bedrooms !== "" ? parseInt(data.bedrooms) : undefined,
@@ -33,6 +43,10 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         purchase_price: data.purchase_price ? parseFloat(data.purchase_price) : undefined,
         current_value: data.current_value ? parseFloat(data.current_value) : undefined,
         setup_completed: true,
+        baseline_completion: 0,
+        health_score: 0,
+        total_maintenance_spent: 0,
+        estimated_disasters_prevented: 0,
       };
 
       // Remove any undefined values
@@ -54,7 +68,8 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     },
     onError: (error) => {
       console.error('Property creation failed:', error);
-      alert('Failed to create property. Please try again.');
+      console.error('Error details:', error.message, error.response?.data);
+      alert(`Failed to create property: ${error.message || 'Please check the console for details and try again.'}`);
       setIsCreating(false);
     }
   });
