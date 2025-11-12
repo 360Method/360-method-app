@@ -1,99 +1,91 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, DollarSign, AlertCircle, Calendar, Sparkles, Info } from "lucide-react";
-import { estimateCascadeRisk } from "../shared/CascadeEstimator";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles } from "lucide-react";
+import { format } from "date-fns";
+import { enrichTaskWithAI } from "@/utils/taskEnrichment";
 
 const SYSTEM_TYPES = [
-  "HVAC",
-  "Plumbing",
-  "Electrical",
-  "Roof",
-  "Foundation",
-  "Gutters",
-  "Exterior",
-  "Windows/Doors",
-  "Appliances",
-  "Landscaping",
-  "General"
+  "HVAC", "Plumbing", "Electrical", "Roof", "Foundation",
+  "Gutters", "Exterior", "Windows/Doors", "Appliances", "Landscaping", "General"
 ];
 
 const PRIORITY_LEVELS = [
-  { value: "High", label: "High Priority", color: "red" },
-  { value: "Medium", label: "Medium Priority", color: "yellow" },
-  { value: "Low", label: "Low Priority", color: "blue" },
-  { value: "Routine", label: "Routine Maintenance", color: "green" }
+  { value: "High", color: "bg-red-600 text-white" },
+  { value: "Medium", color: "bg-yellow-600 text-white" },
+  { value: "Low", color: "bg-blue-600 text-white" },
+  { value: "Routine", color: "bg-gray-600 text-white" }
 ];
 
-const EXECUTION_TYPES = [
-  { value: "Not Decided", label: "Haven't decided yet" },
-  { value: "DIY", label: "I'll do it myself (DIY)" },
-  { value: "Professional", label: "Hire a professional" }
-];
+const EXECUTION_TYPES = ["DIY", "Professional", "Not Decided"];
 
-export default function ManualTaskForm({ propertyId, onComplete, onCancel, editingTask, prefilledDate }) {
-  const [formData, setFormData] = React.useState(editingTask || {
+export default function ManualTaskForm({ propertyId, onComplete, onCancel, prefilledDate = null }) {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = React.useState({
     title: "",
     description: "",
     system_type: "General",
     priority: "Medium",
-    status: prefilledDate ? "Scheduled" : "Identified",
-    scheduled_date: prefilledDate ? new Date(prefilledDate).toISOString().split('T')[0] : "",
+    status: "Identified",
+    scheduled_date: prefilledDate || null,
     execution_type: "Not Decided",
     current_fix_cost: "",
-    photo_urls: []
+    urgency_timeline: ""
   });
-
-  const [photos, setPhotos] = React.useState(editingTask?.photo_urls || []);
-  const [uploading, setUploading] = React.useState(false);
-  const [isEstimating, setIsEstimating] = React.useState(false);
-
-  const queryClient = useQueryClient();
-
-  const { data: systems = [] } = useQuery({
-    queryKey: ['systemBaselines', propertyId],
-    queryFn: () => propertyId 
-      ? base44.entities.SystemBaseline.filter({ property_id: propertyId })
-      : Promise.resolve([]),
-    enabled: !!propertyId,
-  });
+  const [photos, setPhotos] = React.useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
+  const [aiEnriching, setAiEnriching] = React.useState(false);
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      if (editingTask) {
-        return base44.entities.MaintenanceTask.update(editingTask.id, taskData);
-      } else {
-        return base44.entities.MaintenanceTask.create(taskData);
-      }
+      const task = await base44.entities.MaintenanceTask.create(taskData);
+      
+      // Trigger AI enrichment in background (non-blocking)
+      setAiEnriching(true);
+      enrichTaskWithAI(task.id, taskData)
+        .then(() => {
+          // Refresh task list to show enriched data
+          queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+          setAiEnriching(false);
+        })
+        .catch(err => {
+          console.error('AI enrichment failed:', err);
+          setAiEnriching(false);
+        });
+      
+      return task;
     },
     onSuccess: () => {
-      // Invalidate all maintenance task queries to ensure calendar updates
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       onComplete();
-    },
+    }
   });
 
   const handlePhotoUpload = async (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    setUploading(true);
+    setUploadingPhotos(true);
     try {
-      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const uploadPromises = files.map(file =>
+        base44.integrations.Core.UploadFile({ file })
+      );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
       setPhotos(prev => [...prev, ...urls]);
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error('Photo upload failed:', error);
+    } finally {
+      setUploadingPhotos(false);
     }
-    setUploading(false);
   };
 
   const removePhoto = (index) => {
@@ -105,389 +97,304 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, editi
     
     const taskData = {
       property_id: propertyId,
-      ...formData,
+      title: formData.title,
+      description: formData.description,
+      system_type: formData.system_type,
+      priority: formData.priority,
+      status: formData.status,
+      execution_type: formData.execution_type,
       photo_urls: photos,
-      current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined
+      current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
+      urgency_timeline: formData.urgency_timeline || undefined,
+      scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined
     };
-
-    // If high priority, use AI to estimate cascade risk
-    if (formData.priority === "High" && formData.description) {
-      setIsEstimating(true);
-      try {
-        const aiEstimates = await estimateCascadeRisk({
-          description: formData.description,
-          system_type: formData.system_type,
-          severity: "Flag",
-          area: formData.system_type,
-          estimated_cost: formData.current_fix_cost
-        });
-
-        taskData.cascade_risk_score = aiEstimates.cascade_risk_score;
-        taskData.cascade_risk_reason = aiEstimates.cascade_risk_reason;
-        taskData.current_fix_cost = aiEstimates.current_fix_cost;
-        taskData.delayed_fix_cost = aiEstimates.delayed_fix_cost;
-        taskData.cost_impact_reason = aiEstimates.cost_impact_reason;
-        taskData.has_cascade_alert = aiEstimates.cascade_risk_score >= 7;
-      } catch (error) {
-        console.error("AI estimation error:", error);
-      } finally {
-        setIsEstimating(false);
-      }
-    }
 
     createTaskMutation.mutate(taskData);
   };
 
-  const isFormValid = formData.title.trim() && formData.description.trim();
-
-  // Relevant systems for selection
-  const relevantSystems = systems.filter(s => 
-    formData.system_type === 'General' || s.system_type.includes(formData.system_type)
-  );
-
   return (
-    <div className="bg-white pb-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-            {editingTask ? 'Edit Task' : 'Create Maintenance Task'}
-          </h1>
-          <p className="text-gray-600">
-            {prefilledDate 
-              ? `Scheduled for ${new Date(prefilledDate).toLocaleDateString()}`
-              : 'Add a maintenance task, repair, or improvement project'
-            }
-          </p>
-        </div>
-
+    <Card className="border-none shadow-xl">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+        <CardTitle className="flex items-center gap-2">
+          Add New Maintenance Task
+          {aiEnriching && (
+            <Badge className="gap-1 bg-purple-600 text-white">
+              <Sparkles className="w-3 h-3" />
+              AI Enriching...
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Task Title */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Task Title *</label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                placeholder="e.g., Replace HVAC filter, Fix leaky faucet, Paint exterior trim"
-                className="w-full"
-                style={{ minHeight: '48px' }}
-              />
-            </CardContent>
-          </Card>
+          {/* Title */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Task Title *
+            </label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., Replace HVAC air filter"
+              required
+            />
+          </div>
 
           {/* Description */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Description *</label>
-              <p className="text-sm text-gray-600 mb-3">
-                Provide details about what needs to be done. The more specific you are, the better AI can help estimate costs and risks.
-              </p>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Describe the task, what's wrong, what needs to be done, any relevant details..."
-                rows={4}
-                className="w-full"
-                style={{ minHeight: '120px' }}
-              />
-            </CardContent>
-          </Card>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Description *
+            </label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Provide detailed description of what needs to be done..."
+              rows={4}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 The more detail you provide, the better AI can estimate time, tools, and materials needed.
+            </p>
+          </div>
 
-          {/* System Type & Related System */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">System Type</label>
-                <Select 
-                  value={formData.system_type} 
-                  onValueChange={(value) => setFormData({...formData, system_type: value})}
-                >
-                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {SYSTEM_TYPES.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {relevantSystems.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Related System (Optional)
-                  </label>
-                  <p className="text-xs text-gray-600 mb-2">
-                    Link this task to a specific system from your baseline
-                  </p>
-                  <Select 
-                    value={formData.system_id || "none"} 
-                    onValueChange={(value) => setFormData({...formData, system_id: value === "none" ? undefined : value})}
-                  >
-                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="none">None - General task</SelectItem>
-                      {relevantSystems.map(system => (
-                        <SelectItem key={system.id} value={system.id}>
-                          {system.nickname || system.system_type}
-                          {system.brand_model && ` - ${system.brand_model}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Priority & When */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Priority Level</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {PRIORITY_LEVELS.map(priority => (
-                    <Button
-                      key={priority.value}
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData({...formData, priority: priority.value})}
-                      className={`justify-start h-auto p-4 ${
-                        formData.priority === priority.value ? 'border-2 shadow-md' : ''
-                      }`}
-                      style={{
-                        borderColor: formData.priority === priority.value 
-                          ? priority.color === 'red' ? '#DC3545'
-                          : priority.color === 'yellow' ? '#FF6B35'
-                          : priority.color === 'blue' ? '#3B82F6'
-                          : '#28A745'
-                          : undefined
-                      }}
-                    >
-                      <div className="text-left">
-                        <p className="font-semibold">{priority.label}</p>
-                        {priority.value === "High" && (
-                          <Badge className="mt-1 bg-purple-100 text-purple-800 border-purple-300">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            AI Analysis
-                          </Badge>
-                        )}
-                      </div>
-                    </Button>
+          {/* System Type & Priority */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                System Type *
+              </label>
+              <Select
+                value={formData.system_type}
+                onValueChange={(value) => setFormData({ ...formData, system_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYSTEM_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
-                </div>
-                {formData.priority === "High" && (
-                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-xs text-purple-800 flex items-center gap-2">
-                      <Info className="w-4 h-4" />
-                      High priority tasks get AI-powered cascade risk and cost analysis
-                    </p>
-                  </div>
-                )}
-              </div>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value) => setFormData({...formData, status: value})}
-                >
-                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="Identified">Identified - Not scheduled yet</SelectItem>
-                    <SelectItem value="Scheduled">Scheduled - Has a date</SelectItem>
-                    <SelectItem value="In Progress">In Progress - Currently working on it</SelectItem>
-                    <SelectItem value="Completed">Completed - Already done</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Priority *
+              </label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_LEVELS.map(level => (
+                    <SelectItem key={level.value} value={level.value}>
+                      <div className="flex items-center gap-2">
+                        <Badge className={level.color}>{level.value}</Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-              {(formData.status === "Scheduled" || formData.status === "In Progress" || formData.status === "Completed") && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {formData.status === "Completed" ? "Completion Date" : "Scheduled Date"}
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.status === "Completed" ? (formData.completion_date || "") : (formData.scheduled_date || "")}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      ...(formData.status === "Completed" 
-                        ? { completion_date: e.target.value }
-                        : { scheduled_date: e.target.value }
-                      )
-                    })}
-                    className="w-full"
-                    style={{ minHeight: '48px' }}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Status & Execution Type */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Status
+              </label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Identified">Identified</SelectItem>
+                  <SelectItem value="Scheduled">Scheduled</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Deferred">Deferred</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Cost & Who Will Fix */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  {formData.status === "Completed" ? "Actual Cost" : "Estimated Cost"}
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.status === "Completed" ? (formData.actual_cost || "") : (formData.current_fix_cost || "")}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    ...(formData.status === "Completed" 
-                      ? { actual_cost: e.target.value }
-                      : { current_fix_cost: e.target.value }
-                    )
-                  })}
-                  placeholder="0.00"
-                  className="w-full"
-                  style={{ minHeight: '48px' }}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Execution Type
+              </label>
+              <Select
+                value={formData.execution_type}
+                onValueChange={(value) => setFormData({ ...formData, execution_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXECUTION_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Scheduled Date */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Scheduled Date
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.scheduled_date
+                    ? format(new Date(formData.scheduled_date), 'PPP')
+                    : 'Select date...'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.scheduled_date ? new Date(formData.scheduled_date) : undefined}
+                  onSelect={(date) => setFormData({ ...formData, scheduled_date: date })}
                 />
-              </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Who will fix this?</label>
-                <Select 
-                  value={formData.execution_type} 
-                  onValueChange={(value) => setFormData({...formData, execution_type: value})}
-                >
-                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {EXECUTION_TYPES.map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Urgency Timeline & Cost */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Urgency Timeline
+              </label>
+              <Input
+                value={formData.urgency_timeline}
+                onChange={(e) => setFormData({ ...formData, urgency_timeline: e.target.value })}
+                placeholder="e.g., 30 days, 3 months, ASAP"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Estimated Cost
+              </label>
+              <Input
+                type="number"
+                value={formData.current_fix_cost}
+                onChange={(e) => setFormData({ ...formData, current_fix_cost: e.target.value })}
+                placeholder="0.00"
+                step="0.01"
+              />
+            </div>
+          </div>
 
           {/* Photos */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-gray-700 mb-3 block">
-                📷 Add Photos (Optional)
-              </label>
-              <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors" style={{ minHeight: '56px' }}>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-                <Upload className="w-5 h-5 mr-2 text-gray-600" />
-                <span className="text-gray-600">{uploading ? 'Uploading...' : `Upload Photos (${photos.length} photos)`}</span>
-              </label>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Photos
+            </label>
+            <div className="space-y-3">
               {photos.length > 0 && (
-                <div className="flex gap-3 flex-wrap mt-4">
-                  {photos.map((url, idx) => (
-                    <div key={idx} className="relative group">
-                      <img src={url} alt="" className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {photos.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Task photo ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border-2 border-gray-200"
+                      />
                       <button
                         type="button"
-                        onClick={() => removePhoto(idx)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ minHeight: '28px', minWidth: '28px' }}
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <span className="sr-only">Remove</span>
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => document.getElementById('photo-upload').click()}
+                disabled={uploadingPhotos}
+              >
+                {uploadingPhotos ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Add Photos
+                  </>
+                )}
+              </Button>
+              <input
+                id="photo-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
 
-          {/* Completion Notes (if completed) */}
-          {formData.status === "Completed" && (
-            <Card className="border-none shadow-sm">
-              <CardContent className="p-4">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Completion Notes</label>
-                <Textarea
-                  value={formData.completion_notes || ""}
-                  onChange={(e) => setFormData({...formData, completion_notes: e.target.value})}
-                  placeholder="What was done? Any lessons learned? Parts used?"
-                  rows={3}
-                  className="w-full"
-                />
-              </CardContent>
-            </Card>
-          )}
+          {/* AI Enrichment Notice */}
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-purple-900 mb-1">
+                  AI-Powered Task Enrichment
+                </p>
+                <p className="text-xs text-purple-800 leading-relaxed">
+                  After saving, AI will automatically generate: time estimation, statement of work, 
+                  tools & materials list, and video tutorials. This helps you plan and execute more effectively.
+                </p>
+              </div>
+            </div>
+          </div>
 
-          {/* Validation Message */}
-          {!isFormValid && (
-            <Card className="border-2 border-orange-300 bg-orange-50">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-orange-600" />
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Complete Required Fields:</p>
-                    <ul className="text-sm text-gray-700 space-y-1 pl-5 list-disc">
-                      {!formData.title.trim() && <li>Enter a task title</li>}
-                      {!formData.description.trim() && <li>Enter a description</li>}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 pt-6 border-t">
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
-              disabled={!isFormValid || createTaskMutation.isPending || isEstimating}
-              className="w-full font-bold"
-              style={{ 
-                backgroundColor: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#28A745' : '#CCCCCC',
-                color: isFormValid && !createTaskMutation.isPending && !isEstimating ? '#FFFFFF' : '#666666',
-                minHeight: '56px'
-              }}
+              disabled={createTaskMutation.isPending || !formData.title || !formData.description}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              {isEstimating ? (
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
-                  AI Analyzing Task...
-                </span>
-              ) : createTaskMutation.isPending ? (
-                'Saving...'
-              ) : editingTask ? (
-                'Update Task'
+              {createTaskMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
               ) : (
                 'Create Task'
               )}
             </Button>
-
-            <Button
-              type="button"
-              onClick={onCancel}
-              variant="ghost"
-              className="w-full"
-              style={{ minHeight: '48px' }}
-            >
-              Cancel
-            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
