@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft } from "lucide-react";
-// Removed createPageUrl and Link as they are not used in this component's logic.
+import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
 import AreaInspection from "./AreaInspection";
 
 // Physical zone-based routing for efficient inspection
@@ -22,7 +21,7 @@ const INSPECTION_ZONES = [
   {
     id: 'basement',
     name: '🏚️ Basement/Crawlspace',
-    areas: ['foundation'], // 'basement' was added in outline but not in INSPECTION_AREAS, so keeping only 'foundation' here
+    areas: ['foundation'],
     estimatedTime: '5-8 min',
     why: 'While you\'re downstairs'
   },
@@ -35,7 +34,7 @@ const INSPECTION_ZONES = [
   },
   {
     id: 'upper',
-    name: '⬆️ Upper Level', // Reusing '🏚️' icon for attic
+    name: '⬆️ Upper Level',
     areas: ['attic'],
     estimatedTime: '5-8 min',
     why: 'Check attic and insulation'
@@ -91,7 +90,6 @@ const INSPECTION_AREAS = [
 export default function InspectionWalkthrough({ inspection, property, onComplete, onCancel }) {
   const [currentAreaIndex, setCurrentAreaIndex] = React.useState(null);
   const [inspectionData, setInspectionData] = React.useState(() => {
-    // Initialize inspectionData from existing checklist items if available
     const existingItems = inspection.checklist_items || [];
     const groupedByArea = {};
     existingItems.forEach(item => {
@@ -104,8 +102,9 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     });
     return groupedByArea;
   });
-  const [routeMode, setRouteMode] = React.useState('physical'); // 'physical' or 'traditional'
+  const [routeMode, setRouteMode] = React.useState('physical');
   const [completedZones, setCompletedZones] = React.useState([]);
+  const [isCompleting, setIsCompleting] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -114,15 +113,27 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
   });
 
-  const updateInspectionMutation = useMutation({
+  // Save inspection data mutation - called after each area completion
+  const saveInspectionMutation = useMutation({
     mutationFn: async (data) => {
       return base44.entities.Inspection.update(inspection.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
-      // The outline specified onComplete() without args. Original passed updatedInspection.
-      // Adhering to outline for now.
-      onComplete(); 
+    },
+  });
+
+  // Create task mutation for transferring issues to priority queue
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData) => {
+      return base44.entities.MaintenanceTask.create(taskData);
+    },
+  });
+
+  // Update system baseline mutation
+  const updateSystemMutation = useMutation({
+    mutationFn: async ({ systemId, updates }) => {
+      return base44.entities.SystemBaseline.update(systemId, updates);
     },
   });
 
@@ -163,26 +174,126 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     return INSPECTION_AREAS.filter(area => zone.areas.includes(area.id));
   };
 
-  const handleAreaComplete = (areaId, data) => {
-    setInspectionData(prev => ({
-      ...prev,
+  // UPDATED: Save inspection data immediately after area completion
+  const handleAreaComplete = async (areaId, data) => {
+    // Update local state
+    const updatedInspectionData = {
+      ...inspectionData,
       [areaId]: data
-    }));
-    setCurrentAreaIndex(null); // Return to the list after an area is completed
+    };
+    setInspectionData(updatedInspectionData);
+
+    // Calculate new stats based on updated local state
+    const allIssues = Object.values(updatedInspectionData).flat();
+    const issuesCount = allIssues.length;
+    const completionPercent = Math.round((Object.keys(updatedInspectionData).length / INSPECTION_AREAS.length) * 100);
+
+    // Save to backend immediately
+    try {
+      await saveInspectionMutation.mutateAsync({
+        checklist_items: allIssues,
+        issues_found: issuesCount,
+        completion_percentage: completionPercent,
+        status: completionPercent === 100 ? 'Completed' : 'In Progress'
+      });
+    } catch (error) {
+      console.error('Failed to save inspection progress:', error);
+    }
+
+    setCurrentAreaIndex(null);
   };
 
+  // UPDATED: Complete inspection and transfer issues to priority queue
   const handleFinishInspection = async () => {
-    const allIssues = Object.values(inspectionData).flat();
-    const issuesCount = allIssues.length;
-    const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
+    setIsCompleting(true); // Start loading state
 
-    await updateInspectionMutation.mutateAsync({
-      checklist_items: allIssues,
-      issues_found: issuesCount,
-      completion_percentage: completionPercent,
-      status: 'Completed',
-      inspection_date: new Date().toISOString().split('T')[0]
-    });
+    try {
+      const allIssues = Object.values(inspectionData).flat();
+      const issuesCount = allIssues.length;
+      const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
+
+      // Mark inspection as completed
+      await saveInspectionMutation.mutateAsync({
+        checklist_items: allIssues,
+        issues_found: issuesCount,
+        completion_percentage: completionPercent,
+        status: 'Completed',
+        inspection_date: new Date().toISOString().split('T')[0]
+      });
+
+      // Transfer non-quick-fix issues to priority queue
+      const tasksToCreate = allIssues.filter(issue => issue.is_quick_fix === false);
+
+      for (const issue of tasksToCreate) {
+        const taskData = {
+          property_id: property.id,
+          title: issue.item_name || issue.description?.substring(0, 50) || 'Inspection Issue',
+          description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${INSPECTION_AREAS.find(a => a.id === issue.area_id)?.name || 'unknown area'}.\n\n${issue.description || issue.notes || ''}`,
+          system_type: issue.system || 'General',
+          priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
+          status: 'Identified',
+          photo_urls: issue.photo_urls || [],
+          current_fix_cost: issue.current_fix_cost || 0,
+          delayed_fix_cost: issue.delayed_fix_cost || 0,
+          cascade_risk_score: issue.cascade_risk_score || 0,
+          cascade_risk_reason: issue.cascade_risk_reason || '',
+          cost_impact_reason: issue.cost_impact_reason || '',
+          has_cascade_alert: (issue.cascade_risk_score || 0) >= 7,
+          execution_type: issue.who_will_fix === 'diy' ? 'DIY' : issue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided',
+          estimated_hours: issue.max_hours || null
+        };
+
+        await createTaskMutation.mutateAsync(taskData);
+
+        // Update related baseline systems
+        if (issue.system && issue.system !== 'General') {
+          const systemsToUpdate = baselineSystems.filter(s => s.system_type === issue.system);
+          for (const system of systemsToUpdate) {
+            const conditionUpdates = {};
+
+            if (issue.severity === 'Urgent') {
+              conditionUpdates.condition = 'Urgent';
+            } else if (issue.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
+              conditionUpdates.condition = 'Fair';
+            }
+
+            const existingWarnings = system.warning_signs_present || [];
+            const newWarning = issue.description?.substring(0, 100) || issue.notes?.substring(0, 100) || '';
+            if (newWarning && !existingWarnings.includes(newWarning)) {
+              conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
+            }
+
+            const timestamp = new Date().toLocaleDateString();
+            const existingNotes = system.condition_notes || '';
+            const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${issue.description || issue.notes || ''}`;
+            if (!existingNotes.includes(newNote)) {
+              conditionUpdates.condition_notes = existingNotes + newNote;
+            }
+
+            if (Object.keys(conditionUpdates).length > 0) {
+              await updateSystemMutation.mutateAsync({
+                systemId: system.id,
+                updates: conditionUpdates
+              });
+            }
+          }
+        }
+      }
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+
+
+      // Navigate to complete screen
+      onComplete();
+    } catch (error) {
+      console.error('Error completing inspection:', error);
+      alert('Failed to complete inspection. Please try again.');
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   if (currentAreaIndex !== null) {
@@ -354,14 +465,44 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
               Switch to Traditional View
             </Button>
 
-            {progress.percent >= 80 && (
+            {/* Auto-save notification */}
+            {progress.completed > 0 && (
+              <Card className="border-2 border-blue-300 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900 mb-1">
+                        Progress Auto-Saved
+                      </p>
+                      <p className="text-xs text-blue-800">
+                        Your inspection data is automatically saved after each area. You can safely leave and come back anytime.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Complete Inspection Button */}
+            {progress.percent >= 50 && (
               <Button
                 onClick={handleFinishInspection}
                 className="w-full gap-2"
                 style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
-                disabled={updateInspectionMutation.isPending}
+                disabled={isCompleting}
               >
-                {updateInspectionMutation.isPending ? 'Saving...' : 'Complete Inspection'}
+                {isCompleting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Completing & Creating Tasks...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Complete Inspection & Add Issues to Priority Queue
+                  </>
+                )}
               </Button>
             )}
           </div>
@@ -461,14 +602,44 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             Switch to Physical Walkthrough
           </Button>
 
-          {progress.percent >= 80 && (
+          {/* Auto-save notification */}
+          {progress.completed > 0 && (
+            <Card className="border-2 border-blue-300 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">
+                      Progress Auto-Saved
+                    </p>
+                    <p className="text-xs text-blue-800">
+                      Your inspection data is automatically saved after each area. You can safely leave and come back anytime.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Complete Inspection Button */}
+          {progress.percent >= 50 && (
             <Button
               onClick={handleFinishInspection}
               className="w-full gap-2"
               style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
-              disabled={updateInspectionMutation.isPending}
+              disabled={isCompleting}
             >
-              {updateInspectionMutation.isPending ? 'Saving...' : 'Complete Inspection'}
+              {isCompleting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Completing & Creating Tasks...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  Complete Inspection & Add Issues to Priority Queue
+                </>
+              )}
             </Button>
           )}
         </div>
