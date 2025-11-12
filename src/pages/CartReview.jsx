@@ -172,21 +172,74 @@ export default function CartReview() {
         throw new Error('Property not found');
       }
 
-      // Check if this is a baseline assessment (fixed cost)
+      // Check if this is a baseline assessment or inspection (fixed costs)
       const isBaselineAssessment = item.title.toLowerCase().includes('baseline') || 
                                     item.source_type === 'baseline_assessment';
+      const isInspection = item.title.toLowerCase().includes('inspection') ||
+                          item.source_type === 'inspection';
+
+      // Determine if multi-unit property
+      const doorCount = property.door_count || 1;
+      const isMultiUnit = doorCount > 1;
 
       if (isBaselineAssessment) {
+        let baselineHours, baselineCost;
+        
+        if (isMultiUnit) {
+          // Multi-unit: $299 base + $50 per additional door
+          baselineHours = 2.5 + ((doorCount - 1) * 0.5);
+          baselineCost = 299 + ((doorCount - 1) * 50);
+        } else {
+          // Single-family: Fixed $299
+          baselineHours = 2.5;
+          baselineCost = 299;
+        }
+
         setItemEstimates(prev => ({
           ...prev,
           [item.id]: {
-            estimated_hours: 2.5,
-            cost_min: 299,
-            cost_max: 299,
-            detailed_scope: "Complete professional baseline system documentation service. Technician will document all major systems, take photos, record ages/conditions, and create comprehensive digital baseline.",
+            estimated_hours: baselineHours,
+            cost_min: baselineCost,
+            cost_max: baselineCost,
+            detailed_scope: isMultiUnit 
+              ? `Complete professional baseline documentation for ${doorCount}-unit property. Technician will document all major systems, common areas, and individual units. Includes photos, age/condition records, and comprehensive digital baseline for entire property.`
+              : "Complete professional baseline system documentation service. Technician will document all major systems, take photos, record ages/conditions, and create comprehensive digital baseline.",
             materials_note: "All documentation tools and reports included",
             is_fixed_price: true,
-            estimated_timeline: "2-3 hours on-site"
+            estimated_timeline: isMultiUnit ? `${Math.ceil(baselineHours)} hours on-site` : "2-3 hours on-site",
+            pricing_note: isMultiUnit ? `$299 base + $50 per additional unit (${doorCount} units)` : "Fixed price for single-family home"
+          }
+        }));
+        setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
+        return;
+      }
+
+      if (isInspection) {
+        let inspectionHours, inspectionCost;
+        
+        if (isMultiUnit) {
+          // Multi-unit: $199 base + $35 per additional door
+          inspectionHours = 1.5 + ((doorCount - 1) * 0.3);
+          inspectionCost = 199 + ((doorCount - 1) * 35);
+        } else {
+          // Single-family: Fixed $199
+          inspectionHours = 1.5;
+          inspectionCost = 199;
+        }
+
+        setItemEstimates(prev => ({
+          ...prev,
+          [item.id]: {
+            estimated_hours: inspectionHours,
+            cost_min: inspectionCost,
+            cost_max: inspectionCost,
+            detailed_scope: isMultiUnit
+              ? `Professional seasonal inspection for ${doorCount}-unit property. Comprehensive checklist covering all systems, common areas, and units. Identifies issues, documents conditions, and provides actionable recommendations.`
+              : "Professional seasonal inspection with comprehensive checklist. Covers all major systems, identifies issues, documents conditions, and provides actionable recommendations.",
+            materials_note: "All inspection tools and reporting included",
+            is_fixed_price: true,
+            estimated_timeline: isMultiUnit ? `${Math.ceil(inspectionHours)} hours on-site` : "1-2 hours on-site",
+            pricing_note: isMultiUnit ? `$199 base + $35 per additional unit (${doorCount} units)` : "Fixed price for single-family home"
           }
         }));
         setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
@@ -350,7 +403,8 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
         }
       });
       
-      alert('⚠️ AI estimate generated with basic parameters. Add more details for a more accurate estimate.');
+      // Show improved message
+      alert(`💡 Basic Estimate Generated\n\nWe've created a preliminary estimate based on typical ${item.system_type || 'service'} work.\n\nFor a MORE ACCURATE estimate:\n• Click "Edit details" and add specific information\n• Include access instructions and exact locations\n• Upload photos of the issue/area\n• Describe any complications or special requirements\n\nThe more details you provide, the better we can estimate the true scope and cost!`);
     } finally {
       setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
     }
@@ -607,6 +661,77 @@ www.360method.com
             </CardContent>
           </Card>
         )}
+
+        {/* Package Details - Moved to Top */}
+        <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <FileText className="w-6 h-6 text-blue-600" />
+              Service Request Information
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Help us serve you better by providing details about your request
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-bold text-gray-700 mb-2 block">
+                  Package Name *
+                </Label>
+                <Input
+                  value={packageName}
+                  onChange={(e) => setPackageName(e.target.value)}
+                  placeholder="e.g., Spring Maintenance, Emergency Repairs"
+                  style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  Give this request a memorable name
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-bold text-gray-700 mb-2 block">
+                  Preferred Start Date
+                </Label>
+                <Input
+                  type="date"
+                  value={preferredStartDate}
+                  onChange={(e) => setPreferredStartDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  When would you like work to begin?
+                </p>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-bold text-gray-700 mb-2 block">
+                Additional Information for Our Team
+              </Label>
+              <Textarea
+                value={customerNotes}
+                onChange={(e) => setCustomerNotes(e.target.value)}
+                placeholder="Examples:&#10;• Gate code: 1234, park in driveway&#10;• Tenant occupied - call 24hrs ahead: (555) 123-4567&#10;• Dog in backyard - needs to be secured&#10;• Work can only be done on weekdays 9am-3pm&#10;• Prefer eco-friendly materials when possible"
+                rows={5}
+                style={{ backgroundColor: '#FFFFFF', minHeight: '120px' }}
+              />
+              <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-xs font-semibold text-yellow-900 mb-1">
+                  💡 Pro Tip: The more specific, the better!
+                </p>
+                <ul className="text-xs text-gray-700 space-y-0.5 ml-3">
+                  <li>• Access codes, parking, keys</li>
+                  <li>• Tenant/occupancy information</li>
+                  <li>• Scheduling constraints</li>
+                  <li>• Special requirements or preferences</li>
+                  <li>• Anything that helps us do the job right</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Cart Items */}
@@ -893,6 +1018,9 @@ www.360method.com
                                         {estimate.is_fixed_price && (
                                           <Badge className="bg-green-600 text-white text-xs">Fixed Price</Badge>
                                         )}
+                                        {estimate.pricing_note && (
+                                          <p className="text-xs text-gray-600 italic">{estimate.pricing_note}</p>
+                                        )}
                                       </div>
 
                                       {/* Time & Cost */}
@@ -990,45 +1118,7 @@ www.360method.com
               </CardContent>
             </Card>
 
-            {/* Package Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Request Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Package Name *</Label>
-                  <Input
-                    value={packageName}
-                    onChange={(e) => setPackageName(e.target.value)}
-                    placeholder="e.g., Spring Maintenance, Emergency Repairs"
-                    style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
-                  />
-                </div>
-                <div>
-                  <Label>Preferred Start Date</Label>
-                  <Input
-                    type="date"
-                    value={preferredStartDate}
-                    onChange={(e) => setPreferredStartDate(e.target.value)}
-                    style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
-                  />
-                </div>
-                <div>
-                  <Label>Additional Notes</Label>
-                  <Textarea
-                    value={customerNotes}
-                    onChange={(e) => setCustomerNotes(e.target.value)}
-                    placeholder="Access instructions, special requirements..."
-                    rows={4}
-                    style={{ backgroundColor: '#FFFFFF', minHeight: '96px' }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Right Column - Summary & Actions */}
