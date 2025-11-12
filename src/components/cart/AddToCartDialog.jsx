@@ -91,6 +91,12 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Validate that property_id exists before submitting
+    if (!prefilledData?.property_id) {
+      console.error('Cannot add to cart: property_id is required');
+      return;
+    }
+    
     const cartItem = {
       property_id: prefilledData.property_id,
       source_type: prefilledData.source_type || 'custom',
@@ -360,7 +366,7 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
             </Button>
             <Button
               type="submit"
-              disabled={addToCartMutation.isPending || !formData.title || !formData.description}
+              disabled={addToCartMutation.isPending || !formData.title || !formData.description || !prefilledData?.property_id}
               className="flex-1 gap-2"
               style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF', minHeight: '48px' }}
             >
