@@ -11,7 +11,186 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
-import { enrichTaskWithAI } from "@/utils.js";
+
+/**
+ * Enriches a MaintenanceTask with AI-generated insights
+ * This function runs parallel AI calls to generate:
+ * - Time estimation (estimated_hours)
+ * - Statement of Work (ai_sow)
+ * - Tools and Materials needed
+ * - Video tutorial links
+ */
+async function enrichTaskWithAI(taskId, taskData) {
+  const { title, description, system_type, priority } = taskData;
+  
+  // Skip enrichment if task doesn't have sufficient data
+  if (!title || !description || !system_type) {
+    console.warn('Task missing required fields for AI enrichment');
+    return;
+  }
+
+  try {
+    // Execute all AI calls in parallel for efficiency
+    const [
+      timeEstimate,
+      sowResult,
+      toolsAndMaterials,
+      videoResults
+    ] = await Promise.all([
+      // 1. Estimate time required
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Given the maintenance task:
+Title: "${title}"
+Description: "${description}"
+System Type: "${system_type}"
+Priority: "${priority}"
+
+Estimate the time required for an average DIY homeowner to complete this task. Consider:
+- Standard tools and common access conditions
+- Typical residential property
+- Basic to intermediate skill level
+
+Output ONLY a single numeric value representing hours (e.g., 0.5, 1, 2.5, 8). No other text.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            hours: { type: "number" }
+          }
+        }
+      }).catch(err => {
+        console.error('Time estimation failed:', err);
+        return { hours: null };
+      }),
+
+      // 2. Generate Statement of Work
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a concise Statement of Work (SOW) for this maintenance task:
+
+Title: "${title}"
+Description: "${description}"
+System Type: "${system_type}"
+Priority: "${priority}"
+
+Include:
+1. **Objective**: Clear goal of the task
+2. **Scope of Work**: What will be done
+3. **Expected Outcome**: What success looks like
+
+Format as markdown. Be concise (3-5 sentences total).`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            sow: { type: "string" }
+          }
+        }
+      }).catch(err => {
+        console.error('SOW generation failed:', err);
+        return { sow: null };
+      }),
+
+      // 3. Generate Tools and Materials list
+      base44.integrations.Core.InvokeLLM({
+        prompt: `List the essential tools and materials needed for this maintenance task:
+
+Title: "${title}"
+Description: "${description}"
+System Type: "${system_type}"
+
+Provide two separate arrays:
+1. Tools (equipment used, like hammer, wrench, ladder)
+2. Materials (consumables, like screws, paint, caulk)
+
+Be specific but concise. List only essentials, not optional items.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            tools: {
+              type: "array",
+              items: { type: "string" }
+            },
+            materials: {
+              type: "array",
+              items: { type: "string" }
+            }
+          }
+        }
+      }).catch(err => {
+        console.error('Tools/materials generation failed:', err);
+        return { tools: [], materials: [] };
+      }),
+
+      // 4. Find YouTube tutorial videos
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Find helpful YouTube video tutorials for this maintenance task:
+
+Title: "${title}"
+Description: "${description}"
+System Type: "${system_type}"
+
+Search the web and find 2-3 high-quality YouTube tutorial videos that would help someone complete this task. 
+Return the video title and URL for each.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            videos: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  url: { type: "string" }
+                }
+              }
+            }
+          }
+        }
+      }).catch(err => {
+        console.error('Video search failed:', err);
+        return { videos: [] };
+      })
+    ]);
+
+    // Prepare update data
+    const updateData = {
+      ai_enrichment_completed: true
+    };
+
+    // Add time estimate if available
+    if (timeEstimate?.hours && typeof timeEstimate.hours === 'number') {
+      updateData.estimated_hours = timeEstimate.hours;
+    }
+
+    // Add SOW if available
+    if (sowResult?.sow) {
+      updateData.ai_sow = sowResult.sow;
+    }
+
+    // Add tools and materials if available
+    if (toolsAndMaterials?.tools && Array.isArray(toolsAndMaterials.tools)) {
+      updateData.ai_tools_needed = toolsAndMaterials.tools;
+    }
+    if (toolsAndMaterials?.materials && Array.isArray(toolsAndMaterials.materials)) {
+      updateData.ai_materials_needed = toolsAndMaterials.materials;
+    }
+
+    // Add video tutorials if available
+    if (videoResults?.videos && Array.isArray(videoResults.videos)) {
+      updateData.ai_video_tutorials = videoResults.videos.filter(v => v.title && v.url);
+    }
+
+    // Update the task with all AI-generated data
+    await base44.entities.MaintenanceTask.update(taskId, updateData);
+
+    console.log(`Task ${taskId} successfully enriched with AI insights`);
+  } catch (error) {
+    console.error('Error enriching task with AI:', error);
+    // Mark enrichment as attempted even if it failed
+    await base44.entities.MaintenanceTask.update(taskId, {
+      ai_enrichment_completed: true
+    }).catch(err => console.error('Failed to mark enrichment status:', err));
+  }
+}
 
 const SYSTEM_TYPES = [
   "HVAC", "Plumbing", "Electrical", "Roof", "Foundation",
