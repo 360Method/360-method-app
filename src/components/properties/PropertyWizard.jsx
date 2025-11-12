@@ -1,6 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import UserTypeSelector from "./UserTypeSelector";
 import PropertyTypeSelector from "./PropertyTypeSelector";
 import PropertyWizardStep1 from "./PropertyWizardStep1";
 import PropertyWizardStep2 from "./PropertyWizardStep2";
@@ -11,7 +12,8 @@ import PropertyConfirmation from "./PropertyConfirmation";
 import PropertyWizardComplete from "./PropertyWizardComplete";
 
 export default function PropertyWizard({ onComplete, onCancel }) {
-  const [currentStep, setCurrentStep] = React.useState(0); // Start at 0 for type selector
+  const [currentStep, setCurrentStep] = React.useState(-1); // Start at -1 for user type selector
+  const [userType, setUserType] = React.useState(null); // 'homeowner' or 'investor'
   const [propertyData, setPropertyData] = React.useState({});
   const [createdProperty, setCreatedProperty] = React.useState(null);
   const [isCreating, setIsCreating] = React.useState(false);
@@ -21,63 +23,48 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     mutationFn: async (data) => {
       console.log('Creating property with data:', data);
       
-      // Clean the data - convert empty strings to undefined for numeric fields
-      const cleanedData = { ...data };
-      
-      const numericFields = [
-        'year_built', 'square_footage', 'bedrooms', 'bathrooms',
-        'purchase_price', 'current_value', 'monthly_rent', 'door_count'
-      ];
-      
-      numericFields.forEach(field => {
-        if (cleanedData[field] === '' || cleanedData[field] === null) {
-          delete cleanedData[field];
-        } else if (cleanedData[field] !== undefined) {
-          cleanedData[field] = Number(cleanedData[field]);
+      // Clean up the data before sending
+      const cleanData = {
+        ...data,
+        year_built: data.year_built ? parseInt(data.year_built) : undefined,
+        square_footage: data.square_footage ? parseInt(data.square_footage) : undefined,
+        bedrooms: data.bedrooms !== undefined && data.bedrooms !== "" ? parseInt(data.bedrooms) : undefined,
+        bathrooms: data.bathrooms ? parseFloat(data.bathrooms) : undefined,
+        purchase_price: data.purchase_price ? parseFloat(data.purchase_price) : undefined,
+        current_value: data.current_value ? parseFloat(data.current_value) : undefined,
+        setup_completed: true,
+      };
+
+      // Remove any undefined values
+      Object.keys(cleanData).forEach(key => {
+        if (cleanData[key] === undefined || cleanData[key] === "") {
+          delete cleanData[key];
         }
       });
-      
-      // Clean units array if it exists
-      if (cleanedData.units && Array.isArray(cleanedData.units)) {
-        cleanedData.units = cleanedData.units.map(unit => {
-          const cleanedUnit = { ...unit };
-          ['square_footage', 'bedrooms', 'bathrooms'].forEach(field => {
-            if (cleanedUnit[field] === '' || cleanedUnit[field] === null) {
-              delete cleanedUnit[field];
-            } else if (cleanedUnit[field] !== undefined) {
-              cleanedUnit[field] = Number(cleanedUnit[field]);
-            }
-          });
-          return cleanedUnit;
-        });
-      }
-      
-      const fullAddress = `${cleanedData.street_address}${cleanedData.unit_number ? ` #${cleanedData.unit_number}` : ''}, ${cleanedData.city}, ${cleanedData.state} ${cleanedData.zip_code}`;
-      
-      console.log('Cleaned data before create:', cleanedData);
-      
-      return base44.entities.Property.create({
-        ...cleanedData,
-        address: fullAddress,
-        setup_completed: true,
-        baseline_completion: 0
-      });
+
+      console.log('Cleaned data:', cleanData);
+      return await base44.entities.Property.create(cleanData);
     },
     onSuccess: (property) => {
       console.log('Property created successfully:', property);
       setCreatedProperty(property);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       setIsCreating(false);
-      setCurrentStep(6); // Go to complete screen (was 5, now 6)
+      setCurrentStep(6); // Go to complete screen
     },
     onError: (error) => {
-      console.error('Error creating property:', error);
+      console.error('Property creation failed:', error);
+      alert('Failed to create property. Please try again.');
       setIsCreating(false);
-      alert('Error creating property: ' + (error.message || 'Unknown error'));
     }
   });
 
-  const handleTypeSelect = (type) => {
+  const handleUserTypeSelect = (type) => {
+    setUserType(type);
+    setCurrentStep(0);
+  };
+
+  const handlePropertyTypeSelect = (type) => {
     handleDataChange({ property_use_type: type });
     setCurrentStep(1);
   };
@@ -108,11 +95,23 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     });
   };
 
+  // Step -1: User Type Selection (Homeowner vs Investor)
+  if (currentStep === -1) {
+    return (
+      <UserTypeSelector
+        onSelect={handleUserTypeSelect}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   // Step 0: Property Type Selection
   if (currentStep === 0) {
     return (
       <PropertyTypeSelector
-        onSelect={handleTypeSelect}
+        userType={userType}
+        onSelect={handlePropertyTypeSelect}
+        onBack={() => setCurrentStep(-1)}
         onCancel={onCancel}
       />
     );
