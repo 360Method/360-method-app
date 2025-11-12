@@ -33,6 +33,7 @@ const getClimateZone = (state) => {
 export default function OnboardingPropertySetup({ onNext, onBack, data }) {
   const [selectedPlace, setSelectedPlace] = React.useState(null);
   const [operatorData, setOperatorData] = React.useState(null);
+  const [operatorCheckComplete, setOperatorCheckComplete] = React.useState(false);
   const queryClient = useQueryClient();
 
   const propertyUseType = data?.property_use_type || 'primary';
@@ -75,7 +76,15 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
       operator_available: !!operator,
       operator_checked_date: new Date().toISOString().split('T')[0]
     });
+    setOperatorCheckComplete(true);
   };
+
+  // Reset operator check when address changes
+  React.useEffect(() => {
+    if (selectedPlace) {
+      setOperatorCheckComplete(false);
+    }
+  }, [selectedPlace]);
 
   const handleContinue = async () => {
     if (!selectedPlace) return;
@@ -229,10 +238,10 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
         </Button>
         <Button
           onClick={handleContinue}
-          disabled={!selectedPlace || !operatorData || createPropertyMutation.isPending}
+          disabled={!selectedPlace || !operatorCheckComplete || createPropertyMutation.isPending}
           className="gap-2"
           style={{ 
-            backgroundColor: (selectedPlace && operatorData && !createPropertyMutation.isPending) ? '#28A745' : '#CCCCCC', 
+            backgroundColor: (selectedPlace && operatorCheckComplete && !createPropertyMutation.isPending) ? '#28A745' : '#CCCCCC', 
             minHeight: '48px'
           }}
         >
