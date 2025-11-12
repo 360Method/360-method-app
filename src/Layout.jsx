@@ -43,14 +43,14 @@ import CartDrawer from "./components/cart/CartDrawer";
 
 const navigationItems = [
   {
-    title: "Properties",
-    url: createPageUrl("Properties"),
-    icon: Home,
-  },
-  {
     title: "Dashboard",
     url: createPageUrl("Dashboard"),
     icon: LayoutDashboard,
+  },
+  {
+    title: "Properties",
+    url: createPageUrl("Properties"),
+    icon: Home,
   },
   {
     title: "Resources",
