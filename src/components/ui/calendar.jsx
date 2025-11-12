@@ -3,7 +3,24 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 function Calendar({ mode = "single", selected, onSelect, className = "", ...props }) {
-  const [currentMonth, setCurrentMonth] = React.useState(selected || new Date())
+  // Ensure currentMonth is always a valid Date object
+  const [currentMonth, setCurrentMonth] = React.useState(() => {
+    if (selected) {
+      const date = selected instanceof Date ? selected : new Date(selected);
+      return isNaN(date.getTime()) ? new Date() : date;
+    }
+    return new Date();
+  });
+
+  // Update currentMonth when selected changes
+  React.useEffect(() => {
+    if (selected) {
+      const date = selected instanceof Date ? selected : new Date(selected);
+      if (!isNaN(date.getTime())) {
+        setCurrentMonth(date);
+      }
+    }
+  }, [selected]);
 
   const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
   const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
@@ -27,8 +44,10 @@ function Calendar({ mode = "single", selected, onSelect, className = "", ...prop
   }
 
   const isSelected = (day) => {
-    if (!selected) return false
-    return day.toDateString() === selected.toDateString()
+    if (!selected) return false;
+    const selectedDate = selected instanceof Date ? selected : new Date(selected);
+    if (isNaN(selectedDate.getTime())) return false;
+    return day.toDateString() === selectedDate.toDateString();
   }
 
   const isCurrentMonth = (day) => {
