@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar as CalendarIcon, CheckCircle2, Trash2 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -53,7 +54,7 @@ const safeFormatDate = (dateValue, formatString) => {
   }
 };
 
-export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, propertyId }) {
+export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, onDelete, propertyId }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = React.useState(false);
@@ -272,14 +273,55 @@ export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatu
                   </Select>
                 </div>
 
-                <Button
-                  onClick={() => onStatusChange(task.id, 'Completed')}
-                  className="w-full gap-2"
-                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Mark Complete
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => onStatusChange(task.id, 'Completed')}
+                    className="w-full gap-2"
+                    style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-sm">Complete</span>
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2 border-2 border-red-300 text-red-700 hover:bg-red-50"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-sm">Delete</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Task from Priority Queue?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <p>Are you sure you want to delete this task?</p>
+                          <div className="bg-gray-50 rounded p-3 mt-2">
+                            <p className="font-semibold text-gray-900 text-sm">{task.title}</p>
+                            {task.system_type && (
+                              <p className="text-xs text-gray-600 mt-1">System: {task.system_type}</p>
+                            )}
+                          </div>
+                          <p className="text-red-600 font-semibold text-sm mt-2">
+                            ⚠️ This action cannot be undone. The task will be permanently removed from your priority queue.
+                          </p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(task.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete Task
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </div>
           )}
