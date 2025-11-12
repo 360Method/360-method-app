@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -7,13 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label"; // Added Label import
-import { ArrowLeft, X, AlertTriangle, DollarSign, Sparkles, CheckCircle2 } from "lucide-react"; // Added CheckCircle2 import
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, X, AlertTriangle, DollarSign, Sparkles, CheckCircle2 } from "lucide-react";
 
 import ServiceRequestDialog from "../services/ServiceRequestDialog";
 import { estimateCascadeRisk } from "../shared/CascadeEstimator";
 
-const SEVERITY_LEVELS = { // Renamed from SEVERITY_INFO and 'examples' changed to 'example'
+// Safe string truncation helper
+const safeSubstring = (str, maxLength) => {
+  if (!str || typeof str !== 'string') return '';
+  return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+};
+
+const SEVERITY_LEVELS = {
   Urgent: {
     icon: '🚨',
     description: 'Safety hazard or will cause damage soon',
@@ -46,7 +51,7 @@ const COST_RANGES = [
 
 // Utility function to parse cost range into a numeric value for AI estimation fallback
 const parseCostRange = (costRange) => {
-  if (costRange === 'free') return 0;
+  if (!costRange || costRange === 'free') return 0;
   if (costRange === 'unknown') return 0;
   if (costRange.includes('+')) return parseInt(costRange.replace('+', ''), 10);
   const [min] = costRange.split('-');
@@ -59,28 +64,27 @@ export default function IssueDocumentation({
   area,
   existingIssues = [],
   onComplete,
-  preselectedSystem = null // NEW: System to pre-populate
+  preselectedSystem = null
 }) {
   const [formData, setFormData] = React.useState({
-    system: preselectedSystem || '', // Pre-populate if provided
+    system: preselectedSystem || '',
     description: '',
     severity: 'Flag',
     photo_urls: [],
-    is_quick_fix: null, // null, true, or false
-    estimated_cost: '', // e.g., '1-50', 'unknown'
-    who_will_fix: '' // 'diy', 'professional', 'undecided'
+    is_quick_fix: null,
+    estimated_cost: '',
+    who_will_fix: ''
   });
-  const [photos, setPhotos] = React.useState([]); // Local state for photo display and manipulation
+  const [photos, setPhotos] = React.useState([]);
   const [uploading, setUploading] = React.useState(false);
   const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(false);
-  const [aiEstimating, setAiEstimating] = React.useState(false); // Replaces isEstimating
+  const [aiEstimating, setAiEstimating] = React.useState(false);
   const [aiEstimate, setAiEstimate] = React.useState(null);
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
-  const [editingFixDecision, setEditingFixDecision] = React.useState(false); // NEW: For editing quick fix decision
+  const [editingFixDecision, setEditingFixDecision] = React.useState(false);
 
   const queryClient = useQueryClient();
 
-  // Fetch baseline systems for the property to potentially update them
   const { data: baselineSystems = [] } = useQuery({
     queryKey: ['systemBaselines', propertyId],
     queryFn: () => base44.entities.SystemBaseline.list({ property_id: propertyId }),
@@ -92,7 +96,7 @@ export default function IssueDocumentation({
       return base44.entities.MaintenanceTask.create(taskData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', propertyId] }); // Invalidate for specific property
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', propertyId] });
     },
   });
 
@@ -101,7 +105,7 @@ export default function IssueDocumentation({
       return base44.entities.SystemBaseline.update(systemId, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] }); // Invalidate for specific property
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
     },
   });
 
@@ -114,38 +118,38 @@ export default function IssueDocumentation({
       const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);
-      setPhotos(prev => [...prev, ...newUrls]); // Update local photos state for display
+      setPhotos(prev => [...prev, ...newUrls]);
       setFormData(prev => ({
         ...prev,
-        photo_urls: [...prev.photo_urls, ...newUrls] // Update formData
+        photo_urls: [...prev.photo_urls, ...newUrls]
       }));
     } catch (error) {
       console.error("Upload error:", error);
     } finally {
       setUploading(false);
-      e.target.value = ''; // Clear the input field
+      e.target.value = '';
     }
   };
 
   const removePhoto = (index) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index)); // Update local photos state
+    setPhotos(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({
       ...prev,
-      photo_urls: prev.photo_urls.filter((_, i) => i !== index) // Update formData
+      photo_urls: prev.photo_urls.filter((_, i) => i !== index)
     }));
   };
 
   const handleQuickFixAnswer = async (isQuickFix) => {
     setFormData(prev => ({ ...prev, is_quick_fix: isQuickFix }));
     setShowQuickFixQuestion(false);
-    setEditingFixDecision(false); // Reset editing state
+    setEditingFixDecision(false);
 
-    if (!isQuickFix) { // If not a quick fix, proceed with AI estimation
+    if (!isQuickFix) {
       setAiEstimating(true);
-      setAiEstimate(null); // Clear previous estimate
+      setAiEstimate(null);
       try {
         const estimate = await estimateCascadeRisk({
-          description: formData.description,
+          description: formData.description || '',
           system_type: formData.system,
           severity: formData.severity,
           area: area.name,
@@ -154,12 +158,11 @@ export default function IssueDocumentation({
         setAiEstimate(estimate);
       } catch (error) {
         console.error('AI estimation failed:', error);
-        // Provide a fallback AI estimate if the service fails
         setAiEstimate({
-          cascade_risk_score: 5, // Default if AI fails
+          cascade_risk_score: 5,
           cascade_risk_reason: 'Could not get AI estimate. Manual review needed.',
           current_fix_cost: parseCostRange(formData.estimated_cost),
-          delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5, // Heuristic default
+          delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5,
           cost_impact_reason: 'AI estimation failed, using default values.',
           cost_disclaimer: 'AI estimation failed. The following costs are estimated based on your input cost range only.'
         });
@@ -171,23 +174,29 @@ export default function IssueDocumentation({
 
   const handleEditFixDecision = () => {
     setEditingFixDecision(true);
-    setFormData(prev => ({ ...prev, is_quick_fix: null, who_will_fix: '' })); // Reset decision and who_will_fix
-    setAiEstimate(null); // Clear AI estimate as it's no longer relevant
+    setFormData(prev => ({ ...prev, is_quick_fix: null, who_will_fix: '' }));
+    setAiEstimate(null);
   };
 
   const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.description || !formData.system) {
+      console.error("Missing required fields");
+      return;
+    }
+
     if (formData.is_quick_fix) {
       // Quick fix path
       onComplete([...existingIssues, {
         area_id: area.id,
-        item_name: `${formData.system}: ${formData.description}`,
+        item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
         severity: formData.severity,
         notes: `Quick fix completed during inspection. ${formData.who_will_fix === 'diy' ? 'DIY repair' : 'Professional service'}. Estimated cost: ${formData.estimated_cost}.`,
         photo_urls: formData.photo_urls,
         completed: true
       }]);
     } else {
-      // Non-quick fix path (add to Priority Queue)
+      // Non-quick fix path
       if (!aiEstimate) {
         console.error("AI estimate missing for non-quick fix. Cannot proceed.");
         return;
@@ -195,7 +204,7 @@ export default function IssueDocumentation({
 
       const taskData = {
         property_id: propertyId,
-        title: `${formData.system}: ${formData.description.substring(0, 50)}${formData.description.length > 50 ? '...' : ''}`,
+        title: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
         description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
         system_type: formData.system,
         priority: formData.severity === 'Urgent' ? 'High' : formData.severity === 'Flag' ? 'Medium' : 'Low',
@@ -213,32 +222,28 @@ export default function IssueDocumentation({
       try {
         await createTaskMutation.mutateAsync(taskData);
 
-        // Update related baseline systems for this property and system_type
+        // Update related baseline systems
         if (formData.system !== 'General') {
           const systemsToUpdate = baselineSystems.filter(s => s.system_type === formData.system);
           for (const system of systemsToUpdate) {
             const conditionUpdates = {};
 
-            // Update condition based on severity (preserving original logic)
             if (formData.severity === 'Urgent') {
               conditionUpdates.condition = 'Urgent';
             } else if (formData.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
               conditionUpdates.condition = 'Fair';
             }
 
-            // Add warning signs if not already present (preserving original logic)
             const existingWarnings = system.warning_signs_present || [];
-            const newWarning = formData.description.substring(0, 100);
+            const newWarning = safeSubstring(formData.description, 100);
             if (newWarning && !existingWarnings.includes(newWarning)) {
               conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
             }
 
-            // Add condition notes (preserving original logic)
             const timestamp = new Date().toLocaleDateString();
             const existingNotes = system.condition_notes || '';
             const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${formData.description}`;
             conditionUpdates.condition_notes = existingNotes.includes(newNote) ? existingNotes : existingNotes + newNote;
-
 
             if (Object.keys(conditionUpdates).length > 0) {
               await updateSystemMutation.mutateAsync({
@@ -250,7 +255,7 @@ export default function IssueDocumentation({
         }
         onComplete([...existingIssues, {
           area_id: area.id,
-          item_name: `${formData.system}: ${formData.description}`,
+          item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
           severity: formData.severity,
           notes: 'Added to Priority Queue for scheduling',
           photo_urls: formData.photo_urls,
@@ -263,11 +268,8 @@ export default function IssueDocumentation({
     }
   };
 
-  // Determine if the "Continue" button for quick fix question should be enabled
   const canAskQuickFixQuestion = formData.system && formData.description && formData.estimated_cost;
-  // Determine if the Quick Fix submit button should be enabled
   const canSubmitQuickFix = formData.is_quick_fix === true && formData.who_will_fix;
-  // Determine if the Priority Queue submit button should be enabled
   const canSubmitPriorityQueue = formData.is_quick_fix === false && aiEstimate && formData.who_will_fix;
 
   return (
@@ -276,7 +278,7 @@ export default function IssueDocumentation({
         <div className="mobile-container md:max-w-3xl md:mx-auto">
           <Button
             variant="ghost"
-            onClick={() => onComplete(existingIssues)} // Go back to area inspection, not just cancel form
+            onClick={() => onComplete(existingIssues)}
             className="mb-4"
             style={{ minHeight: '44px' }}
           >
@@ -420,7 +422,7 @@ export default function IssueDocumentation({
                 </Select>
               </div>
 
-              {/* Quick Fix Question - Show button if not answered and not editing */}
+              {/* Quick Fix Question */}
               {formData.is_quick_fix === null && !showQuickFixQuestion && !editingFixDecision && (
                 <Button
                   onClick={() => setShowQuickFixQuestion(true)}
@@ -432,7 +434,6 @@ export default function IssueDocumentation({
                 </Button>
               )}
 
-              {/* Display Quick Fix Question */}
               {(showQuickFixQuestion || editingFixDecision) && (
                 <Card className="border-2 border-blue-300 bg-blue-50">
                   <CardContent className="p-6">
@@ -463,7 +464,7 @@ export default function IssueDocumentation({
                 </Card>
               )}
 
-              {/* Quick Fix Path - Show only if answered YES to quick fix */}
+              {/* Quick Fix Path */}
               {formData.is_quick_fix === true && !editingFixDecision && (
                 <Card className="border-2 border-green-300 bg-green-50">
                   <CardContent className="p-6">
@@ -511,7 +512,7 @@ export default function IssueDocumentation({
                 </Card>
               )}
 
-              {/* Priority Queue Path with AI Estimate - Show only if answered NO to quick fix */}
+              {/* Priority Queue Path with AI Estimate */}
               {formData.is_quick_fix === false && !editingFixDecision && (
                 <>
                   {aiEstimating && (
@@ -541,14 +542,12 @@ export default function IssueDocumentation({
                           </Button>
                         </div>
 
-                        {/* Cost Disclaimer */}
                         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r">
                           <p className="text-xs text-yellow-900 leading-relaxed">
                             {aiEstimate.cost_disclaimer}
                           </p>
                         </div>
 
-                        {/* Cascade Risk Score */}
                         <div className="mb-4 p-4 bg-white rounded border">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-semibold">Cascade Risk:</span>
@@ -563,7 +562,6 @@ export default function IssueDocumentation({
                           <p className="text-sm text-gray-700">{aiEstimate.cascade_risk_reason}</p>
                         </div>
 
-                        {/* Cost Comparison */}
                         <div className="mb-4 p-4 bg-white rounded border">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-gray-600">Fix Now Estimate:</span>
@@ -643,7 +641,7 @@ export default function IssueDocumentation({
           severity: formData.severity,
           system_type: formData.system,
           photo_urls: formData.photo_urls,
-          title: `${formData.system}: ${formData.description.substring(0, 50)}${formData.description.length > 50 ? '...' : ''}`,
+          title: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
           notes: `Found during ${inspection.season} ${inspection.year} inspection. AI cascade risk: ${aiEstimate?.cascade_risk_score}/10`
         }}
       />
