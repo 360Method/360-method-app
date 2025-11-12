@@ -696,42 +696,90 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* 360° Method Quick Reference - Compact */}
+        {/* 360° Method Progress - Unified */}
         <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 mb-6 shadow-md">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between" style={{ color: '#1B365D', fontSize: '18px' }}>
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-indigo-600" />
-                The 360° Method Framework
+            <button
+              onClick={() => {
+                const whyElement = document.getElementById('method-why-section');
+                if (whyElement) {
+                  whyElement.style.display = whyElement.style.display === 'none' ? 'block' : 'none';
+                }
+              }}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Target className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <CardTitle style={{ color: '#1B365D', fontSize: '18px', marginBottom: '4px' }}>
+                  Your 360° Method Progress
+                </CardTitle>
+                <p className="text-xs text-indigo-700 font-normal">
+                  Tracking across {properties.length === 1 ? 'your property' : `all ${properties.length} properties`} • Click to learn why this matters
+                </p>
               </div>
-            </CardTitle>
+              <ChevronRight className="w-5 h-5 text-indigo-600 flex-shrink-0 transform transition-transform" id="method-chevron" />
+            </button>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-3">
+
+          {/* Why This Matters - Expandable */}
+          <div id="method-why-section" style={{ display: 'none' }}>
+            <CardContent className="pt-0 pb-4">
+              <div className="bg-white rounded-lg p-4 border border-indigo-200">
+                <h4 className="font-bold text-indigo-900 mb-2 text-sm">💡 Why the 360° Method Matters:</h4>
+                <p className="text-xs text-gray-700 leading-relaxed mb-3">
+                  Most homeowners react to problems—they replace systems when they fail during peak season at emergency pricing. 
+                  The 360° Method flips this: <strong>you stay ahead of issues, plan replacements on your timeline, and save 30%+ on maintenance costs.</strong>
+                </p>
+                <div className="grid md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">🔵 AWARE: Know What You Have</p>
+                    <p className="text-gray-600">Document systems, inspect regularly, track all maintenance</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-orange-900 mb-1">🟠 ACT: Make Smart Decisions</p>
+                    <p className="text-gray-600">Prioritize by risk, schedule strategically, execute before disaster</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-900 mb-1">🟢 ADVANCE: Build Value</p>
+                    <p className="text-gray-600">Forecast expenses, invest in upgrades, scale your portfolio</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </div>
+
+          <CardContent className="pt-0">
+            <div className="grid md:grid-cols-3 gap-3 mb-4">
               {/* Phase I - AWARE */}
               <div className="bg-white p-4 rounded-lg border-2 border-blue-300 hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
                     <Eye className="w-4 h-4 text-white" />
                   </div>
-                  <h4 className="font-bold text-blue-900">I. AWARE</h4>
+                  <h4 className="font-bold text-blue-900 text-sm">I. AWARE</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Know what you have</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {avgBaselineCompletion >= 66 ? '✓' : '1'}
                     </span>
                     <span className={avgBaselineCompletion >= 66 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Baseline</span>
+                    {avgBaselineCompletion < 100 && avgBaselineCompletion > 0 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{avgBaselineCompletion}%</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allInspections.length > 0 ? '✓' : '2'}
                     </span>
                     <span className={allInspections.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Inspect</span>
+                    {allInspections.length > 0 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{allInspections.length}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalSpent > 0 ? '✓' : '3'}
                     </span>
                     <span className={totalSpent > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Track</span>
@@ -745,27 +793,36 @@ export default function Dashboard() {
                   <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0">
                     <Zap className="w-4 h-4 text-white" />
                   </div>
-                  <h4 className="font-bold text-orange-900">II. ACT</h4>
+                  <h4 className="font-bold text-orange-900 text-sm">II. ACT</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allTasks.length > 0 ? '✓' : '4'}
                     </span>
                     <span className={allTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Prioritize</span>
+                    {allTasks.length > 0 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{allTasks.length}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {scheduledTasks.length > 0 ? '✓' : '5'}
                     </span>
                     <span className={scheduledTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Schedule</span>
+                    {scheduledTasks.length > 0 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{scheduledTasks.length}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {completedTasksThisMonth > 0 ? '✓' : '6'}
                     </span>
                     <span className={completedTasksThisMonth > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Execute</span>
+                    {completedTasksThisMonth > 0 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{completedTasksThisMonth}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -776,36 +833,39 @@ export default function Dashboard() {
                   <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                     <TrendingUp className="w-4 h-4 text-white" />
                   </div>
-                  <h4 className="font-bold text-green-900">III. ADVANCE</h4>
+                  <h4 className="font-bold text-green-900 text-sm">III. ADVANCE</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalPrevented > 0 ? '✓' : '7'}
                     </span>
                     <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs">
+                    <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                       8
                     </span>
                     <span className="text-gray-600">Upgrade</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${properties.length > 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${properties.length > 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {properties.length > 1 ? '✓' : '9'}
                     </span>
                     <span className={properties.length > 1 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Scale</span>
+                    {properties.length > 1 && (
+                      <span className="text-[10px] text-gray-500 ml-auto">{properties.length}</span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Progress Summary */}
-            <div className="mt-4 p-3 bg-white rounded border border-indigo-200">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Your Progress:</span>
+            {/* Overall Progress Summary */}
+            <div className="p-4 bg-white rounded-lg border-2 border-indigo-300 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700">Overall Method Progress:</span>
                 <span className="font-bold text-indigo-600">
                   {[
                     avgBaselineCompletion >= 66,
@@ -817,8 +877,26 @@ export default function Dashboard() {
                     totalPrevented > 0,
                     false, // Upgrade step
                     properties.length > 1
-                  ].filter(Boolean).length} of 9 steps completed
+                  ].filter(Boolean).length} of 9 steps
                 </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="h-3 rounded-full bg-gradient-to-r from-blue-500 via-orange-500 to-green-500 transition-all"
+                  style={{ 
+                    width: `${([
+                      avgBaselineCompletion >= 66,
+                      allInspections.length > 0,
+                      totalSpent > 0,
+                      allTasks.length > 0,
+                      scheduledTasks.length > 0,
+                      completedTasksThisMonth > 0,
+                      totalPrevented > 0,
+                      false,
+                      properties.length > 1
+                    ].filter(Boolean).length / 9) * 100}%` 
+                  }}
+                />
               </div>
             </div>
           </CardContent>
@@ -871,49 +949,7 @@ export default function Dashboard() {
               </Card>
             )}
 
-            {/* Phase Progress */}
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
-                  <Target className="w-5 h-5" />
-                  360° Method Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <PhaseProgressCard
-                  phase="AWARE"
-                  icon={Eye}
-                  color="#3B82F6"
-                  progress={avgBaselineCompletion}
-                  description="Document systems and inspect property"
-                  action="Continue"
-                  actionUrl={createPageUrl("Baseline")}
-                  compact={true}
-                />
-                
-                <PhaseProgressCard
-                  phase="ACT"
-                  icon={Zap}
-                  color="#FF6B35"
-                  progress={highPriorityTasks.length > 0 ? 50 : 100}
-                  description="Prioritize and schedule maintenance"
-                  action="View Tasks"
-                  actionUrl={createPageUrl("Prioritize")}
-                  compact={true}
-                />
-                
-                <PhaseProgressCard
-                  phase="ADVANCE"
-                  icon={TrendingUp}
-                  color="#28A745"
-                  progress={totalPrevented > 0 ? 75 : 0}
-                  description="Preserve value and scale"
-                  action="View Progress"
-                  actionUrl={createPageUrl("Preserve")}
-                  compact={true}
-                />
-              </CardContent>
-            </Card>
+
 
             {/* Seasonal Suggestions */}
             {primaryProperty && (
