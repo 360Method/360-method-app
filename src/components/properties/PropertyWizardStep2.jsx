@@ -378,14 +378,23 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
                       </Badge>
                     )}
                   </Label>
-                  <Input
-                    type="number"
-                    value={formData.bedrooms}
-                    onChange={(e) => updateField('bedrooms', e.target.value)}
-                    placeholder="4"
-                    className="mt-2"
-                    style={{ minHeight: '48px' }}
-                  />
+                  <Select
+                    value={formData.bedrooms ? String(formData.bedrooms) : ""}
+                    onValueChange={(value) => updateField('bedrooms', value === "studio" ? 0 : parseInt(value))}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="studio">Studio (0 bedrooms)</SelectItem>
+                      <SelectItem value="1">1 Bedroom</SelectItem>
+                      <SelectItem value="2">2 Bedrooms</SelectItem>
+                      <SelectItem value="3">3 Bedrooms</SelectItem>
+                      <SelectItem value="4">4 Bedrooms</SelectItem>
+                      <SelectItem value="5">5 Bedrooms</SelectItem>
+                      <SelectItem value="6">6+ Bedrooms</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="font-semibold flex items-center gap-2">
@@ -397,15 +406,25 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
                       </Badge>
                     )}
                   </Label>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={formData.bathrooms}
-                    onChange={(e) => updateField('bathrooms', e.target.value)}
-                    placeholder="2.5"
-                    className="mt-2"
-                    style={{ minHeight: '48px' }}
-                  />
+                  <Select
+                    value={formData.bathrooms ? String(formData.bathrooms) : ""}
+                    onValueChange={(value) => updateField('bathrooms', parseFloat(value))}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="1">1 Bathroom</SelectItem>
+                      <SelectItem value="1.5">1.5 Bathrooms</SelectItem>
+                      <SelectItem value="2">2 Bathrooms</SelectItem>
+                      <SelectItem value="2.5">2.5 Bathrooms</SelectItem>
+                      <SelectItem value="3">3 Bathrooms</SelectItem>
+                      <SelectItem value="3.5">3.5 Bathrooms</SelectItem>
+                      <SelectItem value="4">4 Bathrooms</SelectItem>
+                      <SelectItem value="4.5">4.5 Bathrooms</SelectItem>
+                      <SelectItem value="5">5+ Bathrooms</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
