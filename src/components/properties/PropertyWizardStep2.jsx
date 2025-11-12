@@ -87,7 +87,7 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
       alert("Please fill in year built and square footage");
       return;
     }
-    if (!isMultiFamily && (!formData.bedrooms || !formData.bathrooms)) {
+    if (!isMultiFamily && (formData.bedrooms === "" || formData.bedrooms === null || formData.bedrooms === undefined || formData.bathrooms === "" || formData.bathrooms === null || formData.bathrooms === undefined)) {
       alert("Please fill in bedrooms and bathrooms");
       return;
     }

@@ -1,14 +1,17 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import PropertyTypeSelector from "./PropertyTypeSelector";
 import PropertyWizardStep1 from "./PropertyWizardStep1";
 import PropertyWizardStep2 from "./PropertyWizardStep2";
 import PropertyWizardStep3 from "./PropertyWizardStep3";
+import RentalConfigStep from "./RentalConfigStep";
 import PropertyWizardStep4 from "./PropertyWizardStep4";
+import PropertyConfirmation from "./PropertyConfirmation";
 import PropertyWizardComplete from "./PropertyWizardComplete";
 
 export default function PropertyWizard({ onComplete, onCancel }) {
-  const [currentStep, setCurrentStep] = React.useState(1);
+  const [currentStep, setCurrentStep] = React.useState(0); // Start at 0 for type selector
   const [propertyData, setPropertyData] = React.useState({});
   const [createdProperty, setCreatedProperty] = React.useState(null);
   const [isCreating, setIsCreating] = React.useState(false);
@@ -65,7 +68,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
       setCreatedProperty(property);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       setIsCreating(false);
-      setCurrentStep(5);
+      setCurrentStep(6); // Go to complete screen (was 5, now 6)
     },
     onError: (error) => {
       console.error('Error creating property:', error);
@@ -74,11 +77,25 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     }
   });
 
+  const handleTypeSelect = (type) => {
+    handleDataChange({ property_use_type: type });
+    setCurrentStep(1);
+  };
+
   const handleStep1Next = () => setCurrentStep(2);
-  const handleStep2Next = () => setCurrentStep(3);
-  const handleStep3Next = () => setCurrentStep(4);
-  const handleStep4Next = () => {
-    console.log('Step 4 Next clicked, propertyData:', propertyData);
+  const handleStep2Next = () => {
+    // If property type is primary, skip rental config
+    if (propertyData.property_use_type === 'primary') {
+      setCurrentStep(4); // Skip to financial details (step 4)
+    } else {
+      setCurrentStep(3); // Go to rental config
+    }
+  };
+  const handleStep3Next = () => setCurrentStep(4); // Rental config to financial
+  const handleStep4Next = () => setCurrentStep(5); // Financial to confirmation
+  
+  const handleConfirmation = () => {
+    console.log('Confirmation clicked, propertyData:', propertyData);
     setIsCreating(true);
     createPropertyMutation.mutate(propertyData);
   };
@@ -91,17 +108,29 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     });
   };
 
+  // Step 0: Property Type Selection
+  if (currentStep === 0) {
+    return (
+      <PropertyTypeSelector
+        onSelect={handleTypeSelect}
+        onCancel={onCancel}
+      />
+    );
+  }
+
+  // Step 1: Address
   if (currentStep === 1) {
     return (
       <PropertyWizardStep1
         data={propertyData}
         onChange={handleDataChange}
         onNext={handleStep1Next}
-        onCancel={onCancel}
+        onCancel={() => setCurrentStep(0)}
       />
     );
   }
 
+  // Step 2: Property Details
   if (currentStep === 2) {
     return (
       <PropertyWizardStep2
@@ -113,10 +142,12 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     );
   }
 
+  // Step 3: Rental Configuration (conditional)
   if (currentStep === 3) {
     return (
-      <PropertyWizardStep3
+      <RentalConfigStep
         data={propertyData}
+        propertyUseType={propertyData.property_use_type}
         onChange={handleDataChange}
         onNext={handleStep3Next}
         onBack={() => setCurrentStep(2)}
@@ -124,19 +155,40 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     );
   }
 
+  // Step 4: Financial Details
   if (currentStep === 4) {
     return (
       <PropertyWizardStep4
         data={propertyData}
         onChange={handleDataChange}
         onNext={handleStep4Next}
-        onBack={() => setCurrentStep(3)}
+        onBack={() => {
+          // Go back to rental config if not primary, otherwise go to property details
+          if (propertyData.property_use_type === 'primary') {
+            setCurrentStep(2);
+          } else {
+            setCurrentStep(3);
+          }
+        }}
+        isCreating={false}
+      />
+    );
+  }
+
+  // Step 5: Confirmation
+  if (currentStep === 5 && !createdProperty) {
+    return (
+      <PropertyConfirmation
+        data={propertyData}
+        onEdit={() => setCurrentStep(1)}
+        onConfirm={handleConfirmation}
         isCreating={isCreating}
       />
     );
   }
 
-  if (currentStep === 5 && createdProperty) {
+  // Step 6: Complete
+  if (currentStep === 6 && createdProperty) {
     return (
       <PropertyWizardComplete
         property={createdProperty}
