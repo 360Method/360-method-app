@@ -16,6 +16,12 @@ export default function ConfirmDialog({
   const [confirming, setConfirming] = React.useState(false);
 
   const handleConfirm = async () => {
+    if (!onConfirm) {
+      console.error('ConfirmDialog: onConfirm prop is required but was not provided');
+      onClose();
+      return;
+    }
+
     setConfirming(true);
     try {
       await onConfirm();
@@ -43,7 +49,7 @@ export default function ConfirmDialog({
         </DialogHeader>
         
         <div className="py-4" style={{ backgroundColor: '#FFFFFF' }}>
-          <p className="text-gray-700 leading-relaxed">{message}</p>
+          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{message}</p>
         </div>
 
         <div className="flex gap-3 pt-4 border-t">
