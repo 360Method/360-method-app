@@ -631,69 +631,87 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Key Metrics Dashboard */}
+        {/* Key Metrics Dashboard - All Clickable */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <Card className="border-none shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Home className="w-5 h-5 text-blue-600" />
-                <Badge className="bg-blue-600 text-white text-xs">
-                  {isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length}
-                </Badge>
-              </div>
-              <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                {properties.length}
-              </p>
-              <p className="text-xs text-gray-600">
-                {properties.length === 1 ? 'Property' : 'Properties'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-orange-50 to-red-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Flame className="w-5 h-5 text-orange-600" />
-                {highPriorityTasks.length > 0 && (
-                  <Badge className="bg-red-600 text-white text-xs animate-pulse">
-                    Urgent
+          <Link to={createPageUrl("Properties")}>
+            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 hover:scale-105">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Home className="w-5 h-5 text-blue-600" />
+                  <Badge className="bg-blue-600 text-white text-xs">
+                    {isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length}
                   </Badge>
-                )}
-              </div>
-              <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                {highPriorityTasks.length}
-              </p>
-              <p className="text-xs text-gray-600">Priority Tasks</p>
-            </CardContent>
-          </Card>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
+                  {properties.length}
+                </p>
+                <p className="text-xs text-gray-600 flex items-center gap-1">
+                  {properties.length === 1 ? 'Property' : 'Properties'}
+                  <ChevronRight className="w-3 h-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-none shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-green-50 to-emerald-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Shield className="w-5 h-5 text-green-600" />
-                <ArrowUpRight className="w-4 h-4 text-green-600" />
-              </div>
-              <p className="text-2xl font-bold mb-1 text-green-700">
-                ${(totalPrevented / 1000).toFixed(0)}k
-              </p>
-              <p className="text-xs text-gray-600">Prevented</p>
-            </CardContent>
-          </Card>
+          <Link to={createPageUrl("Prioritize")}>
+            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-orange-50 to-red-100 hover:scale-105">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Flame className="w-5 h-5 text-orange-600" />
+                  {highPriorityTasks.length > 0 && (
+                    <Badge className="bg-red-600 text-white text-xs animate-pulse">
+                      Urgent
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
+                  {highPriorityTasks.length}
+                </p>
+                <p className="text-xs text-gray-600 flex items-center gap-1">
+                  Priority Tasks
+                  <ChevronRight className="w-3 h-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="border-none shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-purple-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <CheckCircle2 className="w-5 h-5 text-purple-600" />
-                <Badge className="bg-purple-600 text-white text-xs">
-                  {completedTasksThisMonth}
-                </Badge>
-              </div>
-              <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                {avgHealthScore}
-              </p>
-              <p className="text-xs text-gray-600">Health Score</p>
-            </CardContent>
-          </Card>
+          <Link to={createPageUrl("Preserve")}>
+            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-green-50 to-emerald-100 hover:scale-105">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Shield className="w-5 h-5 text-green-600" />
+                  <ArrowUpRight className="w-4 h-4 text-green-600" />
+                </div>
+                <p className="text-2xl font-bold mb-1 text-green-700">
+                  ${(totalPrevented / 1000).toFixed(0)}k
+                </p>
+                <p className="text-xs text-gray-600 flex items-center gap-1">
+                  Prevented
+                  <ChevronRight className="w-3 h-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to={createPageUrl("Track")}>
+            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 hover:scale-105">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Activity className="w-5 h-5 text-purple-600" />
+                  <Badge className="bg-purple-600 text-white text-xs">
+                    {completedTasksThisMonth}
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
+                  {avgHealthScore}
+                </p>
+                <p className="text-xs text-gray-600 flex items-center gap-1">
+                  Health Score
+                  <ChevronRight className="w-3 h-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* 360° Method Progress - Unified */}
@@ -752,15 +770,15 @@ export default function Dashboard() {
             <div className="grid md:grid-cols-3 gap-3 mb-4">
               {/* Phase I - AWARE */}
               <div className="bg-white p-4 rounded-lg border-2 border-blue-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
                     <Eye className="w-4 h-4 text-white" />
                   </div>
                   <h4 className="font-bold text-blue-900 text-sm">I. AWARE</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Know what you have</p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
+                <div className="space-y-2 mb-3">
+                  <Link to={createPageUrl("Baseline")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {avgBaselineCompletion >= 66 ? '✓' : '1'}
                     </span>
@@ -768,8 +786,9 @@ export default function Dashboard() {
                     {avgBaselineCompletion < 100 && avgBaselineCompletion > 0 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{avgBaselineCompletion}%</span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Inspect")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allInspections.length > 0 ? '✓' : '2'}
                     </span>
@@ -777,27 +796,39 @@ export default function Dashboard() {
                     {allInspections.length > 0 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{allInspections.length}</span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Track")} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalSpent > 0 ? '✓' : '3'}
                     </span>
                     <span className={totalSpent > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Track</span>
-                  </div>
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
                 </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  <Link to={createPageUrl("Baseline")}>
+                    Take Action
+                  </Link>
+                </Button>
               </div>
 
               {/* Phase II - ACT */}
               <div className="bg-white p-4 rounded-lg border-2 border-orange-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0">
                     <Zap className="w-4 h-4 text-white" />
                   </div>
                   <h4 className="font-bold text-orange-900 text-sm">II. ACT</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
+                <div className="space-y-2 mb-3">
+                  <Link to={createPageUrl("Prioritize")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allTasks.length > 0 ? '✓' : '4'}
                     </span>
@@ -805,8 +836,9 @@ export default function Dashboard() {
                     {allTasks.length > 0 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{allTasks.length}</span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Schedule")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {scheduledTasks.length > 0 ? '✓' : '5'}
                     </span>
@@ -814,8 +846,9 @@ export default function Dashboard() {
                     {scheduledTasks.length > 0 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{scheduledTasks.length}</span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Execute")} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {completedTasksThisMonth > 0 ? '✓' : '6'}
                     </span>
@@ -823,33 +856,46 @@ export default function Dashboard() {
                     {completedTasksThisMonth > 0 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{completedTasksThisMonth}</span>
                     )}
-                  </div>
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
                 </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs border-orange-600 text-orange-600 hover:bg-orange-50"
+                >
+                  <Link to={createPageUrl("Prioritize")}>
+                    Take Action
+                  </Link>
+                </Button>
               </div>
 
               {/* Phase III - ADVANCE */}
               <div className="bg-white p-4 rounded-lg border-2 border-green-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                     <TrendingUp className="w-4 h-4 text-white" />
                   </div>
                   <h4 className="font-bold text-green-900 text-sm">III. ADVANCE</h4>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
+                <div className="space-y-2 mb-3">
+                  <Link to={createPageUrl("Preserve")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalPrevented > 0 ? '✓' : '7'}
                     </span>
                     <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Upgrade")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                       8
                     </span>
                     <span className="text-gray-600">Upgrade</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
+                  <Link to={createPageUrl("Scale")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${properties.length > 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {properties.length > 1 ? '✓' : '9'}
                     </span>
@@ -857,8 +903,19 @@ export default function Dashboard() {
                     {properties.length > 1 && (
                       <span className="text-[10px] text-gray-500 ml-auto">{properties.length}</span>
                     )}
-                  </div>
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                  </Link>
                 </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  <Link to={createPageUrl("Preserve")}>
+                    Take Action
+                  </Link>
+                </Button>
               </div>
             </div>
             
@@ -916,7 +973,11 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {upcomingTasks.map((task) => (
-                    <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Link 
+                      key={task.id} 
+                      to={createPageUrl("Execute")}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-300 border-2 border-transparent transition-all cursor-pointer"
+                    >
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         task.daysUntil === 0 ? 'bg-red-600' :
                         task.daysUntil <= 3 ? 'bg-orange-600' :
@@ -932,8 +993,8 @@ export default function Dashboard() {
                            `In ${task.daysUntil} days`}
                         </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-blue-600" />
+                    </Link>
                   ))}
                   <Button
                     asChild
@@ -1003,9 +1064,13 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="space-y-3">
                     {recentActivity.map((activity, idx) => (
-                      <div key={idx} className="flex items-start gap-3">
+                      <Link 
+                        key={idx} 
+                        to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track')}
+                        className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                      >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          activity.color === 'blue' ? 'bg-blue-100' : 'bg-green-100'
+                          activity.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-green-100 group-hover:bg-green-200'
                         }`}>
                           <activity.icon className={`w-4 h-4 ${
                             activity.color === 'blue' ? 'text-blue-600' : 'text-green-600'
@@ -1019,7 +1084,8 @@ export default function Dashboard() {
                             {new Date(activity.date).toLocaleDateString()}
                           </p>
                         </div>
-                      </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                      </Link>
                     ))}
                   </div>
                 </CardContent>
