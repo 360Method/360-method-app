@@ -25,6 +25,7 @@ import ResourceGuides from './pages/ResourceGuides';
 import VideoTutorials from './pages/VideoTutorials';
 import ROICalculators from './pages/ROICalculators';
 import CartReview from './pages/CartReview';
+import Onboarding from './pages/Onboarding';
 import Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "VideoTutorials": VideoTutorials,
     "ROICalculators": ROICalculators,
     "CartReview": CartReview,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
