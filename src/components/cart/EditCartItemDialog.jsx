@@ -341,7 +341,7 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
       };
       
       setAiEstimate(fallbackEstimate);
-      alert(`💡 Basic Estimate Generated\n\nWe've created a preliminary estimate based on typical ${formData.system_type || 'service'} work.\n\nFor a MORE ACCURATE estimate:\n• Add specific details in "Additional Notes"\n• Include exact locations and access info\n• Upload photos of the issue/area\n• Describe any complications or special requirements\n\nClick "Get AI Estimate" again after adding details for an improved estimate!`);
+      alert(`💡 Basic Estimate Generated\n\nWe've created a preliminary estimate based on typical ${formData.system_type || 'service'} work.\n\n⚠️ IMPORTANT: This AI estimate is NOT a final quote. Your operator will provide official pricing after reviewing your request.\n\nFor a MORE ACCURATE AI estimate:\n• Add specific details in "Additional Notes"\n• Include exact locations and access info\n• Upload photos of the issue/area\n• Describe any complications or special requirements\n• Click "Get AI Estimate" again to regenerate\n\nThe more details you provide, the better the AI can estimate!`);
       
     } finally {
       setEstimating(false);
@@ -598,6 +598,16 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
                   <p className="text-xs font-semibold text-green-900">{aiEstimate.pricing_note}</p>
                 </div>
               )}
+              
+              {/* AI Disclaimer */}
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4">
+                <p className="text-xs font-bold text-yellow-900 mb-1">
+                  ⚠️ AI Estimate - Not a Final Quote
+                </p>
+                <p className="text-xs text-yellow-800">
+                  This is a preliminary estimate for planning purposes. Actual scope and costs will be determined by your operator after professional assessment. Add more details for improved accuracy.
+                </p>
+              </div>
 
               {/* Time & Cost */}
               <div className="grid grid-cols-2 gap-3">

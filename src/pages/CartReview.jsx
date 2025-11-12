@@ -404,7 +404,7 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
       });
       
       // Show improved message
-      alert(`💡 Basic Estimate Generated\n\nWe've created a preliminary estimate based on typical ${item.system_type || 'service'} work.\n\nFor a MORE ACCURATE estimate:\n• Click "Edit details" and add specific information\n• Include access instructions and exact locations\n• Upload photos of the issue/area\n• Describe any complications or special requirements\n\nThe more details you provide, the better we can estimate the true scope and cost!`);
+      alert(`💡 Basic Estimate Generated\n\nWe've created a preliminary estimate based on typical ${item.system_type || 'service'} work.\n\n⚠️ IMPORTANT: This AI estimate is NOT a final quote. Your operator will provide official pricing after reviewing your request.\n\nFor a MORE ACCURATE AI estimate:\n• Click "Edit details" and add specific information\n• Include access instructions and exact locations\n• Upload photos of the issue/area\n• Describe any complications or special requirements\n• Then click "Refresh Estimate" to regenerate\n\nThe more details you provide, the better the AI can estimate the true scope and cost!`);
     } finally {
       setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
     }
@@ -717,17 +717,27 @@ www.360method.com
                 rows={5}
                 style={{ backgroundColor: '#FFFFFF', minHeight: '120px' }}
               />
-              <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs font-semibold text-yellow-900 mb-1">
-                  💡 Pro Tip: The more specific, the better!
-                </p>
-                <ul className="text-xs text-gray-700 space-y-0.5 ml-3">
-                  <li>• Access codes, parking, keys</li>
-                  <li>• Tenant/occupancy information</li>
-                  <li>• Scheduling constraints</li>
-                  <li>• Special requirements or preferences</li>
-                  <li>• Anything that helps us do the job right</li>
-                </ul>
+              <div className="mt-2 space-y-2">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-yellow-900 mb-1">
+                    💡 Pro Tip: The more specific, the better!
+                  </p>
+                  <ul className="text-xs text-gray-700 space-y-0.5 ml-3">
+                    <li>• Access codes, parking, keys</li>
+                    <li>• Tenant/occupancy information</li>
+                    <li>• Scheduling constraints</li>
+                    <li>• Special requirements or preferences</li>
+                    <li>• Anything that helps us do the job right</li>
+                  </ul>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-orange-900 mb-1">
+                    ⚠️ Important: AI Estimates Are Preliminary
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    All estimates shown are AI-generated and may not reflect actual costs. Your operator will provide an official quote after reviewing your request and may need to visit the site for accurate pricing.
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
