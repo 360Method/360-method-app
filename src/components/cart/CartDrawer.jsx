@@ -66,36 +66,50 @@ export default function CartDrawer() {
 
   return (
     <>
-      {/* Floating Cart Button - Mobile Optimized */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 md:bottom-8 right-4 md:right-6 bg-purple-600 text-white rounded-full shadow-xl hover:bg-purple-700 transition-all hover:scale-110 z-[90]"
-        style={{ 
-          minHeight: '64px', 
-          minWidth: '64px',
-          padding: '16px'
-        }}
-        aria-label="Shopping Cart"
-      >
-        <ShoppingCart className="w-8 h-8" />
-        {cartItems.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-sm font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center px-2 shadow-lg animate-pulse">
-            {cartItems.length}
-          </span>
-        )}
-      </button>
+      {/* Floating Cart Button - Always Visible */}
+      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-[999]">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="bg-purple-600 text-white rounded-full shadow-2xl hover:bg-purple-700 transition-all hover:scale-110 active:scale-95"
+          style={{ 
+            minHeight: '64px', 
+            minWidth: '64px',
+            padding: '16px',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          aria-label="Shopping Cart"
+        >
+          <ShoppingCart className="w-8 h-8" />
+          {cartItems.length > 0 && (
+            <span 
+              className="absolute bg-red-500 text-white text-sm font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center px-2 shadow-lg"
+              style={{
+                top: '-4px',
+                right: '-4px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }}
+            >
+              {cartItems.length}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Backdrop */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/60 z-[95]"
+          className="fixed inset-0 bg-black/60 z-[998]"
+          style={{ position: 'fixed' }}
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[100] ${
+        className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[998] ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
