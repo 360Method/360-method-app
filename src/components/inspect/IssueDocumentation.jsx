@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -64,24 +65,90 @@ export default function IssueDocumentation({
   area,
   existingIssues = [],
   onComplete,
-  preselectedSystem = null
+  preselectedSystem = null,
+  editingIssue = null, // New prop for editing
+  editingIssueIndex = null // New prop for editing
 }) {
-  const [formData, setFormData] = React.useState({
-    system: preselectedSystem || '',
-    description: '',
-    severity: 'Flag',
-    photo_urls: [],
-    is_quick_fix: null,
-    estimated_cost: '',
-    who_will_fix: ''
+  // Pre-fill form data if editing an existing issue
+  const [formData, setFormData] = React.useState(() => {
+    if (editingIssue) {
+      // Extract system from item_name (format: "System: Description")
+      const systemMatch = editingIssue.item_name?.match(/^([^:]+):/);
+      const extractedSystem = systemMatch ? systemMatch[1].trim() : '';
+
+      // Check if editingIssue.notes is a generic Quick Fix or Priority Queue note
+      const isGenericNotes = editingIssue.notes?.includes('Quick fix completed during inspection') ||
+                             editingIssue.notes?.includes('Added to Priority Queue for scheduling');
+
+      return {
+        system: extractedSystem || preselectedSystem || '',
+        // Use editingIssue.description if available, fallback to notes if not generic
+        description: editingIssue.description || (isGenericNotes ? '' : editingIssue.notes) || '',
+        severity: editingIssue.severity || 'Flag',
+        photo_urls: editingIssue.photo_urls || [],
+        is_quick_fix: editingIssue.completed ? true : (editingIssue.is_quick_fix === false ? false : null), // Explicitly handle false for non-quick-fix
+        estimated_cost: editingIssue.estimated_cost || '',
+        who_will_fix: editingIssue.who_will_fix || ''
+      };
+    }
+
+    return {
+      system: preselectedSystem || '',
+      description: '',
+      severity: 'Flag',
+      photo_urls: [],
+      is_quick_fix: null,
+      estimated_cost: '',
+      who_will_fix: ''
+    };
   });
-  const [photos, setPhotos] = React.useState([]);
+
+  // Initialize photos state with existing photos if editing
+  const [photos, setPhotos] = React.useState(formData.photo_urls);
   const [uploading, setUploading] = React.useState(false);
-  const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(false);
+  // If editing, we assume the quick fix decision might have been made, so initially hide the question.
+  // We'll show it if the fix decision needs to be changed.
+  const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(editingIssue ? false : false);
   const [aiEstimating, setAiEstimating] = React.useState(false);
-  const [aiEstimate, setAiEstimate] = React.useState(null);
+  const [aiEstimate, setAiEstimate] = React.useState(null); // When editing, we don't have this directly from the `item`
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
   const [editingFixDecision, setEditingFixDecision] = React.useState(false);
+
+  // Effect to re-evaluate AI estimate if editing an existing non-quick fix issue
+  // and relevant formData fields change or component mounts
+  React.useEffect(() => {
+    // If we're editing a non-quick-fix issue, and we haven't already generated an AI estimate for display
+    // or if the relevant form data has changed (e.g., description, system type, etc.), re-run AI estimation.
+    if (editingIssue && formData.is_quick_fix === false && !aiEstimate && !aiEstimating) {
+      const fetchEstimate = async () => {
+        setAiEstimating(true);
+        try {
+          const estimate = await estimateCascadeRisk({
+            description: formData.description || '',
+            system_type: formData.system,
+            severity: formData.severity,
+            area: area.name,
+            estimated_cost: formData.estimated_cost
+          });
+          setAiEstimate(estimate);
+        } catch (error) {
+          console.error('AI estimation failed during edit load:', error);
+          setAiEstimate({
+            cascade_risk_score: 5,
+            cascade_risk_reason: 'Could not get AI estimate during edit. Manual review needed.',
+            current_fix_cost: parseCostRange(formData.estimated_cost),
+            delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5,
+            cost_impact_reason: 'AI estimation failed, using default values.',
+            cost_disclaimer: 'AI estimation failed. The following costs are estimated based on your input cost range only.'
+          });
+        } finally {
+          setAiEstimating(false);
+        }
+      };
+      fetchEstimate();
+    }
+  }, [editingIssue, formData.is_quick_fix, formData.description, formData.system, formData.severity, formData.estimated_cost, area.name, aiEstimate, aiEstimating]);
+
 
   const queryClient = useQueryClient();
 
@@ -174,8 +241,10 @@ export default function IssueDocumentation({
 
   const handleEditFixDecision = () => {
     setEditingFixDecision(true);
+    // Reset is_quick_fix to null to re-ask the question, and clear who_will_fix.
+    // Preserve other formData fields.
     setFormData(prev => ({ ...prev, is_quick_fix: null, who_will_fix: '' }));
-    setAiEstimate(null);
+    setAiEstimate(null); // Clear AI estimate so it can be re-calculated if needed
   };
 
   const handleSubmit = async () => {
@@ -185,64 +254,90 @@ export default function IssueDocumentation({
       return;
     }
 
+    // Prepare the issue object based on current form data
+    const issueBase = {
+      area_id: area.id,
+      item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
+      severity: formData.severity,
+      description: formData.description, // Store full description
+      photo_urls: formData.photo_urls,
+      estimated_cost: formData.estimated_cost,
+      who_will_fix: formData.who_will_fix,
+    };
+
+    let updatedIssue;
+    let newIssuesList = [...existingIssues];
+
     if (formData.is_quick_fix) {
       // Quick fix path
-      onComplete([...existingIssues, {
-        area_id: area.id,
-        item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
-        severity: formData.severity,
+      updatedIssue = {
+        ...issueBase,
         notes: `Quick fix completed during inspection. ${formData.who_will_fix === 'diy' ? 'DIY repair' : 'Professional service'}. Estimated cost: ${formData.estimated_cost}.`,
-        photo_urls: formData.photo_urls,
-        completed: true
-      }]);
+        completed: true,
+        is_quick_fix: true, // Explicitly set for quick fix
+      };
     } else {
-      // Non-quick fix path
+      // Non-quick fix path (Priority Queue)
       if (!aiEstimate) {
         console.error("AI estimate missing for non-quick fix. Cannot proceed.");
         return;
       }
+      updatedIssue = {
+        ...issueBase,
+        notes: 'Added to Priority Queue for scheduling',
+        completed: false,
+        is_quick_fix: false, // Explicitly set for non-quick fix
+        // Add AI estimate details to the issue object for persistence/display
+        current_fix_cost: aiEstimate.current_fix_cost,
+        delayed_fix_cost: aiEstimate.delayed_fix_cost,
+        cascade_risk_score: aiEstimate.cascade_risk_score,
+        cascade_risk_reason: aiEstimate.cascade_risk_reason,
+        cost_impact_reason: aiEstimate.cost_impact_reason,
+        cost_disclaimer: aiEstimate.cost_disclaimer,
+      };
 
+      // Create/update maintenance task in the backend only for non-quick fixes
       const taskData = {
         property_id: propertyId,
-        title: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
-        description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
-        system_type: formData.system,
-        priority: formData.severity === 'Urgent' ? 'High' : formData.severity === 'Flag' ? 'Medium' : 'Low',
+        title: updatedIssue.item_name,
+        description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${updatedIssue.description}\n\nSeverity: ${updatedIssue.severity}\nSystem: ${updatedIssue.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
+        system_type: updatedIssue.system,
+        priority: updatedIssue.severity === 'Urgent' ? 'High' : updatedIssue.severity === 'Flag' ? 'Medium' : 'Low',
         status: 'Identified',
-        photo_urls: formData.photo_urls,
+        photo_urls: updatedIssue.photo_urls,
         current_fix_cost: aiEstimate.current_fix_cost,
         delayed_fix_cost: aiEstimate.delayed_fix_cost,
         cascade_risk_score: aiEstimate.cascade_risk_score,
         cascade_risk_reason: aiEstimate.cascade_risk_reason,
         cost_impact_reason: aiEstimate.cost_impact_reason,
         has_cascade_alert: aiEstimate.cascade_risk_score >= 7,
-        execution_type: formData.who_will_fix === 'diy' ? 'DIY' : formData.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
+        execution_type: updatedIssue.who_will_fix === 'diy' ? 'DIY' : updatedIssue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
       };
 
       try {
         await createTaskMutation.mutateAsync(taskData);
 
         // Update related baseline systems
-        if (formData.system !== 'General') {
-          const systemsToUpdate = baselineSystems.filter(s => s.system_type === formData.system);
+        if (updatedIssue.system !== 'General') {
+          const systemsToUpdate = baselineSystems.filter(s => s.system_type === updatedIssue.system);
           for (const system of systemsToUpdate) {
             const conditionUpdates = {};
 
-            if (formData.severity === 'Urgent') {
+            if (updatedIssue.severity === 'Urgent') {
               conditionUpdates.condition = 'Urgent';
-            } else if (formData.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
+            } else if (updatedIssue.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
               conditionUpdates.condition = 'Fair';
             }
 
             const existingWarnings = system.warning_signs_present || [];
-            const newWarning = safeSubstring(formData.description, 100);
+            const newWarning = safeSubstring(updatedIssue.description, 100);
             if (newWarning && !existingWarnings.includes(newWarning)) {
               conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
             }
 
             const timestamp = new Date().toLocaleDateString();
             const existingNotes = system.condition_notes || '';
-            const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${formData.description}`;
+            const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${updatedIssue.description}`;
             conditionUpdates.condition_notes = existingNotes.includes(newNote) ? existingNotes : existingNotes + newNote;
 
             if (Object.keys(conditionUpdates).length > 0) {
@@ -253,19 +348,20 @@ export default function IssueDocumentation({
             }
           }
         }
-        onComplete([...existingIssues, {
-          area_id: area.id,
-          item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
-          severity: formData.severity,
-          notes: 'Added to Priority Queue for scheduling',
-          photo_urls: formData.photo_urls,
-          completed: false
-        }]);
-
       } catch (error) {
         console.error("Error creating task or updating system:", error);
       }
     }
+
+    // Update the local list of issues
+    if (editingIssueIndex !== null) {
+      newIssuesList[editingIssueIndex] = updatedIssue;
+    } else {
+      newIssuesList.push(updatedIssue);
+    }
+
+    // Call onComplete with the modified list of issues
+    onComplete(newIssuesList);
   };
 
   const canAskQuickFixQuestion = formData.system && formData.description && formData.estimated_cost;
@@ -278,7 +374,7 @@ export default function IssueDocumentation({
         <div className="mobile-container md:max-w-3xl md:mx-auto">
           <Button
             variant="ghost"
-            onClick={() => onComplete(existingIssues)}
+            onClick={() => onComplete(existingIssues)} // Go back with original issues if cancelled
             className="mb-4"
             style={{ minHeight: '44px' }}
           >
@@ -289,7 +385,7 @@ export default function IssueDocumentation({
           <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35' }}>
             <CardHeader>
               <CardTitle style={{ color: '#1B365D', fontSize: '20px' }}>
-                Document Issue Found
+                {editingIssue ? 'Edit Issue' : 'Document Issue Found'}
               </CardTitle>
               <p className="text-sm text-gray-600">
                 Area: {area.name}
@@ -505,7 +601,7 @@ export default function IssueDocumentation({
                         className="w-full"
                         style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
                       >
-                        {createTaskMutation.isPending ? 'Saving...' : 'Mark as Fixed & Continue'}
+                        {createTaskMutation.isPending ? 'Saving...' : editingIssue ? 'Update Issue' : 'Mark as Fixed & Continue'}
                       </Button>
                     </div>
                   </CardContent>
@@ -607,7 +703,7 @@ export default function IssueDocumentation({
                             className="w-full"
                             style={{ backgroundColor: '#FF6B35', minHeight: '56px', fontSize: '16px' }}
                           >
-                            {createTaskMutation.isPending ? 'Adding...' : 'Add to Priority Queue'}
+                            {createTaskMutation.isPending ? 'Saving...' : editingIssue ? 'Update Issue' : 'Add to Priority Queue'}
                           </Button>
                           {formData.who_will_fix === 'professional' && (
                             <Button

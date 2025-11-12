@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Lightbulb, AlertTriangle, X } from "lucide-react";
+import { ArrowLeft, Lightbulb, AlertTriangle, X, Edit } from "lucide-react";
 import IssueDocumentation from "./IssueDocumentation";
 
 // Safe string truncation helper
@@ -16,6 +16,7 @@ const safeSubstring = (str, maxLength) => {
 export default function AreaInspection({ area, inspection, property, baselineSystems, existingIssues, onComplete, onBack }) {
   const [documentingIssue, setDocumentingIssue] = React.useState(false);
   const [selectedSystem, setSelectedSystem] = React.useState(null);
+  const [editingIssueIndex, setEditingIssueIndex] = React.useState(null);
   const [issues, setIssues] = React.useState(existingIssues || []);
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
@@ -191,15 +192,23 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
     onComplete(issues);
   };
 
-  // FIXED: IssueDocumentation returns an array, not a single issue
   const handleIssueDocumented = (issuesArray) => {
-    // issuesArray is the full array of issues including the new one
     setIssues(issuesArray);
     setDocumentingIssue(false);
     setSelectedSystem(null);
+    setEditingIssueIndex(null); // Reset editing index
   };
 
   const handleRemovePrefilledIssue = (index) => {
+    setIssues(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditIssue = (index) => {
+    setEditingIssueIndex(index);
+    setDocumentingIssue(true);
+  };
+
+  const handleDeleteIssue = (index) => {
     setIssues(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -235,6 +244,9 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
   };
 
   if (documentingIssue) {
+    // Get the issue being edited if applicable
+    const editingIssue = editingIssueIndex !== null ? issues[editingIssueIndex] : null;
+    
     return (
       <IssueDocumentation
         propertyId={property.id}
@@ -242,10 +254,13 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
         area={area}
         existingIssues={issues}
         preselectedSystem={selectedSystem}
+        editingIssue={editingIssue}
+        editingIssueIndex={editingIssueIndex}
         onComplete={handleIssueDocumented}
         onCancel={() => {
           setDocumentingIssue(false);
           setSelectedSystem(null);
+          setEditingIssueIndex(null); // Reset editing index on cancel
         }}
       />
     );
@@ -589,25 +604,73 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
 
         <hr className="border-gray-200 my-6" />
 
-        {/* Issues Found So Far */}
+        {/* Issues Found So Far - NOW CLICKABLE */}
         {issues.length > 0 && (
           <Card className="border-2 mobile-card" style={{ borderColor: '#FF6B35', backgroundColor: '#FFF5F2' }}>
             <CardContent className="p-4">
               <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
                 Issues Found in This Area: {issues.length}
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {issues.map((issue, idx) => {
-                  // Safely get the preview text - prefer description, fallback to notes
-                  const previewText = issue.description
+                  const previewText = issue.description 
                     ? safeSubstring(issue.description, 60)
                     : safeSubstring(issue.notes, 60);
-
+                  
                   return (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
-                      <div>
-                        <span className="font-medium">{issue.severity}</span>: {previewText}
+                    <div 
+                      key={idx} 
+                      className="bg-white rounded-lg p-3 border-2 border-orange-200 hover:border-orange-400 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => handleEditIssue(idx)}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#FF6B35' }} />
+                            <Badge className={
+                              issue.severity === 'Urgent' ? 'bg-red-600 text-white' :
+                              issue.severity === 'Flag' ? 'bg-orange-600 text-white' :
+                              'bg-green-600 text-white'
+                            }>
+                              {issue.severity}
+                            </Badge>
+                            {issue.completed && (
+                              <Badge className="bg-green-100 text-green-800">
+                                Quick Fix ✓
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-800 font-medium mb-1">
+                            {previewText}
+                          </p>
+                          {issue.photo_urls && issue.photo_urls.length > 0 && (
+                            <p className="text-xs text-gray-600">
+                              📷 {issue.photo_urls.length} photo{issue.photo_urls.length > 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleEditIssue(idx); }} // Stop propagation to prevent parent div click
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            style={{ minHeight: '32px', minWidth: '32px' }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteIssue(idx); }} // Stop propagation
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            style={{ minHeight: '32px', minWidth: '32px' }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -625,7 +688,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
 
           <div className="flex flex-col gap-3">
             <Button
-              onClick={() => setDocumentingIssue(true)}
+              onClick={() => { setDocumentingIssue(true); setEditingIssueIndex(null); }} // Ensure we're adding a new issue
               className="w-full font-bold"
               style={{ backgroundColor: '#FF6B35', minHeight: '56px', fontSize: '16px' }}
             >
