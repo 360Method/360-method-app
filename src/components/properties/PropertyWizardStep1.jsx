@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, Sparkles, Home } from "lucide-react";
+import { MapPin, Loader2, Sparkles, Home, CheckCircle2 } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 import { base44 } from "@/api/base44Client";
@@ -56,6 +56,7 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [propertyDataFetched, setPropertyDataFetched] = React.useState(false);
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
   const [appliedFields, setAppliedFields] = React.useState({});
+  const [successMessage, setSuccessMessage] = React.useState(null);
 
   // Reset AI property data state when returning to this step
   React.useEffect(() => {
@@ -298,9 +299,15 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
     onChange({ [field]: value });
     setAppliedFields(prev => ({ ...prev, [field]: true }));
     
-    // Show confirmation for fields that won't be visible until later steps
+    // Show success message for fields that won't be visible until later steps
     if (field === 'current_value' || field === 'purchase_price') {
-      alert(`✓ ${field === 'current_value' ? 'Estimated value' : 'Purchase price'} of $${value.toLocaleString()} saved! You'll see it in the financial details step.`);
+      const fieldLabel = field === 'current_value' ? 'Estimated value' : 'Purchase price';
+      setSuccessMessage(`${fieldLabel} of $${value.toLocaleString()} saved! You'll see it in Step 4.`);
+      
+      // Auto-hide after 4 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 4000);
     }
   };
 
@@ -369,6 +376,23 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
           )}
         </CardContent>
       </Card>
+
+      {/* Success Message Toast */}
+      {successMessage && (
+        <Card className="border-2 border-green-300 bg-green-50 shadow-lg mb-6 animate-in fade-in-50 slide-in-from-top-5 duration-500">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-green-900">✓ Saved Successfully!</p>
+                <p className="text-sm text-gray-700">{successMessage}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Property Data Loading/Display */}
       {formData.address_verified && (
