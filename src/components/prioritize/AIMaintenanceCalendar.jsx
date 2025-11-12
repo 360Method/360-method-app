@@ -232,6 +232,13 @@ export default function AIMaintenanceCalendar({
     queryFn: () => base44.auth.me(),
   });
 
+  // NEW: Fetch cart items to check for duplicates
+  const { data: cartItems = [] } = useQuery({
+    queryKey: ['cartItems', propertyId],
+    queryFn: () => base44.entities.CartItem.filter({ property_id: propertyId, status: 'in_cart' }),
+    enabled: !!propertyId,
+  });
+
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
       return base44.entities.MaintenanceTask.create(taskData);
@@ -245,6 +252,27 @@ export default function AIMaintenanceCalendar({
     user.subscription_tier?.includes('homecare') || 
     user.subscription_tier?.includes('propertycare')
   );
+
+  // NEW: Helper function to check if a suggestion is already added
+  const isAlreadyAdded = React.useCallback((suggestion) => {
+    const suggestionTitleLower = suggestion.title.toLowerCase();
+    
+    // Check in existing tasks
+    const inQueue = existingTasks.some(task => {
+      const taskTitleLower = task.title.toLowerCase();
+      // Check if suggestion title is a substring of task title or vice-versa
+      return taskTitleLower.includes(suggestionTitleLower) || suggestionTitleLower.includes(taskTitleLower);
+    });
+    
+    // Check in cart
+    const inCart = cartItems.some(item => {
+      const itemTitleLower = item.title.toLowerCase();
+      // Check if suggestion title is a substring of item title or vice-versa
+      return itemTitleLower.includes(suggestionTitleLower) || suggestionTitleLower.includes(itemTitleLower);
+    });
+    
+    return { inQueue, inCart, isAdded: inQueue || inCart };
+  }, [existingTasks, cartItems]);
 
   // Generate AI-driven suggestions with regional pricing
   React.useEffect(() => {
@@ -406,6 +434,13 @@ Return JSON with "suggestions" array.`;
   }, [systems, inspections, property, selectedTimeframe, aiSuggestions, existingTasks]);
 
   const handleAddToQueue = async (suggestion) => {
+    // Check if already added before proceeding
+    const status = isAlreadyAdded(suggestion);
+    if (status.isAdded) {
+      alert(`This item is already in your ${status.inQueue ? 'Priority Queue' : 'Cart'}`);
+      return;
+    }
+
     const suggestedDate = addMonths(new Date(), suggestion.suggested_month || 0);
     
     const taskData = {
@@ -426,12 +461,20 @@ Return JSON with "suggestions" array.`;
   };
 
   const handleAddToCart = (suggestion) => {
+    // Check if already added before proceeding
+    const status = isAlreadyAdded(suggestion);
+    if (status.isAdded) {
+      alert(`This item is already in your ${status.inQueue ? 'Priority Queue' : 'Cart'}`);
+      return;
+    }
+
     setSelectedSuggestion(suggestion);
     setShowCartDialog(true);
   };
 
   const handleScheduleService = async (suggestion) => {
     // For members, add to queue AND create service request (this function is kept for now but not directly used by the UI as per the outline)
+    // The duplicate check is handled by handleAddToCart/handleAddToQueue if these are eventually called.
     await handleAddToQueue(suggestion);
     setSelectedSuggestion(suggestion);
     setShowCartDialog(true);
@@ -441,7 +484,12 @@ Return JSON with "suggestions" array.`;
     if (!aiSuggestions) return;
     
     const createPromises = aiSuggestions
-      .filter(s => s.priority === 'High' || s.priority === 'Medium')
+      .filter(s => {
+        // Only add High/Medium priority items that aren't already added
+        if (s.priority !== 'High' && s.priority !== 'Medium') return false;
+        const status = isAlreadyAdded(s);
+        return !status.isAdded;
+      })
       .map(suggestion => {
         const suggestedDate = addMonths(new Date(), suggestion.suggested_month || 0);
         return {
@@ -630,165 +678,208 @@ Return JSON with "suggestions" array.`;
                     </div>
 
                     <div className="space-y-3 ml-0 md:ml-8">
-                      {month.suggestions.map((suggestion, idx) => (
-                        <Card
-                          key={idx}
-                          className={`border-2 transition-all ${
-                            expandedCard === `${monthIdx}-${idx}` ? 'shadow-lg' : ''
-                          } ${
-                            suggestion.priority === 'High'
-                              ? 'border-red-300 bg-red-50'
-                              : suggestion.priority === 'Medium'
-                              ? 'border-orange-300 bg-orange-50'
-                              : suggestion.priority === 'Routine'
-                              ? 'border-green-300 bg-green-50'
-                              : 'border-blue-300 bg-blue-50'
-                          }`}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-2 gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                  <Badge
-                                    className={
-                                      suggestion.priority === 'High'
-                                        ? 'bg-red-600 text-white'
-                                        : suggestion.priority === 'Medium'
-                                        ? 'bg-orange-600 text-white'
-                                        : suggestion.priority === 'Routine'
-                                        ? 'bg-green-600 text-white'
-                                        : 'bg-blue-600 text-white'
-                                    }
-                                  >
-                                    {suggestion.priority}
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    {suggestion.system_type}
-                                  </Badge>
-                                </div>
-                                <h4 className="font-semibold text-gray-900 mb-1 break-words">
-                                  {suggestion.title}
-                                </h4>
-                              </div>
-                              <div className="flex flex-col gap-2 flex-shrink-0">
-                                <Button
-                                  onClick={() => handleAddToCart(suggestion)}
-                                  disabled={createTaskMutation.isPending}
-                                  size="sm"
-                                  className="gap-1 whitespace-nowrap"
-                                  style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
-                                >
-                                  <ShoppingCart className="w-4 h-4" />
-                                  Add to Cart
-                                </Button>
-                                <Button
-                                  onClick={() => handleAddToQueue(suggestion)}
-                                  disabled={createTaskMutation.isPending}
-                                  size="sm"
-                                  variant="outline"
-                                  className="gap-1 whitespace-nowrap"
-                                  style={{ minHeight: '44px' }}
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  Add to Queue
-                                </Button>
-                              </div>
-                            </div>
+                      {month.suggestions.map((suggestion, idx) => {
+                        const addedStatus = isAlreadyAdded(suggestion);
+                        const isMinimized = addedStatus.isAdded;
 
-                            {expandedCard === `${monthIdx}-${idx}` ? (
-                              <>
-                                <p className="text-sm text-gray-700 mb-3">
-                                  {suggestion.description}
-                                </p>
-
-                                {suggestion.urgency_reason && (
-                                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                                    <p className="text-xs font-semibold text-blue-900 mb-1">
-                                      ⏰ Why Now:
-                                    </p>
-                                    <p className="text-xs text-gray-800">{suggestion.urgency_reason}</p>
-                                  </div>
-                                )}
-
-                                {suggestion.consequences && (
-                                  <div className="mb-3 p-3 bg-red-50 border-2 border-red-300 rounded">
-                                    <p className="text-xs font-semibold text-red-900 mb-2 flex items-center gap-1">
-                                      <AlertTriangle className="w-4 h-4" />
-                                      ⚠️ If Skipped (6-12 months):
-                                    </p>
-                                    <p className="text-xs text-gray-800 mb-3">{suggestion.consequences}</p>
-                                    
-                                    <div className="bg-white p-3 rounded border border-red-200">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs text-gray-600">Fix Now:</span>
-                                        <span className="font-bold text-green-700">${suggestion.estimated_cost_range}</span>
-                                      </div>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs text-gray-600">Fix Later:</span>
-                                        <span className="font-bold text-red-700">${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)}</span>
-                                      </div>
-                                      <div className="pt-2 border-t border-red-200 flex items-center justify-between">
-                                        <span className="text-xs font-semibold text-red-900">Cost Increase:</span>
-                                        <span className="font-bold text-red-900">
-                                          +${suggestion.cost_increase.toLocaleString()} ({Math.round((suggestion.cost_multiplier - 1) * 100)}% more)
+                        return (
+                          <Card
+                            key={idx}
+                            className={`border-2 transition-all ${
+                              isMinimized 
+                                ? 'border-green-300 bg-green-50 opacity-75'
+                                : expandedCard === `${monthIdx}-${idx}` ? 'shadow-lg' : ''
+                            } ${
+                              suggestion.priority === 'High' && !isMinimized
+                                ? 'border-red-300 bg-red-50'
+                                : suggestion.priority === 'Medium' && !isMinimized
+                                ? 'border-orange-300 bg-orange-50'
+                                : suggestion.priority === 'Routine' && !isMinimized
+                                ? 'border-green-300 bg-green-50'
+                                : suggestion.priority === 'Low' && !isMinimized
+                                ? 'border-blue-300 bg-blue-50'
+                                : '' // For minimized state, the green-300 bg-green-50 overrides other priority colors
+                            }`}
+                          >
+                            <CardContent className="p-4">
+                              {/* MINIMIZED VIEW - Already Added */}
+                              {isMinimized ? (
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-900">
+                                        {suggestion.title}
+                                      </h4>
+                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        <Badge className="bg-green-600 text-white text-xs">
+                                          ✓ Already Added
+                                        </Badge>
+                                        <Badge variant="outline" className="text-xs">
+                                          {addedStatus.inQueue ? '📋 In Priority Queue' : '🛒 In Cart'}
+                                        </Badge>
+                                        <span className="text-xs text-gray-600">
+                                          ${suggestion.estimated_cost_range}
                                         </span>
                                       </div>
-                                      <p className="text-xs text-gray-600 mt-2 italic">
-                                        * Estimates based on regional averages. Actual costs vary.
-                                      </p>
                                     </div>
                                   </div>
-                                )}
-
-                                <div className="flex items-center gap-4 text-sm flex-wrap">
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="w-4 h-4 text-gray-600" />
-                                    <span className="font-medium">${suggestion.estimated_cost_range}</span>
-                                    <span className="text-xs text-gray-500">
-                                      ({property.climate_zone} avg)
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4 text-gray-600" />
-                                    <span>{format(addMonths(new Date(), suggestion.suggested_month), 'MMM d, yyyy')}</span>
-                                  </div>
-                                </div>
-
-                                <button
-                                  onClick={() => setExpandedCard(null)}
-                                  className="text-xs text-purple-600 mt-2 hover:underline"
-                                >
-                                  Show less
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-                                  {suggestion.description}
-                                </p>
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <DollarSign className="w-4 h-4 text-gray-600" />
-                                    <span className="font-medium">${suggestion.estimated_cost_range}</span>
-                                    <span className="text-xs text-gray-500">(avg)</span>
-                                    {suggestion.cost_increase > 500 && (
-                                      <Badge className="ml-2 bg-red-100 text-red-800 text-xs">
-                                        +${Math.round(suggestion.cost_increase/100)*100} if delayed
-                                      </Badge>
-                                    )}
-                                  </div>
                                   <button
-                                    onClick={() => setExpandedCard(`${monthIdx}-${idx}`)}
-                                    className="text-xs text-purple-600 hover:underline"
+                                    onClick={() => setExpandedCard(expandedCard === `${monthIdx}-${idx}` ? null : `${monthIdx}-${idx}`)}
+                                    className="text-xs text-purple-600 hover:underline ml-3"
                                   >
-                                    Show more
+                                    {expandedCard === `${monthIdx}-${idx}` ? 'Hide Details' : 'View Details'}
                                   </button>
                                 </div>
-                              </>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
+                              ) : (
+                                <>
+                                  {/* NORMAL VIEW - Not Added Yet */}
+                                  <div className="flex items-start justify-between mb-2 gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <Badge
+                                          className={
+                                            suggestion.priority === 'High'
+                                              ? 'bg-red-600 text-white'
+                                              : suggestion.priority === 'Medium'
+                                              ? 'bg-orange-600 text-white'
+                                              : suggestion.priority === 'Routine'
+                                              ? 'bg-green-600 text-white'
+                                              : 'bg-blue-600 text-white'
+                                          }
+                                        >
+                                          {suggestion.priority}
+                                        </Badge>
+                                        <Badge variant="outline" className="text-xs">
+                                          {suggestion.system_type}
+                                        </Badge>
+                                      </div>
+                                      <h4 className="font-semibold text-gray-900 mb-1 break-words">
+                                        {suggestion.title}
+                                      </h4>
+                                    </div>
+                                    <div className="flex flex-col gap-2 flex-shrink-0">
+                                      <Button
+                                        onClick={() => handleAddToCart(suggestion)}
+                                        disabled={createTaskMutation.isPending}
+                                        size="sm"
+                                        className="gap-1 whitespace-nowrap"
+                                        style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
+                                      >
+                                        <ShoppingCart className="w-4 h-4" />
+                                        Add to Cart
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleAddToQueue(suggestion)}
+                                        disabled={createTaskMutation.isPending}
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1 whitespace-nowrap"
+                                        style={{ minHeight: '44px' }}
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                        Add to Queue
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {expandedCard === `${monthIdx}-${idx}` ? (
+                                    <>
+                                      <p className="text-sm text-gray-700 mb-3">
+                                        {suggestion.description}
+                                      </p>
+
+                                      {suggestion.urgency_reason && (
+                                        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                                          <p className="text-xs font-semibold text-blue-900 mb-1">
+                                            ⏰ Why Now:
+                                          </p>
+                                          <p className="text-xs text-gray-800">{suggestion.urgency_reason}</p>
+                                        </div>
+                                      )}
+
+                                      {suggestion.consequences && (
+                                        <div className="mb-3 p-3 bg-red-50 border-2 border-red-300 rounded">
+                                          <p className="text-xs font-semibold text-red-900 mb-2 flex items-center gap-1">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            ⚠️ If Skipped (6-12 months):
+                                          </p>
+                                          <p className="text-xs text-gray-800 mb-3">{suggestion.consequences}</p>
+                                          
+                                          <div className="bg-white p-3 rounded border border-red-200">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <span className="text-xs text-gray-600">Fix Now:</span>
+                                              <span className="font-bold text-green-700">${suggestion.estimated_cost_range}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between mb-2">
+                                              <span className="text-xs text-gray-600">Fix Later:</span>
+                                              <span className="font-bold text-red-700">${formatCostRange(suggestion.delayed_cost_min, suggestion.delayed_cost_max)}</span>
+                                            </div>
+                                            <div className="pt-2 border-t border-red-200 flex items-center justify-between">
+                                              <span className="text-xs font-semibold text-red-900">Cost Increase:</span>
+                                              <span className="font-bold text-red-900">
+                                                +${suggestion.cost_increase.toLocaleString()} ({Math.round((suggestion.cost_multiplier - 1) * 100)}% more)
+                                              </span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-2 italic">
+                                              * Estimates based on regional averages. Actual costs vary.
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      <div className="flex items-center gap-4 text-sm flex-wrap">
+                                        <div className="flex items-center gap-1">
+                                          <DollarSign className="w-4 h-4 text-gray-600" />
+                                          <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                          <span className="text-xs text-gray-500">
+                                            ({property.climate_zone} avg)
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Clock className="w-4 h-4 text-gray-600" />
+                                          <span>{format(addMonths(new Date(), suggestion.suggested_month), 'MMM d, yyyy')}</span>
+                                        </div>
+                                      </div>
+
+                                      <button
+                                        onClick={() => setExpandedCard(null)}
+                                        className="text-xs text-purple-600 mt-2 hover:underline"
+                                      >
+                                        Show less
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                                        {suggestion.description}
+                                      </p>
+                                      <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <div className="flex items-center gap-1 text-sm">
+                                          <DollarSign className="w-4 h-4 text-gray-600" />
+                                          <span className="font-medium">${suggestion.estimated_cost_range}</span>
+                                          <span className="text-xs text-gray-500">(avg)</span>
+                                          {suggestion.cost_increase > 500 && (
+                                            <Badge className="ml-2 bg-red-100 text-red-800 text-xs">
+                                              +${Math.round(suggestion.cost_increase/100)*100} if delayed
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() => setExpandedCard(`${monthIdx}-${idx}`)}
+                                          className="text-xs text-purple-600 hover:underline"
+                                        >
+                                          Show more
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
