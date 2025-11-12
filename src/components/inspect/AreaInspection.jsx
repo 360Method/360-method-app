@@ -191,9 +191,10 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
     onComplete(issues);
   };
 
-  const handleIssueDocumented = (issueData) => {
-    const newIssues = [...issues, issueData];
-    setIssues(newIssues);
+  // FIXED: IssueDocumentation returns an array, not a single issue
+  const handleIssueDocumented = (issuesArray) => {
+    // issuesArray is the full array of issues including the new one
+    setIssues(issuesArray);
     setDocumentingIssue(false);
     setSelectedSystem(null);
   };
