@@ -1,7 +1,8 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Home,
@@ -24,8 +25,19 @@ import {
   ChevronRight,
   Sparkles,
   Lightbulb,
-  BookOpen
+  BookOpen,
+  UserCircle,
+  LogOut,
+  User
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import BottomNav from "./components/navigation/BottomNav";
 import CartDrawer from "./components/cart/CartDrawer";
 
@@ -95,12 +107,66 @@ export default function Layout({ children }) {
     Services: true
   });
 
+  // Fetch current user
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+    retry: false,
+  });
+
   const toggleSection = (section) => {
     setOpenSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
+
+  const handleLogout = () => {
+    base44.auth.logout();
+  };
+
+  // Account dropdown component
+  const AccountDropdown = ({ isMobile = false }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size={isMobile ? "icon" : "sm"}
+          className={isMobile ? "flex-shrink-0" : "gap-2"}
+          style={{ minHeight: '44px', minWidth: '44px' }}
+        >
+          <UserCircle className="w-6 h-6" />
+          {!isMobile && user && (
+            <span className="text-sm font-medium">{user.full_name || user.email}</span>
+          )}
+          {!isMobile && <ChevronDown className="w-4 h-4" />}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56" style={{ backgroundColor: '#FFFFFF' }}>
+        {user && (
+          <>
+            <div className="px-3 py-2 border-b border-gray-200">
+              <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
+              <p className="text-xs text-gray-600">{user.email}</p>
+              {user.role && (
+                <p className="text-xs text-blue-600 mt-1 capitalize">{user.role}</p>
+              )}
+            </div>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Settings")}>
+          <Settings className="w-4 h-4 mr-2" />
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+          <LogOut className="w-4 h-4 mr-2" />
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <>
@@ -318,17 +384,20 @@ export default function Layout({ children }) {
             })}
           </div>
 
-          {/* Settings at bottom */}
+          {/* Settings and Account at bottom */}
           <div className="border-t border-gray-200 p-2">
             <Link
               to={createPageUrl("Settings")}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${
+              className={`flex items-center gap-3 px-3 py-2 mb-2 rounded-lg transition-colors hover:bg-gray-100 ${
                 location.pathname === createPageUrl("Settings") ? 'bg-gray-100 font-medium' : ''
               }`}
             >
               <Settings className="w-4 h-4 text-gray-600" />
               <span>Settings</span>
             </Link>
+            <div className="px-1">
+              <AccountDropdown isMobile={false} />
+            </div>
           </div>
         </aside>
 
@@ -423,12 +492,12 @@ export default function Layout({ children }) {
             })}
           </div>
 
-          {/* Settings at bottom of mobile menu */}
+          {/* Settings and account at bottom of mobile menu */}
           <div className="border-t border-gray-200 p-4">
             <Link
               to={createPageUrl("Settings")}
               onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-gray-100 ${
+              className={`flex items-center gap-3 p-3 mb-2 rounded-lg transition-colors hover:bg-gray-100 ${
                 location.pathname === createPageUrl("Settings") ? 'bg-gray-100 font-medium' : ''
               }`}
               style={{ minHeight: '48px' }}
@@ -436,6 +505,22 @@ export default function Layout({ children }) {
               <Settings className="w-5 h-5 text-gray-600" />
               <span className="text-lg">Settings</span>
             </Link>
+            {user && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
+                <p className="text-xs text-gray-600">{user.email}</p>
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3 gap-2"
+                  style={{ minHeight: '44px' }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -452,7 +537,7 @@ export default function Layout({ children }) {
                 <Menu className="w-6 h-6 text-gray-900" />
               </button>
               <h1 className="text-lg font-semibold text-gray-900">360° Method</h1>
-              <div style={{ width: '44px' }} /> {/* Spacer for centering */}
+              <AccountDropdown isMobile={true} />
             </div>
           </header>
 
