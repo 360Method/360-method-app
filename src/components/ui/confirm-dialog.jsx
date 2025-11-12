@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 export default function ConfirmDialog({ 
   open, 
   onClose, 
-  onConfirm, 
+  onConfirm = null, // Made optional with default null
   title = "Confirm Action",
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
@@ -16,25 +16,36 @@ export default function ConfirmDialog({
   const [confirming, setConfirming] = React.useState(false);
 
   const handleConfirm = async () => {
-    if (!onConfirm) {
-      console.error('ConfirmDialog: onConfirm prop is required but was not provided');
-      onClose();
+    // Guard clause: if onConfirm is not provided or not a function, just close
+    if (!onConfirm || typeof onConfirm !== 'function') {
+      console.warn('ConfirmDialog: onConfirm is not a function or was not provided. Closing dialog.');
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+      }
       return;
     }
 
     setConfirming(true);
     try {
       await onConfirm();
-      onClose();
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+      }
     } catch (error) {
-      console.error('Action failed:', error);
+      console.error('ConfirmDialog action failed:', error);
     } finally {
       setConfirming(false);
     }
   };
 
+  const handleClose = () => {
+    if (onClose && typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogOverlay className="bg-black/75" />
       <DialogContent className="max-w-md bg-white" style={{ backgroundColor: '#FFFFFF' }}>
         <DialogHeader style={{ backgroundColor: '#FFFFFF' }}>
@@ -56,7 +67,7 @@ export default function ConfirmDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={confirming}
             className="flex-1"
             style={{ 
@@ -71,12 +82,13 @@ export default function ConfirmDialog({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={confirming}
+            disabled={confirming || !onConfirm}
             className="flex-1"
             style={{ 
               backgroundColor: variant === "destructive" ? '#DC3545' : '#28A745',
               color: '#FFFFFF',
-              minHeight: '48px' 
+              minHeight: '48px',
+              opacity: !onConfirm ? 0.5 : 1
             }}
           >
             {confirming ? 'Processing...' : confirmText}
