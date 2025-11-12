@@ -88,7 +88,7 @@ const INSPECTION_AREAS = [
   { id: 'safety', name: 'Safety Systems', icon: '🚨', whatToCheck: 'smoke detectors, CO detectors, fire extinguishers, test dates' }
 ];
 
-export default function InspectionWalkthrough({ inspection, property, onComplete, onBack }) {
+export default function InspectionWalkthrough({ inspection, property, onComplete, onCancel }) {
   const [currentAreaIndex, setCurrentAreaIndex] = React.useState(null);
   const [inspectionData, setInspectionData] = React.useState(() => {
     // Initialize inspectionData from existing checklist items if available
@@ -209,12 +209,12 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         <div className="max-w-4xl mx-auto p-4 md:p-8">
           <Button
             variant="ghost"
-            onClick={onBack}
+            onClick={onCancel}
             className="mb-4"
             style={{ minHeight: '44px' }}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Inspection Setup
+            Back to Inspect
           </Button>
 
           {/* Header */}
@@ -376,12 +376,12 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         <Button
           variant="ghost"
-          onClick={onBack}
+          onClick={onCancel}
           className="mb-4"
           style={{ minHeight: '44px' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Setup
+          Back to Inspect
         </Button>
 
         <div className="mb-6">
