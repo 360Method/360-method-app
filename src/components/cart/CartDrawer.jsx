@@ -41,6 +41,24 @@ export default function CartDrawer() {
     },
   });
 
+  // Lock body scroll when drawer is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isOpen]);
+
   const handleEditItem = (item) => {
     setEditingItem(item);
     setShowEditDialog(true);
@@ -112,16 +130,23 @@ export default function CartDrawer() {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-[998] ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed inset-0 z-[998] ${
+          isOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
-        style={{
-          touchAction: 'pan-y'
-        }}
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="p-4 border-b bg-purple-50 flex items-center justify-between">
+        <div
+          className={`absolute top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform transition-transform duration-300 ${
+            isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '100vh',
+            maxHeight: '100dvh'
+          }}
+        >
+          {/* Header - Fixed */}
+          <div className="flex-shrink-0 p-4 border-b bg-purple-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-purple-600" />
               <h2 className="font-bold text-lg" style={{ color: '#1B365D' }}>
@@ -131,20 +156,21 @@ export default function CartDrawer() {
             <button
               onClick={() => setIsOpen(false)}
               className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-              style={{ minHeight: '40px', minWidth: '40px' }}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
 
-          {/* Cart Items - Touch Scrollable */}
+          {/* Cart Items - Scrollable Area */}
           <div 
-            className="flex-1 overflow-y-auto p-4 space-y-3"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3"
             style={{
               WebkitOverflowScrolling: 'touch',
+              overflowY: 'scroll',
               overscrollBehavior: 'contain',
               touchAction: 'pan-y',
-              position: 'relative'
+              minHeight: 0
             }}
           >
             {cartItems.length === 0 ? (
@@ -215,7 +241,7 @@ export default function CartDrawer() {
                     <button
                       onClick={() => handleDeleteClick(item)}
                       className="flex items-center justify-center text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
-                      style={{ minHeight: '40px', minWidth: '40px' }}
+                      style={{ minHeight: '44px', minWidth: '44px' }}
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -225,9 +251,9 @@ export default function CartDrawer() {
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer - Fixed */}
           {cartItems.length > 0 && (
-            <div className="p-4 border-t bg-gray-50 space-y-3">
+            <div className="flex-shrink-0 p-4 border-t bg-gray-50 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-gray-700">Estimated Total:</span>
                 <span className="text-xl font-bold text-purple-700">
