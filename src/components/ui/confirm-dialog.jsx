@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 export default function ConfirmDialog({ 
   open, 
   onClose, 
-  onConfirm = null, // Made optional with default null
+  onConfirm, 
   title = "Confirm Action",
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
@@ -18,7 +18,12 @@ export default function ConfirmDialog({
   const handleConfirm = async () => {
     // Guard clause: if onConfirm is not provided or not a function, just close
     if (!onConfirm || typeof onConfirm !== 'function') {
-      console.warn('ConfirmDialog: onConfirm is not a function or was not provided. Closing dialog.');
+      console.error('ConfirmDialog: onConfirm prop is required and must be a function', {
+        open,
+        title,
+        hasOnConfirm: !!onConfirm,
+        onConfirmType: typeof onConfirm
+      });
       if (onClose && typeof onClose === 'function') {
         onClose();
       }
