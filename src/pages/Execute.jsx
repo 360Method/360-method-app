@@ -1,13 +1,11 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query"; // Removed useQueryClient, useMutation
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2,
   Wrench,
@@ -15,13 +13,12 @@ import {
   Calendar,
   AlertCircle,
   Lightbulb,
-  Target, // Removed ArrowLeft, AlertCircle (re-added if needed), Target (re-added if needed)
   Clock,
   AlertTriangle,
   Home,
   Filter,
-  ChevronRight, // Added
-  ChevronDown // Added
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -32,11 +29,9 @@ export default function Execute() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
   
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null); // Changed initial state to null
-  const [statusFilter, setStatusFilter] = React.useState("all"); // Added
-  const [whyExpanded, setWhyExpanded] = React.useState(false); // Added
-
-  // useQueryClient removed as it's not used directly after changes
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [whyExpanded, setWhyExpanded] = React.useState(false);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -60,8 +55,6 @@ export default function Execute() {
   });
 
   React.useEffect(() => {
-    // If selectedProperty is null (meaning no propertyIdFromUrl was set initially)
-    // AND properties have loaded, set the first property as default.
     if (selectedProperty === null && properties.length > 0) {
       setSelectedProperty(properties[0].id);
     }
@@ -75,7 +68,6 @@ export default function Execute() {
     if (!t.scheduled_date) return false;
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
-    // Normalize dates to ignore time for comparison
     taskDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     return taskDate <= today;
@@ -85,7 +77,6 @@ export default function Execute() {
     if (!t.scheduled_date) return false;
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
-    // Normalize dates to ignore time for comparison
     taskDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     return taskDate > today;
@@ -96,7 +87,7 @@ export default function Execute() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pb-20 md:pb-8"> {/* Changed background gradient */}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
         {/* Phase & Step Header */}
         <div className="mb-6">
@@ -148,11 +139,11 @@ export default function Execute() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Execution Workflow:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc list-inside">
-                    <li><strong>DIY completion:</strong> Mark done, record actual cost and notes</li>
-                    <li><strong>Request professional service:</strong> Connect with operators in your area</li>
-                    <li><strong>Track service requests:</strong> Monitor status from request to completion</li>
-                    <li><strong>Build execution history:</strong> Create data for future cost estimates</li>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>DIY completion:</strong> Mark done, record actual cost and notes</li>
+                    <li>• <strong>Request professional service:</strong> Connect with operators in your area</li>
+                    <li>• <strong>Track service requests:</strong> Monitor status from request to completion</li>
+                    <li>• <strong>Build execution history:</strong> Create data for future cost estimates</li>
                   </ul>
                 </div>
                 <div className="bg-orange-50 rounded p-3 border-l-4 border-orange-600">
@@ -190,7 +181,7 @@ export default function Execute() {
           </Card>
         )}
 
-        {/* Workflow Navigation - Back to Schedule if no ready tasks */}
+        {/* Workflow Navigation */}
         {selectedProperty && readyToExecute.length === 0 && scheduledTasks.length === 0 && (
           <Card className="border-2 border-blue-300 bg-blue-50 shadow-xl">
             <CardContent className="p-6">
@@ -208,7 +199,7 @@ export default function Execute() {
                       style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
                     >
                       <Link to={createPageUrl("Prioritize") + `?property=${selectedProperty}`}>
-                        <Lightbulb className="w-4 h-4" /> {/* Replaced ArrowLeft with Lightbulb */}
+                        <Lightbulb className="w-4 h-4" />
                         Go to Prioritize
                       </Link>
                     </Button>
@@ -300,7 +291,6 @@ export default function Execute() {
                 <CardContent className="p-4 md:p-6">
                   {scheduledTasks.length > 0 ? (
                     <div className="space-y-4">
-                      {/* Due Now Section */}
                       {readyToExecute.length > 0 && (
                         <div>
                           <div className="flex items-center gap-2 mb-3">
@@ -320,7 +310,6 @@ export default function Execute() {
                         </div>
                       )}
 
-                      {/* Upcoming Section */}
                       {upcomingTasks.length > 0 && (
                         <div>
                           <div className="flex items-center gap-2 mb-3 mt-6">
