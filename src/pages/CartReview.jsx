@@ -1,35 +1,34 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tantml:react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { 
   ShoppingCart, 
   Trash2, 
-  Send, 
   Sparkles, 
-  Clock, 
-  DollarSign,
-  Gift,
-  TrendingUp,
-  AlertTriangle,
+  Crown,
   CheckCircle2,
   FileText,
-  Calendar,
-  Crown,
-  Edit,
-  Image as ImageIcon
+  CreditCard,
+  Download,
+  User as UserIcon,
+  MapPin,
+  Phone,
+  Mail,
+  ChevronRight,
+  ChevronDown,
+  AlertCircle,
+  Gift,
+  X
 } from "lucide-react";
 import { estimateCartItems } from "../components/cart/AIEstimator";
-import EditCartItemDialog from "../components/cart/EditCartItemDialog";
-import ConfirmDialog from "../components/ui/confirm-dialog";
-import { format } from "date-fns";
 import { createPageUrl } from "@/utils";
+import { checkServiceAvailability } from "../components/shared/ServiceAreaChecker";
 
 export default function CartReview() {
   const [aiEstimating, setAiEstimating] = React.useState(false);
@@ -38,10 +37,9 @@ export default function CartReview() {
   const [customerNotes, setCustomerNotes] = React.useState('');
   const [preferredStartDate, setPreferredStartDate] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
-  const [editingItem, setEditingItem] = React.useState(null);
-  const [showEditDialog, setShowEditDialog] = React.useState(false);
-  const [deletingItem, setDeletingItem] = React.useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [expandedItems, setExpandedItems] = React.useState({});
+  const [operatorInfo, setOperatorInfo] = React.useState(null);
+  const [generatingPDF, setGeneratingPDF] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -81,17 +79,18 @@ export default function CartReview() {
     },
   });
 
-  const isMember = user && (
-    user.subscription_tier?.includes('homecare') || 
-    user.subscription_tier?.includes('propertycare')
-  );
+  // Check for operator availability
+  React.useEffect(() => {
+    if (cartItems.length > 0 && properties.length > 0) {
+      const property = properties.find(p => p.id === cartItems[0].property_id);
+      if (property?.zip_code) {
+        const serviceCheck = checkServiceAvailability(property.zip_code);
+        setOperatorInfo(serviceCheck);
+      }
+    }
+  }, [cartItems, properties]);
 
-  const memberDiscountPercent = user?.subscription_tier?.includes('elite') ? 20 :
-                                 user?.subscription_tier?.includes('premium') ? 15 :
-                                 user?.subscription_tier?.includes('essential') ? 10 : 0;
-
-  const hourBucket = user?.hour_bucket || { total: 0, used: 0, remaining: 0 };
-
+  // Auto-estimate cart
   React.useEffect(() => {
     if (cartItems.length > 0 && properties.length > 0 && !aiEstimates) {
       const property = properties.find(p => p.id === cartItems[0].property_id);
@@ -126,6 +125,17 @@ export default function CartReview() {
     }
   }, [cartItems, properties, aiEstimates]);
 
+  const isMember = user && (
+    user.subscription_tier?.includes('homecare') || 
+    user.subscription_tier?.includes('propertycare')
+  );
+
+  const memberDiscountPercent = user?.subscription_tier?.includes('elite') ? 20 :
+                                 user?.subscription_tier?.includes('premium') ? 15 :
+                                 user?.subscription_tier?.includes('essential') ? 10 : 0;
+
+  const hourBucket = user?.hour_bucket || { total: 0, used: 0, remaining: 0 };
+
   const totalHours = cartItems.reduce((sum, item) => sum + (item.estimated_hours || 0), 0);
   const totalCostMin = cartItems.reduce((sum, item) => sum + (item.estimated_cost_min || 0), 0);
   const totalCostMax = cartItems.reduce((sum, item) => sum + (item.estimated_cost_max || 0), 0);
@@ -138,27 +148,115 @@ export default function CartReview() {
   const finalCostMin = Math.max(0, totalCostMin - memberDiscountAmount - hourBucketSavings);
   const finalCostMax = Math.max(0, totalCostMax - memberDiscountAmount - hourBucketSavings);
 
-  const handleEditItem = (item) => {
-    setEditingItem(item);
-    setShowEditDialog(true);
+  const toggleItemExpand = (itemId) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
   };
 
-  const handleDeleteClick = (item) => {
-    setDeletingItem(item);
-    setShowDeleteDialog(true);
-  };
+  const handleGeneratePDF = async () => {
+    setGeneratingPDF(true);
+    try {
+      const property = properties.find(p => p.id === cartItems[0].property_id);
+      
+      const pdfContent = `
+SERVICE REQUEST ESTIMATE
+========================
 
-  const handleConfirmDelete = async () => {
-    if (deletingItem) {
-      await deleteItemMutation.mutateAsync(deletingItem.id);
-      setDeletingItem(null);
-      setShowDeleteDialog(false);
+Property: ${property?.address || 'N/A'}
+Customer: ${user?.full_name} (${user?.email})
+Date: ${new Date().toLocaleDateString()}
+
+${operatorInfo?.available ? 
+`360° Method Operator: ${operatorInfo.operator}
+Contact: ${operatorInfo.contact?.phone}
+Email: ${operatorInfo.contact?.email}` : 
+`No 360° Method Operator in area - use with your preferred contractor`}
+
+SERVICES REQUESTED
+------------------
+
+${cartItems.map((item, idx) => `
+${idx + 1}. ${item.title}
+   System: ${item.system_type || 'General'}
+   Priority: ${item.priority}
+   
+   Description:
+   ${item.description}
+   
+   ${item.customer_notes ? `Notes: ${item.customer_notes}\n` : ''}
+   Estimated Time: ${item.estimated_hours?.toFixed(1) || '?'} hours
+   Estimated Cost: $${item.estimated_cost_min?.toLocaleString() || '?'} - $${item.estimated_cost_max?.toLocaleString() || '?'}
+   ${item.preferred_timeline ? `Timeline: ${item.preferred_timeline}` : ''}
+   ${item.photo_urls?.length ? `Photos: ${item.photo_urls.length} attached` : ''}
+`).join('\n---\n')}
+
+COST SUMMARY
+------------
+Total Estimated Hours: ${totalHours.toFixed(1)}
+Base Cost Range: $${totalCostMin.toLocaleString()} - $${totalCostMax.toLocaleString()}
+
+${isMember ? `
+MEMBER BENEFITS APPLIED:
+- ${memberDiscountPercent}% Discount: -$${Math.round(memberDiscountAmount).toLocaleString()}
+${hoursFromBucket > 0 ? `- Hour Bucket (${hoursFromBucket.toFixed(1)} hrs): -$${hourBucketSavings.toLocaleString()}` : ''}
+- Total Savings: $${Math.round(memberDiscountAmount + hourBucketSavings).toLocaleString()}
+
+YOUR FINAL COST: $${Math.round(finalCostMin).toLocaleString()} - $${Math.round(finalCostMax).toLocaleString()}
+` : `
+ESTIMATED TOTAL: $${Math.round((totalCostMin + totalCostMax) / 2).toLocaleString()}
+`}
+
+${preferredStartDate ? `Preferred Start Date: ${preferredStartDate}` : ''}
+
+${customerNotes ? `
+ADDITIONAL NOTES:
+${customerNotes}
+` : ''}
+
+---
+
+⚠️ IMPORTANT DISCLAIMERS:
+- These are AI-generated estimates based on typical project costs
+- Final pricing will vary based on actual site conditions, materials, and scope
+- Not a binding quote - contractor will provide final pricing after inspection
+${operatorInfo?.available ? '' : `
+- This estimate can be used with any licensed contractor
+- Learn more about becoming a 360° Method Operator: www.360method.com/operators
+`}
+
+Generated by 360° Method Command Center
+www.360method.com
+      `.trim();
+
+      // Create a blob and download
+      const blob = new Blob([pdfContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Service-Estimate-${property?.address?.replace(/[^a-z0-9]/gi, '-')}-${new Date().getTime()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate estimate file. Please try again.');
+    } finally {
+      setGeneratingPDF(false);
     }
   };
 
   const handleSubmit = async () => {
     if (!packageName.trim()) {
       alert('Please enter a package name');
+      return;
+    }
+
+    if (!operatorInfo?.available) {
+      alert('No 360° Method Operator available in your area. Download the estimate to use with your own contractor.');
       return;
     }
 
@@ -205,60 +303,16 @@ export default function CartReview() {
         });
       }
 
-      const emailBody = `
-NEW SERVICE PACKAGE REQUEST - #${servicePackage.id}
-
-CUSTOMER: ${user.full_name} (${user.email})
-MEMBERSHIP: ${user.subscription_tier || 'Non-member'}
-
-PROPERTY: ${property?.address || 'N/A'}
-
-PACKAGE: "${packageName}"
-ITEMS: ${cartItems.length}
-ESTIMATED HOURS: ${totalHours.toFixed(1)}
-ESTIMATED COST: $${totalCostMin.toLocaleString()} - $${totalCostMax.toLocaleString()}
-
-${isMember ? `MEMBER BENEFITS APPLIED:
-- Discount: ${memberDiscountPercent}% (-$${Math.round(memberDiscountAmount).toLocaleString()})
-- Hours from Bucket: ${hoursFromBucket.toFixed(1)} hours (-$${hourBucketSavings.toLocaleString()})
-- Total Savings: $${Math.round(memberDiscountAmount + hourBucketSavings).toLocaleString()}
-- Final Cost: $${Math.round(finalCostMin).toLocaleString()} - $${Math.round(finalCostMax).toLocaleString()}
-` : ''}
-
-PREFERRED START: ${preferredStartDate || 'Not specified'}
-
-CUSTOMER NOTES:
-${customerNotes || 'None'}
-
-ITEMS:
-${cartItems.map((item, idx) => `
-${idx + 1}. ${item.system_type || 'General'}: ${item.title}
-   Priority: ${item.priority}
-   Hours: ${item.estimated_hours?.toFixed(1) || '?'}
-   Cost: $${item.estimated_cost_min?.toLocaleString() || '?'} - $${item.estimated_cost_max?.toLocaleString() || '?'}
-   Description: ${item.description}
-   ${item.customer_notes ? `Notes: ${item.customer_notes}` : ''}
-   ${item.photo_urls?.length > 0 ? `Photos: ${item.photo_urls.length}` : ''}
-   ${item.preferred_timeline ? `Timeline: ${item.preferred_timeline}` : ''}
-`).join('\n')}
-
-⚠️ AI DISCLAIMER: Estimates based on $150/hr + materials. 
-Actual costs vary based on site conditions.
-
----
-View in app: ServicePackage #${servicePackage.id}
-      `;
-
       await base44.integrations.Core.SendEmail({
-        to: 'operator@example.com',
+        to: operatorInfo.contact?.email || 'operator@example.com',
         subject: `New Service Package Request - ${packageName}`,
-        body: emailBody
+        body: `Service package #${servicePackage.id} submitted by ${user.full_name}`
       });
 
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
       
-      alert('✅ Service package submitted successfully! Your operator will review and provide a detailed quote.');
+      alert('✅ Service package submitted successfully! Your operator will contact you soon.');
       window.location.href = createPageUrl('Dashboard');
 
     } catch (error) {
@@ -279,7 +333,7 @@ View in app: ServicePackage #${servicePackage.id}
               Your Cart is Empty
             </h2>
             <p className="text-gray-600 mb-6">
-              Add services from AI suggestions, priority tasks, or upgrades to get started
+              Add services to get started
             </p>
             <Button
               asChild
@@ -293,28 +347,30 @@ View in app: ServicePackage #${servicePackage.id}
     );
   }
 
+  const property = properties.find(p => p.id === cartItems[0].property_id);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#1B365D' }}>
-              Review Service Cart
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} ready for review
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 pb-20">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Review Your Cart
+          </h1>
+          <p className="text-gray-600">
+            {cartItems.length} service{cartItems.length !== 1 ? 's' : ''} • {property?.address || 'Property'}
+          </p>
         </div>
 
+        {/* AI Estimating Banner */}
         {aiEstimating && (
           <Card className="border-2 border-purple-300 bg-purple-50">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-purple-600 animate-pulse" />
-                <div className="flex-1">
+                <div>
                   <h3 className="font-bold text-purple-900">AI Estimating Your Cart...</h3>
-                  <p className="text-sm text-gray-700">Analyzing {cartItems.length} items for accurate time and cost estimates</p>
+                  <p className="text-sm text-gray-700">Calculating accurate time and cost estimates</p>
                 </div>
               </div>
             </CardContent>
@@ -322,63 +378,119 @@ View in app: ServicePackage #${servicePackage.id}
         )}
 
         <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Column - Cart Items */}
           <div className="lg:col-span-2 space-y-6">
-            {isMember && (
-              <Card className="border-2 border-green-300 bg-green-50">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-3 mb-4">
-                    <Crown className="w-8 h-8 text-green-600 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-green-900 mb-1">👑 Member Benefits Active</h3>
-                      <p className="text-sm text-gray-700">Your discounts are automatically applied</p>
+            {/* Operator Info Bubble */}
+            {operatorInfo && (
+              <Card className={`border-2 ${operatorInfo.available ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'}`}>
+                <CardContent className="p-4">
+                  {operatorInfo.available ? (
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                        <UserIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-green-900 mb-1">
+                          ✓ {operatorInfo.operator} Services Your Area
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-2">
+                          <MapPin className="w-3 h-3 inline mr-1" />
+                          {operatorInfo.area}
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className="flex items-center gap-1 text-gray-700">
+                            <Phone className="w-3 h-3" />
+                            {operatorInfo.contact?.phone}
+                          </span>
+                          <span className="flex items-center gap-1 text-gray-700">
+                            <Mail className="w-3 h-3" />
+                            {operatorInfo.contact?.email}
+                          </span>
+                        </div>
+                        {!isMember && (
+                          <div className="mt-3 p-2 bg-white rounded border border-green-200">
+                            <p className="text-xs font-semibold text-green-900 mb-1">
+                              💡 Become a Member & Save
+                            </p>
+                            <p className="text-xs text-gray-700 mb-2">
+                              Get 10-20% off + included hours. This cart: save ${Math.round((totalCostMin + totalCostMax) / 2 * 0.15).toLocaleString()}
+                            </p>
+                            <Button asChild size="sm" variant="outline" className="w-full">
+                              <a href={createPageUrl('Pricing')}>View Plans</a>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-1">💰 Member Discount</p>
-                      <p className="text-2xl font-bold text-green-700">{memberDiscountPercent}%</p>
-                      <p className="text-xs text-gray-600">Saves ${Math.round(memberDiscountAmount).toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-1">⏱️ Hour Bucket</p>
-                      <p className="text-2xl font-bold text-green-700">{hoursFromBucket.toFixed(1)} hrs</p>
-                      <p className="text-xs text-gray-600">Saves ${hourBucketSavings.toLocaleString()}</p>
-                      <Progress 
-                        value={(hourBucket.remaining / hourBucket.total) * 100} 
-                        className="mt-2 h-2"
-                      />
-                      <p className="text-xs text-gray-600 mt-1">
-                        {hourBucket.remaining?.toFixed(1)} / {hourBucket.total} hrs remaining
+                  ) : (
+                    <div>
+                      <h3 className="font-bold text-orange-900 mb-2">
+                        No 360° Operator in {property?.city || 'Your Area'} Yet
+                      </h3>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Download your estimate below to use with any contractor. Want 360° Method service? Join the waitlist!
                       </p>
+                      <div className="flex gap-2">
+                        <Button asChild size="sm" variant="outline" className="flex-1">
+                          <a href={createPageUrl('FindOperator')}>Join Waitlist</a>
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="flex-1">
+                          <a href="https://360method.com/operators" target="_blank">Become an Operator</a>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             )}
 
+            {/* Cart Items - Compact */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" />
-                  Cart Items ({cartItems.length})
+                  Your Services ({cartItems.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 {cartItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    className="border-2 rounded-lg p-4 hover:border-indigo-300 transition-colors"
+                    className="border-2 rounded-lg p-3 hover:border-purple-300 transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-bold text-gray-400">#{idx + 1}</span>
+                    <div className="flex gap-3">
+                      {/* Icon/Image */}
+                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {item.photo_urls && item.photo_urls.length > 0 ? (
+                          <img 
+                            src={item.photo_urls[0]} 
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-3xl">
+                            {item.system_type === 'HVAC System' ? '❄️' :
+                             item.system_type === 'Plumbing System' ? '🚰' :
+                             item.system_type === 'Electrical System' ? '⚡' :
+                             item.system_type === 'Roof System' ? '🏠' :
+                             item.priority === 'Emergency' || item.priority === 'High' ? '⚠️' : '🔧'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
                           <h3 className="font-semibold">{item.title}</h3>
+                          <button
+                            onClick={() => deleteItemMutation.mutate(item.id)}
+                            className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0 ml-2"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                          {item.system_type && (
-                            <Badge variant="outline">{item.system_type}</Badge>
-                          )}
+                        
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {item.priority && (
                             <Badge className={
                               item.priority === 'Emergency' ? 'bg-red-600' :
@@ -388,109 +500,79 @@ View in app: ServicePackage #${servicePackage.id}
                               {item.priority}
                             </Badge>
                           )}
-                          {item.photo_urls?.length > 0 && (
-                            <Badge variant="outline" className="text-xs gap-1">
-                              <ImageIcon className="w-3 h-3" />
-                              {item.photo_urls.length}
-                            </Badge>
+                          {(item.estimated_cost_min && item.estimated_cost_max) && (
+                            <span className="text-sm font-semibold text-purple-700">
+                              ${item.estimated_cost_min.toLocaleString()} - ${item.estimated_cost_max.toLocaleString()}
+                            </span>
                           )}
-                          {item.preferred_timeline && (
-                            <Badge variant="outline" className="text-xs">
-                              📅 {item.preferred_timeline}
-                            </Badge>
+                          {item.estimated_hours && (
+                            <span className="text-xs text-gray-600">
+                              {item.estimated_hours.toFixed(1)} hrs
+                            </span>
                           )}
                         </div>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="text-blue-600 hover:bg-blue-50 rounded p-2 transition-colors"
-                          style={{ minHeight: '40px', minWidth: '40px' }}
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(item)}
-                          className="text-red-600 hover:bg-red-50 rounded p-2 transition-colors"
-                          style={{ minHeight: '40px', minWidth: '40px' }}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-700 mb-3">{item.description}</p>
-                    
-                    {item.customer_notes && (
-                      <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
-                        <p className="text-xs font-semibold text-blue-900 mb-1">Customer Notes:</p>
-                        <p className="text-xs text-gray-800">{item.customer_notes}</p>
-                      </div>
-                    )}
 
-                    {item.photo_urls && item.photo_urls.length > 0 && (
-                      <div className="flex gap-2 mb-3">
-                        {item.photo_urls.slice(0, 4).map((url, photoIdx) => (
-                          <img
-                            key={photoIdx}
-                            src={url}
-                            alt={`Photo ${photoIdx + 1}`}
-                            className="w-16 h-16 object-cover rounded border-2 border-gray-200 cursor-pointer hover:border-purple-400"
-                            onClick={() => window.open(url, '_blank')}
-                          />
-                        ))}
-                        {item.photo_urls.length > 4 && (
-                          <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded border-2 border-gray-200 text-xs font-medium text-gray-600">
-                            +{item.photo_urls.length - 4}
+                        {/* Expandable Details */}
+                        <button
+                          onClick={() => toggleItemExpand(item.id)}
+                          className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                        >
+                          {expandedItems[item.id] ? (
+                            <>
+                              <ChevronDown className="w-4 h-4" />
+                              Hide details
+                            </>
+                          ) : (
+                            <>
+                              <ChevronRight className="w-4 h-4" />
+                              View details
+                            </>
+                          )}
+                        </button>
+
+                        {expandedItems[item.id] && (
+                          <div className="mt-3 pt-3 border-t space-y-2">
+                            <p className="text-sm text-gray-700">{item.description}</p>
+                            {item.system_type && (
+                              <p className="text-xs text-gray-600">System: {item.system_type}</p>
+                            )}
+                            {item.customer_notes && (
+                              <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                                <p className="text-xs font-semibold text-blue-900">Your Notes:</p>
+                                <p className="text-xs text-gray-800">{item.customer_notes}</p>
+                              </div>
+                            )}
+                            {item.preferred_timeline && (
+                              <p className="text-xs text-gray-600">Timeline: {item.preferred_timeline}</p>
+                            )}
+                            {item.photo_urls && item.photo_urls.length > 0 && (
+                              <div className="flex gap-2 flex-wrap">
+                                {item.photo_urls.map((url, photoIdx) => (
+                                  <img
+                                    key={photoIdx}
+                                    src={url}
+                                    alt={`Photo ${photoIdx + 1}`}
+                                    className="w-20 h-20 object-cover rounded border-2 border-gray-200 cursor-pointer hover:border-purple-400"
+                                    onClick={() => window.open(url, '_blank')}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-
-                    {aiEstimates && aiEstimates.estimates[idx] && (
-                      <div className="grid md:grid-cols-3 gap-3 mt-3 pt-3 border-t">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">{aiEstimates.estimates[idx].estimated_hours?.toFixed(1)} hrs</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <DollarSign className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">
-                            ${item.estimated_cost_min?.toLocaleString()} - ${item.estimated_cost_max?.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {aiEstimates.estimates[idx].materials_note}
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
-            {aiEstimates?.bundle_discount_suggestion && (
-              <Card className="border-2 border-blue-300 bg-blue-50">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-900 mb-1">💡 AI Bundling Suggestion</p>
-                      <p className="text-sm text-gray-800">{aiEstimates.bundle_discount_suggestion}</p>
-                      {aiEstimates.scheduling_suggestion && (
-                        <p className="text-sm text-gray-800 mt-1">📅 {aiEstimates.scheduling_suggestion}</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
+            {/* Package Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" />
-                  Package Details
+                  Request Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -499,7 +581,7 @@ View in app: ServicePackage #${servicePackage.id}
                   <Input
                     value={packageName}
                     onChange={(e) => setPackageName(e.target.value)}
-                    placeholder="e.g., Spring Maintenance Bundle, Emergency Repairs"
+                    placeholder="e.g., Spring Maintenance, Emergency Repairs"
                     style={{ backgroundColor: '#FFFFFF', minHeight: '48px' }}
                   />
                 </div>
@@ -513,11 +595,11 @@ View in app: ServicePackage #${servicePackage.id}
                   />
                 </div>
                 <div>
-                  <Label>Additional Notes for Operator</Label>
+                  <Label>Additional Notes</Label>
                   <Textarea
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
-                    placeholder="Access instructions, scheduling preferences, special requirements..."
+                    placeholder="Access instructions, special requirements..."
                     rows={4}
                     style={{ backgroundColor: '#FFFFFF', minHeight: '96px' }}
                   />
@@ -526,128 +608,134 @@ View in app: ServicePackage #${servicePackage.id}
             </Card>
           </div>
 
+          {/* Right Column - Summary & Actions */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4 space-y-6">
+            <div className="sticky top-4 space-y-4">
+              {/* Cost Summary */}
               <Card className="border-2 border-purple-300">
                 <CardHeader className="bg-purple-50">
-                  <CardTitle className="text-lg">Cost Summary</CardTitle>
+                  <CardTitle className="text-lg">Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Items:</span>
-                    <span className="font-semibold">{cartItems.length}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Est. Hours:</span>
-                    <span className="font-semibold">{totalHours.toFixed(1)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm pt-2 border-t">
-                    <span>Base Cost:</span>
-                    <span className="font-semibold">
-                      ${totalCostMin.toLocaleString()} - ${totalCostMax.toLocaleString()}
-                    </span>
-                  </div>
-                  {isMember && (
-                    <>
-                      <div className="flex justify-between text-sm text-green-700">
-                        <span>Discount ({memberDiscountPercent}%):</span>
-                        <span className="font-semibold">-${Math.round(memberDiscountAmount).toLocaleString()}</span>
-                      </div>
-                      {hoursFromBucket > 0 && (
-                        <div className="flex justify-between text-sm text-green-700">
-                          <span>Hour Bucket ({hoursFromBucket.toFixed(1)} hrs):</span>
-                          <span className="font-semibold">-${hourBucketSavings.toLocaleString()}</span>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Items:</span>
+                      <span className="font-semibold">{cartItems.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Est. Hours:</span>
+                      <span className="font-semibold">{totalHours.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span>Base Cost:</span>
+                      <span className="font-semibold">
+                        ${totalCostMin.toLocaleString()} - ${totalCostMax.toLocaleString()}
+                      </span>
+                    </div>
+                    {isMember && (
+                      <>
+                        <div className="flex justify-between text-green-700">
+                          <span>Discount ({memberDiscountPercent}%):</span>
+                          <span className="font-semibold">-${Math.round(memberDiscountAmount).toLocaleString()}</span>
                         </div>
-                      )}
-                    </>
-                  )}
+                        {hoursFromBucket > 0 && (
+                          <div className="flex justify-between text-green-700">
+                            <span>Hour Bucket:</span>
+                            <span className="font-semibold">-${hourBucketSavings.toLocaleString()}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                   <div className="flex justify-between text-lg font-bold pt-3 border-t" style={{ color: '#8B5CF6' }}>
                     <span>Your Cost:</span>
-                    <span>${Math.round(finalCostMin).toLocaleString()} - ${Math.round(finalCostMax).toLocaleString()}</span>
+                    <span>${Math.round((finalCostMin + finalCostMax) / 2).toLocaleString()}</span>
                   </div>
                   {isMember && (memberDiscountAmount + hourBucketSavings) > 0 && (
                     <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
-                      <p className="text-sm font-semibold text-green-900">💰 Total Savings</p>
+                      <p className="text-sm font-semibold text-green-900">You Save</p>
                       <p className="text-2xl font-bold text-green-700">
                         ${Math.round(memberDiscountAmount + hourBucketSavings).toLocaleString()}
                       </p>
                     </div>
                   )}
                   <p className="text-xs text-gray-600 text-center pt-2">
-                    {aiEstimates?.disclaimer || '⚠️ Estimates based on AI analysis. Final pricing after operator review.'}
+                    ⚠️ Preliminary estimate. Final quote after review.
                   </p>
                 </CardContent>
               </Card>
 
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting || !packageName.trim()}
-                className="w-full gap-2"
-                style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '18px' }}
-              >
-                {submitting ? (
-                  <>
-                    <Sparkles className="w-5 h-5 animate-spin" />
-                    Submitting...
-                  </>
+              {/* Actions */}
+              <div className="space-y-3">
+                {operatorInfo?.available ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitting || !packageName.trim()}
+                    className="w-full gap-2"
+                    style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+                  >
+                    {submitting ? (
+                      <>
+                        <Sparkles className="w-5 h-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5" />
+                        Submit to {operatorInfo.operator}
+                      </>
+                    )}
+                  </Button>
                 ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    Submit to Operator
-                  </>
+                  <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4 text-center">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-2 text-orange-600" />
+                    <p className="text-sm font-semibold text-orange-900 mb-2">
+                      No operator in your area
+                    </p>
+                    <p className="text-xs text-gray-700 mb-3">
+                      Download estimate to use with your contractor
+                    </p>
+                  </div>
                 )}
-              </Button>
 
-              {!isMember && (
-                <Card className="border-2 border-orange-300 bg-orange-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Gift className="w-6 h-6 text-orange-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-orange-900 mb-2">💡 Save with Membership</p>
-                        <p className="text-sm text-gray-700 mb-3">
-                          This cart would save you ${Math.round((totalCostMin + totalCostMax) / 2 * 0.15).toLocaleString()} with a membership
-                        </p>
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="outline"
-                          className="w-full"
-                        >
-                          <a href={createPageUrl('Pricing')}>View Plans</a>
-                        </Button>
-                      </div>
+                <Button
+                  onClick={handleGeneratePDF}
+                  disabled={generatingPDF}
+                  variant="outline"
+                  className="w-full gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  {generatingPDF ? (
+                    <>
+                      <Sparkles className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Download Estimate
+                    </>
+                  )}
+                </Button>
+
+                {user?.saved_payment_method ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <div className="text-xs">
+                      <p className="font-semibold text-blue-900">Card on file</p>
+                      <p className="text-gray-600">•••• {user.saved_payment_method.last4}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                ) : !operatorInfo?.available && (
+                  <p className="text-xs text-center text-gray-600">
+                    No payment needed - use estimate with any contractor
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <EditCartItemDialog
-        open={showEditDialog}
-        onClose={() => {
-          setShowEditDialog(false);
-          setEditingItem(null);
-        }}
-        item={editingItem}
-      />
-
-      <ConfirmDialog
-        open={showDeleteDialog}
-        onClose={() => {
-          setShowDeleteDialog(false);
-          setDeletingItem(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Remove from Cart?"
-        message={`Are you sure you want to remove "${deletingItem?.title}" from your cart? This action cannot be undone.`}
-        confirmText="Yes, Remove"
-        cancelText="Cancel"
-        variant="destructive"
-      />
     </div>
   );
 }
