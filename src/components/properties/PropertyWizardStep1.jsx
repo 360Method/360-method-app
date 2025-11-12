@@ -55,6 +55,7 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [loadingPropertyData, setLoadingPropertyData] = React.useState(false);
   const [propertyDataFetched, setPropertyDataFetched] = React.useState(false);
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
+  const [appliedFields, setAppliedFields] = React.useState({});
 
   const handleAddressSelect = async (addressData) => {
     const climateZone = getClimateZone(addressData.state);
@@ -281,7 +282,12 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
 
   const applyAiData = (field, value) => {
     onChange({ [field]: value });
-    setAiPropertyData(prev => ({ ...prev, [field]: null })); // Mark as applied
+    setAppliedFields(prev => ({ ...prev, [field]: true }));
+    
+    // Show confirmation for fields that won't be visible until later steps
+    if (field === 'current_value' || field === 'purchase_price') {
+      alert(`✓ ${field === 'current_value' ? 'Estimated value' : 'Purchase price'} of $${value.toLocaleString()} saved! You'll see it in the financial details step.`);
+    }
   };
 
   return (
@@ -395,13 +401,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Year Built</p>
                       <p className="font-bold text-lg">{aiPropertyData.year_built}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('year_built', aiPropertyData.year_built)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.year_built ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('year_built', aiPropertyData.year_built)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
                   
@@ -409,13 +421,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Square Footage</p>
                       <p className="font-bold text-lg">{aiPropertyData.square_footage.toLocaleString()} sq ft</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('square_footage', aiPropertyData.square_footage)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.square_footage ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('square_footage', aiPropertyData.square_footage)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -423,13 +441,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Bedrooms</p>
                       <p className="font-bold text-lg">{aiPropertyData.bedrooms}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('bedrooms', aiPropertyData.bedrooms)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.bedrooms ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('bedrooms', aiPropertyData.bedrooms)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -437,13 +461,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Bathrooms</p>
                       <p className="font-bold text-lg">{aiPropertyData.bathrooms}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('bathrooms', aiPropertyData.bathrooms)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.bathrooms ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('bathrooms', aiPropertyData.bathrooms)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -451,13 +481,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Stories</p>
                       <p className="font-bold text-lg">{aiPropertyData.stories}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('stories', aiPropertyData.stories)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.stories ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('stories', aiPropertyData.stories)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -465,13 +501,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Foundation Type</p>
                       <p className="font-bold text-lg">{aiPropertyData.foundation_type}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('foundation_type', aiPropertyData.foundation_type)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.foundation_type ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('foundation_type', aiPropertyData.foundation_type)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -479,13 +521,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Garage Type</p>
                       <p className="font-bold text-lg">{aiPropertyData.garage_type}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('garage_type', aiPropertyData.garage_type)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.garage_type ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Applied
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('garage_type', aiPropertyData.garage_type)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -493,13 +541,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Estimated Value</p>
                       <p className="font-bold text-lg">${aiPropertyData.estimated_value.toLocaleString()}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => applyAiData('current_value', aiPropertyData.estimated_value)}
-                        className="mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Use This Value
-                      </Button>
+                      {appliedFields.current_value ? (
+                        <Badge className="mt-2 bg-green-600 text-white">
+                          ✓ Saved for Step 4
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => applyAiData('current_value', aiPropertyData.estimated_value)}
+                          className="mt-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Use This Value
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
