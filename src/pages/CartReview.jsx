@@ -24,7 +24,11 @@ import {
   ChevronDown,
   AlertCircle,
   Gift,
-  X
+  X,
+  Clock,
+  DollarSign,
+  Edit,
+  Save
 } from "lucide-react";
 import { estimateCartItems } from "../components/cart/AIEstimator";
 import { createPageUrl } from "@/utils";
@@ -40,6 +44,10 @@ export default function CartReview() {
   const [expandedItems, setExpandedItems] = React.useState({});
   const [operatorInfo, setOperatorInfo] = React.useState(null);
   const [generatingPDF, setGeneratingPDF] = React.useState(false);
+  const [estimatingItems, setEstimatingItems] = React.useState({});
+  const [itemEstimates, setItemEstimates] = React.useState({});
+  const [editingItemId, setEditingItemId] = React.useState(null);
+  const [editFormData, setEditFormData] = React.useState({});
 
   const queryClient = useQueryClient();
 
@@ -153,6 +161,174 @@ export default function CartReview() {
       ...prev,
       [itemId]: !prev[itemId]
     }));
+  };
+
+  const handleGetItemEstimate = async (item) => {
+    setEstimatingItems(prev => ({ ...prev, [item.id]: true }));
+    
+    try {
+      const property = properties.find(p => p.id === item.property_id);
+      if (!property) {
+        throw new Error('Property not found');
+      }
+
+      // Check if this is a baseline assessment (fixed cost)
+      const isBaselineAssessment = item.title.toLowerCase().includes('baseline') || 
+                                    item.source_type === 'baseline_assessment';
+
+      if (isBaselineAssessment) {
+        setItemEstimates(prev => ({
+          ...prev,
+          [item.id]: {
+            estimated_hours: 2.5,
+            cost_min: 299,
+            cost_max: 299,
+            detailed_scope: "Complete professional baseline system documentation service. Technician will document all major systems, take photos, record ages/conditions, and create comprehensive digital baseline.",
+            materials_note: "All documentation tools and reports included",
+            is_fixed_price: true,
+            estimated_timeline: "2-3 hours on-site"
+          }
+        }));
+        setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
+        return;
+      }
+
+      const estimationPrompt = `You are estimating a home service request for Handy Pioneers (internal rate: $150/hour, not shown to customer).
+
+PROPERTY CONTEXT:
+Address: ${property.address}
+Type: ${property.property_type || 'Not specified'}
+Climate: ${property.climate_zone || 'Pacific Northwest'}
+
+SERVICE REQUEST:
+Title: ${item.title}
+System: ${item.system_type || 'General'}
+Priority: ${item.priority}
+
+DETAILED DESCRIPTION:
+${item.description}
+
+${item.customer_notes ? `CUSTOMER NOTES:\n${item.customer_notes}` : ''}
+
+${item.photo_urls?.length > 0 ? `PHOTOS PROVIDED: ${item.photo_urls.length} (analyze for scope accuracy)` : 'NO PHOTOS - estimate conservatively'}
+
+${item.preferred_timeline ? `CUSTOMER TIMELINE: ${item.preferred_timeline}` : ''}
+
+ESTIMATION REQUIREMENTS:
+
+1. ESTIMATED_HOURS: Total professional time including:
+   - Travel to/from site (0.5 hrs standard)
+   - Setup and preparation
+   - Actual work time
+   - Cleanup and documentation
+   - Buffer for typical complications (15-20%)
+
+2. COST_MIN: Best case scenario
+   - Hours × $150 base rate
+   - Basic materials estimate
+   - Minimal complications assumed
+
+3. COST_MAX: With typical complications
+   - Hours × $150 base rate
+   - Materials + 20% buffer
+   - Common issue discoveries
+   - Weather/access delays
+
+4. DETAILED_SCOPE: Professional statement of work (2-3 sentences)
+   - What will be inspected/repaired/replaced
+   - Method and approach
+   - Quality standards
+
+5. MATERIALS_LIST: Key materials needed (list 3-5 items)
+
+6. TOOLS_REQUIRED: Specialized tools needed (if any)
+
+7. PERMIT_REQUIRED: Does this need permits? (yes/no)
+
+8. TIMELINE: Estimated completion time once started
+
+9. RISK_FACTORS: Potential complications that could increase cost
+
+10. RECOMMENDATIONS: Any prep work customer should do before service
+
+PRICING MODIFIERS:
+- Emergency priority: +50% urgency fee
+- High priority: +25% urgency fee
+- Multiple floors: +0.5 hours per additional floor
+- Difficult access: +1-2 hours
+- Aged systems (15+ years): +20% for complications
+
+Provide realistic, professional estimates. Be conservative - better to over-estimate slightly than under-deliver.`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: estimationPrompt,
+        add_context_from_internet: false,
+        file_urls: item.photo_urls?.length > 0 ? item.photo_urls : undefined,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            estimated_hours: { type: "number" },
+            cost_min: { type: "number" },
+            cost_max: { type: "number" },
+            detailed_scope: { type: "string" },
+            materials_list: { type: "array", items: { type: "string" } },
+            tools_required: { type: "array", items: { type: "string" } },
+            permit_required: { type: "boolean" },
+            estimated_timeline: { type: "string" },
+            risk_factors: { type: "array", items: { type: "string" } },
+            recommendations: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setItemEstimates(prev => ({ ...prev, [item.id]: result }));
+      
+      // Update cart item with new estimates
+      await updateItemMutation.mutateAsync({
+        itemId: item.id,
+        updates: {
+          estimated_hours: result.estimated_hours,
+          estimated_cost_min: result.cost_min,
+          estimated_cost_max: result.cost_max
+        }
+      });
+
+    } catch (error) {
+      console.error('AI estimation failed:', error);
+      alert('Failed to get AI estimate. Please try again.');
+    } finally {
+      setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
+    }
+  };
+
+  const handleStartEditItem = (item) => {
+    setEditingItemId(item.id);
+    setEditFormData({
+      title: item.title,
+      description: item.description,
+      customer_notes: item.customer_notes || '',
+      priority: item.priority,
+      preferred_timeline: item.preferred_timeline || ''
+    });
+  };
+
+  const handleSaveItemEdit = async (itemId) => {
+    try {
+      await updateItemMutation.mutateAsync({
+        itemId,
+        updates: editFormData
+      });
+      setEditingItemId(null);
+      setEditFormData({});
+    } catch (error) {
+      console.error('Failed to update item:', error);
+      alert('Failed to save changes. Please try again.');
+    }
+  };
+
+  const handleCancelItemEdit = () => {
+    setEditingItemId(null);
+    setEditFormData({});
   };
 
   const handleGeneratePDF = async () => {
@@ -453,117 +629,309 @@ www.360method.com
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {cartItems.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="border-2 rounded-lg p-3 hover:border-purple-300 transition-colors"
-                  >
-                    <div className="flex gap-3">
-                      {/* Icon/Image */}
-                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {item.photo_urls && item.photo_urls.length > 0 ? (
-                          <img 
-                            src={item.photo_urls[0]} 
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-3xl">
-                            {item.system_type === 'HVAC System' ? '❄️' :
-                             item.system_type === 'Plumbing System' ? '🚰' :
-                             item.system_type === 'Electrical System' ? '⚡' :
-                             item.system_type === 'Roof System' ? '🏠' :
-                             item.priority === 'Emergency' || item.priority === 'High' ? '⚠️' : '🔧'}
-                          </span>
-                        )}
-                      </div>
+                {cartItems.map((item, idx) => {
+                  const estimate = itemEstimates[item.id];
+                  const isEstimating = estimatingItems[item.id];
+                  const isEditing = editingItemId === item.id;
+                  const isExpanded = expandedItems[item.id];
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-semibold">{item.title}</h3>
-                          <button
-                            onClick={() => deleteItemMutation.mutate(item.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0 ml-2"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          {item.priority && (
-                            <Badge className={
-                              item.priority === 'Emergency' ? 'bg-red-600' :
-                              item.priority === 'High' ? 'bg-orange-600' :
-                              'bg-blue-600'
-                            }>
-                              {item.priority}
-                            </Badge>
-                          )}
-                          {(item.estimated_cost_min && item.estimated_cost_max) && (
-                            <span className="text-sm font-semibold text-purple-700">
-                              ${item.estimated_cost_min.toLocaleString()} - ${item.estimated_cost_max.toLocaleString()}
-                            </span>
-                          )}
-                          {item.estimated_hours && (
-                            <span className="text-xs text-gray-600">
-                              {item.estimated_hours.toFixed(1)} hrs
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Expandable Details */}
-                        <button
-                          onClick={() => toggleItemExpand(item.id)}
-                          className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
-                        >
-                          {expandedItems[item.id] ? (
-                            <>
-                              <ChevronDown className="w-4 h-4" />
-                              Hide details
-                            </>
+                  return (
+                    <div
+                      key={item.id}
+                      className="border-2 rounded-lg p-4 hover:border-purple-300 transition-colors"
+                    >
+                      <div className="flex gap-3">
+                        {/* Icon/Image */}
+                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {item.photo_urls && item.photo_urls.length > 0 ? (
+                            <img 
+                              src={item.photo_urls[0]} 
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <>
-                              <ChevronRight className="w-4 h-4" />
-                              View details
-                            </>
+                            <span className="text-3xl">
+                              {item.system_type === 'HVAC System' ? '❄️' :
+                               item.system_type === 'Plumbing System' ? '🚰' :
+                               item.system_type === 'Electrical System' ? '⚡' :
+                               item.system_type === 'Roof System' ? '🏠' :
+                               item.priority === 'Emergency' || item.priority === 'High' ? '⚠️' : '🔧'}
+                            </span>
                           )}
-                        </button>
+                        </div>
 
-                        {expandedItems[item.id] && (
-                          <div className="mt-3 pt-3 border-t space-y-2">
-                            <p className="text-sm text-gray-700">{item.description}</p>
-                            {item.system_type && (
-                              <p className="text-xs text-gray-600">System: {item.system_type}</p>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-1">
+                            <h3 className="font-semibold">{item.title}</h3>
+                            <button
+                              onClick={() => deleteItemMutation.mutate(item.id)}
+                              className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0 ml-2"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {item.priority && (
+                              <Badge className={
+                                item.priority === 'Emergency' ? 'bg-red-600' :
+                                item.priority === 'High' ? 'bg-orange-600' :
+                                'bg-blue-600'
+                              }>
+                                {item.priority}
+                              </Badge>
                             )}
-                            {item.customer_notes && (
-                              <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                                <p className="text-xs font-semibold text-blue-900">Your Notes:</p>
-                                <p className="text-xs text-gray-800">{item.customer_notes}</p>
-                              </div>
+                            {(item.estimated_cost_min && item.estimated_cost_max) && (
+                              <span className="text-sm font-semibold text-purple-700">
+                                ${item.estimated_cost_min.toLocaleString()} - ${item.estimated_cost_max.toLocaleString()}
+                              </span>
                             )}
-                            {item.preferred_timeline && (
-                              <p className="text-xs text-gray-600">Timeline: {item.preferred_timeline}</p>
-                            )}
-                            {item.photo_urls && item.photo_urls.length > 0 && (
-                              <div className="flex gap-2 flex-wrap">
-                                {item.photo_urls.map((url, photoIdx) => (
-                                  <img
-                                    key={photoIdx}
-                                    src={url}
-                                    alt={`Photo ${photoIdx + 1}`}
-                                    className="w-20 h-20 object-cover rounded border-2 border-gray-200 cursor-pointer hover:border-purple-400"
-                                    onClick={() => window.open(url, '_blank')}
-                                  />
-                                ))}
-                              </div>
+                            {item.estimated_hours && (
+                              <span className="text-xs text-gray-600">
+                                {item.estimated_hours.toFixed(1)} hrs
+                              </span>
                             )}
                           </div>
-                        )}
+
+                          {/* Expandable Details */}
+                          <button
+                            onClick={() => toggleItemExpand(item.id)}
+                            className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronDown className="w-4 h-4" />
+                                Hide details
+                              </>
+                            ) : (
+                              <>
+                                <ChevronRight className="w-4 h-4" />
+                                View & edit details
+                              </>
+                            )}
+                          </button>
+
+                          {isExpanded && (
+                            <div className="mt-4 pt-4 border-t space-y-4">
+                              {isEditing ? (
+                                <>
+                                  {/* Editing Mode */}
+                                  <div className="space-y-3">
+                                    <div>
+                                      <Label className="text-xs font-semibold">Title</Label>
+                                      <Input
+                                        value={editFormData.title}
+                                        onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                        style={{ minHeight: '40px' }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs font-semibold">Description</Label>
+                                      <Textarea
+                                        value={editFormData.description}
+                                        onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                        rows={3}
+                                        style={{ minHeight: '72px' }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs font-semibold">Additional Details</Label>
+                                      <Textarea
+                                        value={editFormData.customer_notes}
+                                        onChange={(e) => setEditFormData({ ...editFormData, customer_notes: e.target.value })}
+                                        placeholder="Gate codes, access instructions, specific requirements..."
+                                        rows={3}
+                                        style={{ minHeight: '72px' }}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        onClick={() => handleSaveItemEdit(item.id)}
+                                        size="sm"
+                                        className="gap-1"
+                                        style={{ backgroundColor: '#28A745' }}
+                                      >
+                                        <Save className="w-4 h-4" />
+                                        Save
+                                      </Button>
+                                      <Button
+                                        onClick={handleCancelItemEdit}
+                                        size="sm"
+                                        variant="outline"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  {/* View Mode */}
+                                  <div>
+                                    <p className="text-sm text-gray-700 mb-2">{item.description}</p>
+                                    {item.system_type && (
+                                      <p className="text-xs text-gray-600 mb-1">System: {item.system_type}</p>
+                                    )}
+                                    {item.customer_notes && (
+                                      <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
+                                        <p className="text-xs font-semibold text-blue-900">Your Notes:</p>
+                                        <p className="text-xs text-gray-800">{item.customer_notes}</p>
+                                      </div>
+                                    )}
+                                    {item.preferred_timeline && (
+                                      <p className="text-xs text-gray-600 mb-2">Timeline: {item.preferred_timeline}</p>
+                                    )}
+                                    <Button
+                                      onClick={() => handleStartEditItem(item)}
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1 mb-3"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                      Edit details
+                                    </Button>
+                                  </div>
+
+                                  {item.photo_urls && item.photo_urls.length > 0 && (
+                                    <div className="flex gap-2 flex-wrap">
+                                      {item.photo_urls.map((url, photoIdx) => (
+                                        <img
+                                          key={photoIdx}
+                                          src={url}
+                                          alt={`Photo ${photoIdx + 1}`}
+                                          className="w-20 h-20 object-cover rounded border-2 border-gray-200 cursor-pointer hover:border-purple-400"
+                                          onClick={() => window.open(url, '_blank')}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* AI Estimate Button */}
+                                  <div className="border-t pt-3">
+                                    <Button
+                                      onClick={() => handleGetItemEstimate(item)}
+                                      disabled={isEstimating}
+                                      className="w-full gap-2"
+                                      style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
+                                    >
+                                      {isEstimating ? (
+                                        <>
+                                          <Sparkles className="w-5 h-5 animate-spin" />
+                                          AI Analyzing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Sparkles className="w-5 h-5" />
+                                          {estimate ? 'Refresh Estimate' : 'Get Detailed Estimate'}
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+
+                                  {/* AI Estimate Results */}
+                                  {estimate && (
+                                    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 space-y-3">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="w-5 h-5 text-blue-600" />
+                                        <h4 className="font-bold text-blue-900">Detailed Estimate</h4>
+                                        {estimate.is_fixed_price && (
+                                          <Badge className="bg-green-600 text-white text-xs">Fixed Price</Badge>
+                                        )}
+                                      </div>
+
+                                      {/* Time & Cost */}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-white rounded p-2">
+                                          <div className="flex items-center gap-1 mb-1">
+                                            <Clock className="w-3 h-3 text-gray-600" />
+                                            <span className="text-xs font-semibold text-gray-600">Time</span>
+                                          </div>
+                                          <p className="text-xl font-bold text-gray-900">{estimate.estimated_hours.toFixed(1)} hrs</p>
+                                        </div>
+                                        <div className="bg-white rounded p-2">
+                                          <div className="flex items-center gap-1 mb-1">
+                                            <DollarSign className="w-3 h-3 text-gray-600" />
+                                            <span className="text-xs font-semibold text-gray-600">Cost</span>
+                                          </div>
+                                          <p className="text-base font-bold text-gray-900">
+                                            ${estimate.cost_min.toLocaleString()} - ${estimate.cost_max.toLocaleString()}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Member Benefits */}
+                                      {isMember && !estimate.is_fixed_price && (
+                                        <div className="bg-green-50 border border-green-300 rounded p-2">
+                                          <div className="flex items-center gap-1 mb-1">
+                                            <Crown className="w-3 h-3 text-green-700" />
+                                            <span className="text-xs font-bold text-green-900">Your Member Benefits</span>
+                                          </div>
+                                          <div className="space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                              <span>Discount ({memberDiscountPercent}%):</span>
+                                              <span className="font-semibold text-green-700">
+                                                -${Math.round(((estimate.cost_min + estimate.cost_max) / 2) * (memberDiscountPercent / 100)).toLocaleString()}
+                                              </span>
+                                            </div>
+                                            {hourBucket.remaining > 0 && (
+                                              <div className="flex justify-between">
+                                                <span>Available Hours:</span>
+                                                <span className="font-semibold text-green-700">
+                                                  {hourBucket.remaining.toFixed(1)} / {hourBucket.total} hrs
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Scope */}
+                                      {estimate.detailed_scope && (
+                                        <div className="bg-white rounded p-2">
+                                          <p className="text-xs font-semibold text-gray-700 mb-1">Scope of Work:</p>
+                                          <p className="text-xs text-gray-800">{estimate.detailed_scope}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Materials */}
+                                      {estimate.materials_list && estimate.materials_list.length > 0 && (
+                                        <div className="bg-white rounded p-2">
+                                          <p className="text-xs font-semibold text-gray-700 mb-1">Materials:</p>
+                                          <ul className="text-xs text-gray-800 space-y-0.5">
+                                            {estimate.materials_list.slice(0, 3).map((material, idx) => (
+                                              <li key={idx}>• {material}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+
+                                      {/* Risk Factors */}
+                                      {estimate.risk_factors && estimate.risk_factors.length > 0 && (
+                                        <div className="bg-orange-50 border border-orange-200 rounded p-2">
+                                          <p className="text-xs font-semibold text-orange-900 mb-1">⚠️ Potential Issues:</p>
+                                          <ul className="text-xs text-gray-800 space-y-0.5">
+                                            {estimate.risk_factors.slice(0, 2).map((risk, idx) => (
+                                              <li key={idx}>• {risk}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+
+                                      {estimate.estimated_timeline && (
+                                        <p className="text-xs text-gray-600">Timeline: {estimate.estimated_timeline}</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
 
