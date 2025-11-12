@@ -1,7 +1,7 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ import {
   Plus,
   ChevronRight,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -27,6 +28,8 @@ import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
 
   const { data: properties = [] } = useQuery({
@@ -47,6 +50,13 @@ export default function Dashboard() {
   const { data: allTasks = [] } = useQuery({
     queryKey: ['allMaintenanceTasks'],
     queryFn: () => base44.entities.MaintenanceTask.list(),
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-user'] });
+    },
   });
 
   const currentTier = user?.subscription_tier || 'free';
@@ -84,6 +94,19 @@ export default function Dashboard() {
     }
   }, [isFreeTier, properties.length, avgBaselineCompletion]);
 
+  const handleRestartOnboarding = async () => {
+    try {
+      await updateUserMutation.mutateAsync({
+        onboarding_completed: false,
+        onboarding_skipped: false
+      });
+      await queryClient.invalidateQueries({ queryKey: ['current-user'] });
+      navigate(createPageUrl("Onboarding"));
+    } catch (error) {
+      console.error("Failed to restart onboarding:", error);
+    }
+  };
+
   if (properties.length === 0) {
     return (
       <div className="min-h-screen bg-white">
@@ -95,6 +118,45 @@ export default function Dashboard() {
             </h1>
             <TierBadge tier={currentTier} />
           </div>
+
+          {/* Onboarding Prompt if not completed */}
+          {!user?.onboarding_completed && (
+            <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-purple-900 mb-2 text-lg">
+                      🎉 Get Started with Guided Setup
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-3">
+                      Our 5-minute onboarding will help you add your property, choose your documentation path, and get the most value from the 360° Method.
+                    </p>
+                    <Button
+                      onClick={handleRestartOnboarding}
+                      disabled={updateUserMutation.isPending}
+                      className="gap-2"
+                      style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
+                    >
+                      {updateUserMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Starting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Start Guided Setup
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {/* Free Tier Notice */}
           {isFreeTier && (
@@ -179,6 +241,46 @@ export default function Dashboard() {
             Your property portfolio at a glance
           </p>
         </div>
+
+        {/* Onboarding Restart Card - Only show if user skipped or wants to revisit */}
+        {user?.onboarding_skipped && (
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-purple-900 mb-1">
+                    Complete Your Guided Setup
+                  </h3>
+                  <p className="text-sm text-gray-700 mb-3">
+                    You previously skipped onboarding. Take 5 minutes to complete the guided setup and get personalized recommendations.
+                  </p>
+                  <Button
+                    onClick={handleRestartOnboarding}
+                    disabled={updateUserMutation.isPending}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-purple-600 text-purple-600 hover:bg-purple-100"
+                  >
+                    {updateUserMutation.isPending ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Resume Guided Setup
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Property Limit Warning */}
         {!canAddProperty && (
