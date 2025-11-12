@@ -1077,6 +1077,32 @@ export default function Dashboard() {
             </Card>
           </div>
 
+          {/* Calendar/Schedule Overview */}
+          <Card className="border-none shadow-md">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
+                  <Calendar className="w-4 h-4" />
+                  This Month
+                </CardTitle>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                >
+                  <Link to={createPageUrl("Schedule")}>
+                    Full Calendar
+                    <ChevronRight className="w-3 h-3 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <MiniCalendar tasks={allTasks} properties={properties} />
+            </CardContent>
+          </Card>
+
           {/* Recent Activity - Compact */}
           {recentActivity.length > 0 && (
             <Card className="border-none shadow-md">
