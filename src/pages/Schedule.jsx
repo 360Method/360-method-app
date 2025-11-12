@@ -5,11 +5,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Lightbulb, Target, Clock, CheckCircle2, List, Grid3x3, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Lightbulb, Target, Clock, CheckCircle2, List, Grid3x3, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
+
+// Helper function to format estimated hours
+const formatEstimatedTime = (hours) => {
+  if (!hours || hours === 0) return null;
+  
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60);
+    return `~${minutes} min`;
+  } else if (hours === 1) {
+    return '~1 hr';
+  } else if (hours < 8) {
+    return `~${hours.toFixed(1)} hrs`;
+  } else {
+    const days = Math.ceil(hours / 8);
+    return `~${days} day${days > 1 ? 's' : ''}`;
+  }
+};
+
+// System type icons
+const SYSTEM_ICONS = {
+  "HVAC": "❄️",
+  "Plumbing": "🚰",
+  "Electrical": "⚡",
+  "Roof": "🏠",
+  "Foundation": "🏗️",
+  "Gutters": "🌧️",
+  "Exterior": "🎨",
+  "Windows/Doors": "🚪",
+  "Appliances": "🔌",
+  "Landscaping": "🌳",
+  "General": "🔧"
+};
 
 export default function Schedule() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -22,6 +54,7 @@ export default function Schedule() {
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [taskFormDate, setTaskFormDate] = React.useState(null);
   const [viewMode, setViewMode] = React.useState('month'); // 'month' or 'week'
+  const [expandedGroups, setExpandedGroups] = React.useState({}); // Track which groups are expanded
 
   const queryClient = useQueryClient();
 
@@ -36,14 +69,6 @@ export default function Schedule() {
       ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty })
       : Promise.resolve([]),
     enabled: !!selectedProperty,
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, updates }) => 
-      base44.entities.MaintenanceTask.update(taskId, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-    },
   });
 
   React.useEffect(() => {
@@ -70,6 +95,66 @@ export default function Schedule() {
     const completionDate = new Date(t.completion_date);
     return isSameMonth(completionDate, currentMonth);
   }).length;
+
+  // NEW: Group unscheduled tasks by system_type
+  const groupedUnscheduledTasks = React.useMemo(() => {
+    const groups = {};
+    
+    unscheduledTasks.forEach(task => {
+      const systemType = task.system_type || 'General';
+      if (!groups[systemType]) {
+        groups[systemType] = [];
+      }
+      groups[systemType].push(task);
+    });
+
+    // Sort groups: prioritize groups with High priority tasks, then by task count
+    const sortedGroups = Object.entries(groups).sort((a, b) => {
+      const [systemA, tasksA] = a;
+      const [systemB, tasksB] = b;
+      
+      // Count high priority tasks in each group
+      const highPriorityA = tasksA.filter(t => t.priority === 'High').length;
+      const highPriorityB = tasksB.filter(t => t.priority === 'High').length;
+      
+      if (highPriorityB !== highPriorityA) {
+        return highPriorityB - highPriorityA;
+      }
+      
+      // Then by total task count
+      return tasksB.length - tasksA.length;
+    });
+
+    return sortedGroups;
+  }, [unscheduledTasks]);
+
+  // Initialize all groups as expanded
+  React.useEffect(() => {
+    const initialExpanded = {};
+    groupedUnscheduledTasks.forEach(([systemType]) => {
+      if (expandedGroups[systemType] === undefined) {
+        initialExpanded[systemType] = true;
+      }
+    });
+    if (Object.keys(initialExpanded).length > 0) {
+      setExpandedGroups(prev => ({ ...prev, ...initialExpanded }));
+    }
+  }, [groupedUnscheduledTasks]);
+
+  const toggleGroup = (systemType) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [systemType]: !prev[systemType]
+    }));
+  };
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskId, updates }) => 
+      base44.entities.MaintenanceTask.update(taskId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+    },
+  });
 
   const getTasksForDate = (date) => {
     return scheduledTasks.filter(t => {
@@ -267,9 +352,9 @@ export default function Schedule() {
           />
         )}
 
-        {/* Unscheduled Tasks - Quick Schedule */}
+        {/* NEW: Enhanced Unscheduled Tasks - Grouped by System */}
         {unscheduledTasks.length > 0 && (
-          <Card className="border-2 border-orange-300 bg-orange-50 shadow-lg">
+          <Card className="border-2 border-orange-300 bg-orange-50 shadow-xl">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#1B365D' }}>
                 <AlertCircle className="w-5 h-5 text-orange-600" />
@@ -277,48 +362,137 @@ export default function Schedule() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <p className="text-sm text-gray-700 mb-4">
-                These tasks need dates. Drag and drop onto your calendar or click to schedule.
-              </p>
-              <div className="grid md:grid-cols-2 gap-3">
-                {unscheduledTasks.slice(0, 6).map(task => (
-                  <div
-                    key={task.id}
-                    className="bg-white rounded-lg p-3 border-2 border-orange-200 hover:border-orange-400 transition-all"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-sm text-gray-900 flex-1">
-                        {task.title}
-                      </h4>
-                      <Badge className={
-                        task.priority === 'High' ? 'bg-red-600 text-white text-xs' :
-                        task.priority === 'Medium' ? 'bg-yellow-600 text-white text-xs' :
-                        'bg-blue-600 text-white text-xs'
-                      }>
-                        {task.priority}
-                      </Badge>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setSelectedDate(new Date());
-                        setShowDialog(true);
-                      }}
-                      size="sm"
-                      variant="outline"
-                      className="w-full gap-2 border-orange-400 text-orange-700 hover:bg-orange-100"
-                      style={{ minHeight: '40px' }}
-                    >
-                      <CalendarIcon className="w-4 h-4" />
-                      Schedule This
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              {unscheduledTasks.length > 6 && (
-                <p className="text-xs text-center text-gray-600 mt-3">
-                  + {unscheduledTasks.length - 6} more unscheduled tasks
+              <div className="bg-white rounded-lg p-3 mb-4 border-2 border-orange-200">
+                <p className="text-sm text-gray-700">
+                  <strong>These tasks need dates.</strong> Grouped by system for easier planning. Click to expand each group.
                 </p>
-              )}
+              </div>
+
+              <div className="space-y-3">
+                {groupedUnscheduledTasks.map(([systemType, tasksInGroup]) => {
+                  const isExpanded = expandedGroups[systemType];
+                  const icon = SYSTEM_ICONS[systemType] || SYSTEM_ICONS['General'];
+                  const highPriorityCount = tasksInGroup.filter(t => t.priority === 'High').length;
+                  const totalEstimatedTime = tasksInGroup.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+
+                  return (
+                    <Card 
+                      key={systemType}
+                      className={`border-2 transition-all ${
+                        highPriorityCount > 0 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-orange-200 bg-white'
+                      }`}
+                    >
+                      {/* Group Header - Clickable */}
+                      <button
+                        onClick={() => toggleGroup(systemType)}
+                        className="w-full p-4 flex items-center justify-between hover:bg-orange-50 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                          <span className="text-2xl">{icon}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                              {systemType}
+                              <Badge variant="outline" className="text-xs">
+                                {tasksInGroup.length} task{tasksInGroup.length > 1 ? 's' : ''}
+                              </Badge>
+                              {highPriorityCount > 0 && (
+                                <Badge className="bg-red-600 text-white text-xs">
+                                  🔴 {highPriorityCount} High Priority
+                                </Badge>
+                              )}
+                            </h3>
+                            {totalEstimatedTime > 0 && (
+                              <p className="text-xs text-gray-600 flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3" />
+                                Total time: {formatEstimatedTime(totalEstimatedTime)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        )}
+                      </button>
+
+                      {/* Group Content - Collapsible */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 space-y-2 border-t border-orange-200">
+                          {tasksInGroup.map(task => {
+                            const estimatedTime = formatEstimatedTime(task.estimated_hours);
+                            
+                            return (
+                              <div
+                                key={task.id}
+                                className="bg-white rounded-lg p-3 border-2 border-orange-200 hover:border-orange-400 transition-all"
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-sm text-gray-900 break-words">
+                                      {task.title}
+                                    </h4>
+                                    {task.description && (
+                                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                        {task.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Badge className={
+                                    task.priority === 'High' ? 'bg-red-600 text-white text-xs flex-shrink-0' :
+                                    task.priority === 'Medium' ? 'bg-yellow-600 text-white text-xs flex-shrink-0' :
+                                    'bg-blue-600 text-white text-xs flex-shrink-0'
+                                  }>
+                                    {task.priority}
+                                  </Badge>
+                                </div>
+
+                                {/* Time Estimate Display */}
+                                {estimatedTime && (
+                                  <div className="flex items-center gap-1 mb-2">
+                                    <Clock className="w-3 h-3 text-blue-600" />
+                                    <span className="text-xs font-semibold text-blue-700">
+                                      {estimatedTime}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <Button
+                                  onClick={() => {
+                                    setSelectedDate(new Date());
+                                    setShowDialog(true);
+                                  }}
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full gap-2 border-orange-400 text-orange-700 hover:bg-orange-100"
+                                  style={{ minHeight: '40px' }}
+                                >
+                                  <CalendarIcon className="w-4 h-4" />
+                                  Schedule This Task
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Summary Stats at Bottom */}
+              <div className="mt-4 bg-white rounded-lg p-3 border-2 border-orange-200">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">
+                    <strong>{groupedUnscheduledTasks.length}</strong> system{groupedUnscheduledTasks.length > 1 ? 's' : ''} need attention
+                  </span>
+                  <span className="text-gray-700">
+                    <strong>{unscheduledTasks.filter(t => t.priority === 'High').length}</strong> high priority
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
