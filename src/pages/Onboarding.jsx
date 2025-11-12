@@ -130,9 +130,9 @@ export default function Onboarding() {
     
     // Navigate based on selected path
     if (onboardingData.selectedPath === 'wizard') {
-      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&wizard=true`);
+      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&wizard=true&fromOnboarding=true`);
     } else if (onboardingData.selectedPath === 'walkthrough') {
-      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&walkthrough=true`);
+      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&walkthrough=true&fromOnboarding=true`);
     } else {
       navigate(createPageUrl("Dashboard"));
     }

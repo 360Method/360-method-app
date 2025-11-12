@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +14,7 @@ import AddToCartDialog from "../components/cart/AddToCartDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
 import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
+import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -193,6 +193,7 @@ const MILESTONES = [
 export default function Baseline() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
+  const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
@@ -207,6 +208,7 @@ export default function Baseline() {
   const [showPhysicalWalkthrough, setShowPhysicalWalkthrough] = React.useState(false);
   const [recentMilestone, setRecentMilestone] = React.useState(null);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
+  const [showPostOnboardingPrompt, setShowPostOnboardingPrompt] = React.useState(fromOnboarding);
 
   const queryClient = useQueryClient();
 
@@ -670,9 +672,22 @@ export default function Baseline() {
           )}
         </Card>
 
+        {/* Post-Onboarding Completion Prompt */}
+        {showPostOnboardingPrompt && currentProperty && (
+          <PostOnboardingPrompt
+            property={currentProperty}
+            onDismiss={() => {
+              setShowPostOnboardingPrompt(false);
+              // Remove the flag from URL
+              const newUrl = window.location.pathname + window.location.search.replace(/[?&]fromOnboarding=true/, '').replace(/^&/, '?');
+              window.history.replaceState({}, '', newUrl);
+            }}
+          />
+        )}
+
         {/* Property Selector - MOVED UP */}
         {properties.length > 0 && (
-          <Card className="border-2 border-blue-300 shadow-lg">
+          <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
               <Select value={selectedProperty} onValueChange={setSelectedProperty}>
