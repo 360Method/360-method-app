@@ -39,7 +39,10 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
     year_built: !!data.year_built,
     square_footage: !!data.square_footage,
     bedrooms: !!data.bedrooms,
-    bathrooms: !!data.bathrooms
+    bathrooms: !!data.bathrooms,
+    stories: !!data.stories,
+    foundation_type: !!data.foundation_type,
+    garage_type: !!data.garage_type
   };
 
   React.useEffect(() => {
@@ -408,7 +411,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
             )}
 
             <div>
-              <Label className="font-semibold">Stories/Levels</Label>
+              <Label className="font-semibold flex items-center gap-2">
+                Stories/Levels
+                {aiPrefilled.stories && (
+                  <Badge className="bg-purple-600 text-white text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </Label>
               <Select
                 value={formData.stories}
                 onValueChange={(value) => updateField('stories', value)}
@@ -427,7 +438,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
             </div>
 
             <div>
-              <Label className="font-semibold">Foundation Type</Label>
+              <Label className="font-semibold flex items-center gap-2">
+                Foundation Type
+                {aiPrefilled.foundation_type && (
+                  <Badge className="bg-purple-600 text-white text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </Label>
               <Select
                 value={formData.foundation_type}
                 onValueChange={(value) => updateField('foundation_type', value)}
@@ -466,7 +485,15 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
             )}
 
             <div>
-              <Label className="font-semibold">Garage</Label>
+              <Label className="font-semibold flex items-center gap-2">
+                Garage
+                {aiPrefilled.garage_type && (
+                  <Badge className="bg-purple-600 text-white text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </Label>
               <Select
                 value={formData.garage_type}
                 onValueChange={(value) => updateField('garage_type', value)}

@@ -91,11 +91,28 @@ Extract the following details if available:
 3. Number of Bedrooms
 4. Number of Bathrooms
 5. Property Type (Single-Family Home, Duplex, Triplex, Fourplex, Condo/Townhouse, etc.)
-6. Number of Stories
-7. Lot Size
-8. Last Sale Date
-9. Last Sale Price
-10. Estimated Current Value
+6. Number of Stories (1-story, 2-story, 3+ story, split-level, etc.)
+7. Foundation Type (Concrete Slab, Crawlspace, Full Basement, Partial Basement, Pier & Beam)
+8. Garage Type (None, Attached 1-car, Attached 2-car, Attached 3+ car, Detached, Carport)
+9. Lot Size
+10. Last Sale Date
+11. Last Sale Price
+12. Estimated Current Value
+
+For foundation type, look for keywords like:
+- "Slab", "Slab on grade" → Concrete Slab
+- "Crawl", "Crawlspace" → Crawlspace
+- "Full basement", "Basement" → Full Basement
+- "Partial basement" → Partial Basement
+- "Pier and beam", "Raised foundation" → Pier & Beam
+
+For garage, look for:
+- "No garage", "None" → None
+- "1-car garage attached", "Single car" → Attached 1-car
+- "2-car garage attached", "Double garage" → Attached 2-car
+- "3-car garage" → Attached 3+ car
+- "Detached garage" → Detached
+- "Carport" → Carport
 
 Return ONLY the data you can confirm from reliable sources. Use null for missing data.`;
 
@@ -111,6 +128,8 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
             bathrooms: { type: ["number", "null"] },
             property_type: { type: ["string", "null"] },
             stories: { type: ["string", "null"] },
+            foundation_type: { type: ["string", "null"] },
+            garage_type: { type: ["string", "null"] },
             lot_size: { type: ["string", "null"] },
             last_sale_date: { type: ["string", "null"] },
             last_sale_price: { type: ["number", "null"] },
@@ -134,6 +153,79 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
           if (response.square_footage) updates.square_footage = response.square_footage;
           if (response.bedrooms) updates.bedrooms = response.bedrooms;
           if (response.bathrooms) updates.bathrooms = response.bathrooms;
+          
+          // Map stories
+          if (response.stories) {
+            const storiesMap = {
+              '1': 'Single-Story',
+              'one': 'Single-Story',
+              'single': 'Single-Story',
+              '2': 'Two-Story',
+              'two': 'Two-Story',
+              '3': 'Three+ Story',
+              'three': 'Three+ Story',
+              'split': 'Split-Level',
+              'tri-level': 'Tri-Level',
+              'trilevel': 'Tri-Level'
+            };
+            const lowerStories = response.stories.toLowerCase();
+            for (const [key, value] of Object.entries(storiesMap)) {
+              if (lowerStories.includes(key)) {
+                updates.stories = value;
+                break;
+              }
+            }
+          }
+          
+          // Map foundation type
+          if (response.foundation_type) {
+            const foundationMap = {
+              'slab': 'Concrete Slab',
+              'concrete slab': 'Concrete Slab',
+              'crawl': 'Crawlspace',
+              'crawlspace': 'Crawlspace',
+              'full basement': 'Full Basement',
+              'basement': 'Full Basement',
+              'partial basement': 'Partial Basement',
+              'pier': 'Pier & Beam',
+              'beam': 'Pier & Beam',
+              'raised': 'Pier & Beam',
+              'mixed': 'Mixed'
+            };
+            const lowerFoundation = response.foundation_type.toLowerCase();
+            for (const [key, value] of Object.entries(foundationMap)) {
+              if (lowerFoundation.includes(key)) {
+                updates.foundation_type = value;
+                break;
+              }
+            }
+          }
+          
+          // Map garage type
+          if (response.garage_type) {
+            const garageMap = {
+              'none': 'None',
+              'no garage': 'None',
+              'attached 1': 'Attached 1-car',
+              '1-car attached': 'Attached 1-car',
+              'single car': 'Attached 1-car',
+              'attached 2': 'Attached 2-car',
+              '2-car attached': 'Attached 2-car',
+              'double garage': 'Attached 2-car',
+              'attached 3': 'Attached 3+ car',
+              '3-car': 'Attached 3+ car',
+              'detached': 'Detached',
+              'carport': 'Carport'
+            };
+            const lowerGarage = response.garage_type.toLowerCase();
+            for (const [key, value] of Object.entries(garageMap)) {
+              if (lowerGarage.includes(key)) {
+                updates.garage_type = value;
+                break;
+              }
+            }
+          }
+          
           if (response.property_type) {
             // Map to our property types
             const typeMap = {
@@ -348,6 +440,48 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                       <Button
                         size="sm"
                         onClick={() => applyAiData('bathrooms', aiPropertyData.bathrooms)}
+                        className="mt-2 bg-purple-600 hover:bg-purple-700"
+                      >
+                        Use This Value
+                      </Button>
+                    </div>
+                  )}
+
+                  {aiPropertyData.stories && (
+                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">Stories</p>
+                      <p className="font-bold text-lg">{aiPropertyData.stories}</p>
+                      <Button
+                        size="sm"
+                        onClick={() => applyAiData('stories', aiPropertyData.stories)}
+                        className="mt-2 bg-purple-600 hover:bg-purple-700"
+                      >
+                        Use This Value
+                      </Button>
+                    </div>
+                  )}
+
+                  {aiPropertyData.foundation_type && (
+                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">Foundation Type</p>
+                      <p className="font-bold text-lg">{aiPropertyData.foundation_type}</p>
+                      <Button
+                        size="sm"
+                        onClick={() => applyAiData('foundation_type', aiPropertyData.foundation_type)}
+                        className="mt-2 bg-purple-600 hover:bg-purple-700"
+                      >
+                        Use This Value
+                      </Button>
+                    </div>
+                  )}
+
+                  {aiPropertyData.garage_type && (
+                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">Garage Type</p>
+                      <p className="font-bold text-lg">{aiPropertyData.garage_type}</p>
+                      <Button
+                        size="sm"
+                        onClick={() => applyAiData('garage_type', aiPropertyData.garage_type)}
                         className="mt-2 bg-purple-600 hover:bg-purple-700"
                       >
                         Use This Value
