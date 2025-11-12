@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 
 import OnboardingWelcome from "../components/onboarding/OnboardingWelcome";
 import OnboardingUserProfile from "../components/onboarding/OnboardingUserProfile";
+import OnboardingPropertyType from "../components/onboarding/OnboardingPropertyType";
 import OnboardingPropertySetup from "../components/onboarding/OnboardingPropertySetup";
 import OnboardingBaselinePrimer from "../components/onboarding/OnboardingBaselinePrimer";
 import OnboardingComplete from "../components/onboarding/OnboardingComplete";
@@ -16,7 +17,8 @@ import OnboardingSkipDialog from "../components/onboarding/OnboardingSkipDialog"
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [onboardingData, setOnboardingData] = React.useState({
-    userProfile: null,
+    userType: null,
+    property_use_type: null,
     property: null,
     selectedPath: null
   });
@@ -61,6 +63,11 @@ export default function Onboarding() {
       id: 'profile',
       component: OnboardingUserProfile,
       title: 'Tell Us About You'
+    },
+    {
+      id: 'propertyType',
+      component: OnboardingPropertyType,
+      title: 'Property Type'
     },
     {
       id: 'property',
