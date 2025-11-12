@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, X, AlertTriangle, DollarSign, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, DollarSign, Sparkles, CheckCircle2, Clock } from "lucide-react";
 
 import ServiceRequestDialog from "../services/ServiceRequestDialog";
 import { estimateCascadeRisk } from "../shared/CascadeEstimator";
@@ -17,6 +17,30 @@ import { estimateCascadeRisk } from "../shared/CascadeEstimator";
 const safeSubstring = (str, maxLength) => {
   if (!str || typeof str !== 'string') return '';
   return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+};
+
+// Format labor hours into readable string
+const formatLaborHours = (minHours, maxHours) => {
+  const formatSingle = (hours) => {
+    if (hours === 0) return '0 hours';
+    if (hours < 1) {
+      return `${Math.round(hours * 60)} min`;
+    } else if (hours === 1) {
+      return '1 hour';
+    } else if (hours < 8) {
+      return `${hours} hours`;
+    } else {
+      const days = Math.floor(hours / 8);
+      const remainingHours = hours % 8;
+      if (remainingHours === 0) {
+        return `${days} day${days > 1 ? 's' : ''}`;
+      } else {
+        return `${days} day${days > 1 ? 's' : ''}, ${remainingHours} hours`;
+      }
+    }
+  };
+
+  return `${formatSingle(minHours)} - ${formatSingle(maxHours)}`;
 };
 
 const SEVERITY_LEVELS = {
@@ -76,17 +100,12 @@ export default function IssueDocumentation({
       const systemMatch = editingIssue.item_name?.match(/^([^:]+):/);
       const extractedSystem = systemMatch ? systemMatch[1].trim() : '';
 
-      // Check if editingIssue.notes is a generic Quick Fix or Priority Queue note
-      const isGenericNotes = editingIssue.notes?.includes('Quick fix completed during inspection') ||
-                             editingIssue.notes?.includes('Added to Priority Queue for scheduling');
-
       return {
         system: extractedSystem || preselectedSystem || '',
-        // Use editingIssue.description if available, fallback to notes if not generic
-        description: editingIssue.description || (isGenericNotes ? '' : editingIssue.notes) || '',
+        description: editingIssue.description || editingIssue.notes || '',
         severity: editingIssue.severity || 'Flag',
         photo_urls: editingIssue.photo_urls || [],
-        is_quick_fix: editingIssue.completed ? true : (editingIssue.is_quick_fix === false ? false : null), // Explicitly handle false for non-quick-fix
+        is_quick_fix: editingIssue.completed ? true : null, // If completed, it was a quick fix. Otherwise, undecided for editing purposes.
         estimated_cost: editingIssue.estimated_cost || '',
         who_will_fix: editingIssue.who_will_fix || ''
       };
@@ -104,11 +123,11 @@ export default function IssueDocumentation({
   });
 
   // Initialize photos state with existing photos if editing
-  const [photos, setPhotos] = React.useState(formData.photo_urls);
+  const [photos, setPhotos] = React.useState(editingIssue?.photo_urls || []);
   const [uploading, setUploading] = React.useState(false);
   // If editing, we assume the quick fix decision might have been made, so initially hide the question.
   // We'll show it if the fix decision needs to be changed.
-  const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(editingIssue ? false : false);
+  const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(false);
   const [aiEstimating, setAiEstimating] = React.useState(false);
   const [aiEstimate, setAiEstimate] = React.useState(null); // When editing, we don't have this directly from the `item`
   const [showServiceDialog, setShowServiceDialog] = React.useState(false);
@@ -117,8 +136,11 @@ export default function IssueDocumentation({
   // Effect to re-evaluate AI estimate if editing an existing non-quick fix issue
   // and relevant formData fields change or component mounts
   React.useEffect(() => {
-    // If we're editing a non-quick-fix issue, and we haven't already generated an AI estimate for display
+    // If we're editing an issue that was NOT a quick fix (or its quick fix state is now false)
+    // and we haven't already generated an AI estimate for display
     // or if the relevant form data has changed (e.g., description, system type, etc.), re-run AI estimation.
+    // We only trigger this if is_quick_fix is explicitly false (meaning it's a priority queue item)
+    // or if it was initially undecided and now became false.
     if (editingIssue && formData.is_quick_fix === false && !aiEstimate && !aiEstimating) {
       const fetchEstimate = async () => {
         setAiEstimating(true);
@@ -139,7 +161,9 @@ export default function IssueDocumentation({
             current_fix_cost: parseCostRange(formData.estimated_cost),
             delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5,
             cost_impact_reason: 'AI estimation failed, using default values.',
-            cost_disclaimer: 'AI estimation failed. The following costs are estimated based on your input cost range only.'
+            min_hours: 1, // Fallback for min hours
+            max_hours: 4, // Fallback for max hours
+            cost_disclaimer: 'AI estimation failed. The following costs and time estimates are rough defaults based on your input cost range only.'
           });
         } finally {
           setAiEstimating(false);
@@ -231,7 +255,9 @@ export default function IssueDocumentation({
           current_fix_cost: parseCostRange(formData.estimated_cost),
           delayed_fix_cost: parseCostRange(formData.estimated_cost) * 1.5,
           cost_impact_reason: 'AI estimation failed, using default values.',
-          cost_disclaimer: 'AI estimation failed. The following costs are estimated based on your input cost range only.'
+          min_hours: 1, // Fallback for min hours
+          max_hours: 4, // Fallback for max hours
+          cost_disclaimer: 'AI estimation failed. The following costs and time estimates are rough defaults based on your input cost range only.'
         });
       } finally {
         setAiEstimating(false);
@@ -254,8 +280,8 @@ export default function IssueDocumentation({
       return;
     }
 
-    // Prepare the issue object based on current form data
-    const issueBase = {
+    // Base issue object with common fields
+    const baseIssue = {
       area_id: area.id,
       item_name: `${formData.system}: ${safeSubstring(formData.description, 50)}`,
       severity: formData.severity,
@@ -266,12 +292,11 @@ export default function IssueDocumentation({
     };
 
     let updatedIssue;
-    let newIssuesList = [...existingIssues];
 
     if (formData.is_quick_fix) {
       // Quick fix path
       updatedIssue = {
-        ...issueBase,
+        ...baseIssue,
         notes: `Quick fix completed during inspection. ${formData.who_will_fix === 'diy' ? 'DIY repair' : 'Professional service'}. Estimated cost: ${formData.estimated_cost}.`,
         completed: true,
         is_quick_fix: true, // Explicitly set for quick fix
@@ -283,7 +308,7 @@ export default function IssueDocumentation({
         return;
       }
       updatedIssue = {
-        ...issueBase,
+        ...baseIssue,
         notes: 'Added to Priority Queue for scheduling',
         completed: false,
         is_quick_fix: false, // Explicitly set for non-quick fix
@@ -294,13 +319,15 @@ export default function IssueDocumentation({
         cascade_risk_reason: aiEstimate.cascade_risk_reason,
         cost_impact_reason: aiEstimate.cost_impact_reason,
         cost_disclaimer: aiEstimate.cost_disclaimer,
+        min_hours: aiEstimate.min_hours,
+        max_hours: aiEstimate.max_hours,
       };
 
       // Create/update maintenance task in the backend only for non-quick fixes
       const taskData = {
         property_id: propertyId,
         title: updatedIssue.item_name,
-        description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${updatedIssue.description}\n\nSeverity: ${updatedIssue.severity}\nSystem: ${updatedIssue.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
+        description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nDescription: ${updatedIssue.description}\n\nSeverity: ${updatedIssue.severity}\nSystem: ${updatedIssue.system}${aiEstimate ? `\n\n--- AI Risk Analysis ---\n  Cascade Risk Score: ${aiEstimate.cascade_risk_score}/10 - ${aiEstimate.cascade_risk_reason}\n  Estimated Fix Now Cost: $${aiEstimate.current_fix_cost.toLocaleString()}\n  Estimated Fix Later Cost: $${aiEstimate.delayed_fix_cost.toLocaleString()}\n  Cost Impact Reason: ${aiEstimate.cost_impact_reason}\n  Estimated Labor Hours: ${formatLaborHours(aiEstimate.min_hours, aiEstimate.max_hours)}\n\n${aiEstimate.cost_disclaimer}` : ''}`,
         system_type: updatedIssue.system,
         priority: updatedIssue.severity === 'Urgent' ? 'High' : updatedIssue.severity === 'Flag' ? 'Medium' : 'Low',
         status: 'Identified',
@@ -311,7 +338,8 @@ export default function IssueDocumentation({
         cascade_risk_reason: aiEstimate.cascade_risk_reason,
         cost_impact_reason: aiEstimate.cost_impact_reason,
         has_cascade_alert: aiEstimate.cascade_risk_score >= 7,
-        execution_type: updatedIssue.who_will_fix === 'diy' ? 'DIY' : updatedIssue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided'
+        execution_type: updatedIssue.who_will_fix === 'diy' ? 'DIY' : updatedIssue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided',
+        estimated_hours: aiEstimate.max_hours // Use max hours as a single estimate for task
       };
 
       try {
@@ -354,6 +382,7 @@ export default function IssueDocumentation({
     }
 
     // Update the local list of issues
+    let newIssuesList = [...existingIssues];
     if (editingIssueIndex !== null) {
       newIssuesList[editingIssueIndex] = updatedIssue;
     } else {
@@ -615,7 +644,7 @@ export default function IssueDocumentation({
                     <Card className="border-2 border-purple-300 bg-purple-50">
                       <CardContent className="p-6 text-center">
                         <div className="animate-spin text-5xl mb-4">⚙️</div>
-                        <p className="font-medium text-gray-700">AI analyzing cascade risk...</p>
+                        <p className="font-medium text-gray-700">AI analyzing cascade risk and labor hours...</p>
                       </CardContent>
                     </Card>
                   )}
@@ -657,6 +686,25 @@ export default function IssueDocumentation({
                           </div>
                           <p className="text-sm text-gray-700">{aiEstimate.cascade_risk_reason}</p>
                         </div>
+
+                        {/* NEW: Labor Hours Estimate */}
+                        {aiEstimate.min_hours != null && aiEstimate.max_hours != null && (
+                          <div className="mb-4 p-4 bg-white rounded border">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-5 h-5 text-blue-600" />
+                              <span className="font-semibold">Estimated Labor Time:</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">DIY / Handyman Time:</span>
+                              <span className="font-bold text-blue-700">
+                                {formatLaborHours(aiEstimate.min_hours, aiEstimate.max_hours)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-2 italic">
+                              Actual time may vary based on skill level, tool access, and specific conditions
+                            </p>
+                          </div>
+                        )}
 
                         <div className="mb-4 p-4 bg-white rounded border">
                           <div className="flex items-center justify-between mb-2">
@@ -733,7 +781,7 @@ export default function IssueDocumentation({
         prefilledData={{
           property_id: propertyId,
           service_type: "Inspection Issue - Professional Repair",
-          description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}:\n\n${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}\n\nEstimated Cost: ${formData.estimated_cost}\n\nNote: Cost estimate is AI-generated average. Actual cost may vary.`,
+          description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${area.name}:\n\n${formData.description}\n\nSeverity: ${formData.severity}\nSystem: ${formData.system}\n\nEstimated Cost: ${formData.estimated_cost}\nEstimated Labor: ${aiEstimate?.min_hours != null && aiEstimate?.max_hours != null ? formatLaborHours(aiEstimate.min_hours, aiEstimate.max_hours) : 'Unknown'}\n\nNote: Cost and time estimates are AI-generated averages. Actual costs may vary.`,
           severity: formData.severity,
           system_type: formData.system,
           photo_urls: formData.photo_urls,
