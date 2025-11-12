@@ -1,9 +1,23 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button"; // Added Button
 import { Badge } from "@/components/ui/badge";
-import { Building2, TrendingDown, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
+import { Progress } from "@/components/ui/progress"; // Added Progress
+import {
+  Building2,
+  Home, // Added Home
+  TrendingDown,
+  TrendingUp,
+  DollarSign,
+  AlertTriangle,
+  Users, // Added Users
+  Briefcase, // Added Briefcase
+  Award, // Added Award
+  Plus // Added Plus
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
@@ -52,15 +66,28 @@ export default function Scale() {
     : 0;
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">ADVANCE → Scale</h1>
-          <p className="text-gray-600 mt-1">Multi-property portfolio management for investors</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-green-600 text-white text-sm px-3 py-1">
+              Phase III - ADVANCE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 9 of 9
+            </Badge>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Scale
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Manage multiple properties with confidence and efficiency
+          </p>
         </div>
 
         {/* Portfolio Overview */}
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
           <Card className="border-none shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -119,7 +146,7 @@ export default function Scale() {
         </div>
 
         {/* Portfolio Health */}
-        <Card className="border-none shadow-lg bg-gradient-to-r from-blue-50 to-purple-50">
+        <Card className="border-none shadow-lg bg-gradient-to-r from-blue-50 to-purple-50 mb-6">
           <CardContent className="p-8">
             <div className="flex items-center justify-between">
               <div>
@@ -143,7 +170,7 @@ export default function Scale() {
 
         {/* Best & Worst Performers */}
         {properties.length > 1 && (
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             {bestProperty && (
               <Card className="border-2 border-green-200 bg-green-50">
                 <CardHeader>
@@ -195,7 +222,7 @@ export default function Scale() {
         )}
 
         {/* Property Comparison */}
-        <Card className="border-none shadow-lg">
+        <Card className="border-none shadow-lg mb-6">
           <CardHeader>
             <CardTitle>Property Comparison</CardTitle>
           </CardHeader>

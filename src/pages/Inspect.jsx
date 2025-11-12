@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,26 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress"; // Added Progress import
 import { 
-  ClipboardCheck, 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock,
-  Plus,
-  Eye,
-  PlayCircle,
-  FileText,
-  Wrench,
-  Trash2,
-  MoreVertical,
-  Lightbulb,
-  Target,
-  Shield,
-  DollarSign,
-  TrendingUp,
-  ArrowRight,
-  MapPin,
-  ListOrdered
+  Plus, // Kept
+  Calendar, // Added
+  CheckCircle2, // Kept
+  AlertTriangle, // Added (replaces AlertCircle)
+  Clock, // Kept
+  Eye, // Kept
+  FileText, // Kept
+  Trash2, // Kept
+  PlayCircle, // Kept
+  BookOpen, // Added
+  Lightbulb, // Kept
+  Shield // Kept
+  // Removed: ClipboardCheck, AlertCircle, Wrench, MoreVertical, Target, DollarSign, TrendingUp, ArrowRight, MapPin, ListOrdered
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import {
@@ -224,18 +220,29 @@ export default function Inspect() {
 
   // Main inspection dashboard view
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>AWARE → INSPECT</h1>
-          <p className="text-xl text-gray-600">Seasonal Property Inspections</p>
-          <p className="text-gray-600 mt-1">Catch problems while they're cheap to fix</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+              Phase I - AWARE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 2 of 9
+            </Badge>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Inspect
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Seasonal inspections to catch issues before they cascade
+          </p>
         </div>
 
         {/* Property Selector - MOVED UP */}
         {properties.length > 0 && (
-          <Card className="border-2 border-blue-300 shadow-lg">
+          <Card className="border-2 border-blue-300 shadow-lg mb-8"> {/* Added mb-8 for spacing after new header */}
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
@@ -256,7 +263,7 @@ export default function Inspect() {
 
         {/* PROMINENT INSPECTION METHOD SELECTOR - Always visible when property selected and baseline complete */}
         {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
-          <Card className="border-4 border-blue-400 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 shadow-2xl">
+          <Card className="border-4 border-blue-400 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 shadow-2xl mb-8"> {/* Added mb-8 */}
             <CardHeader className="pb-4">
               <div className="text-center">
                 <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -276,7 +283,7 @@ export default function Inspect() {
                   <CardContent className="p-6">
                     <div className="text-center space-y-4">
                       <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <ListOrdered className="w-10 h-10 text-white" />
+                        <BookOpen className="w-10 h-10 text-white" /> {/* Changed icon from ListOrdered to BookOpen */}
                       </div>
                       <div>
                         <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -303,9 +310,9 @@ export default function Inspect() {
                         className="w-full gap-2 text-lg py-6 group-hover:bg-blue-700"
                         style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
                       >
-                        <ListOrdered className="w-5 h-5" />
+                        <BookOpen className="w-5 h-5" /> {/* Changed icon from ListOrdered to BookOpen */}
                         Start Traditional
-                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                        {/* <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /> Removed icon */}
                       </Button>
                     </div>
                   </CardContent>
@@ -319,7 +326,7 @@ export default function Inspect() {
                   <CardContent className="p-6">
                     <div className="text-center space-y-4">
                       <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <MapPin className="w-10 h-10 text-white" />
+                        <PlayCircle className="w-10 h-10 text-white" /> {/* Changed icon from MapPin to PlayCircle */}
                       </div>
                       <div>
                         <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -346,9 +353,9 @@ export default function Inspect() {
                         className="w-full gap-2 text-lg py-6 group-hover:bg-teal-700"
                         style={{ backgroundColor: '#14B8A6', minHeight: '56px' }}
                       >
-                        <MapPin className="w-5 h-5" />
+                        <PlayCircle className="w-5 h-5" /> {/* Changed icon from MapPin to PlayCircle */}
                         Start Walkthrough
-                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                        {/* <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /> Removed icon */}
                       </Button>
                     </div>
                   </CardContent>
@@ -374,7 +381,7 @@ export default function Inspect() {
                       className="whitespace-nowrap"
                       style={{ minHeight: '48px' }}
                     >
-                      <Wrench className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4 mr-2" /> {/* Changed icon from Wrench to Plus */}
                       Request Pro
                     </Button>
                   </div>
@@ -385,7 +392,7 @@ export default function Inspect() {
         )}
 
         {/* Why Inspections Matter - Educational Section */}
-        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl">
+        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-8"> {/* Added mb-8 */}
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
               <Lightbulb className="w-8 h-8 text-yellow-600" />
@@ -398,7 +405,7 @@ export default function Inspect() {
               <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-md">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-red-600" />
+                    <AlertTriangle className="w-6 h-6 text-red-600" /> {/* Changed icon from Target to AlertTriangle */}
                   </div>
                   <h3 className="font-bold text-red-900 text-lg">Catch Problems Early</h3>
                 </div>
@@ -454,7 +461,7 @@ export default function Inspect() {
               <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-md">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-green-600" />
+                    <Calendar className="w-6 h-6 text-green-600" /> {/* Changed icon from TrendingUp to Calendar */}
                   </div>
                   <h3 className="font-bold text-green-900 text-lg">Protect Value</h3>
                 </div>
@@ -482,7 +489,7 @@ export default function Inspect() {
             {/* The Bottom Line */}
             <div className="bg-white rounded-lg p-5 border-2 border-purple-300">
               <div className="flex items-start gap-3">
-                <DollarSign className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" />
+                <BookOpen className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" /> {/* Changed icon from DollarSign to BookOpen */}
                 <div>
                   <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
                   <p className="text-gray-800 leading-relaxed">
@@ -532,7 +539,7 @@ export default function Inspect() {
 
         {/* In-Progress Inspection Alert */}
         {inProgressInspection && (
-          <Card className="border-2 border-orange-300 bg-orange-50">
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-8"> {/* Added mb-8 */}
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
                 <Clock className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -545,6 +552,7 @@ export default function Inspect() {
                     {new Date(inProgressInspection.created_date).toLocaleDateString()}.{' '}
                     {inProgressInspection.completion_percentage}% complete. Your progress is automatically saved.
                   </p>
+                  <Progress value={inProgressInspection.completion_percentage} className="w-full mb-3" /> {/* Added Progress bar */}
                   <div className="flex flex-col md:flex-row gap-2">
                     <Button
                       onClick={() => handleContinueInspection(inProgressInspection)}
@@ -570,10 +578,10 @@ export default function Inspect() {
 
         {/* Baseline System Warning */}
         {!hasBaselineSystems && selectedPropertyId && (
-          <Card className="border-2 border-orange-300 bg-orange-50">
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-8"> {/* Added mb-8 */}
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0" /> {/* Changed icon from AlertCircle to AlertTriangle */}
                 <div>
                   <p className="font-semibold text-orange-900 mb-2">
                     Baseline Documentation Required First
@@ -595,7 +603,7 @@ export default function Inspect() {
 
         {/* Inspection History */}
         {inspections.length > 0 && (
-          <div>
+          <div className="mb-8"> {/* Added mb-8 */}
             <h2 className="text-2xl font-bold mb-4" style={{ color: '#1B365D' }}>
               Inspection History
             </h2>
@@ -696,7 +704,7 @@ export default function Inspect() {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" style={{ minHeight: '44px', minWidth: '44px' }}>
-                                  <MoreVertical className="w-4 h-4" />
+                                  <Plus className="w-4 h-4" /> {/* Changed icon from MoreVertical to Plus */}
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="bg-white">
@@ -729,7 +737,7 @@ export default function Inspect() {
         {inspections.length === 0 && hasBaselineSystems && !inProgressInspection && (
           <Card className="border-none shadow-lg">
             <CardContent className="p-12 text-center">
-              <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" /> {/* Changed icon from ClipboardCheck to BookOpen */}
               <h3 className="text-xl font-semibold mb-2">No Inspections Yet</h3>
               <p className="text-gray-600 mb-6">
                 Choose your inspection method above to get started

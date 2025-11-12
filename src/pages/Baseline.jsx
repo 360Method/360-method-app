@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
@@ -600,13 +600,24 @@ export default function Baseline() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>AWARE → BASELINE</h1>
-          <p className="text-xl text-gray-600">Document Your Property Systems</p>
-          <p className="text-gray-600 mt-1">Know what you have, when it was installed, and when to replace it</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+              Phase I - AWARE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 1 of 9
+            </Badge>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Baseline
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Document your property's systems to unlock powerful insights
+          </p>
         </div>
 
         {/* Property Selector - MOVED UP */}

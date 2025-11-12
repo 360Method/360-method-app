@@ -6,7 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingUp, Calendar, Zap, Plus, ListOrdered, ArrowUpDown, Filter } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Plus,
+  AlertTriangle,
+  TrendingDown, // Added TrendingDown
+  ListOrdered,
+  Filter,
+  Home, // Added Home
+  Calendar,
+  DollarSign, // Added DollarSign
+  Zap,
+  TrendingUp, // Existing
+  ArrowUpDown, // Existing
+} from "lucide-react";
 
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -177,14 +190,24 @@ export default function PrioritizePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 pb-24">
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Prioritize</h1>
-            <p className="text-sm md:text-base text-gray-600">Smart maintenance planning based on risk and cost impact</p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
+              Phase II - ACT
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 4 of 9
+            </Badge>
           </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Prioritize
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Smart task ranking based on cascade risk and cost impact
+          </p>
         </div>
 
         <Card className="border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-red-50">

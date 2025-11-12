@@ -6,18 +6,22 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home, BookOpen, Video, Calculator } from "lucide-react";
+import {
+  Plus, Lightbulb, TrendingUp, DollarSign, Calendar, CheckCircle2, Clock, Sparkles, Award, Zap, Home, BookOpen, Video, Calculator, Search, Filter
+} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard.jsx";
-import UpgradeProjectForm from "../components/upgrade/UpgradeProjectForm.jsx";
+import UpgradeCard from "../components/upgrade/UpgradeCard";
+import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 
 export default function Upgrade() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const showNewForm = searchParams.get('new') === 'true';
   const templateIdFromUrl = searchParams.get('template');
-  
+
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);
   const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
@@ -45,22 +49,22 @@ export default function Upgrade() {
     queryFn: () => base44.entities.Upgrade.list('-created_date'),
   });
 
-  const activeProjects = allUpgrades.filter(u => 
+  const activeProjects = allUpgrades.filter(u =>
     u.status === 'Planned' || u.status === 'In Progress'
   );
 
   const plannedProjects = allUpgrades.filter(u => u.status === 'Planned');
   const inProgressProjects = allUpgrades.filter(u => u.status === 'In Progress');
 
-  const completedProjects = allUpgrades.filter(u => 
+  const completedProjects = allUpgrades.filter(u =>
     u.status === 'Completed'
   );
 
-  const totalInvestment = completedProjects.reduce((sum, p) => 
+  const totalInvestment = completedProjects.reduce((sum, p) =>
     sum + (p.actual_cost || p.investment_required || 0), 0
   );
 
-  const totalEquityGained = completedProjects.reduce((sum, p) => 
+  const totalEquityGained = completedProjects.reduce((sum, p) =>
     sum + (p.property_value_impact || 0), 0
   );
 
@@ -73,9 +77,9 @@ export default function Upgrade() {
   const memberDiscountTier = isServiceMember ? currentTier : 0;
 
   // This old calculation is no longer needed since we are passing the tier name
-  // const memberDiscount = currentTier.includes('essential') ? 0.05 
-  //   : currentTier.includes('premium') ? 0.10 
-  //   : currentTier.includes('elite') ? 0.15 
+  // const memberDiscount = currentTier.includes('essential') ? 0.05
+  //   : currentTier.includes('premium') ? 0.10
+  //   : currentTier.includes('elite') ? 0.15
   //   : 0;
 
   const handleFormComplete = () => {
@@ -90,7 +94,7 @@ export default function Upgrade() {
     return (
       <div className="min-h-screen bg-white">
         <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
-          <UpgradeProjectForm
+          <UpgradeDialog // Renamed from UpgradeProjectForm
             properties={properties}
             project={editingProject}
             templateId={templateId}
@@ -105,27 +109,29 @@ export default function Upgrade() {
 
   // Determine the actual percentage for display purposes in the banner, if needed.
   // This is separate from the value passed to components, which is the tier name.
-  const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05 
-    : currentTier.includes('premium') ? 0.10 
-    : currentTier.includes('elite') ? 0.15 
+  const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05
+    : currentTier.includes('premium') ? 0.10
+    : currentTier.includes('elite') ? 0.15
     : 0;
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mobile-container md:max-w-6xl md:mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Lightbulb className="w-8 h-8 text-green-600" />
-            <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-              Strategic Upgrades
-            </h1>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-green-600 text-white text-sm px-3 py-1">
+              Phase III - ADVANCE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 8 of 9
+            </Badge>
           </div>
-          <p className="text-gray-600" style={{ fontSize: '16px' }}>
-            Transform your property strategically
-          </p>
-          <p className="text-sm font-semibold" style={{ color: '#28A745' }}>
-            Small investments today = Big returns tomorrow
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Upgrade
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Strategic improvements that increase property value and ROI
           </p>
         </div>
 
@@ -138,7 +144,7 @@ export default function Upgrade() {
                 Why Strategic Upgrades Matter
               </h3>
               <p className="text-gray-800 mb-4" style={{ fontSize: '16px', lineHeight: '1.6' }}>
-                Most homeowners wait until something breaks. Smart homeowners invest strategically. 
+                Most homeowners wait until something breaks. Smart homeowners invest strategically.
                 Replace before failure = avoid disasters + maximize ROI.
               </p>
               <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -286,7 +292,7 @@ export default function Upgrade() {
                   <p className="text-sm text-purple-700 mb-2">
                     Save thousands on contractor coordination fees through your operator.
                   </p>
-                  <div className="text-sm text-purple-800">
+                  <div classNameName="text-sm text-purple-800">
                     <p>• $25K kitchen remodel → Save ${(25000 * displayMemberDiscountPercentage).toLocaleString()}</p>
                     <p>• $45K addition → Save ${(45000 * displayMemberDiscountPercentage).toLocaleString()}</p>
                     <p>• $8K HVAC upgrade → Save ${(8000 * displayMemberDiscountPercentage).toLocaleString()}</p>
@@ -395,7 +401,7 @@ export default function Upgrade() {
             </h2>
             <div className="space-y-4">
               {activeProjects.map((project) => (
-                <UpgradeProjectCard
+                <UpgradeCard // Renamed from UpgradeProjectCard
                   key={project.id}
                   project={project}
                   properties={properties}
@@ -413,7 +419,7 @@ export default function Upgrade() {
             <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
               ✅ Completed Projects
             </h2>
-            
+
             {/* Lifetime Equity Summary */}
             <Card className="border-2 border-green-300 bg-green-50 mb-4">
               <CardContent className="p-6">
@@ -448,7 +454,7 @@ export default function Upgrade() {
 
             <div className="space-y-4">
               {completedProjects.map((project) => (
-                <UpgradeProjectCard
+                <UpgradeCard // Renamed from UpgradeProjectCard
                   key={project.id}
                   project={project}
                   properties={properties}

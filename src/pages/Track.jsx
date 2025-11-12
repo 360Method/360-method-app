@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart, Sparkles, Brain, TrendingDown, Zap } from "lucide-react";
+import { Activity, DollarSign, Calendar, Download, Filter, Plus, TrendingUp, AlertTriangle, CheckCircle2, Target, Award, BarChart3, PieChart, Sparkles, Brain, TrendingDown, Zap, Clock, Home, Trophy } from "lucide-react";
 import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -348,13 +349,27 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#1B365D' }}>AWARE → Track</h1>
-            <p className="text-gray-600 mt-1">Complete history & analytics of your property</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+              Phase I - AWARE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 3 of 9
+            </Badge>
           </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Track
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Monitor your maintenance history and spending over time
+          </p>
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
           <div className="flex gap-3">
             <Button 
               onClick={() => setShowTaskForm(true)}

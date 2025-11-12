@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Lightbulb, Target, Clock, CheckCircle2, List, Grid3x3, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  X, // Retained: used in TaskFormOverlay
+  Clock,
+  CheckCircle2,
+  List, // Retained: used in view mode buttons
+  Grid3x3, // Retained: used in view mode buttons
+  AlertCircle,
+  ChevronDown, // Retained: used in unscheduled tasks
+  ChevronUp, // Retained: used in unscheduled tasks
+  Home, // Added as per outline
+  Sparkles // Added as per outline
+} from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday, isValid, parseISO } from "date-fns";
 import TaskDialog from "../components/schedule/TaskDialog";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
@@ -233,98 +249,28 @@ export default function Schedule() {
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
-        
-        {/* Mobile-Optimized Header */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#1B365D' }}>
-                ACT → Schedule
-              </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-1">
-                Calendar & timeline view
-              </p>
-            </div>
-            <Button
-              onClick={() => handleAddTask()}
-              className="gap-2 shadow-lg"
-              style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Add Task</span>
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
+              Phase II - ACT
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 5 of 9
+            </Badge>
           </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Schedule
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Plan your maintenance tasks on a visual calendar
+          </p>
         </div>
 
-        {/* Why Scheduling Matters */}
-        <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg md:text-xl" style={{ color: '#1B365D' }}>
-              <Lightbulb className="w-6 h-6 text-blue-600" />
-              Why Your Maintenance Calendar Matters
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm md:text-base text-gray-800 leading-relaxed">
-              <strong>Scheduling isn't just planning—it's prevention.</strong> A strategic calendar prevents emergencies, 
-              maximizes savings, and ensures nothing critical falls through the cracks.
-            </p>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 border-2 border-green-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-5 h-5 text-green-600" />
-                  <h3 className="font-bold text-green-900">Beat Peak Season</h3>
-                </div>
-                <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  Schedule HVAC service in spring, not during July heatwave when it costs 3X more and wait is 2+ weeks.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 border-2 border-orange-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
-                  <h3 className="font-bold text-orange-900">Prevent Gaps</h3>
-                </div>
-                <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  Missed annual filter change? Efficiency drops 30%. System works harder. Fails 5 years early = $8K loss.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-5 h-5 text-purple-600" />
-                  <h3 className="font-bold text-purple-900">Budget Control</h3>
-                </div>
-                <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  See what's coming 2-3 months ahead. Plan expenses. Get quotes early. Control costs vs. emergency panic.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
-              <p className="text-sm font-semibold text-blue-900 mb-2">
-                💡 Strategic Scheduling = Proactive Control:
-              </p>
-              <ul className="text-xs md:text-sm text-gray-800 space-y-1">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold mt-0.5">1.</span>
-                  <span><strong>Seasonal tasks</strong> = right time for regional climate (prevent winter pipe bursts)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold mt-0.5">2.</span>
-                  <span><strong>Calendar view</strong> = see workload distribution (don't overload one weekend)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold mt-0.5">3.</span>
-                  <span><strong>Timeline clarity</strong> = finish high-risk tasks before they cascade</span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+        {/* This was the "Mobile-Optimized Header", removed as per instructions */}
+        {/* This was the "Why Scheduling Matters" card, removed as per instructions */}
 
         {/* Property Selector */}
         {properties.length > 0 && (

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Wrench, Phone, Calendar, ArrowLeft, AlertCircle, Lightbulb, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  CheckCircle2,
+  Wrench,
+  Phone,
+  Calendar,
+  ArrowLeft,
+  AlertCircle,
+  Lightbulb,
+  Target,
+  Clock, // Added
+  AlertTriangle, // Added
+  Home, // Added
+  Filter // Added
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TaskExecutionCard from "../components/execute/TaskExecutionCard";
@@ -55,6 +70,9 @@ export default function Execute() {
     if (!t.scheduled_date) return false;
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
+    // Normalize dates to ignore time for comparison
+    taskDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     return taskDate <= today;
   });
 
@@ -62,6 +80,9 @@ export default function Execute() {
     if (!t.scheduled_date) return false;
     const taskDate = new Date(t.scheduled_date);
     const today = new Date();
+    // Normalize dates to ignore time for comparison
+    taskDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     return taskDate > today;
   });
 
@@ -72,19 +93,22 @@ export default function Execute() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
-        
-        {/* Header */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#1B365D' }}>
-                ACT → Execute
-              </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-1">
-                Complete tasks & track progress
-              </p>
-            </div>
+        {/* Phase & Step Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
+              Phase II - ACT
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 6 of 9
+            </Badge>
           </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Execute
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Complete scheduled tasks and track service requests
+          </p>
         </div>
 
         {/* Why Execution Matters */}
