@@ -13,6 +13,75 @@ const Label = ({ children, className = "", ...props }) => (
   </label>
 );
 
+// Climate zone mapping based on state
+const getClimateZone = (state) => {
+  const stateUpper = state?.toUpperCase();
+  
+  const climateMap = {
+    // Pacific Northwest
+    'WA': 'Pacific Northwest',
+    'OR': 'Pacific Northwest',
+    'ID': 'Pacific Northwest',
+    
+    // Northeast
+    'ME': 'Northeast',
+    'NH': 'Northeast',
+    'VT': 'Northeast',
+    'MA': 'Northeast',
+    'RI': 'Northeast',
+    'CT': 'Northeast',
+    'NY': 'Northeast',
+    'NJ': 'Northeast',
+    'PA': 'Northeast',
+    'DE': 'Northeast',
+    'MD': 'Northeast',
+    
+    // Southeast
+    'VA': 'Southeast',
+    'WV': 'Southeast',
+    'KY': 'Southeast',
+    'TN': 'Southeast',
+    'NC': 'Southeast',
+    'SC': 'Southeast',
+    'GA': 'Southeast',
+    'FL': 'Southeast',
+    'AL': 'Southeast',
+    'MS': 'Southeast',
+    'LA': 'Southeast',
+    'AR': 'Southeast',
+    
+    // Midwest
+    'OH': 'Midwest',
+    'MI': 'Midwest',
+    'IN': 'Midwest',
+    'IL': 'Midwest',
+    'WI': 'Midwest',
+    'MN': 'Midwest',
+    'IA': 'Midwest',
+    'MO': 'Midwest',
+    'ND': 'Midwest',
+    'SD': 'Midwest',
+    'NE': 'Midwest',
+    'KS': 'Midwest',
+    
+    // Southwest
+    'TX': 'Southwest',
+    'OK': 'Southwest',
+    'NM': 'Southwest',
+    'AZ': 'Southwest',
+    'NV': 'Southwest',
+    'CA': 'Southwest',
+    
+    // Mountain West
+    'MT': 'Mountain West',
+    'WY': 'Mountain West',
+    'CO': 'Mountain West',
+    'UT': 'Mountain West'
+  };
+  
+  return climateMap[stateUpper] || 'Midwest'; // Default to Midwest if state not found
+};
+
 export default function OnboardingPropertySetup({ onNext, onBack, data }) {
   const [address, setAddress] = React.useState("");
   const [verifiedAddress, setVerifiedAddress] = React.useState(null);
@@ -38,7 +107,7 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
     try {
       // Use LLM to parse and verify address
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Parse and verify this address: "${address}". Return structured data with street_address, city, state, zip_code, county. If the address seems valid, mark it as verified. Use your knowledge to fill in missing information like county based on city/state.`,
+        prompt: `Parse and verify this address: "${address}". Return structured data with street_address, city, state (2-letter code), zip_code, county. If the address seems valid, mark it as verified. Use your knowledge to fill in missing information like county based on city/state.`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -54,9 +123,13 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
       });
 
       if (result.is_valid) {
+        // Determine climate zone based on state
+        const climateZone = getClimateZone(result.state);
+        
         setVerifiedAddress({
           ...result,
           address: result.formatted_address || address,
+          climate_zone: climateZone,
           address_verified: true,
           verification_source: "manual_entry"
         });
@@ -67,6 +140,7 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
       setVerifiedAddress({
         address: address,
         street_address: address,
+        climate_zone: 'Midwest', // Safe default
         address_verified: false,
         verification_source: "manual_entry"
       });
@@ -179,6 +253,11 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
                 {verifiedAddress.city && verifiedAddress.state && verifiedAddress.zip_code && (
                   <p className="text-sm text-gray-600 mt-1">
                     {verifiedAddress.city}, {verifiedAddress.state} {verifiedAddress.zip_code}
+                  </p>
+                )}
+                {verifiedAddress.climate_zone && (
+                  <p className="text-xs text-green-700 mt-2">
+                    🌡️ Climate Zone: <strong>{verifiedAddress.climate_zone}</strong>
                   </p>
                 )}
                 <Button
