@@ -271,15 +271,40 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
             cost_min: { type: "number" },
             cost_max: { type: "number" },
             detailed_scope: { type: "string" },
-            materials_list: { type: "array", items: { type: "string" } },
-            tools_required: { type: "array", items: { type: "string" } },
-            permit_required: { type: "boolean" },
-            estimated_timeline: { type: "string" },
-            risk_factors: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+            materials_list: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of materials needed"
+            },
+            tools_required: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of tools needed"
+            },
+            permit_required: { 
+              type: "boolean",
+              description: "Whether permits are needed"
+            },
+            estimated_timeline: { 
+              type: "string",
+              description: "How long to complete"
+            },
+            risk_factors: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "Potential complications"
+            },
+            recommendations: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "Prep work suggestions"
+            }
+          },
+          required: ["estimated_hours", "cost_min", "cost_max", "detailed_scope"]
         }
       });
+
+      console.log('AI Estimation Result:', result);
 
       setItemEstimates(prev => ({ ...prev, [item.id]: result }));
       
@@ -295,7 +320,37 @@ Provide realistic, professional estimates. Be conservative - better to over-esti
 
     } catch (error) {
       console.error('AI estimation failed:', error);
-      alert('Failed to get AI estimate. Please try again.');
+      console.error('Error details:', error.message, error.response?.data);
+      
+      // Provide fallback estimate
+      const fallbackHours = item.priority === 'Emergency' ? 3 : 
+                           item.priority === 'High' ? 4 : 5;
+      const urgencyMultiplier = item.priority === 'Emergency' ? 1.5 : 
+                               item.priority === 'High' ? 1.25 : 1.0;
+      
+      const fallbackEstimate = {
+        estimated_hours: fallbackHours * urgencyMultiplier,
+        cost_min: Math.round(fallbackHours * 150 * urgencyMultiplier),
+        cost_max: Math.round(fallbackHours * 150 * urgencyMultiplier * 1.4),
+        detailed_scope: `Professional ${item.system_type || 'service'} - detailed scope will be determined during site assessment.`,
+        materials_list: ['Materials to be determined on-site'],
+        estimated_timeline: `${fallbackHours}-${fallbackHours + 2} hours`,
+        risk_factors: ['Final scope may vary based on actual conditions'],
+        is_fallback: true
+      };
+      
+      setItemEstimates(prev => ({ ...prev, [item.id]: fallbackEstimate }));
+      
+      await updateItemMutation.mutateAsync({
+        itemId: item.id,
+        updates: {
+          estimated_hours: fallbackEstimate.estimated_hours,
+          estimated_cost_min: fallbackEstimate.cost_min,
+          estimated_cost_max: fallbackEstimate.cost_max
+        }
+      });
+      
+      alert('⚠️ AI estimate generated with basic parameters. Add more details for a more accurate estimate.');
     } finally {
       setEstimatingItems(prev => ({ ...prev, [item.id]: false }));
     }
