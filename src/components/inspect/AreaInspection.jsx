@@ -7,9 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Lightbulb, AlertTriangle, X } from "lucide-react";
 import IssueDocumentation from "./IssueDocumentation";
 
+// Safe string truncation helper
+const safeSubstring = (str, maxLength) => {
+  if (!str || typeof str !== 'string') return '';
+  return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+};
+
 export default function AreaInspection({ area, inspection, property, baselineSystems, existingIssues, onComplete, onBack }) {
   const [documentingIssue, setDocumentingIssue] = React.useState(false);
-  const [selectedSystem, setSelectedSystem] = React.useState(null); // NEW: Track which system user clicked
+  const [selectedSystem, setSelectedSystem] = React.useState(null);
   const [issues, setIssues] = React.useState(existingIssues || []);
   const [aiSuggestions, setAiSuggestions] = React.useState(null);
   const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
@@ -189,7 +195,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
     const newIssues = [...issues, issueData];
     setIssues(newIssues);
     setDocumentingIssue(false);
-    setSelectedSystem(null); // Reset selected system
+    setSelectedSystem(null);
   };
 
   const handleRemovePrefilledIssue = (index) => {
@@ -215,11 +221,11 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
       'Dishwasher': 'Appliances',
       'Microwave': 'Appliances',
       'Garbage Disposal': 'Appliances',
-      'Smoke Detector': 'Safety', // Corrected mapping
-      'CO Detector': 'Safety',     // Corrected mapping
-      'Fire Extinguisher': 'Safety',// Corrected mapping
-      'Security System': 'Safety',  // Corrected mapping
-      'Radon Test': 'Safety'        // Corrected mapping
+      'Smoke Detector': 'Safety',
+      'CO Detector': 'Safety',
+      'Fire Extinguisher': 'Safety',
+      'Security System': 'Safety',
+      'Radon Test': 'Safety'
     };
 
     const mappedSystemType = systemTypeMap[system.system_type] || 'General';
@@ -234,7 +240,7 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
         inspection={inspection}
         area={area}
         existingIssues={issues}
-        preselectedSystem={selectedSystem} // Pass the preselected system
+        preselectedSystem={selectedSystem}
         onComplete={handleIssueDocumented}
         onCancel={() => {
           setDocumentingIssue(false);
@@ -590,14 +596,21 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
                 Issues Found in This Area: {issues.length}
               </h2>
               <div className="space-y-2">
-                {issues.map((issue, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-sm">
-                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
-                    <div>
-                      <span className="font-medium">{issue.severity}</span>: {issue.description ? issue.description.substring(0, 60) + '...' : issue.notes.substring(0, 60) + '...'}
+                {issues.map((issue, idx) => {
+                  // Safely get the preview text - prefer description, fallback to notes
+                  const previewText = issue.description
+                    ? safeSubstring(issue.description, 60)
+                    : safeSubstring(issue.notes, 60);
+
+                  return (
+                    <div key={idx} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#FF6B35' }} />
+                      <div>
+                        <span className="font-medium">{issue.severity}</span>: {previewText}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
