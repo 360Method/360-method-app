@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ListOrdered, DollarSign, AlertTriangle, TrendingUp, Plus, Lightbulb, ArrowUpDown, Filter, Shield, Target, TrendingDown } from "lucide-react";
+import { ListOrdered, DollarSign, AlertTriangle, TrendingUp, Plus, Lightbulb, ArrowUpDown, Filter, Shield, Target, TrendingDown, Calendar, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import AIMaintenanceCalendar from "../components/prioritize/AIMaintenanceCalendar";
@@ -114,6 +116,16 @@ export default function Prioritize() {
   const currentCost = activeTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const potentialCost = activeTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || t.current_fix_cost || 0), 0);
   const potentialSavings = potentialCost - currentCost;
+  
+  // NEW: Calculate unscheduled tasks
+  const unscheduledTasks = activeTasks.filter(t => !t.scheduled_date);
+  const scheduledTasks = activeTasks.filter(t => t.scheduled_date);
+  const readyToExecute = scheduledTasks.filter(t => {
+    if (!t.scheduled_date) return false;
+    const taskDate = new Date(t.scheduled_date);
+    const today = new Date();
+    return taskDate <= today && t.status === 'Scheduled';
+  });
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
@@ -288,6 +300,123 @@ export default function Prioritize() {
             </CardContent>
           </Card>
         </div>
+
+        {/* NEW: Workflow Progress & Next Steps */}
+        {activeTasks.length > 0 && (
+          <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg" style={{ color: '#1B365D' }}>
+                <Target className="w-5 h-5 text-blue-600" />
+                ACT Workflow Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Step 1: Prioritize (Current Page) */}
+              <div className="bg-white rounded-lg p-4 border-2 border-green-300">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <h3 className="font-bold text-green-900">Step 1: Prioritize</h3>
+                  </div>
+                  <Badge className="bg-green-600 text-white">Current Step</Badge>
+                </div>
+                <p className="text-sm text-gray-700 mb-2">
+                  ✅ You have <strong>{activeTasks.length} tasks</strong> in your queue, ranked by impact.
+                </p>
+              </div>
+
+              {/* Step 2: Schedule (Next Step) */}
+              <div className={`bg-white rounded-lg p-4 border-2 ${unscheduledTasks.length > 0 ? 'border-orange-300' : 'border-blue-300'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className={`w-5 h-5 ${unscheduledTasks.length > 0 ? 'text-orange-600' : 'text-blue-600'}`} />
+                    <h3 className={`font-bold ${unscheduledTasks.length > 0 ? 'text-orange-900' : 'text-blue-900'}`}>
+                      Step 2: Schedule
+                    </h3>
+                  </div>
+                  {unscheduledTasks.length > 0 ? (
+                    <Badge className="bg-orange-600 text-white">Action Needed</Badge>
+                  ) : (
+                    <Badge className="bg-green-600 text-white">Complete</Badge>
+                  )}
+                </div>
+                
+                {unscheduledTasks.length > 0 ? (
+                  <>
+                    <p className="text-sm text-gray-700 mb-3">
+                      ⚠️ <strong>{unscheduledTasks.length} tasks</strong> need dates assigned. Schedule them to unlock optimal timing.
+                    </p>
+                    <Button
+                      asChild
+                      className="gap-2 w-full"
+                      style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
+                    >
+                      <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
+                        <Calendar className="w-4 h-4" />
+                        Go to Schedule Page
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-700">
+                    ✅ All tasks have dates! <strong>{scheduledTasks.length} scheduled tasks</strong> ready for execution.
+                  </p>
+                )}
+              </div>
+
+              {/* Step 3: Execute (Final Step) */}
+              <div className={`bg-white rounded-lg p-4 border-2 ${readyToExecute.length > 0 ? 'border-green-300' : 'border-gray-300'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className={`w-5 h-5 ${readyToExecute.length > 0 ? 'text-green-600' : 'text-gray-400'}`} />
+                    <h3 className={`font-bold ${readyToExecute.length > 0 ? 'text-green-900' : 'text-gray-700'}`}>
+                      Step 3: Execute
+                    </h3>
+                  </div>
+                  {readyToExecute.length > 0 && (
+                    <Badge className="bg-green-600 text-white">Ready Now!</Badge>
+                  )}
+                </div>
+                
+                {readyToExecute.length > 0 ? (
+                  <>
+                    <p className="text-sm text-gray-700 mb-3">
+                      🎯 <strong>{readyToExecute.length} tasks</strong> are due today or overdue. Time to take action!
+                    </p>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="gap-2 w-full border-2 border-green-400 text-green-700 hover:bg-green-50"
+                      style={{ minHeight: '48px' }}
+                    >
+                      <Link to={createPageUrl("Execute") + `?property=${selectedProperty}`}>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Go to Execute Page
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    {scheduledTasks.length > 0 
+                      ? `📅 ${scheduledTasks.length} tasks scheduled for future dates.`
+                      : '⏳ No tasks ready for execution yet.'
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Workflow Tip */}
+              <div className="bg-blue-100 rounded-lg p-3 border border-blue-300">
+                <p className="text-xs md:text-sm text-blue-900">
+                  <strong>💡 Tip:</strong> Use the "Schedule" button on each task card below to assign dates quickly, 
+                  then move to the Schedule page to see your full calendar.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI Maintenance Calendar */}
         {selectedProperty && (
