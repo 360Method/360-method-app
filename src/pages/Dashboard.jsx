@@ -959,142 +959,92 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-6">
-          {/* Left Column - Main Content */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Upcoming Tasks */}
-            {upcomingTasks.length > 0 && (
-              <Card className="border-none shadow-md">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '18px' }}>
-                    <Calendar className="w-5 h-5" />
+        {/* Main Content Grid - Compact & Mobile-First */}
+        <div className="space-y-4 mb-6">
+          {/* Upcoming Tasks - Compact */}
+          {upcomingTasks.length > 0 && (
+            <Card className="border-none shadow-md">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
+                    <Calendar className="w-4 h-4" />
                     Upcoming Tasks
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {upcomingTasks.map((task) => (
-                    <Link 
-                      key={task.id} 
-                      to={createPageUrl("Execute")}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-300 border-2 border-transparent transition-all cursor-pointer"
-                    >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        task.daysUntil === 0 ? 'bg-red-600' :
-                        task.daysUntil <= 3 ? 'bg-orange-600' :
-                        'bg-blue-600'
-                      }`}>
-                        <Clock className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-gray-900 truncate">{task.title}</p>
-                        <p className="text-xs text-gray-600">
-                          {task.daysUntil === 0 ? 'Today' :
-                           task.daysUntil === 1 ? 'Tomorrow' :
-                           `In ${task.daysUntil} days`}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-blue-600" />
-                    </Link>
-                  ))}
                   <Button
                     asChild
-                    variant="outline"
-                    className="w-full"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
                   >
                     <Link to={createPageUrl("Schedule")}>
-                      View All Scheduled Tasks
-                      <ChevronRight className="w-4 h-4 ml-2" />
+                      View All
+                      <ChevronRight className="w-3 h-3 ml-1" />
                     </Link>
                   </Button>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {upcomingTasks.slice(0, 3).map((task) => (
+                  <Link 
+                    key={task.id} 
+                    to={createPageUrl("Execute")}
+                    className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 hover:border-blue-300 border border-transparent transition-all"
+                  >
+                    <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
+                      task.daysUntil === 0 ? 'bg-red-600' :
+                      task.daysUntil <= 3 ? 'bg-orange-600' :
+                      'bg-blue-600'
+                    }`}>
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-gray-900 truncate">{task.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {task.daysUntil === 0 ? 'Today' :
+                         task.daysUntil === 1 ? 'Tomorrow' :
+                         `In ${task.daysUntil} days`}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
-
-
-            {/* Seasonal Suggestions */}
-            {primaryProperty && (
-              <SeasonalTaskSuggestions 
-                propertyId={primaryProperty.id}
-                property={primaryProperty}
-                compact={true}
-              />
-            )}
-          </div>
-
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            {/* Mini Calendar */}
-            <MiniCalendar tasks={allTasks} properties={properties} />
-
-            {/* Health Score Gauge */}
+          {/* Two-Column Layout for Desktop */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Health Score & Baseline */}
             <Card className="border-none shadow-md">
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
                   <Activity className="w-4 h-4" />
-                  Health Score
+                  Property Health
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <HealthScoreGauge score={avgHealthScore} />
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Baseline</span>
-                    <span className="font-bold">{avgBaselineCompletion}%</span>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 mb-1">Health Score</p>
+                    <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{avgHealthScore}</p>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all"
-                      style={{ width: `${avgBaselineCompletion}%` }}
-                    />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 mb-1">Baseline</p>
+                    <p className="text-3xl font-bold text-blue-600">{avgBaselineCompletion}%</p>
                   </div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all"
+                    style={{ width: `${avgBaselineCompletion}%` }}
+                  />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
-            {recentActivity.length > 0 && (
-              <Card className="border-none shadow-md">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
-                    <Activity className="w-4 h-4" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {recentActivity.map((activity, idx) => (
-                      <Link 
-                        key={idx} 
-                        to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track')}
-                        className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          activity.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-green-100 group-hover:bg-green-200'
-                        }`}>
-                          <activity.icon className={`w-4 h-4 ${
-                            activity.color === 'blue' ? 'text-blue-600' : 'text-green-600'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {activity.title}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(activity.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Quick Actions */}
-            <Card className="border-none shadow-md bg-gradient-to-br from-indigo-50 to-purple-50">
-              <CardHeader className="pb-3">
+            <Card className="border-none shadow-md">
+              <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
                   <Sparkles className="w-4 h-4" />
                   Quick Actions
@@ -1104,6 +1054,7 @@ export default function Dashboard() {
                 <Button
                   asChild
                   variant="outline"
+                  size="sm"
                   className="w-full justify-start gap-2"
                 >
                   <Link to={createPageUrl("Inspect")}>
@@ -1114,6 +1065,7 @@ export default function Dashboard() {
                 <Button
                   asChild
                   variant="outline"
+                  size="sm"
                   className="w-full justify-start gap-2"
                 >
                   <Link to={createPageUrl("Services")}>
@@ -1121,50 +1073,93 @@ export default function Dashboard() {
                     Request Service
                   </Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                >
-                  <Link to={createPageUrl("Resources")}>
-                    <BookOpen className="w-4 h-4" />
-                    Browse Resources
-                  </Link>
-                </Button>
               </CardContent>
             </Card>
-
-            {/* Service Member Badge */}
-            {isServiceMember && user?.operator_name && (
-              <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-green-900 mb-1 text-sm">
-                        Service Member
-                      </p>
-                      <p className="text-xs text-gray-700 mb-2">
-                        Operator: <strong>{user.operator_name}</strong>
-                      </p>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-green-600 text-green-600 hover:bg-green-100"
-                      >
-                        <Link to={createPageUrl("Services")}>
-                          Manage Service
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
+
+          {/* Recent Activity - Compact */}
+          {recentActivity.length > 0 && (
+            <Card className="border-none shadow-md">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
+                    <Activity className="w-4 h-4" />
+                    Recent Activity
+                  </CardTitle>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    <Link to={createPageUrl("Track")}>
+                      View All
+                      <ChevronRight className="w-3 h-3 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {recentActivity.slice(0, 3).map((activity, idx) => (
+                    <Link 
+                      key={idx} 
+                      to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track')}
+                      className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors group"
+                    >
+                      <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
+                        activity.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-green-100 group-hover:bg-green-200'
+                      }`}>
+                        <activity.icon className={`w-4 h-4 ${
+                          activity.color === 'blue' ? 'text-blue-600' : 'text-green-600'
+                        }`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(activity.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-gray-600 flex-shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Seasonal Suggestions - Compact */}
+          {primaryProperty && (
+            <SeasonalTaskSuggestions 
+              propertyId={primaryProperty.id}
+              property={primaryProperty}
+              compact={true}
+            />
+          )}
+
+          {/* Service Member Badge */}
+          {isServiceMember && user?.operator_name && (
+            <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-green-900 text-sm">Service Member</p>
+                    <p className="text-xs text-gray-700">Operator: <strong>{user.operator_name}</strong></p>
+                  </div>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Link to={createPageUrl("Services")}>Manage</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Property Limit Warning */}
