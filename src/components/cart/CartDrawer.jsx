@@ -126,15 +126,31 @@ export default function CartDrawer() {
                   key={item.id}
                   className="border-2 rounded-lg p-3 bg-white hover:border-purple-300 transition-colors"
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  {/* Compact Card Design */}
+                  <div className="flex gap-3">
+                    {/* Icon/Image */}
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0">
+                      {item.photo_urls && item.photo_urls.length > 0 ? (
+                        <img 
+                          src={item.photo_urls[0]} 
+                          alt={item.title}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <span className="text-2xl">
+                          {item.system_type === 'HVAC System' ? '❄️' :
+                           item.system_type === 'Plumbing System' ? '🚰' :
+                           item.system_type === 'Electrical System' ? '⚡' :
+                           item.system_type === 'Roof System' ? '🏠' :
+                           item.priority === 'Emergency' || item.priority === 'High' ? '⚠️' : '🔧'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-1 line-clamp-2">{item.title}</h3>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {item.system_type && (
-                          <Badge variant="outline" className="text-xs">
-                            {item.system_type}
-                          </Badge>
-                        )}
+                      <h3 className="font-semibold text-sm mb-1 line-clamp-1">{item.title}</h3>
+                      <div className="flex items-center gap-1 mb-1">
                         {item.priority && (
                           <Badge 
                             className={`text-xs ${
@@ -148,49 +164,27 @@ export default function CartDrawer() {
                             {item.priority}
                           </Badge>
                         )}
-                        {item.photo_urls && item.photo_urls.length > 0 && (
-                          <Badge variant="outline" className="text-xs gap-1">
-                            <ImageIcon className="w-3 h-3" />
-                            {item.photo_urls.length}
-                          </Badge>
+                        {(item.estimated_cost_min && item.estimated_cost_max) && (
+                          <span className="text-xs font-semibold text-purple-700">
+                            ${Math.round((item.estimated_cost_min + item.estimated_cost_max) / 2).toLocaleString()}
+                          </span>
                         )}
                       </div>
+                      <button
+                        onClick={() => handleEditItem(item)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        View details →
+                      </button>
                     </div>
-                  </div>
 
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                    {item.description}
-                  </p>
-
-                  {item.customer_notes && (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
-                      <p className="text-xs text-gray-700 line-clamp-1">
-                        📝 {item.customer_notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {(item.estimated_cost_min || item.estimated_cost_max) && (
-                    <p className="text-sm font-semibold text-purple-700 mb-2">
-                      ${item.estimated_cost_min?.toLocaleString() || '?'} - ${item.estimated_cost_max?.toLocaleString() || '?'}
-                    </p>
-                  )}
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditItem(item)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
-                      style={{ minHeight: '40px' }}
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
+                    {/* Delete Button */}
                     <button
                       onClick={() => handleDeleteClick(item)}
-                      className="flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                      className="flex items-center justify-center text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
                       style={{ minHeight: '40px', minWidth: '40px' }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
