@@ -1,10 +1,11 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users, BarChart3, FileText, Share2, ArrowUp } from "lucide-react";
+import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users, BarChart3, FileText, Share2, ArrowUp, Compass, Flag, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing, getRecommendedTier } from "../components/shared/TierCalculator";
@@ -281,7 +282,7 @@ export default function Pricing() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {totalDoors <= 25 && (
                       <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-green-400">
-                        <p className="text-xs text-gray-600 mb-1">Pro (Recommended)</p>
+                        <p className="text-xs text-gray-600 mb-1">Pioneer (Recommended)</p>
                         <p className="text-2xl md:text-3xl font-bold text-green-700">
                           ${goodPricing.monthlyPrice}<span className="text-sm">/mo</span>
                         </p>
@@ -294,7 +295,7 @@ export default function Pricing() {
                     )}
                     {totalDoors <= 100 && (
                       <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-300">
-                        <p className="text-xs text-gray-600 mb-1">Premium</p>
+                        <p className="text-xs text-gray-600 mb-1">Commander</p>
                         <p className="text-2xl md:text-3xl font-bold text-purple-700">
                           ${betterPricing.monthlyPrice}<span className="text-sm">/mo</span>
                         </p>
@@ -306,7 +307,7 @@ export default function Pricing() {
                       </div>
                     )}
                     <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-orange-300">
-                      <p className="text-xs text-gray-600 mb-1">Enterprise</p>
+                      <p className="text-xs text-gray-600 mb-1">Elite</p>
                       <p className="text-2xl md:text-3xl font-bold text-orange-700">
                         ${bestPricing.monthlyPrice}<span className="text-sm">/mo</span>
                       </p>
@@ -324,15 +325,18 @@ export default function Pricing() {
         {/* Main Pricing Cards */}
         <div ref={pricingCardsRef} className="scroll-mt-20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
-            {/* Free Tier */}
+            {/* Scout Tier (Free) */}
             <Card className={`border-2 ${currentTier === 'free' ? 'border-gray-400 shadow-lg' : 'border-gray-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'free' && (
                   <Badge className="mb-3 md:mb-4 bg-gray-600 text-xs">CURRENT</Badge>
                 )}
-                <h3 className="font-bold mb-1 md:mb-2 text-gray-900 text-xl md:text-2xl">
-                  Free
-                </h3>
+                <div className="flex items-center gap-2 mb-1 md:mb-2">
+                  <Compass className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />
+                  <h3 className="font-bold text-gray-900 text-xl md:text-2xl">
+                    Scout
+                  </h3>
+                </div>
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">Learn the Method</p>
                 <div className="mb-3 md:mb-4">
                   <div className="flex items-baseline gap-1">
@@ -392,7 +396,7 @@ export default function Pricing() {
               </CardContent>
             </Card>
 
-            {/* Good Tier (Pro) */}
+            {/* Pioneer Tier (Good) */}
             <Card className={`border-2 ${currentTier === 'good' ? 'border-green-600 shadow-lg' : recommendedTier === 'good' ? 'border-green-400 shadow-lg' : 'border-green-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'good' ? (
@@ -403,9 +407,9 @@ export default function Pricing() {
                   <Badge className="mb-3 md:mb-4 bg-green-600 text-xs">BEST VALUE</Badge>
                 )}
                 <div className="flex items-center gap-2 mb-1 md:mb-2">
-                  <Zap className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+                  <Flag className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
                   <h3 className="font-bold text-green-700 text-xl md:text-2xl">
-                    Good
+                    Pioneer
                   </h3>
                 </div>
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">AI-Powered Pro</p>
@@ -427,6 +431,10 @@ export default function Pricing() {
 
                 <ul className="space-y-2 mb-4 md:mb-6 min-h-[180px] md:min-h-[200px]">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
+                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold">Everything in Scout, PLUS:</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-xs md:text-sm">
                     <Brain className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <span><strong>AI cascade alerts</strong></span>
                   </li>
@@ -441,10 +449,6 @@ export default function Pricing() {
                   <li className="flex items-start gap-2 text-xs md:text-sm">
                     <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Up to 25 doors</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Portfolio analytics</span>
                   </li>
                   <li className="flex items-start gap-2 text-xs md:text-sm">
                     <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
@@ -467,13 +471,13 @@ export default function Pricing() {
                     className="w-full font-bold text-sm md:text-base"
                     style={{ backgroundColor: '#28A745', minHeight: '48px' }}
                   >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Pro' : 'Switch to Pro'}
+                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Pioneer' : 'Switch to Pioneer'}
                   </Button>
                 )}
               </CardContent>
             </Card>
 
-            {/* Better Tier (Premium) */}
+            {/* Commander Tier (Better) */}
             <Card className={`border-2 ${currentTier === 'better' ? 'border-purple-600 shadow-lg' : recommendedTier === 'better' ? 'border-purple-400 shadow-lg' : 'border-purple-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'better' ? (
@@ -484,9 +488,9 @@ export default function Pricing() {
                   <Badge className="mb-3 md:mb-4 bg-purple-600 text-xs">GROWING PORTFOLIO</Badge>
                 )}
                 <div className="flex items-center gap-2 mb-1 md:mb-2">
-                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
+                  <Star className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
                   <h3 className="font-bold text-purple-700 text-xl md:text-2xl">
-                    Better
+                    Commander
                   </h3>
                 </div>
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">Advanced AI + Collaboration</p>
@@ -508,6 +512,10 @@ export default function Pricing() {
 
                 <ul className="space-y-2 mb-4 md:mb-6 min-h-[180px] md:min-h-[200px]">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
+                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold">Everything in Pioneer, PLUS:</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-xs md:text-sm">
                     <Brain className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <span><strong>AI portfolio comparison</strong></span>
                   </li>
@@ -527,10 +535,6 @@ export default function Pricing() {
                     <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <span>White-label reports</span>
                   </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span>Priority support (24hr)</span>
-                  </li>
                 </ul>
 
                 {currentTier === 'better' ? (
@@ -548,13 +552,13 @@ export default function Pricing() {
                     className="w-full font-bold text-sm md:text-base"
                     style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
                   >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Premium' : 'Switch to Premium'}
+                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Commander' : 'Switch to Commander'}
                   </Button>
                 )}
               </CardContent>
             </Card>
 
-            {/* Best Tier (Enterprise) */}
+            {/* Elite Tier (Best) */}
             <Card className={`border-2 ${currentTier === 'best' ? 'border-orange-600 shadow-lg' : recommendedTier === 'best' ? 'border-orange-400 shadow-lg' : 'border-orange-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'best' ? (
@@ -567,7 +571,7 @@ export default function Pricing() {
                 <div className="flex items-center gap-2 mb-1 md:mb-2">
                   <Crown className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
                   <h3 className="font-bold text-orange-700 text-xl md:text-2xl">
-                    Best
+                    Elite
                   </h3>
                 </div>
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">Full Enterprise Suite</p>
@@ -589,6 +593,10 @@ export default function Pricing() {
 
                 <ul className="space-y-2 mb-4 md:mb-6 min-h-[180px] md:min-h-[200px]">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
+                    <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold">Everything in Commander, PLUS:</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-xs md:text-sm">
                     <Brain className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
                     <span><strong>Custom AI reporting</strong></span>
                   </li>
@@ -608,10 +616,6 @@ export default function Pricing() {
                     <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
                     <span>Phone support (4hr)</span>
                   </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span>API access (soon)</span>
-                  </li>
                 </ul>
 
                 {currentTier === 'best' ? (
@@ -625,7 +629,7 @@ export default function Pricing() {
                     className="w-full font-bold text-sm md:text-base"
                     style={{ backgroundColor: '#F59E0B', minHeight: '48px' }}
                   >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Enterprise' : 'Switch to Enterprise'}
+                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Elite' : 'Switch to Elite'}
                   </Button>
                 )}
               </CardContent>
@@ -738,20 +742,20 @@ export default function Pricing() {
             
             <div className="space-y-3 md:space-y-4">
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Pro (Good):</strong> $8/month covers your first 3 doors. Add $2/month for each door beyond that, up to 25 doors maximum.
+                <strong>Pioneer (Good):</strong> $8/month covers your first 3 doors. Add $2/month for each door beyond that, up to 25 doors maximum.
               </p>
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Premium (Better):</strong> $50/month covers your first 15 doors. Add $3/month for each door beyond that, up to 100 doors maximum.
+                <strong>Commander (Better):</strong> $50/month covers your first 15 doors. Add $3/month for each door beyond that, up to 100 doors maximum.
               </p>
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Enterprise (Best):</strong> $299/month flat rate, unlimited doors. Best value for 80+ doors.
+                <strong>Elite (Best):</strong> $299/month flat rate, unlimited doors. Best value for 80+ doors.
               </p>
 
               <div className="bg-white rounded-lg p-3 md:p-4 mt-3 md:mt-4">
                 <p className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Real-World Examples:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs md:text-sm text-gray-700">
                   <div>
-                    <strong>Pro Tier:</strong>
+                    <strong>Pioneer Tier:</strong>
                     <ul className="space-y-1 ml-4 mt-2">
                       <li>• 1 house = <strong>$8/mo</strong></li>
                       <li>• 1 house + 1 duplex (3 doors) = <strong>$8/mo</strong></li>
@@ -760,7 +764,7 @@ export default function Pricing() {
                     </ul>
                   </div>
                   <div>
-                    <strong>Premium Tier:</strong>
+                    <strong>Commander Tier:</strong>
                     <ul className="space-y-1 ml-4 mt-2">
                       <li>• 15 doors = <strong>$50/mo</strong></li>
                       <li>• 30 doors = <strong>$95/mo</strong></li>
@@ -773,7 +777,7 @@ export default function Pricing() {
 
               <div className="bg-green-50 rounded-lg p-3 border-l-4 border-green-600">
                 <p className="text-xs md:text-sm text-green-900 leading-relaxed">
-                  <strong>💡 Smart Tip:</strong> Enterprise becomes better value around 80 doors ($299 flat vs. $245+ variable). Plus you get multi-user accounts and dedicated support.
+                  <strong>💡 Smart Tip:</strong> Elite becomes better value around 80 doors ($299 flat vs. $245+ variable). Plus you get multi-user accounts and dedicated support.
                 </p>
               </div>
             </div>
@@ -807,10 +811,10 @@ export default function Pricing() {
                   <thead>
                     <tr className="border-b-2">
                       <th className="text-left p-2 md:p-3 font-semibold text-xs md:text-sm">Feature</th>
-                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm">Free</th>
-                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-green-700">Good</th>
-                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-purple-700">Better</th>
-                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-orange-700">Best</th>
+                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm">Scout</th>
+                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-green-700">Pioneer</th>
+                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-purple-700">Commander</th>
+                      <th className="text-center p-2 md:p-3 font-semibold text-xs md:text-sm text-orange-700">Elite</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -907,7 +911,7 @@ export default function Pricing() {
                   Can I cancel or change tiers anytime?
                 </h4>
                 <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  Yes! Switch between tiers instantly with no penalties. All your data stays intact. Try Premium features, downgrade if needed - you're always in control.
+                  Yes! Switch between tiers instantly with no penalties. All your data stays intact. Try Commander features, downgrade if needed - you're always in control.
                 </p>
               </div>
 
@@ -933,10 +937,10 @@ export default function Pricing() {
 
               <div>
                 <h4 className="font-semibold mb-2 text-sm md:text-base" style={{ color: '#1B365D' }}>
-                  When should I choose Enterprise over Premium?
+                  When should I choose Elite over Commander?
                 </h4>
                 <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  Enterprise makes sense at 80+ doors (saves money vs. Premium's variable pricing) OR if you need multi-user teams, 
+                  Elite makes sense at 80+ doors (saves money vs. Commander's variable pricing) OR if you need multi-user teams, 
                   custom reporting, and dedicated support. Great for property management companies managing client portfolios.
                 </p>
               </div>
@@ -946,7 +950,7 @@ export default function Pricing() {
                   What about professional services (HomeCare/PropertyCare)?
                 </h4>
                 <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                  Professional service memberships include the Best (Enterprise) software tier FREE for one year. 
+                  Professional service memberships include the Elite software tier FREE for one year. 
                   The software and physical labor are separate offerings. <Link to={createPageUrl("Services")} className="text-blue-600 underline">Learn more about professional services</Link>.
                 </p>
               </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, ArrowRight, Brain, Sparkles, Zap, TrendingUp, Crown, Check, AlertTriangle } from "lucide-react";
+import { X, ArrowRight, Brain, Sparkles, Zap, TrendingUp, Crown, Check, AlertTriangle, Compass, Flag, Star } from "lucide-react";
 
 export default function TierChangeDialog({ 
   open, 
@@ -23,24 +23,24 @@ export default function TierChangeDialog({
 
   const getTierIcon = (tier) => {
     switch(tier) {
-      case 'free': return Sparkles;
-      case 'good': return Zap;
-      case 'better': return TrendingUp;
+      case 'free': return Compass;
+      case 'good': return Flag;
+      case 'better': return Star;
       case 'best': return Crown;
-      default: return Sparkles;
+      default: return Compass;
     }
   };
 
   const CurrentIcon = getTierIcon(currentTier);
   const NewIcon = getTierIcon(newTier);
 
-  // Feature changes
+  // Feature changes - show only new features for each tier upgrade
   const getFeatureChanges = () => {
     const features = {
       free: ['Basic tracking', '1 property limit'],
       good: ['AI cascade alerts', 'AI cost forecasting', 'AI insights', 'Portfolio analytics', 'Export reports', 'Up to 25 doors'],
-      better: ['Everything in Pro', 'AI portfolio comparison', 'AI budget forecasting', 'Team collaboration', 'White-label reports', 'Up to 100 doors'],
-      best: ['Everything in Premium', 'Custom AI reports', 'Multi-user accounts', 'Dedicated manager', 'Phone support', 'Unlimited doors']
+      better: ['AI portfolio comparison', 'AI budget forecasting', 'Team collaboration', 'White-label reports', 'Up to 100 doors'],
+      best: ['Custom AI reports', 'Multi-user accounts', 'Dedicated manager', 'Phone support', 'Unlimited doors']
     };
 
     const currentFeatures = features[currentTier] || [];
@@ -48,7 +48,7 @@ export default function TierChangeDialog({
 
     if (isUpgrade) {
       return {
-        gaining: newFeatures.slice(currentFeatures.length),
+        gaining: newFeatures,
         keeping: currentFeatures
       };
     } else {
@@ -180,7 +180,9 @@ export default function TierChangeDialog({
               <div className="space-y-3">
                 {isUpgrade && changes.gaining.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 mb-2">✨ New Features:</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                      ✨ New Features (includes everything in {currentTierConfig.displayName}):
+                    </p>
                     <div className="space-y-1">
                       {changes.gaining.map((feature, idx) => (
                         <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
