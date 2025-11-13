@@ -44,8 +44,6 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     units: data.units || []
   });
 
-  const [initialized, setInitialized] = React.useState(false);
-
   // Scroll to top when component mounts
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -53,7 +51,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
 
   // Initialize units array for multi-unit configuration - ONLY ONCE
   React.useEffect(() => {
-    if (useUnitBasedConfig && !initialized && data.door_count) {
+    if (useUnitBasedConfig && formData.units.length === 0 && data.door_count) {
       const initialUnits = [];
       for (let i = 0; i < data.door_count; i++) {
         const existingUnit = data.units?.[i];
@@ -64,7 +62,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
           bedrooms: existingUnit?.bedrooms || "",
           bathrooms: existingUnit?.bathrooms || "",
           occupancy_status: existingUnit?.occupancy_status || "Vacant",
-          is_furnished: existingUnit?.is_furnished || false,
+          is_furnished: existingUnit?.is_furnished ?? false,
           furnishing_level: existingUnit?.furnishing_level || "unfurnished",
           tenant_name: existingUnit?.tenant_name || "",
           tenant_email: existingUnit?.tenant_email || "",
@@ -73,9 +71,8 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
         });
       }
       setFormData(prev => ({ ...prev, units: initialUnits }));
-      setInitialized(true);
     }
-  }, [useUnitBasedConfig, data.door_count, initialized, data.units]);
+  }, []);
 
   // For full rental properties, sync number_of_rental_units with door_count
   React.useEffect(() => {
@@ -272,11 +269,21 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                             { value: 'unfurnished', label: 'Unfurnished', sub: 'Tenant brings everything' }
                           ].map((option) => (
                             <button
-                              key={option.value}
+                              key={`${unit.unit_id}-${option.value}`}
                               type="button"
-                              onClick={() => {
-                                updateUnit(index, 'furnishing_level', option.value);
-                                updateUnit(index, 'is_furnished', option.value !== 'unfurnished');
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Furnishing button clicked:', option.value, 'for unit', index);
+                                const updatedUnits = [...formData.units];
+                                updatedUnits[index] = { 
+                                  ...updatedUnits[index], 
+                                  furnishing_level: option.value,
+                                  is_furnished: option.value !== 'unfurnished'
+                                };
+                                const updated = { ...formData, units: updatedUnits };
+                                setFormData(updated);
+                                onChange(updated);
                               }}
                               className={`w-full flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all text-left ${
                                 unit.furnishing_level === option.value
@@ -1070,7 +1077,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <Label className="font-semibold">Estimated bookings per year</Label>
                 <Select
                   value={String(formData.rental_config.bookings_per_year)}
-                  onValueChange={(value) => updateRentalConfig('bookings_per_per', parseInt(value))}
+                  onValueChange={(value) => updateRentalConfig('bookings_per_year', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
                     <SelectValue placeholder="Select..." />
