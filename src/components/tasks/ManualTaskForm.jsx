@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
 async function enrichTaskWithAI(taskId, taskData, photoUrls = []) {
@@ -213,7 +214,7 @@ const EXECUTION_TYPES = [
   { value: "Not Decided", label: "🤔 Not Decided - I'll decide later" }
 ];
 
-export default function ManualTaskForm({ propertyId, onComplete, onCancel, open = true, prefilledDate = null, editingTask = null }) {
+export default function ManualTaskForm({ propertyId, property, onComplete, onCancel, open = true, prefilledDate = null, editingTask = null }) {
   const queryClient = useQueryClient();
   const [step, setStep] = React.useState(1);
   const [formData, setFormData] = React.useState(editingTask || {
@@ -225,7 +226,8 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
     scheduled_date: prefilledDate || null,
     execution_type: "Not Decided",
     current_fix_cost: "",
-    urgency_timeline: ""
+    urgency_timeline: "",
+    unit_tag: "" // Added unit_tag to initial state
   });
   const [photos, setPhotos] = React.useState(editingTask?.photo_urls || []);
   const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
@@ -234,6 +236,8 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
   const [showAiResults, setShowAiResults] = React.useState(false);
 
   const isEditing = !!editingTask?.id;
+  const isMultiUnit = property && (property.door_count > 1 || (property.units && property.units.length > 0));
+  const unitOptions = property?.units || [];
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
@@ -297,6 +301,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
       status: formData.status,
       execution_type: formData.execution_type,
       photo_urls: photos,
+      unit_tag: formData.unit_tag || undefined, // Include unit_tag
       current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
       urgency_timeline: formData.urgency_timeline || undefined,
       scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined
@@ -624,6 +629,47 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                   </Select>
                 </div>
               </div>
+
+              {/* Unit Tag - For Multi-Unit Properties */}
+              {isMultiUnit && (
+                <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                  <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Tag by Unit (Multi-Unit Property)
+                  </label>
+                  <p className="text-xs text-purple-800 mb-3">
+                    Tagging by unit helps you sort maintenance history later in Track
+                  </p>
+                  <Select
+                    value={formData.unit_tag}
+                    onValueChange={(value) => setFormData({ ...formData, unit_tag: value })}
+                  >
+                    <SelectTrigger className="bg-white" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select unit (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>All Units / Common Area</SelectItem> {/* Changed null to empty string for consistency with controlled component */}
+                      {unitOptions.length > 0 ? (
+                        unitOptions.map((unit, idx) => (
+                          <SelectItem key={unit.unit_id || idx} value={unit.unit_id || unit.nickname || `Unit ${idx + 1}`}>
+                            {unit.nickname || unit.unit_id || `Unit ${idx + 1}`}
+                            {unit.bedrooms && ` - ${unit.bedrooms}bd`}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          {/* Fallback options if units array is empty */}
+                          <SelectItem value="Unit 1">Unit 1</SelectItem>
+                          <SelectItem value="Unit 2">Unit 2</SelectItem>
+                          <SelectItem value="Unit 3">Unit 3</SelectItem>
+                          <SelectItem value="Unit 4">Unit 4</SelectItem>
+                          <SelectItem value="Common Area">Common Area</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
 
@@ -736,6 +782,12 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                     <span className="text-gray-600 font-medium">Execution:</span>
                     <span className="font-semibold text-gray-900">{formData.execution_type}</span>
                   </div>
+                  {isMultiUnit && formData.unit_tag && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Unit:</span>
+                      <span className="font-semibold text-purple-700">{formData.unit_tag}</span>
+                    </div>
+                  )}
                   {formData.scheduled_date && (
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Scheduled:</span>

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,7 +21,8 @@ import {
   Send,
   Edit,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  Building2 // Added Building2 import
 } from "lucide-react";
 import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -83,6 +85,7 @@ export default function PriorityTaskCard({
   const currentCost = task.current_fix_cost || 0;
   const delayedCost = task.delayed_fix_cost || 0;
   const potentialSavings = delayedCost - currentCost;
+  const isMultiUnit = property && property.door_count > 1; // Added isMultiUnit
 
   const handleExecutionTypeChange = (newType) => {
     updateTaskMutation.mutate({
@@ -134,6 +137,12 @@ export default function PriorityTaskCard({
                     'bg-blue-600'
                   }>
                     Risk: {cascadeRiskScore}/10
+                  </Badge>
+                )}
+                {isMultiUnit && task.unit_tag && ( // Added unit_tag badge
+                  <Badge className="bg-purple-600 text-white gap-1">
+                    <Building2 className="w-3 h-3" />
+                    {task.unit_tag}
                   </Badge>
                 )}
                 {property && (
@@ -403,6 +412,7 @@ export default function PriorityTaskCard({
       {showEditForm && (
         <ManualTaskForm
           propertyId={task.property_id}
+          property={property} // Added property prop
           editingTask={task}
           onComplete={() => setShowEditForm(false)}
           onCancel={() => setShowEditForm(false)}
