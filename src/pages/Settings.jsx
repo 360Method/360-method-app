@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,13 +23,14 @@ import {
   TrendingUp,
   Zap,
   ArrowUpCircle,
-  Compass, // New import
-  Flag,    // New import
-  Star     // New import
+  Compass,
+  Flag,
+  Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
+import TierChangeDialog from "../components/pricing/TierChangeDialog";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -51,6 +51,8 @@ export default function Settings() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
   const [isChangingTier, setIsChangingTier] = React.useState(false);
+  const [showTierDialog, setShowTierDialog] = React.useState(false);
+  const [selectedNewTier, setSelectedNewTier] = React.useState(null);
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -85,6 +87,8 @@ export default function Settings() {
       setIsSaving(false);
       setSaveSuccess(true);
       setIsChangingTier(false);
+      setShowTierDialog(false);
+      setSelectedNewTier(null);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
     onError: (error) => {
@@ -101,10 +105,13 @@ export default function Settings() {
   };
 
   const handleChangeTier = (newTier) => {
-    if (confirm(`Switch to ${getTierConfig(newTier).displayName} tier?`)) {
-      setIsChangingTier(true);
-      updateUserMutation.mutate({ tier: newTier });
-    }
+    setSelectedNewTier(newTier);
+    setShowTierDialog(true);
+  };
+
+  const handleConfirmTierChange = () => {
+    setIsChangingTier(true);
+    updateUserMutation.mutate({ tier: selectedNewTier });
   };
 
   const handleRestartOnboarding = async () => {
@@ -129,16 +136,22 @@ export default function Settings() {
   const totalDoors = calculateTotalDoors(properties);
   const tierConfig = getTierConfig(currentTier);
 
-  // Get pricing for all tiers
-  const goodPricing = calculateGoodPricing(totalDoors);
-  const betterPricing = calculateBetterPricing(totalDoors);
-  const bestPricing = calculateBestPricing();
+  // Get pricing for all tiers (using annual by default for display)
+  const goodPricing = calculateGoodPricing(totalDoors, 'annual');
+  const betterPricing = calculateBetterPricing(totalDoors, 'annual');
+  const bestPricing = calculateBestPricing('annual');
 
   // Determine which tier pricing applies
   let currentPricing = null;
   if (currentTier === 'good') currentPricing = goodPricing;
   if (currentTier === 'better') currentPricing = betterPricing;
   if (currentTier === 'best') currentPricing = bestPricing;
+
+  // Get pricing for selected new tier
+  let selectedNewTierPricing = null;
+  if (selectedNewTier === 'good') selectedNewTierPricing = calculateGoodPricing(totalDoors, 'annual');
+  if (selectedNewTier === 'better') selectedNewTierPricing = calculateBetterPricing(totalDoors, 'annual');
+  if (selectedNewTier === 'best') selectedNewTierPricing = calculateBestPricing('annual');
 
   const getTierIcon = (tier) => {
     switch(tier) {
@@ -198,7 +211,7 @@ export default function Settings() {
                       ${currentPricing.monthlyPrice}<span className="text-lg">/month</span>
                     </p>
                     <p className="text-sm text-gray-600">
-                      ${currentPricing.annualPrice}/year
+                      ${currentPricing.annualPrice}/year (annual billing)
                     </p>
                     {currentPricing.additionalDoors > 0 && (
                       <div className="mt-2 p-2 bg-white rounded border border-gray-200">
@@ -265,7 +278,7 @@ export default function Settings() {
                   className={currentTier === 'free' ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'free' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'free' ? '✓ Scout' : 'Scout'}
+                  {currentTier === 'free' ? '✓ Scout' : 'Scout'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('good')}
@@ -275,7 +288,7 @@ export default function Settings() {
                   className={currentTier === 'good' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'good' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'good' ? '✓ Pioneer' : 'Pioneer'}
+                  {currentTier === 'good' ? '✓ Pioneer' : 'Pioneer'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('better')}
@@ -285,7 +298,7 @@ export default function Settings() {
                   className={currentTier === 'better' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'better' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'better' ? '✓ Commander' : 'Commander'}
+                  {currentTier === 'better' ? '✓ Commander' : 'Commander'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('best')}
@@ -295,7 +308,7 @@ export default function Settings() {
                   className={currentTier === 'best' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'best' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'best' ? '✓ Elite' : 'Elite'}
+                  {currentTier === 'best' ? '✓ Elite' : 'Elite'}
                 </Button>
               </div>
               {isChangingTier && (
@@ -602,6 +615,26 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tier Change Dialog */}
+      {selectedNewTier && (
+        <TierChangeDialog
+          open={showTierDialog}
+          onClose={() => {
+            setShowTierDialog(false);
+            setSelectedNewTier(null);
+          }}
+          onConfirm={handleConfirmTierChange}
+          currentTier={currentTier}
+          newTier={selectedNewTier}
+          currentTierConfig={getTierConfig(currentTier)}
+          newTierConfig={getTierConfig(selectedNewTier)}
+          newTierPricing={selectedNewTierPricing}
+          totalDoors={totalDoors}
+          billingCycle="annual"
+          isLoading={isChangingTier}
+        />
+      )}
     </div>
   );
 }
