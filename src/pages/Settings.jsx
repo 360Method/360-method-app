@@ -18,10 +18,15 @@ import {
   CheckCircle2,
   Sparkles,
   LogOut,
-  Crown
+  Crown,
+  CreditCard,
+  TrendingUp,
+  Zap,
+  ArrowUpCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -49,7 +54,10 @@ export default function Settings() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list();
+      return allProps.filter(p => !p.is_draft);
+    },
   });
 
   // Initialize form with user data
@@ -86,9 +94,7 @@ export default function Settings() {
         onboarding_completed: false,
         onboarding_skipped: false
       });
-      // Force refetch to ensure state is updated
       await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      // Use navigate instead of window.location
       navigate(createPageUrl("Onboarding"));
     } catch (error) {
       console.error("Failed to restart onboarding:", error);
@@ -99,29 +105,31 @@ export default function Settings() {
     base44.auth.logout();
   };
 
-  const tierInfo = {
-    apprentice: {
-      name: "360 Home Apprentice",
-      color: "blue",
-      icon: "🏠",
-      propertyLimit: 1
-    },
-    pro: {
-      name: "360 Home Pro",
-      color: "purple",
-      icon: "⭐",
-      propertyLimit: 5
-    },
-    commander: {
-      name: "360 Commander",
-      color: "gold",
-      icon: "👑",
-      propertyLimit: "Unlimited"
+  // Tier calculations
+  const currentTier = user?.tier || 'free';
+  const totalDoors = calculateTotalDoors(properties);
+  const tierConfig = getTierConfig(currentTier);
+
+  // Get pricing for all tiers
+  const goodPricing = calculateGoodPricing(totalDoors);
+  const betterPricing = calculateBetterPricing(totalDoors);
+  const bestPricing = calculateBestPricing();
+
+  // Determine which tier pricing applies
+  let currentPricing = null;
+  if (currentTier === 'good') currentPricing = goodPricing;
+  if (currentTier === 'better') currentPricing = betterPricing;
+  if (currentTier === 'best') currentPricing = bestPricing;
+
+  const getTierIcon = (tier) => {
+    switch(tier) {
+      case 'free': return <Sparkles className="w-5 h-5 text-gray-600" />;
+      case 'good': return <Zap className="w-5 h-5 text-green-600" />;
+      case 'better': return <TrendingUp className="w-5 h-5 text-purple-600" />;
+      case 'best': return <Crown className="w-5 h-5 text-orange-600" />;
+      default: return <Sparkles className="w-5 h-5 text-gray-600" />;
     }
   };
-
-  const currentTier = user?.subscription_tier || "apprentice";
-  const tierDetails = tierInfo[currentTier];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pb-20">
@@ -132,51 +140,179 @@ export default function Settings() {
             Settings
           </h1>
           <p className="text-gray-600 text-lg">
-            Manage your account and preferences
+            Manage your account and subscription
           </p>
         </div>
 
-        {/* Current Tier */}
-        <Card className={`mb-6 border-2 ${
-          currentTier === 'commander' ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50' :
-          currentTier === 'pro' ? 'border-purple-300 bg-purple-50' :
-          'border-blue-300 bg-blue-50'
+        {/* Current Tier & Billing */}
+        <Card className={`mb-6 border-2 shadow-lg ${
+          currentTier === 'best' ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-yellow-50' :
+          currentTier === 'better' ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50' :
+          currentTier === 'good' ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50' :
+          'border-gray-300 bg-gray-50'
         }`}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">{tierDetails.icon}</div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-bold" style={{ color: '#1B365D' }}>
-                      {tierDetails.name}
-                    </h3>
-                    {currentTier === 'commander' && <Crown className="w-5 h-5 text-yellow-600" />}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              {getTierIcon(currentTier)}
+              <span style={{ color: '#1B365D' }}>Current Plan</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-2xl font-bold" style={{ color: tierConfig.color }}>
+                    {tierConfig.displayName}
+                  </h3>
+                  <Badge 
+                    className="text-white"
+                    style={{ backgroundColor: tierConfig.color }}
+                  >
+                    {tierConfig.name.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                {/* Pricing Display */}
+                {currentPricing && currentTier !== 'free' && (
+                  <div className="mb-3">
+                    <p className="text-3xl font-bold" style={{ color: tierConfig.color }}>
+                      ${currentPricing.monthlyPrice}<span className="text-lg">/month</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      ${currentPricing.annualPrice}/year
+                    </p>
+                    {currentPricing.additionalDoors > 0 && (
+                      <div className="mt-2 p-2 bg-white rounded border border-gray-200">
+                        <p className="text-xs text-gray-700">
+                          <strong>Breakdown:</strong> ${currentPricing.breakdown.base} base + ${currentPricing.breakdown.additionalCost} for {currentPricing.additionalDoors} extra door{currentPricing.additionalDoors > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {typeof tierDetails.propertyLimit === 'number' 
-                      ? `Up to ${tierDetails.propertyLimit} ${tierDetails.propertyLimit === 1 ? 'property' : 'properties'}`
-                      : tierDetails.propertyLimit + ' properties'
-                    }
+                )}
+
+                {currentTier === 'free' && (
+                  <p className="text-lg text-gray-700 mb-3">
+                    <strong>$0/month</strong> • Limited features
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Currently managing: <strong>{properties.length}</strong> {properties.length === 1 ? 'property' : 'properties'}
-                  </p>
+                )}
+
+                {/* Door Count */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">Properties</p>
+                    <p className="text-2xl font-bold" style={{ color: tierConfig.color }}>
+                      {properties.length}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {tierConfig.propertyLimit === Infinity ? 'Unlimited' : `of ${tierConfig.propertyLimit} max`}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">Total Doors</p>
+                    <p className="text-2xl font-bold" style={{ color: tierConfig.color }}>
+                      {totalDoors}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {tierConfig.doorLimit === null ? 'Any size' : tierConfig.doorLimit === Infinity ? 'Unlimited' : `of ${tierConfig.doorLimit} max`}
+                    </p>
+                  </div>
                 </div>
               </div>
-              {currentTier !== 'commander' && (
+
+              {currentTier !== 'best' && (
                 <Button
                   asChild
-                  variant="outline"
                   className="gap-2"
+                  style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
                 >
                   <Link to={createPageUrl("Pricing")}>
-                    <Sparkles className="w-4 h-4" />
+                    <ArrowUpCircle className="w-4 h-4" />
                     Upgrade Plan
                   </Link>
                 </Button>
               )}
             </div>
+
+            {/* Upgrade Suggestions */}
+            {currentTier === 'free' && totalDoors > 1 && (
+              <div className="bg-white rounded-lg p-4 border-2 border-green-300">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  💡 Suggested Upgrade: Pro (Good)
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  With {totalDoors} doors, Pro would cost <strong>${goodPricing.monthlyPrice}/month</strong> and unlock:
+                </p>
+                <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
+                  <li>Cascade risk alerts</li>
+                  <li>Portfolio analytics</li>
+                  <li>Export reports (PDF)</li>
+                </ul>
+              </div>
+            )}
+
+            {currentTier === 'good' && totalDoors > 25 && (
+              <div className="bg-white rounded-lg p-4 border-2 border-purple-300">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  💡 Suggested Upgrade: Premium (Better)
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  You have {totalDoors} doors - Premium would cost <strong>${betterPricing.monthlyPrice}/month</strong> and add:
+                </p>
+                <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
+                  <li>Portfolio comparison dashboard</li>
+                  <li>Budget forecasting tools</li>
+                  <li>Share access with team</li>
+                </ul>
+              </div>
+            )}
+
+            {currentTier === 'better' && totalDoors > 80 && (
+              <div className="bg-white rounded-lg p-4 border-2 border-orange-300">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  💡 Suggested Upgrade: Enterprise (Best)
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  With {totalDoors} doors, Enterprise at <strong>$299/month flat</strong> would save you ${betterPricing.monthlyPrice - 299}/month and add:
+                </p>
+                <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
+                  <li>Unlimited doors (no per-door charges)</li>
+                  <li>Multi-user accounts with roles</li>
+                  <li>Dedicated account manager</li>
+                  <li>Phone support (4hr response)</li>
+                </ul>
+              </div>
+            )}
+
+            {/* Feature List */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <p className="text-sm font-semibold text-gray-900 mb-3">Included Features:</p>
+              <ul className="space-y-2">
+                {tierConfig.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: tierConfig.color }} />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Billing Actions */}
+            {currentTier !== 'free' && (
+              <div className="flex gap-3">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="gap-2 flex-1"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Pricing")}>
+                    <CreditCard className="w-4 h-4" />
+                    View Plans
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
