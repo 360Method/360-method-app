@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,39 +8,26 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Calendar as CalendarIcon,
-  ChevronDown,
-  ChevronUp,
   Building2,
   Clock,
   ListChecks,
   ArrowRight,
-  ArrowLeft,
   Inbox,
   PlayCircle,
   BookOpen,
   AlertTriangle,
-  Target,
   Plus,
-  Eye
+  Eye,
+  CheckSquare
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, parseISO, startOfDay, addDays } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import CalendarView from "../components/schedule/CalendarView";
+import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import StepNavigation from "../components/navigation/StepNavigation";
-
-const Label = ({ children, className = "", ...props }) => (
-  <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
-    {children}
-  </label>
-);
-
-const SYSTEM_TYPES = [
-  "HVAC", "Plumbing", "Electrical", "Roof", "Foundation",
-  "Gutters", "Exterior", "Windows/Doors", "Appliances", "Landscaping", "General"
-];
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -50,11 +36,12 @@ export default function SchedulePage() {
   const propertyIdFromUrl = urlParams.get('property');
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
-  const [showEducation, setShowEducation] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState('unscheduled'); // 'unscheduled' or 'calendar'
-  const [expandedSystems, setExpandedSystems] = React.useState({});
+  const [viewMode, setViewMode] = React.useState('unscheduled');
+  const [showQuickDatePicker, setShowQuickDatePicker] = React.useState(false);
+  const [selectedTaskForPicker, setSelectedTaskForPicker] = React.useState(null);
+  const [selectedTasks, setSelectedTasks] = React.useState([]);
+  const [showBatchScheduler, setShowBatchScheduler] = React.useState(false);
 
-  // Fetch properties
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
@@ -63,7 +50,6 @@ export default function SchedulePage() {
     }
   });
 
-  // Set initial selected property
   React.useEffect(() => {
     if (propertyIdFromUrl && properties.length > 0) {
       const foundProperty = properties.find(p => p.id === propertyIdFromUrl);
@@ -75,7 +61,6 @@ export default function SchedulePage() {
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
-  // Fetch tasks based on selected property
   const { data: allTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty],
     queryFn: async () => {
@@ -88,7 +73,6 @@ export default function SchedulePage() {
     enabled: properties.length > 0 && selectedProperty !== null
   });
 
-  // Mutations for task management
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
     onSuccess: () => {
@@ -97,37 +81,26 @@ export default function SchedulePage() {
     }
   });
 
-  // Filter tasks that have execution_method set (ready to be scheduled)
-  const tasksReadyForScheduling = allTasks.filter(task =>
-    task.execution_method &&
+  // Filter tasks that have execution_method set
+  const tasksReadyForScheduling = allTasks.filter(task => 
+    task.execution_method && 
     (task.status === 'Identified' || task.status === 'Scheduled')
   );
 
-  // Split into tasks with dates and tasks without dates
   const tasksWithDates = tasksReadyForScheduling.filter(t => t.scheduled_date);
   const tasksWithoutDates = tasksReadyForScheduling.filter(t => !t.scheduled_date);
 
-  // Group unscheduled tasks by system type
-  const tasksBySystem = tasksWithoutDates.reduce((acc, task) => {
-    const system = task.system_type || 'General';
-    if (!acc[system]) {
-      acc[system] = [];
-    }
-    acc[system].push(task);
-    return acc;
-  }, {});
+  // NEW: Simple flat sort by priority
+  const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
+  const sortedUnscheduledTasks = tasksWithoutDates.sort((a, b) => {
+    return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
+  });
 
-  const sortedSystems = Object.keys(tasksBySystem).sort((a, b) =>
-    tasksBySystem[b].length - tasksBySystem[a].length
-  );
-
-  // Calculate statistics
   const totalScheduling = tasksReadyForScheduling.length;
   const tasksReadyForExecution = tasksWithDates.length;
   const awaitingDates = tasksWithoutDates.length;
   const totalEstimatedHours = tasksReadyForScheduling.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
 
-  // Count tasks by next 7 days
   const today = startOfDay(new Date());
   const next7Days = tasksReadyForScheduling.filter(t => {
     if (!t.scheduled_date) return false;
@@ -140,11 +113,27 @@ export default function SchedulePage() {
     }
   }).length;
 
-  // Handler for drag-and-drop from calendar
-  const handleTaskDrop = (taskId, date) => {
+  // NEW: Workload calculation
+  const getWorkloadByDay = (tasks) => {
+    const workloadMap = {};
+    tasks.forEach(task => {
+      if (task.scheduled_date && (task.estimated_hours || task.diy_time_hours)) {
+        const dateKey = format(parseISO(task.scheduled_date), 'yyyy-MM-dd');
+        workloadMap[dateKey] = (workloadMap[dateKey] || 0) + (task.estimated_hours || task.diy_time_hours);
+      }
+    });
+    return workloadMap;
+  };
+
+  const workloadByDay = getWorkloadByDay(tasksWithDates);
+  const overloadedDays = Object.entries(workloadByDay)
+    .filter(([date, hours]) => hours > 6)
+    .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+  const handleTaskDrop = (task, date) => {
     updateTaskMutation.mutate({
-      taskId: taskId,
-      data: {
+      taskId: task.id,
+      data: { 
         scheduled_date: format(date, 'yyyy-MM-dd'),
         status: 'Scheduled'
       }
@@ -154,7 +143,7 @@ export default function SchedulePage() {
   const handleSetDate = (task, date) => {
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: {
+      data: { 
         scheduled_date: format(date, 'yyyy-MM-dd'),
         status: 'Scheduled'
       }
@@ -164,7 +153,7 @@ export default function SchedulePage() {
   const handleSendBackToPrioritize = (task) => {
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: {
+      data: { 
         status: 'Identified',
         scheduled_date: null,
         execution_method: null
@@ -172,14 +161,35 @@ export default function SchedulePage() {
     });
   };
 
-  const toggleSystemExpanded = (system) => {
-    setExpandedSystems(prev => ({
-      ...prev,
-      [system]: !prev[system]
-    }));
+  const handleTaskClick = (task, event) => {
+    // Cmd/Ctrl+Click for batch selection
+    if (event.metaKey || event.ctrlKey) {
+      if (selectedTasks.includes(task.id)) {
+        setSelectedTasks(selectedTasks.filter(id => id !== task.id));
+      } else {
+        setSelectedTasks([...selectedTasks, task.id]);
+      }
+    } else {
+      // Regular click opens quick date picker
+      setSelectedTaskForPicker(task);
+      setShowQuickDatePicker(true);
+    }
   };
 
-  // No properties fallback
+  const handleBatchSchedule = (dateStr) => {
+    selectedTasks.forEach(taskId => {
+      updateTaskMutation.mutate({
+        taskId,
+        data: {
+          scheduled_date: dateStr,
+          status: 'Scheduled'
+        }
+      });
+    });
+    setSelectedTasks([]);
+    setShowBatchScheduler(false);
+  };
+
   if (properties.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 pb-20">
@@ -206,19 +216,18 @@ export default function SchedulePage() {
     );
   }
 
-  const currentProperty = selectedProperty !== 'all'
+  const currentProperty = selectedProperty !== 'all' 
     ? properties.find(p => p.id === selectedProperty)
     : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        {/* Step Navigation */}
+        
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={5} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center shadow-lg">
@@ -229,19 +238,18 @@ export default function SchedulePage() {
                 Step 5: Schedule - Timeline Planner
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Drag tasks to calendar dates, then they flow to Execute
+                Click tasks for quick scheduling or drag to calendar
               </p>
             </div>
           </div>
 
-          {/* ACT Phase Workflow Indicator */}
           <Card className="border-2 border-yellow-400 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 shadow-lg">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="w-5 h-5 text-yellow-700" />
                 <h3 className="font-bold text-yellow-900">ACT Phase - Step 2 of 3:</h3>
               </div>
-
+              
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge className="bg-red-600 text-white">✓ 1. Prioritize</Badge>
                 <ArrowRight className="w-4 h-4 text-gray-600" />
@@ -251,128 +259,27 @@ export default function SchedulePage() {
               </div>
 
               <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Tasks with execution methods arrive from Prioritize → Drag them to calendar dates →
-                They auto-flow to Execute on scheduled day with AI how-to guides
+                <strong>Your Job:</strong> Click any task for quick date options (Today/Tomorrow/Weekend) or drag to calendar → 
+                Tasks auto-flow to Execute on scheduled day
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Educational Card - Expandable */}
-        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 mb-6">
-          <CardContent className="p-4">
-            <button
-              onClick={() => setShowEducation(!showEducation)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-bold text-yellow-900 mb-1">
-                  📅 How Schedule Works
-                </h3>
-                <p className="text-sm text-yellow-800">
-                  Click to understand your role in the ACT workflow
-                </p>
-              </div>
-              {showEducation ? (
-                <ChevronUp className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-              )}
-            </button>
-
-            {showEducation && (
-              <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-yellow-200 pt-4">
-                <p className="leading-relaxed">
-                  <strong>Schedule is Step 2 of ACT:</strong> After you've prioritized tasks and selected an execution method (DIY/Contractor/360° Operator),
-                  they arrive here. Your job is to assign calendar dates. Once a date is set, the task will automatically flow to "Execute"
-                  on that day, where you'll find comprehensive AI how-to guides. This creates your maintenance timeline.
-                </p>
-
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-3 border border-yellow-200">
-                    <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
-                      <Inbox className="w-4 h-4" />
-                      What Arrives Here
-                    </p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Tasks from Prioritize with an execution method (DIY/Contractor/360° Operator) selected.</li>
-                      <li>• Status is "Identified" or "Scheduled" (if already dated)</li>
-                      <li>• May or may not have dates yet</li>
-                      <li>• Can be DIY, Contractor, or 360° Operator</li>
-                      <li>• Already enriched with AI analysis</li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-3 border border-yellow-200">
-                    <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      Your Planning Tasks
-                    </p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Assign calendar dates to tasks</li>
-                      <li>• Group similar work (batch by system)</li>
-                      <li>• Consider seasonal timing</li>
-                      <li>• Plan around availability</li>
-                      <li>• Balance DIY vs Professional timing</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="bg-green-50 rounded-lg p-3 border-2 border-green-300">
-                  <p className="font-semibold text-green-900 mb-2 flex items-center gap-2">
-                    <PlayCircle className="w-4 h-4" />
-                    Next Stop: Execute (Green)
-                  </p>
-                  <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                    Once tasks have dates, they automatically appear in <strong>Execute</strong> on the scheduled day.
-                    Execute shows:
-                  </p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• AI-generated scope of work</li>
-                    <li>• Tools & materials needed</li>
-                    <li>• Video tutorials</li>
-                    <li>• Time estimates</li>
-                    <li>• Complete how-to guides</li>
-                  </ul>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
-                  <p className="font-semibold text-blue-900 mb-2">💡 Pro Tips:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• <strong>Batch by system:</strong> Schedule similar tasks together (all HVAC work on one day)</li>
-                    <li>• <strong>Season matters:</strong> Don't schedule roof work in winter or exterior painting in rain season</li>
-                    <li>• <strong>Send back anytime:</strong> Changed your mind? Send tasks back to Prioritize to reassess execution method or prioritize differently.</li>
-                    <li>• <strong>No rush:</strong> Tasks wait here until YOU assign dates - nothing happens automatically</li>
-                  </ul>
-                </div>
-
-                <p className="text-xs italic text-yellow-700 bg-yellow-100 border border-yellow-300 rounded p-2">
-                  🗓️ <strong>Remember:</strong> Schedule is about <strong>WHEN</strong>, not HOW. The "how" lives in
-                  Execute with AI-generated instructions. Your job here is just timeline planning.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Property Selector */}
         {properties.length > 1 && (
           <Card className="mb-6 border-2 border-yellow-200 bg-white">
             <CardContent className="p-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-yellow-600" />
-                  <Label className="text-base font-bold text-yellow-900">Filter by Property:</Label>
+                  <label className="text-base font-bold text-yellow-900">Filter by Property:</label>
                 </div>
                 <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                   <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
                     <SelectValue placeholder="Select property" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">
-                      All Properties ({properties.length})
-                    </SelectItem>
+                    <SelectItem value="all">All Properties ({properties.length})</SelectItem>
                     {properties.map(prop => (
                       <SelectItem key={prop.id} value={prop.id}>
                         {prop.address || prop.street_address || 'Unnamed Property'}
@@ -391,13 +298,9 @@ export default function SchedulePage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <ListChecks className="w-5 h-5 text-yellow-600" />
-                <Badge className="bg-yellow-600 text-white text-xs">
-                  Total
-                </Badge>
+                <Badge className="bg-yellow-600 text-white text-xs">Total</Badge>
               </div>
-              <p className="text-2xl font-bold text-yellow-700">
-                {totalScheduling}
-              </p>
+              <p className="text-2xl font-bold text-yellow-700">{totalScheduling}</p>
               <p className="text-xs text-gray-600">Ready to Schedule</p>
             </CardContent>
           </Card>
@@ -407,14 +310,10 @@ export default function SchedulePage() {
               <div className="flex items-center justify-between mb-2">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
                 {awaitingDates > 0 && (
-                  <Badge className="bg-orange-600 text-white text-xs">
-                    Needs Date
-                  </Badge>
+                  <Badge className="bg-orange-600 text-white text-xs">Needs Date</Badge>
                 )}
               </div>
-              <p className="text-2xl font-bold text-orange-700">
-                {awaitingDates}
-              </p>
+              <p className="text-2xl font-bold text-orange-700">{awaitingDates}</p>
               <p className="text-xs text-gray-600">Awaiting Dates</p>
             </CardContent>
           </Card>
@@ -424,9 +323,7 @@ export default function SchedulePage() {
               <div className="flex items-center justify-between mb-2">
                 <PlayCircle className="w-5 h-5 text-green-600" />
               </div>
-              <p className="text-2xl font-bold text-green-700">
-                {tasksReadyForExecution}
-              </p>
+              <p className="text-2xl font-bold text-green-700">{tasksReadyForExecution}</p>
               <p className="text-xs text-gray-600">On Calendar</p>
             </CardContent>
           </Card>
@@ -436,14 +333,10 @@ export default function SchedulePage() {
               <div className="flex items-center justify-between mb-2">
                 <Clock className="w-5 h-5 text-blue-600" />
                 {next7Days > 0 && (
-                  <Badge className="bg-blue-600 text-white text-xs">
-                    This Week
-                  </Badge>
+                  <Badge className="bg-blue-600 text-white text-xs">This Week</Badge>
                 )}
               </div>
-              <p className="text-2xl font-bold text-blue-700">
-                {next7Days}
-              </p>
+              <p className="text-2xl font-bold text-blue-700">{next7Days}</p>
               <p className="text-xs text-gray-600">Next 7 Days</p>
             </CardContent>
           </Card>
@@ -453,7 +346,7 @@ export default function SchedulePage() {
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <Label className="font-bold text-yellow-900">View Mode:</Label>
+              <label className="font-bold text-yellow-900">View Mode:</label>
               <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={() => setViewMode('unscheduled')}
@@ -480,9 +373,8 @@ export default function SchedulePage() {
 
         {/* Main Content Area */}
         {viewMode === 'calendar' ? (
-          // CALENDAR VIEW
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Unscheduled Tasks Sidebar (Mobile: above calendar) */}
+            {/* Unscheduled Tasks Sidebar */}
             <div className="lg:col-span-1 order-2 lg:order-1">
               <Card className="border-2 border-orange-300 bg-orange-50 sticky top-4">
                 <CardHeader>
@@ -491,22 +383,81 @@ export default function SchedulePage() {
                     Ready to Schedule ({awaitingDates})
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
-                  {tasksWithoutDates.length > 0 ? (
-                    tasksWithoutDates.map(task => (
+                <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {/* Batch Selection UI */}
+                  {sortedUnscheduledTasks.length > 0 && (
+                    <div className="mb-3 p-3 bg-white rounded-lg border-2 border-orange-400">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-700">
+                          {selectedTasks.length > 0 ? (
+                            <span className="font-semibold">{selectedTasks.length} selected</span>
+                          ) : (
+                            <span className="text-xs">⌘+Click to select multiple</span>
+                          )}
+                        </div>
+                        
+                        {selectedTasks.length > 0 && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => setShowBatchScheduler(true)}
+                              size="sm"
+                              className="bg-yellow-600 hover:bg-yellow-700 gap-1"
+                              style={{ minHeight: '36px' }}
+                            >
+                              <CheckSquare className="w-3 h-3" />
+                              Schedule All
+                            </Button>
+                            <Button
+                              onClick={() => setSelectedTasks([])}
+                              size="sm"
+                              variant="outline"
+                              style={{ minHeight: '36px' }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {sortedUnscheduledTasks.length > 0 ? (
+                    sortedUnscheduledTasks.map(task => (
                       <div
                         key={task.id}
                         draggable
                         onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
-                        className="p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-move hover:bg-orange-50 transition-all"
+                        onClick={(e) => handleTaskClick(task, e)}
+                        className={`
+                          p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-pointer
+                          hover:bg-orange-50 transition-all
+                          ${selectedTasks.includes(task.id) ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''}
+                        `}
+                        style={{ minHeight: '44px' }}
                       >
-                        <div className="font-semibold text-sm text-gray-900 mb-1">{task.title}</div>
-                        <div className="text-xs text-gray-600">
-                          {task.execution_method === 'DIY' && '🔧 DIY'}
-                          {task.execution_method === 'Contractor' && '👷 Contractor'}
-                          {task.execution_method === '360_Operator' && '⭐ 360° Operator'}
-                          {task.diy_cost && ` • $${task.diy_cost}`}
-                          {task.contractor_cost && !task.diy_cost && ` • $${task.contractor_cost}`}
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-gray-900 mb-1 break-words">
+                              {task.title}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
+                              <Badge className={
+                                task.priority === 'High' ? 'bg-red-600' :
+                                task.priority === 'Medium' ? 'bg-yellow-600' :
+                                task.priority === 'Low' ? 'bg-blue-600' : 'bg-gray-600'
+                              } style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                {task.priority}
+                              </Badge>
+                              <span>
+                                {task.execution_method === 'DIY' && '🔧 DIY'}
+                                {task.execution_method === 'Contractor' && '👷 Contractor'}
+                                {task.execution_method === '360_Operator' && '⭐ Operator'}
+                              </span>
+                              {(task.estimated_hours || task.diy_time_hours) && (
+                                <span>• ~{task.estimated_hours || task.diy_time_hours}h</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -521,17 +472,44 @@ export default function SchedulePage() {
 
             {/* Calendar */}
             <div className="lg:col-span-3 order-1 lg:order-2">
-              <CalendarView
+              <CalendarView 
                 tasks={tasksWithDates}
-                onTaskClick={(task) => {/* Could open detail modal */}}
-                onDateClick={(date) => {/* Could open "Add task" modal */}}
-                onTaskDrop={(taskId, date) => handleTaskDrop(taskId, date)}
+                onTaskClick={(task) => {
+                  setSelectedTaskForPicker(task);
+                  setShowQuickDatePicker(true);
+                }}
+                onDateClick={(date) => {/* Could add task selector modal here */}}
+                onTaskDrop={handleTaskDrop}
               />
+              
+              {/* Workload Warning */}
+              {overloadedDays.length > 0 && (
+                <div className="mt-4 bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-orange-900 mb-1">
+                        ⚠️ Heavy Workload Days
+                      </h4>
+                      <div className="text-sm text-orange-800 space-y-1">
+                        {overloadedDays.map(([date, hours]) => (
+                          <div key={date}>
+                            <strong>{format(parseISO(date), 'MMM d, yyyy')}</strong>: {hours.toFixed(1)} hours scheduled
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-orange-700 mt-2">
+                        Consider spreading tasks across multiple days for better balance.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
           // UNSCHEDULED LIST VIEW
-          sortedSystems.length > 0 ? (
+          sortedUnscheduledTasks.length > 0 ? (
             <div className="space-y-4">
               <Card className="border-2 border-orange-300 bg-orange-50">
                 <CardContent className="p-4">
@@ -542,67 +520,27 @@ export default function SchedulePage() {
                         {awaitingDates} Task{awaitingDates !== 1 ? 's' : ''} Waiting for Calendar Dates
                       </h3>
                       <p className="text-sm text-orange-800">
-                        These tasks were sent from Prioritize with execution methods set. Assign dates to move them to the calendar.
+                        Click any task for quick scheduling options or switch to Calendar View to drag and drop.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {sortedSystems.map(system => {
-                const systemTasks = tasksBySystem[system];
-                const isExpanded = expandedSystems[system] !== false;
-
-                return (
-                  <Card key={system} className="border-2 border-yellow-200 bg-white">
-                    <CardHeader
-                      className="cursor-pointer hover:bg-yellow-50 transition-colors"
-                      onClick={() => toggleSystemExpanded(system)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                            <span className="text-2xl">
-                              {system === 'HVAC' ? '❄️' :
-                               system === 'Plumbing' ? '🚰' :
-                               system === 'Electrical' ? '⚡' :
-                               system === 'Roof' ? '🏠' : '🔧'}
-                            </span>
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg text-yellow-900">{system}</CardTitle>
-                            <p className="text-sm text-gray-600">
-                              {systemTasks.length} task{systemTasks.length !== 1 ? 's' : ''} need{systemTasks.length === 1 ? 's' : ''} dates
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-yellow-600 text-white">{systemTasks.length}</Badge>
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-yellow-600" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-yellow-600" />
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    {isExpanded && (
-                      <CardContent className="space-y-3 pt-0">
-                        {systemTasks.map(task => (
-                          <ScheduleTaskCard
-                            key={task.id}
-                            task={task}
-                            property={currentProperty || properties.find(p => p.id === task.property_id)}
-                            onSetDate={handleSetDate}
-                            onSendBack={handleSendBackToPrioritize}
-                          />
-                        ))}
-                      </CardContent>
-                    )}
-                  </Card>
-                );
-              })}
+              {/* Flat list sorted by priority */}
+              {sortedUnscheduledTasks.map(task => (
+                <ScheduleTaskCard
+                  key={task.id}
+                  task={task}
+                  property={currentProperty || properties.find(p => p.id === task.property_id)}
+                  onSetDate={handleSetDate}
+                  onSendBack={handleSendBackToPrioritize}
+                  onQuickSchedule={() => {
+                    setSelectedTaskForPicker(task);
+                    setShowQuickDatePicker(true);
+                  }}
+                />
+              ))}
             </div>
           ) : (
             <Card className="border-2 border-yellow-200 bg-white">
@@ -637,57 +575,6 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Navigation Guide */}
-        <Card className="mt-6 border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <ArrowRight className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-yellow-900 mb-3">Navigation - Moving Tasks Between Steps:</h3>
-                <div className="grid md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-red-50 rounded-lg p-3 border-2 border-red-400">
-                    <p className="font-semibold text-red-900 mb-1 flex items-center gap-2">
-                      <ArrowLeft className="w-4 h-4" />
-                      Send Back to Prioritize
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Changed your mind? Send tasks back to the Ticket Queue to re-evaluate priority,
-                      execution method, or to remove their scheduled date and execution method.
-                    </p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-400">
-                    <p className="font-semibold text-yellow-900 mb-1 flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4" />
-                      Set/Change Date
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Assign calendar dates to tasks. Once dated, they'll appear in Execute on the scheduled day.
-                      You can change dates anytime
-                    </p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
-                    <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
-                      <PlayCircle className="w-4 h-4" />
-                      Auto-Flows to Execute
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Tasks with dates automatically appear in <strong>Execute</strong> on the scheduled day.
-                      No "send" action needed - just set the date
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 bg-white rounded-lg p-3 border-l-4 border-green-600">
-                  <p className="text-xs text-gray-800 leading-relaxed">
-                    <strong>📚 Remember:</strong> Once tasks are completed in Execute, they automatically archive to
-                    <strong> Track</strong> with all dates, costs, and outcomes logged. The ACT workflow ensures nothing falls through the cracks!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Empty State */}
         {totalScheduling === 0 && (
           <Card className="mt-6 border-2 border-yellow-200 bg-white">
@@ -697,7 +584,7 @@ export default function SchedulePage() {
                 No Tasks Ready to Schedule
               </h3>
               <p className="text-gray-600 mb-6">
-                Tasks arrive here from Prioritize after you choose an execution method (DIY/Contractor/360° Operator).
+                Tasks arrive here from Prioritize after you choose an execution method.
               </p>
               <Button
                 asChild
@@ -711,6 +598,53 @@ export default function SchedulePage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Quick Date Picker Modal */}
+        {showQuickDatePicker && selectedTaskForPicker && (
+          <QuickDatePicker
+            task={selectedTaskForPicker}
+            onSchedule={(task, date) => {
+              handleSetDate(task, date);
+            }}
+            onClose={() => {
+              setShowQuickDatePicker(false);
+              setSelectedTaskForPicker(null);
+            }}
+          />
+        )}
+
+        {/* Batch Scheduler Modal */}
+        {showBatchScheduler && selectedTasks.length > 0 && (
+          <Dialog open={true} onOpenChange={() => setShowBatchScheduler(false)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Schedule {selectedTasks.length} Tasks</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Schedule all for:
+                  </label>
+                  <input
+                    type="date"
+                    min={format(new Date(), 'yyyy-MM-dd')}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleBatchSchedule(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:outline-none bg-white"
+                    style={{ minHeight: '48px' }}
+                  />
+                  <p className="text-xs text-gray-600 mt-2">
+                    All {selectedTasks.length} selected tasks will be scheduled for this date
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>

@@ -104,6 +104,10 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
           const isToday = isSameDay(day, new Date());
           const isCurrentMonth = isSameMonth(day, currentMonth);
           
+          // NEW: Calculate workload for this day
+          const totalHours = tasksOnDay.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
+          const availableHours = 8 - totalHours;
+          
           return (
             <div
               key={idx}
@@ -111,7 +115,7 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
               onDrop={(e) => handleDrop(e, day)}
               onDragOver={handleDragOver}
               className={`
-                min-h-20 md:min-h-24 border rounded p-1 md:p-2 cursor-pointer transition-all
+                min-h-20 md:min-h-28 border rounded p-1 md:p-2 cursor-pointer transition-all
                 ${isToday ? 'bg-blue-50 border-blue-400 border-2' : 'bg-white border-gray-200'}
                 ${!isCurrentMonth ? 'opacity-40' : ''}
                 hover:bg-gray-50 hover:shadow-md
@@ -153,6 +157,21 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
                   </div>
                 )}
               </div>
+              
+              {/* NEW: Available Hours Indicator */}
+              {isCurrentMonth && totalHours > 0 && (
+                <div className="text-xs mt-1 font-semibold">
+                  {availableHours > 0 ? (
+                    <span className="text-green-600">
+                      ✓ {availableHours.toFixed(1)}h left
+                    </span>
+                  ) : (
+                    <span className="text-red-600">
+                      ⚠️ Overloaded
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
