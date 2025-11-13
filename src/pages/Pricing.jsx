@@ -737,64 +737,64 @@ export default function Pricing() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200">
+              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200 break-words">
                 <div className="flex items-center gap-2 mb-2">
-                  <Shield className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-                  <h4 className="font-semibold text-purple-900 text-sm md:text-base">Cascade Risk Intelligence</h4>
+                  <Shield className="w-4 h-4 md:w-5 md:h-5 text-purple-600 flex-shrink-0" />
+                  <h4 className="font-semibold text-purple-900 text-sm md:text-base break-words">Cascade Risk Intelligence</h4>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed break-words">
                   <strong>What it does:</strong> Analyzes how one failing system triggers others (e.g., clogged gutters → foundation damage → basement flooding).
                 </p>
-                <p className="text-xs text-gray-600 italic leading-relaxed">
+                <p className="text-xs text-gray-600 italic leading-relaxed break-words">
                   <strong>Why you're better:</strong> You'll spot chain reactions before they start, like a professional inspector - preventing $10K-50K disasters with $200 fixes.
                 </p>
               </div>
 
-              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200">
+              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200 break-words">
                 <div className="flex items-center gap-2 mb-2">
-                  <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-                  <h4 className="font-semibold text-purple-900 text-sm md:text-base">Pattern Recognition</h4>
+                  <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-purple-600 flex-shrink-0" />
+                  <h4 className="font-semibold text-purple-900 text-sm md:text-base break-words">Pattern Recognition</h4>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed break-words">
                   <strong>What it does:</strong> Learns from your maintenance history to predict future needs, costs, and optimal timing.
                 </p>
-                <p className="text-xs text-gray-600 italic leading-relaxed">
+                <p className="text-xs text-gray-600 italic leading-relaxed break-words">
                   <strong>Why you're better:</strong> You'll budget accurately and plan ahead, eliminating financial surprises that drain bank accounts and stress marriages.
                 </p>
               </div>
 
-              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200">
+              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200 break-words">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-                  <h4 className="font-semibold text-purple-900 text-sm md:text-base">Smart Prioritization</h4>
+                  <Zap className="w-4 h-4 md:w-5 md:h-5 text-purple-600 flex-shrink-0" />
+                  <h4 className="font-semibold text-purple-900 text-sm md:text-base break-words">Smart Prioritization</h4>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed break-words">
                   <strong>What it does:</strong> Ranks 47 potential tasks by urgency, cost impact, and cascade risk - not just gut feel.
                 </p>
-                <p className="text-xs text-gray-600 italic leading-relaxed">
+                <p className="text-xs text-gray-600 italic leading-relaxed break-words">
                   <strong>Why you're better:</strong> You'll work on the <em>right</em> things first, maximizing ROI on your time and money like a professional property manager.
                 </p>
               </div>
 
-              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200">
+              <div className="bg-white rounded-lg p-3 md:p-4 border-2 border-purple-200 break-words">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-                  <h4 className="font-semibold text-purple-900 text-sm md:text-base">Cost Optimization</h4>
+                  <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-purple-600 flex-shrink-0" />
+                  <h4 className="font-semibold text-purple-900 text-sm md:text-base break-words">Cost Optimization</h4>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed">
+                <p className="text-xs md:text-sm text-gray-700 mb-2 leading-relaxed break-words">
                   <strong>What it does:</strong> Identifies ways to reduce spending without sacrificing quality (bulk timing, DIY vs. hire decisions).
                 </p>
-                <p className="text-xs text-gray-600 italic leading-relaxed">
+                <p className="text-xs text-gray-600 italic leading-relaxed break-words">
                   <strong>Why you're better:</strong> You'll spend 30-40% less than reactive neighbors while maintaining <em>higher</em> property health scores.
                 </p>
               </div>
             </div>
 
-            <div className="mt-3 md:mt-4 bg-purple-100 rounded-lg p-3 md:p-4 border-2 border-purple-300">
+            <div className="mt-3 md:mt-4 bg-purple-100 rounded-lg p-3 md:p-4 border-2 border-purple-300 break-words">
               <p className="text-xs md:text-sm font-bold text-purple-900 mb-1 md:mb-2">
                 🎓 The Real ROI: Knowledge That Compounds
               </p>
-              <p className="text-xs text-gray-800 leading-relaxed">
+              <p className="text-xs text-gray-800 leading-relaxed break-words">
                 After 6 months using AI-powered features, most users report they can predict issues before inspectors find them, negotiate better with contractors (because they know the numbers), and make confident decisions about repairs vs. replacements. <strong>You're not just maintaining a home - you're becoming a property expert.</strong>
               </p>
             </div>
