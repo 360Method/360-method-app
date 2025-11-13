@@ -50,6 +50,17 @@ const getCurrentSeason = () => {
   return "Winter";
 };
 
+// Helper to check if template is inspection-related (to filter out)
+const isInspectionTask = (template) => {
+  const inspectionKeywords = ['inspect', 'inspection', 'check', 'review', 'examine', 'assess', 'evaluate', 'walkthrough', 'survey', 'audit'];
+  const titleLower = (template.title || '').toLowerCase();
+  const descLower = (template.description || '').toLowerCase();
+  
+  return inspectionKeywords.some(keyword => 
+    titleLower.includes(keyword) || descLower.includes(keyword)
+  );
+};
+
 export default function PrioritizePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -168,7 +179,7 @@ export default function PrioritizePage() {
         title: template.title,
         description: template.description,
         system_type: template.system_type,
-        priority: template.priority,
+        priority: template.priority || 'Routine',
         status: 'Identified',
         template_origin_id: template.id,
         recurring: true,
@@ -208,15 +219,20 @@ export default function PrioritizePage() {
     }
   };
 
-  // Filter templates by current season and climate zone
+  // Filter templates by current season and climate zone (exclude inspections, include "All Climates")
   const currentSeason = getCurrentSeason();
   const climateZones = getPropertyClimateZones();
   
   const relevantTemplates = allTemplates.filter(template => {
+    // Exclude inspection-type tasks
+    if (isInspectionTask(template)) {
+      return false;
+    }
+    
     // Check if template matches current season or is year-round
     const seasonMatch = template.season === currentSeason || template.season === 'Year-Round';
     
-    // Check if template matches property climate zones or is for all climates
+    // Include templates that match property climate zones OR are for "All Climates"
     const climateMatch = template.climate_zone === 'All Climates' || 
                          climateZones.length === 0 || 
                          climateZones.includes(template.climate_zone);
@@ -448,7 +464,7 @@ export default function PrioritizePage() {
                     </p>
                     <ul className="space-y-1 text-xs">
                       <li>• <strong>Seasonal Inspections</strong> - Issues discovered during quarterly walkthroughs</li>
-                      <li>• <strong>Climate-Based Seasonal Maintenance</strong> - Routine tasks specific to your region (e.g., winterization, HVAC filter changes)</li>
+                      <li>• <strong>Seasonal Maintenance Tasks</strong> - Routine work specific to your region (e.g., gutter cleaning, HVAC maintenance)</li>
                       <li>• <strong>Preserve Analysis</strong> - Lifecycle planning based on system age</li>
                       <li>• <strong>Upgrade Projects</strong> - Value-add improvement ideas</li>
                       <li>• <strong>Manual Entry</strong> - Ad-hoc discoveries you add yourself</li>
@@ -474,19 +490,21 @@ export default function PrioritizePage() {
                 <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300">
                   <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Routine Seasonal Maintenance
+                    Seasonal Maintenance Tasks
                   </p>
                   <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                    <strong>Climate-specific tasks</strong> are automatically suggested based on your property's region 
-                    (set during property setup). These routine maintenance items appear here as <Badge className="bg-gray-600 text-white text-xs">Routine</Badge> priority 
-                    tickets. Examples:
+                    <strong>Actual maintenance work</strong> suggested based on your property's climate zone. 
+                    These are physical tasks that need to be done, not visual inspections. Examples:
                   </p>
                   <ul className="space-y-1 text-xs">
-                    <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, check heating system (cold climates)</li>
-                    <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal prep, inspect insulation</li>
-                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, roof inspection, exterior paint check</li>
-                    <li>• ☀️ <strong>Summer:</strong> HVAC filter changes, pest control, deck maintenance</li>
+                    <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, service heating system</li>
+                    <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal, salt walkways</li>
+                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, power wash exterior, fertilize lawn</li>
+                    <li>• ☀️ <strong>Summer:</strong> Replace HVAC filters, pest control, seal driveway</li>
                   </ul>
+                  <p className="text-xs text-gray-600 mt-2 italic">
+                    💡 Inspections are separate - run those in the Inspect step
+                  </p>
                 </div>
 
                 <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
@@ -678,13 +696,13 @@ export default function PrioritizePage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Sparkles className="w-5 h-5 text-blue-600" />
-                Seasonal Maintenance - {currentSeason}
+                {currentSeason} Maintenance Tasks
                 <Badge className="bg-blue-600 text-white ml-2">
                   {relevantTemplates.length} Suggested
                 </Badge>
               </CardTitle>
               <p className="text-sm text-gray-700">
-                Climate-specific routine maintenance for your area. Click "Add to Queue" to track these tasks.
+                Recommended maintenance work for your property's climate. These are physical tasks to complete, not inspections.
               </p>
             </CardHeader>
             <CardContent>
