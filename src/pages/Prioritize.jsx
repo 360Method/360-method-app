@@ -35,6 +35,7 @@ import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import StepNavigation from "../components/navigation/StepNavigation";
+import UnitSelectionModal from "../components/prioritize/UnitSelectionModal"; // NEW IMPORT
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -74,6 +75,7 @@ export default function PrioritizePage() {
   const [sortBy, setSortBy] = React.useState('cascade_risk');
   const [showEducation, setShowEducation] = React.useState(false);
   const [addingTemplateId, setAddingTemplateId] = React.useState(null);
+  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -175,7 +177,7 @@ export default function PrioritizePage() {
     return seasonMatch && climateMatch && notAlreadyAdded;
   });
 
-  // Filter tasks to only show those in the "Ticket Queue" (NOT Completed, NOT Scheduled, NOT In Progress)
+  // Filter tasks to only show those in the "Ticket Queue"
   const ticketQueueTasks = allTasks.filter(task => 
     task.status === 'Identified' || task.status === 'Deferred'
   );
@@ -189,7 +191,6 @@ export default function PrioritizePage() {
     return task.priority === priorityFilter;
   });
 
-  // Sort tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     if (sortBy === 'cascade_risk') {
       return (b.cascade_risk_score || 0) - (a.cascade_risk_score || 0);
@@ -202,7 +203,7 @@ export default function PrioritizePage() {
     return 0;
   });
 
-  // Calculate statistics (including templates)
+  // Calculate statistics
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
   const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
   const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length + relevantTemplates.length;
@@ -234,7 +235,33 @@ export default function PrioritizePage() {
     }
   };
 
-  // DIRECT template addition
+  // Helper to create a single task from template data
+  const createTaskFromTemplate = async (template, propertyId, unitTag = undefined) => {
+    try {
+      const taskData = {
+        property_id: propertyId,
+        title: template.title,
+        description: template.description,
+        system_type: template.system_type,
+        priority: template.priority || 'Routine',
+        status: 'Identified',
+        template_origin_id: template.id,
+        recurring: true,
+        recurrence_interval_days: template.suggested_interval_days || 365,
+        unit_tag: unitTag // Add unit_tag here
+      };
+
+      console.log('📝 Creating task:', taskData);
+      const newTask = await base44.entities.MaintenanceTask.create(taskData);
+      console.log('✅ Task created:', newTask);
+      return newTask;
+    } catch (error) {
+      console.error('❌ Error creating task:', error);
+      throw new Error(`Failed to create task "${template.title}": ${error.message}`);
+    }
+  };
+
+  // Template addition with scope awareness
   const handleAddTemplate = async (template) => {
     console.log('🎯 handleAddTemplate called for:', template.title);
     
@@ -250,38 +277,67 @@ export default function PrioritizePage() {
       return;
     }
     
-    // Set loading state
-    setAddingTemplateId(template.id);
+    const currentProperty = properties.find(p => p.id === propertyId);
+    // Determine if the property is multi-unit based on door_count or units array presence
+    const isMultiUnit = currentProperty && (currentProperty.door_count > 1 || (currentProperty.units && currentProperty.units.length > 0));
+    
+    // Determine template scope, default to 'property_wide' for backward compatibility
+    const appliesToScope = template.applies_to_scope || 'property_wide';
+    
+    if (appliesToScope === 'per_unit' && isMultiUnit) {
+      // Open unit selection modal if template is per-unit and property is multi-unit
+      console.log('🏢 Per-unit task on multi-unit property - opening modal');
+      setUnitSelectionModal({ open: true, template, property: currentProperty });
+      return; // Stop here, actual creation happens after modal confirmation
+    }
+    
+    // For property-wide tasks or single-unit properties, proceed directly
+    console.log('🏠 Property-wide task or single-unit - creating directly');
+    setAddingTemplateId(template.id); // Set loading state for direct creation
+    try {
+      // If multi-unit but template is property-wide, tag as 'Common Area'. Otherwise, no unit tag.
+      const unitTagForPropertyWide = isMultiUnit ? 'Common Area' : undefined;
+      await createTaskFromTemplate(template, propertyId, unitTagForPropertyWide);
+      await refetchTasks(); // Refetch after single task creation
+    } catch (error) {
+      alert(error.message); // Display error from createTaskFromTemplate
+    } finally {
+      setAddingTemplateId(null); // Clear loading state
+    }
+    console.log('✅ Done with direct creation!');
+  };
+
+  // Handle unit selection modal confirmation
+  const handleUnitSelectionConfirm = async (selectedUnitTags) => {
+    const template = unitSelectionModal.template;
+    const property = unitSelectionModal.property;
+    
+    if (!template || !property) {
+      console.error("No template or property found in modal state.");
+      setUnitSelectionModal({ open: false, template: null, property: null });
+      return;
+    }
+    
+    console.log('🏢 Creating tasks for selected units:', selectedUnitTags);
+    setAddingTemplateId(template.id); // Set loading state for batch creation
     
     try {
-      // Create task directly
-      const taskData = {
-        property_id: propertyId,
-        title: template.title,
-        description: template.description,
-        system_type: template.system_type,
-        priority: template.priority || 'Routine',
-        status: 'Identified',
-        template_origin_id: template.id,
-        recurring: true,
-        recurrence_interval_days: template.suggested_interval_days || 365
-      };
+      // Create a task for each selected unit
+      const createPromises = selectedUnitTags.map(unitTag => 
+        createTaskFromTemplate(template, property.id, unitTag)
+      );
       
-      console.log('📝 Creating task:', taskData);
-      const newTask = await base44.entities.MaintenanceTask.create(taskData);
-      console.log('✅ Task created:', newTask);
+      await Promise.all(createPromises);
+      console.log(`✅ Created ${selectedUnitTags.length} tasks`);
       
-      // Refetch tasks immediately
-      await refetchTasks();
-      
-      // Clear loading state
-      setAddingTemplateId(null);
-      console.log('✅ Done!');
+      await refetchTasks(); // Refetch after all batch tasks are created
+      setUnitSelectionModal({ open: false, template: null, property: null }); // Close modal
       
     } catch (error) {
-      console.error('❌ Error:', error);
-      alert(`Failed: ${error.message}`);
-      setAddingTemplateId(null);
+      console.error('❌ Error creating tasks:', error);
+      alert(`Failed to create some tasks: ${error.message}`); // Display a general error
+    } finally {
+      setAddingTemplateId(null); // Clear loading state
     }
   };
 
@@ -657,7 +713,7 @@ export default function PrioritizePage() {
           </CardContent>
         </Card>
 
-        {/* SIMPLIFIED Seasonal Tasks - NO NESTED CARDS */}
+        {/* Seasonal Tasks with Scope Indicators */}
         {relevantTemplates.length > 0 && (
           <div 
             className="mb-6 p-6 rounded-lg border-2 border-blue-400 bg-white shadow-lg"
@@ -680,6 +736,7 @@ export default function PrioritizePage() {
               {relevantTemplates.map((template) => {
                 const isAdding = addingTemplateId === template.id;
                 const canAdd = selectedProperty !== 'all' || properties.length === 1;
+                const appliesToScope = template.applies_to_scope || 'property_wide'; // Determine scope
                 
                 return (
                   <div
@@ -687,7 +744,15 @@ export default function PrioritizePage() {
                     className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50"
                     style={{ backgroundColor: '#EFF6FF' }}
                   >
-                    <h3 className="font-bold text-gray-900 mb-2">{template.title}</h3>
+                    <div className="flex items-start justify-between gap-2 mb-2"> {/* NEW: Flex container for title and scope badge */}
+                      <h3 className="font-bold text-gray-900">{template.title}</h3>
+                      <Badge 
+                        className={appliesToScope === 'per_unit' ? 'bg-purple-600' : 'bg-gray-600'}
+                        style={{ flexShrink: 0 }}
+                      >
+                        {appliesToScope === 'per_unit' ? '🏢 Per Unit' : '🏠 Building'}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-gray-700 mb-3">{template.description}</p>
                     
                     <div className="flex gap-2 mb-4">
@@ -820,6 +885,16 @@ export default function PrioritizePage() {
           open={showTaskForm}
         />
       )}
+
+      {/* Unit Selection Modal */}
+      <UnitSelectionModal
+        open={unitSelectionModal.open}
+        onClose={() => setUnitSelectionModal({ open: false, template: null, property: null })}
+        template={unitSelectionModal.template}
+        property={unitSelectionModal.property}
+        onConfirm={handleUnitSelectionConfirm}
+        isCreating={addingTemplateId === unitSelectionModal.template?.id}
+      />
     </div>
   );
 }
