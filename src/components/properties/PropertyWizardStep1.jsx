@@ -1,13 +1,13 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, Sparkles, Home, CheckCircle2 } from "lucide-react";
+import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench, AlertCircle } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 import { base44 } from "@/api/base44Client";
+import { checkServiceAvailability } from "../shared/ServiceAreaChecker";
 
 // Climate zone mapping function
 const getClimateZone = (state) => {
@@ -50,7 +50,9 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
     address_verified: data.address_verified || false,
     verification_source: data.verification_source || "manual_entry",
     property_type: data.property_type || "",
-    climate_zone: data.climate_zone || ""
+    climate_zone: data.climate_zone || "",
+    operator_available: data.operator_available || false,
+    operator_id: data.operator_id || null
   });
 
   const [loadingPropertyData, setLoadingPropertyData] = React.useState(false);
@@ -58,6 +60,8 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
   const [appliedFields, setAppliedFields] = React.useState({});
   const [successMessage, setSuccessMessage] = React.useState(null);
+  const [operatorInfo, setOperatorInfo] = React.useState(null);
+  const [checkingOperator, setCheckingOperator] = React.useState(false);
 
   // Scroll to top when component mounts
   React.useEffect(() => {
@@ -75,8 +79,28 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
         state: data.state,
         zip_code: data.zip_code
       });
+      // Check operator availability
+      checkOperatorAvailability(data.zip_code);
     }
   }, []);
+
+  const checkOperatorAvailability = (zipCode) => {
+    if (!zipCode) return;
+    
+    setCheckingOperator(true);
+    const availability = checkServiceAvailability(zipCode);
+    setOperatorInfo(availability);
+    setCheckingOperator(false);
+
+    // Update form data with operator info
+    const operatorData = {
+      operator_available: availability.available || false,
+      operator_id: availability.operatorId || null,
+      operator_checked_date: new Date().toISOString().split('T')[0]
+    };
+    
+    onChange(operatorData);
+  };
 
   const handleAddressSelect = async (addressData) => {
     const climateZone = getClimateZone(addressData.state);
@@ -89,6 +113,11 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
     
     setFormData(updated);
     onChange(updated);
+
+    // Check operator availability
+    if (addressData.zip_code) {
+      checkOperatorAvailability(addressData.zip_code);
+    }
 
     // Automatically fetch property data after address is verified
     if (addressData.address_verified) {
@@ -394,6 +423,140 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
           )}
         </CardContent>
       </Card>
+
+      {/* Operator Availability Check */}
+      {formData.address_verified && (
+        <Card className="border-2 mobile-card mb-6" style={{ borderColor: operatorInfo?.available ? '#28A745' : '#FFA500' }}>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              {checkingOperator ? (
+                <>
+                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Checking service availability...</p>
+                    <p className="text-sm text-gray-600 mt-1">Looking for certified operators in your area</p>
+                  </div>
+                </>
+              ) : operatorInfo?.available ? (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                    <Wrench className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold mb-2" style={{ color: '#28A745', fontSize: '20px' }}>
+                      🎉 Great News!
+                    </h3>
+                    <p className="text-gray-900 mb-3">
+                      <strong>A Certified 360° Method Operator is available in your area!</strong>
+                    </p>
+                    <div className="bg-white p-4 rounded-lg border border-green-200 mb-3">
+                      <p className="text-sm font-semibold text-gray-900 mb-1">
+                        <Building2 className="w-4 h-4 inline mr-2" />
+                        {operatorInfo.operator}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Serving {operatorInfo.area}
+                      </p>
+                      {operatorInfo.contact && (
+                        <div className="mt-2 text-sm text-gray-700">
+                          <p>📞 {operatorInfo.contact.phone}</p>
+                          <p>✉️ {operatorInfo.contact.email}</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 inline text-green-600 mr-1" />
+                      Professional maintenance, repairs, and inspections available
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 inline text-green-600 mr-1" />
+                      Priority scheduling for emergencies
+                    </p>
+                    <p className="text-sm text-gray-700 mt-2">
+                      💡 You can request services after setting up your property!
+                    </p>
+                  </div>
+                </>
+              ) : operatorInfo?.comingSoon ? (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold mb-2" style={{ color: '#FF6B35', fontSize: '20px' }}>
+                      We're Expanding to Your Area!
+                    </h3>
+                    <p className="text-gray-900 mb-3">
+                      Professional services are coming soon to <strong>{operatorInfo.area}</strong>
+                    </p>
+                    {operatorInfo.launchDate && operatorInfo.launchDate !== 'TBD' && (
+                      <p className="text-sm text-gray-700 mb-3">
+                        🗓️ Expected launch: <strong>{operatorInfo.launchDate}</strong>
+                      </p>
+                    )}
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-3">
+                      <p className="text-sm font-semibold text-blue-900 mb-2">
+                        ✨ You can still use all features now:
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Track maintenance and inspections
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Get AI-powered insights and recommendations
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Manage DIY projects
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Work with your own contractors
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Home className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
+                      Full Software Access Available
+                    </h3>
+                    <p className="text-gray-900 mb-3">
+                      Professional operator services aren't available in your area yet, but you have complete access to our platform!
+                    </p>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <p className="text-sm font-semibold text-blue-900 mb-2">
+                        ✨ Everything you need for property management:
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Complete maintenance tracking system
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        AI-powered recommendations
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        DIY guides and resources
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
+                        Coordinate with your own contractors
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Success Message Toast */}
       {successMessage && (
