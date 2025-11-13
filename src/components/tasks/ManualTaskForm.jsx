@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -227,7 +226,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     execution_type: "Not Decided",
     current_fix_cost: "",
     urgency_timeline: "",
-    unit_tag: "" // Added unit_tag to initial state
+    unit_tag: ""
   });
   const [photos, setPhotos] = React.useState(editingTask?.photo_urls || []);
   const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
@@ -251,7 +250,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       
-      // Run AI enrichment and show results
       setAiEnriching(true);
       const cascadeResult = await enrichTaskWithAI(savedTask.id, savedTask, photos);
       setAiEnriching(false);
@@ -260,7 +258,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
         setAiAnalysis(cascadeResult);
         setShowAiResults(true);
       } else {
-        // Even if AI fails, show a success message instead of auto-closing
         setShowAiResults(true);
       }
     }
@@ -301,7 +298,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       status: formData.status,
       execution_type: formData.execution_type,
       photo_urls: photos,
-      unit_tag: formData.unit_tag || undefined, // Include unit_tag
+      unit_tag: formData.unit_tag || undefined,
       current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
       urgency_timeline: formData.urgency_timeline || undefined,
       scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined
@@ -316,13 +313,11 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     return true;
   };
 
-  // Show AI Analysis Results - User must click to close
+  // Show AI Analysis Results
   if (showAiResults) {
     return (
       <Dialog open={true} onOpenChange={(isOpen) => {
-        console.log('🔵 Dialog onOpenChange called:', isOpen);
         if (!isOpen) {
-          console.log('🔵 Calling onComplete to close');
           onComplete();
         }
       }}>
@@ -355,7 +350,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           <div className="space-y-4 py-4">
             {aiAnalysis ? (
               <>
-                {/* Cost Analysis */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -380,7 +374,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   </div>
                 </div>
 
-                {/* Cascade Risk */}
                 <div className={`border-2 rounded-lg p-4 ${
                   aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
                   aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-50 border-orange-400' :
@@ -408,7 +401,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   )}
                 </div>
 
-                {/* Why Waiting Costs More */}
                 {aiAnalysis.cost_impact_reason && (
                   <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
                     <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
@@ -419,7 +411,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   </div>
                 )}
 
-                {/* Urgency Timeline */}
                 {aiAnalysis.urgency_timeline && (
                   <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                     <h3 className="font-bold text-purple-900 mb-2">Timeline to Critical:</h3>
@@ -427,7 +418,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   </div>
                 )}
 
-                {/* Savings Potential */}
                 {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
                   <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
                     <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
@@ -455,10 +445,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           <div className="flex gap-3 pt-4 border-t">
             <button
               type="button"
-              onClick={() => {
-                console.log('🖱️ Close button clicked!');
-                onComplete();
-              }}
+              onClick={() => onComplete()}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-md transition-colors"
               style={{ minHeight: '48px', cursor: 'pointer' }}
             >
@@ -489,7 +476,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Bar */}
         <div className="flex gap-2 mb-6">
           <div className={`flex-1 h-2 rounded-full transition-all ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           <div className={`flex-1 h-2 rounded-full transition-all ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
@@ -497,7 +483,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Basic Info + Photos */}
           {step === 1 && (
             <div className="space-y-4">
               <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
@@ -533,7 +518,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 />
               </div>
 
-              {/* Photo Upload - Prominent in Step 1 */}
               <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Camera className="w-5 h-5 text-purple-600" />
@@ -640,7 +624,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {/* Unit Tag - For Multi-Unit Properties */}
               {isMultiUnit && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
@@ -651,14 +634,14 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     Tagging by unit helps you sort maintenance history later in Track
                   </p>
                   <Select
-                    value={formData.unit_tag}
-                    onValueChange={(value) => setFormData({ ...formData, unit_tag: value })}
+                    value={formData.unit_tag || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, unit_tag: value === "none" ? "" : value })}
                   >
                     <SelectTrigger className="bg-white" style={{ minHeight: '48px' }}>
                       <SelectValue placeholder="Select unit (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={""}>All Units / Common Area</SelectItem> {/* Changed null to empty string for consistency with controlled component */}
+                      <SelectItem value="none">All Units / Common Area</SelectItem>
                       {unitOptions.length > 0 ? (
                         unitOptions.map((unit, idx) => (
                           <SelectItem key={unit.unit_id || idx} value={unit.unit_id || unit.nickname || `Unit ${idx + 1}`}>
@@ -668,7 +651,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                         ))
                       ) : (
                         <>
-                          {/* Fallback options if units array is empty */}
                           <SelectItem value="Unit 1">Unit 1</SelectItem>
                           <SelectItem value="Unit 2">Unit 2</SelectItem>
                           <SelectItem value="Unit 3">Unit 3</SelectItem>
@@ -683,7 +665,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             </div>
           )}
 
-          {/* Step 2: Planning & Timeline */}
           {step === 2 && (
             <div className="space-y-4">
               <div className="bg-orange-50 border-l-4 border-orange-600 p-4 rounded">
@@ -758,7 +739,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             </div>
           )}
 
-          {/* Step 3: Review & Submit */}
           {step === 3 && (
             <div className="space-y-4">
               <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
@@ -766,7 +746,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 <p className="text-xs text-green-800">Double-check everything before submitting - AI will analyze after you click the button below</p>
               </div>
 
-              {/* Review Summary */}
               <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-sm">
                 <p className="font-semibold text-gray-900 mb-3 text-sm">📋 Task Summary:</p>
                 <div className="space-y-3 text-sm">
@@ -815,7 +794,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {/* AI Enrichment Notice */}
               <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
@@ -834,7 +812,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {/* Important: Wait for Results */}
               <div className="bg-yellow-50 border-l-4 border-yellow-600 p-4 rounded">
                 <p className="text-xs text-yellow-900 font-semibold">
                   ⏱️ After clicking the button below, please wait for AI analysis results. This helps you understand the true cost and urgency of this maintenance item.
@@ -843,7 +820,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex gap-3 pt-4 border-t">
             {step > 1 && !createTaskMutation.isPending && !aiEnriching && (
               <Button
