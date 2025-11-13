@@ -432,10 +432,10 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
             ) : (
               <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center">
                 <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-3" />
-                <h3 className="font-bold text-green-900 text-xl mb-2">Task Created!</h3>
+                <h3 className="font-bold text-green-900 text-xl mb-2">Task {isEditing ? 'Updated' : 'Created'}!</h3>
                 <p className="text-sm text-gray-700">
-                  Your maintenance task has been added to your priority queue.
-                  {isEditing ? ' Changes have been saved.' : ' You can find it in the Prioritize section.'}
+                  Your maintenance task has been {isEditing ? 'updated' : 'added to your priority queue'}.
+                  {!isEditing && ' You can find it in the Prioritize section.'}
                 </p>
               </div>
             )}
@@ -464,7 +464,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
             {isEditing ? '✏️ Edit' : '➕ Add'} Maintenance Task
             {aiEnriching && (
               <Badge className="gap-1 bg-purple-600 text-white">
-                <Sparkles className="w-3 h-3 />
+                <Sparkles className="w-3 h-3" />
                 AI Analyzing...
               </Badge>
             )}
@@ -775,7 +775,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
               {/* Important: Wait for Results */}
               <div className="bg-yellow-50 border-l-4 border-yellow-600 p-4 rounded">
                 <p className="text-xs text-yellow-900 font-semibold">
-                  ⏱️ After clicking "Create Task", please wait for AI analysis results before closing. This helps you understand the true cost and urgency of this maintenance item.
+                  ⏱️ After clicking the button below, please wait for AI analysis results. This helps you understand the true cost and urgency of this maintenance item.
                 </p>
               </div>
             </div>
