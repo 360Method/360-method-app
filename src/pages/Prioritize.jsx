@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -190,10 +189,19 @@ export default function PrioritizePage() {
       console.log('Task created successfully:', result);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       console.log('Invalidating queries after successful task creation');
+      // Invalidate all maintenanceTasks queries to refresh the list
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-      setAddingTemplateId(null);
+      // Also invalidate the specific query for the current property
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', variables.propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', selectedProperty] });
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+      
+      // Wait a tiny bit for the queries to invalidate, then clear the loading state
+      setTimeout(() => {
+        setAddingTemplateId(null);
+      }, 100);
     },
     onError: (error) => {
       console.error('Failed to add template:', error);
@@ -315,13 +323,15 @@ export default function PrioritizePage() {
     }
   };
 
-  const handleAddTemplate = (e, template) => {
+  const handleAddTemplate = async (e, template) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Add template clicked:', template.title);
+    console.log('=== Add Template Button Clicked ===');
+    console.log('Template:', template.title);
     console.log('Selected property:', selectedProperty);
-    console.log('Properties:', properties);
+    console.log('All properties:', properties);
+    console.log('Current user:', currentUser?.email);
     
     if (selectedProperty === 'all' && properties.length > 1) {
       alert('Please select a specific property to add this task.');
@@ -334,9 +344,16 @@ export default function PrioritizePage() {
       return;
     }
     
-    console.log('Adding template to property:', propertyId);
+    console.log('Adding template to property ID:', propertyId);
+    console.log('Setting loading state for template ID:', template.id);
     setAddingTemplateId(template.id);
-    createFromTemplateMutation.mutate({ template, propertyId });
+    
+    try {
+      await createFromTemplateMutation.mutateAsync({ template, propertyId });
+      console.log('✅ Task added successfully!');
+    } catch (error) {
+      console.error('❌ Error adding task:', error);
+    }
   };
 
   // No properties fallback
@@ -757,7 +774,11 @@ export default function PrioritizePage() {
                       </div>
                       <Button
                         onClick={(e) => handleAddTemplate(e, template)}
-                        disabled={addingTemplateId === template.id || (selectedProperty === 'all' && properties.length > 1) || createFromTemplateMutation.isPending}
+                        disabled={
+                          createFromTemplateMutation.isPending ||
+                          addingTemplateId === template.id ||
+                          (selectedProperty === 'all' && properties.length > 1)
+                        }
                         size="sm"
                         className="w-full bg-blue-600 hover:bg-blue-700 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ minHeight: '40px' }}
