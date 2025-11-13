@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +10,25 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle, Building2 } from "lucide-react";
+import { 
+  Calendar as CalendarIcon, 
+  Upload, 
+  X, 
+  Loader2, 
+  Sparkles, 
+  CheckCircle2, 
+  AlertCircle, 
+  Camera, 
+  DollarSign, 
+  AlertTriangle, 
+  Building2,
+  Wrench,
+  HardHat,
+  Star,
+  TrendingDown,
+  BookOpen,
+  Clock
+} from "lucide-react";
 import { format } from "date-fns";
 
 async function enrichTaskWithAI(taskId, taskData, photoUrls = []) {
@@ -25,34 +42,48 @@ async function enrichTaskWithAI(taskId, taskData, photoUrls = []) {
   try {
     const hasPhotos = photoUrls && photoUrls.length > 0;
     
-    const cascadeAnalysisPrompt = `Analyze this maintenance issue and provide detailed risk assessment:
+    const cascadeAnalysisPrompt = `You are a property maintenance expert analyzing this maintenance issue.
 
-Task: ${title}
-Description: ${description}
-System Type: ${system_type}
-Priority: ${priority}
+Task Title: ${title}
+Description: ${description || 'No description provided'}
+System Type: ${system_type || 'General'}
+Priority: ${priority || 'Medium'}
 ${hasPhotos ? `Photos: ${photoUrls.length} attached for analysis` : 'No photos provided'}
 
-Based on this information${hasPhotos ? ' and the attached photos' : ''}, provide:
+Please analyze and provide a JSON response with the following fields:
 
-1. **Current Fix Cost**: Realistic estimate to fix this NOW (materials + labor). Consider typical market rates.
+COST OPTIONS:
+1. "diy_cost" (number): Materials-only cost if homeowner does this themselves. Example: $25 for a faucet washer replacement.
 
-2. **Cascade Risk Score** (1-10): How likely is this to trigger other failures if ignored?
-   - 1-3: Low risk, isolated issue
-   - 4-6: Medium risk, could affect nearby systems
-   - 7-8: High risk, likely to cascade
-   - 9-10: Critical, will definitely cause expensive failures
+2. "diy_difficulty" (string): Rate the DIY difficulty as "Easy", "Medium", or "Hard". Consider skill level, tools needed, and risk.
 
-3. **Cascade Risk Explanation**: Describe EXACTLY what will fail next and how. Be specific about the chain reaction.
-   Example: "Clogged gutters overflow → water pools at foundation → foundation cracks → basement flooding → mold growth"
+3. "diy_time_hours" (number): Estimated hours for an average DIY homeowner to complete this task. Example: 0.5 for simple faucet repair, 4 for installing ceiling fan.
 
-4. **Delayed Fix Cost**: Realistic estimate if this is ignored for 6-12 months. Include cascade damage costs.
+4. "contractor_cost" (number): Typical cost to hire a local handyman or contractor, including labor + materials + service call. IMPORTANT: Include typical service call minimum ($75-150) even for quick jobs.
 
-5. **Cost Impact Reason**: Explain WHY waiting makes it more expensive. What additional damage occurs?
+5. "service_call_minimum" (number): Typical service call fee in this market. Usually $75-150.
 
-6. **Urgency Timeline**: How long before this becomes critical? (e.g., "30 days", "3 months", "immediate")
+6. "operator_cost" (number): Estimated cost through a professional maintenance membership service (typically 15-25% less than contractor due to no service call fee and efficiency of regular visits). Example: If contractor charges $150, operator would be ~$120.
 
-Be realistic with costs - use actual contractor and material pricing. Be dire and specific about cascade risks to motivate action.`;
+CASCADE RISK ANALYSIS:
+7. "current_fix_cost" (number): Use the contractor_cost as baseline for "fix it now" cost.
+
+8. "cascade_risk_score" (number 1-10): How likely this issue will cause other problems if ignored.
+
+9. "cascade_risk_reason" (string): Detailed explanation of what will fail next and how the damage cascades. Be specific about the domino effect.
+
+10. "delayed_fix_cost" (number): Estimated cost if this issue is ignored for the urgency timeline, including all cascade damage. Example: $25 faucet washer becomes $800 (cabinet replacement + mold remediation + water waste).
+
+11. "cost_impact_reason" (string): Detailed explanation of WHY delaying increases cost. Break down the cascade: "What starts as X becomes Y because Z." Be specific about each failure point.
+
+12. "urgency_timeline" (string): Timeframe before issue worsens. Examples: "Immediate", "1-2 weeks", "1-3 months", "3-6 months", "6-12 months".
+
+ADDITIONAL INSIGHTS:
+13. "estimated_hours" (number): Same as diy_time_hours (for consistency with existing code).
+
+14. "key_warning" (string): One-sentence warning about the most critical risk. Example: "Leaking water will rot cabinet wood and grow mold."
+
+Respond ONLY with valid JSON. No markdown, no explanation, just the JSON object.`;
 
     const cascadeAnalysis = await base44.integrations.Core.InvokeLLM({
       prompt: cascadeAnalysisPrompt,
@@ -60,37 +91,29 @@ Be realistic with costs - use actual contractor and material pricing. Be dire an
       response_json_schema: {
         type: "object",
         properties: {
+          diy_cost: { type: "number" },
+          diy_difficulty: { type: "string" },
+          diy_time_hours: { type: "number" },
+          contractor_cost: { type: "number" },
+          service_call_minimum: { type: "number" },
+          operator_cost: { type: "number" },
           current_fix_cost: { type: "number" },
           cascade_risk_score: { type: "number" },
           cascade_risk_reason: { type: "string" },
           delayed_fix_cost: { type: "number" },
           cost_impact_reason: { type: "string" },
-          urgency_timeline: { type: "string" }
+          urgency_timeline: { type: "string" },
+          estimated_hours: { type: "number" },
+          key_warning: { type: "string" }
         },
-        required: ["current_fix_cost", "cascade_risk_score", "cascade_risk_reason", "delayed_fix_cost", "cost_impact_reason", "urgency_timeline"]
+        required: ["diy_cost", "contractor_cost", "current_fix_cost", "cascade_risk_score", "cascade_risk_reason", "delayed_fix_cost", "cost_impact_reason", "urgency_timeline"]
       }
     }).catch(err => {
       console.error('Cascade analysis failed:', err);
       return null;
     });
 
-    const [timeEstimate, sowResult, toolsAndMaterials, videoResults] = await Promise.all([
-      base44.integrations.Core.InvokeLLM({
-        prompt: `Given the maintenance task:
-Title: "${title}"
-Description: "${description}"
-System Type: "${system_type}"
-Priority: "${priority}"
-
-Estimate the time required for an average DIY homeowner to complete this task. Consider standard tools and basic to intermediate skill level.
-
-Output ONLY a single numeric value representing hours (e.g., 0.5, 1, 2.5, 8). No other text.`,
-        response_json_schema: {
-          type: "object",
-          properties: { hours: { type: "number" } }
-        }
-      }).catch(err => ({ hours: null })),
-
+    const [sowResult, toolsAndMaterials, videoResults] = await Promise.all([
       base44.integrations.Core.InvokeLLM({
         prompt: `Generate a concise Statement of Work (SOW) for this maintenance task:
 
@@ -158,21 +181,31 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
     const updateData = { ai_enrichment_completed: true };
 
     if (cascadeAnalysis) {
+      if (cascadeAnalysis.diy_cost) updateData.diy_cost = cascadeAnalysis.diy_cost;
+      if (cascadeAnalysis.diy_difficulty) updateData.diy_difficulty = cascadeAnalysis.diy_difficulty;
+      if (cascadeAnalysis.diy_time_hours) updateData.diy_time_hours = cascadeAnalysis.diy_time_hours;
+      if (cascadeAnalysis.contractor_cost) updateData.contractor_cost = cascadeAnalysis.contractor_cost;
+      if (cascadeAnalysis.service_call_minimum) updateData.service_call_minimum = cascadeAnalysis.service_call_minimum;
+      if (cascadeAnalysis.operator_cost) updateData.operator_cost = cascadeAnalysis.operator_cost;
       if (cascadeAnalysis.current_fix_cost) updateData.current_fix_cost = cascadeAnalysis.current_fix_cost;
       if (cascadeAnalysis.cascade_risk_score) updateData.cascade_risk_score = cascadeAnalysis.cascade_risk_score;
       if (cascadeAnalysis.cascade_risk_reason) updateData.cascade_risk_reason = cascadeAnalysis.cascade_risk_reason;
       if (cascadeAnalysis.delayed_fix_cost) updateData.delayed_fix_cost = cascadeAnalysis.delayed_fix_cost;
       if (cascadeAnalysis.cost_impact_reason) updateData.cost_impact_reason = cascadeAnalysis.cost_impact_reason;
       if (cascadeAnalysis.urgency_timeline) updateData.urgency_timeline = cascadeAnalysis.urgency_timeline;
+      if (cascadeAnalysis.key_warning) updateData.key_warning = cascadeAnalysis.key_warning;
+      
+      if (cascadeAnalysis.estimated_hours && typeof cascadeAnalysis.estimated_hours === 'number') {
+        updateData.estimated_hours = cascadeAnalysis.estimated_hours;
+      } else if (cascadeAnalysis.diy_time_hours && typeof cascadeAnalysis.diy_time_hours === 'number') {
+        updateData.estimated_hours = cascadeAnalysis.diy_time_hours;
+      }
       
       if (cascadeAnalysis.cascade_risk_score >= 7) {
         updateData.has_cascade_alert = true;
       }
     }
 
-    if (timeEstimate?.hours && typeof timeEstimate.hours === 'number') {
-      updateData.estimated_hours = timeEstimate.hours;
-    }
     if (sowResult?.sow) updateData.ai_sow = sowResult.sow;
     if (toolsAndMaterials?.tools && Array.isArray(toolsAndMaterials.tools)) {
       updateData.ai_tools_needed = toolsAndMaterials.tools;
@@ -215,7 +248,6 @@ const EXECUTION_TYPES = [
   { value: "Not Decided", label: "🤔 Not Decided - I'll decide later" }
 ];
 
-// Helper to determine property flow type
 function getPropertyFlowType(property) {
   if (!property) return null;
   const doorCount = property.door_count || 1;
@@ -263,16 +295,13 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const allUnitOptions = unitOptions.length > 0 ? unitOptions : fallbackUnits;
 
   const createTaskMutation = useMutation({
-    mutationFn: async (tasksData) => { // tasksData is now expected to be an array of task objects
+    mutationFn: async (tasksData) => {
       if (isEditing) {
-        // Editing: only update single task
         return await base44.entities.MaintenanceTask.update(editingTask.id, tasksData[0]);
       } else {
-        // Creating: may create multiple tasks
         if (tasksData.length === 1) {
           return await base44.entities.MaintenanceTask.create(tasksData[0]);
         } else {
-          // Bulk create for multiple units
           const createPromises = tasksData.map(taskData => 
             base44.entities.MaintenanceTask.create(taskData)
           );
@@ -284,7 +313,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       
-      // For AI enrichment, use the first task from the savedTasks array (or the single savedTask object)
       const firstTask = Array.isArray(savedTasks) ? savedTasks[0] : savedTasks;
       
       setAiEnriching(true);
@@ -332,7 +360,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   };
 
   const handleSelectAllUnits = () => {
-    // +1 for "Common Area"
     const allUnitIds = ['Common Area', ...allUnitOptions.map(u => u.unit_id || u.nickname)];
     if (selectedUnits.length === allUnitIds.length) { 
       setSelectedUnits([]);
@@ -361,39 +388,29 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     let tasksToCreate = [];
 
     if (isEditing) {
-      // When editing, only one task is updated. Preserve its original unit_tag, scope, and applies_to_unit_count.
       tasksToCreate.push({ 
         ...baseTaskData, 
-        unit_tag: editingTask.unit_tag || undefined, // Preserve existing unit_tag
-        scope: editingTask.scope || (editingTask.unit_tag ? 'per_unit' : 'property_wide'), // Default based on unit_tag
-        applies_to_unit_count: editingTask.applies_to_unit_count || 1 // Default 1 if not specified
+        unit_tag: editingTask.unit_tag || undefined
       });
     } else if (isSingleFamily) {
-      // Single family: no unit tag, scope is property_wide
       tasksToCreate.push({
         ...baseTaskData,
-        unit_tag: undefined, // No unit_tag for single family
+        unit_tag: undefined,
         scope: 'property_wide',
-        applies_to_unit_count: 1 // Applies to the single property unit
+        applies_to_unit_count: 1
       });
-    } else { // This branch is for multi-unit properties (dual_unit or multi_unit)
-      if (selectedUnits.length > 0) {
-        // Creating tasks for selected units (can include "Common Area")
-        tasksToCreate = selectedUnits.map(unitTag => ({
-          ...baseTaskData,
-          unit_tag: unitTag,
-          scope: (unitTag === "Common Area") ? 'building_wide' : 'per_unit',
-          applies_to_unit_count: (unitTag === "Common Area") ? (property?.door_count || 1) : 1
-        }));
-      } else {
-        // Multi-unit property, but no specific units selected, implicitly means a "Common Area" task
-        tasksToCreate.push({
-          ...baseTaskData,
-          unit_tag: "Common Area",
-          scope: 'building_wide',
-          applies_to_unit_count: property?.door_count || 1
-        });
-      }
+    } else if (isMultiUnit && selectedUnits.length > 0) {
+      tasksToCreate = selectedUnits.map(unitTag => ({
+        ...baseTaskData,
+        unit_tag: unitTag,
+        scope: 'per_unit'
+      }));
+    } else {
+      tasksToCreate.push({
+        ...baseTaskData,
+        unit_tag: isMultiUnit ? "Common Area" : undefined,
+        scope: isMultiUnit ? 'building_wide' : 'property_wide'
+      });
     }
 
     createTaskMutation.mutate(tasksToCreate);
@@ -402,7 +419,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const canGoNext = () => {
     if (step === 1) {
       const isBaseInfoValid = formData.title.trim().length > 0 && formData.description.trim().length > 0;
-      // For new tasks in multi-unit properties, ensure at least one unit is selected (or common area)
       if (!isEditing && isMultiUnit) {
         return isBaseInfoValid && selectedUnits.length > 0;
       }
@@ -412,9 +428,17 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     return true;
   };
 
-  // Show AI Analysis Results
+  // AI Analysis Results Display
   if (showAiResults) {
-    const taskCount = isEditing ? 1 : (isSingleFamily ? 1 : (selectedUnits.length > 0 ? selectedUnits.length : 1));
+    const taskCount = isEditing ? 1 : (isSingleFamily ? 1 : selectedUnits.length > 0 ? selectedUnits.length : 1);
+    
+    // Fallback values
+    const diyCost = aiAnalysis?.diy_cost || null;
+    const diyDifficulty = aiAnalysis?.diy_difficulty || 'Medium';
+    const diyTimeHours = aiAnalysis?.diy_time_hours || aiAnalysis?.estimated_hours || null;
+    const contractorCost = aiAnalysis?.contractor_cost || aiAnalysis?.current_fix_cost || 0;
+    const serviceCallMin = aiAnalysis?.service_call_minimum || 100;
+    const operatorCost = aiAnalysis?.operator_cost || Math.round(contractorCost * 0.8);
     
     return (
       <Dialog open={true} onOpenChange={(isOpen) => {
@@ -422,7 +446,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           onComplete();
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               {aiAnalysis ? (
@@ -452,99 +476,244 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             )}
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             {aiAnalysis ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-5 h-5 text-green-600" />
-                      <h3 className="font-bold text-green-900">Fix Now</h3>
+                {/* COST OPTIONS SECTION */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-900">Cost to Fix This Issue</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    {/* DIY OPTION */}
+                    {diyCost !== null && (
+                      <div className="border-2 border-green-300 rounded-lg p-4 bg-green-50 relative">
+                        <div className="absolute top-2 right-2">
+                          <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full font-semibold">
+                            Lowest Cost
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <Wrench className="w-5 h-5 text-green-700" />
+                          <span className="font-semibold text-green-900">DIY</span>
+                        </div>
+                        
+                        <div className="text-3xl font-bold text-green-700 mb-1">
+                          ${diyCost.toLocaleString()}
+                        </div>
+                        
+                        <div className="text-xs text-green-800 mb-3">
+                          Materials only
+                        </div>
+                        
+                        <div className="border-t border-green-300 pt-2 space-y-1">
+                          {diyTimeHours && (
+                            <div className="text-xs text-green-900">
+                              <span className="font-semibold">Time:</span> {diyTimeHours} {diyTimeHours === 1 ? 'hour' : 'hours'}
+                            </div>
+                          )}
+                          <div className="text-xs text-green-900">
+                            <span className="font-semibold">Difficulty:</span> {diyDifficulty}
+                          </div>
+                        </div>
+                        
+                        {diyCost && contractorCost && (
+                          <div className="mt-3 bg-green-100 rounded p-2">
+                            <div className="flex items-center gap-1 text-green-800">
+                              <DollarSign className="w-4 h-4" />
+                              <span className="text-sm font-semibold">
+                                Save ${(contractorCost - diyCost).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* CONTRACTOR OPTION */}
+                    <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <HardHat className="w-5 h-5 text-gray-700" />
+                        <span className="font-semibold text-gray-900">Contractor</span>
+                      </div>
+                      
+                      <div className="text-3xl font-bold text-gray-900 mb-1">
+                        ${contractorCost.toLocaleString()}
+                      </div>
+                      
+                      <div className="text-xs text-gray-600 mb-3">
+                        Labor + materials
+                      </div>
+                      
+                      <div className="border-t border-gray-300 pt-2">
+                        {serviceCallMin && (
+                          <div className="flex items-start gap-1 text-orange-600 text-xs">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span>
+                              Includes ~${serviceCallMin} service call minimum
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-green-700">
-                      ${aiAnalysis.current_fix_cost?.toLocaleString() || 'N/A'}
-                    </p>
-                    <p className="text-xs text-green-800 mt-1">Estimated cost {taskCount > 1 ? 'per unit ' : ''}today</p>
-                  </div>
-
-                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                      <h3 className="font-bold text-red-900">If You Wait</h3>
+                    
+                    {/* 360° OPERATOR OPTION */}
+                    <div className="border-2 border-blue-300 rounded-lg p-4 bg-blue-50 relative">
+                      <div className="absolute top-2 right-2">
+                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-semibold">
+                          Best Value
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mb-2">
+                        <Star className="w-5 h-5 text-blue-700" />
+                        <span className="font-semibold text-blue-900">360° Operator</span>
+                      </div>
+                      
+                      <div className="text-3xl font-bold text-blue-700 mb-1">
+                        ${operatorCost.toLocaleString()}
+                      </div>
+                      
+                      <div className="text-xs text-blue-800 mb-3">
+                        Professional service
+                      </div>
+                      
+                      <div className="border-t border-blue-300 pt-2 space-y-1">
+                        <div className="text-xs text-blue-900">
+                          ✓ No service call fee
+                        </div>
+                        <div className="text-xs text-blue-900">
+                          ✓ Included in membership
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-red-700">
-                      ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
-                    </p>
-                    <p className="text-xs text-red-800 mt-1">Estimated cost {taskCount > 1 ? 'per unit ' : ''}in 6-12 months</p>
+                    
                   </div>
-                </div>
-
-                {taskCount > 1 && (
-                  <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
-                    <p className="text-sm text-blue-900 font-semibold">
-                      📋 Multiple Units: The costs shown are per unit. Total estimated cost: 
-                      <strong> ${((aiAnalysis.current_fix_cost || 0) * taskCount).toLocaleString()}</strong> now vs 
-                      <strong> ${((aiAnalysis.delayed_fix_cost || 0) * taskCount).toLocaleString()}</strong> if delayed
-                    </p>
-                  </div>
-                )}
-
-                <div className={`border-2 rounded-lg p-4 ${
-                  aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
-                  aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-50 border-orange-400' :
-                  'bg-blue-50 border-blue-400'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-lg">Cascade Risk Assessment</h3>
-                    <Badge className={
-                      aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-600' :
-                      aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-600' :
-                      'bg-blue-600'
-                    }>
-                      Risk Score: {aiAnalysis.cascade_risk_score}/10
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-800 mb-3 font-medium">
-                    {aiAnalysis.cascade_risk_reason}
-                  </p>
-                  {aiAnalysis.cascade_risk_score >= 7 && (
-                    <div className="bg-red-100 border border-red-300 rounded p-3 mt-2">
-                      <p className="text-xs text-red-900 font-bold">
-                        ⚠️ HIGH RISK: This issue will likely trigger expensive cascade failures if ignored!
-                      </p>
+                  
+                  {/* DIY SAVINGS CALLOUT */}
+                  {diyCost && contractorCost && (
+                    <div className="mt-4 bg-green-50 border-l-4 border-green-600 p-4 rounded">
+                      <div className="flex items-start gap-3">
+                        <TrendingDown className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-green-900 mb-1">
+                            💡 DIY Savings Potential
+                          </div>
+                          <div className="text-sm text-green-800">
+                            By doing this yourself, you'll save <strong>${(contractorCost - diyCost).toLocaleString()}</strong> compared to hiring a contractor.
+                            {diyTimeHours && ` Time investment: ${diyTimeHours} ${diyTimeHours === 1 ? 'hour' : 'hours'}.`}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {aiAnalysis.cost_impact_reason && (
-                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                    <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5" />
-                      Why Waiting Costs More:
-                    </h3>
-                    <p className="text-sm text-gray-800">{aiAnalysis.cost_impact_reason}</p>
-                  </div>
-                )}
+                {/* DIVIDER */}
+                <div className="border-t border-gray-200" />
 
-                {aiAnalysis.urgency_timeline && (
-                  <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
-                    <h3 className="font-bold text-purple-900 mb-2">Timeline to Critical:</h3>
-                    <p className="text-lg font-bold text-purple-700">{aiAnalysis.urgency_timeline}</p>
+                {/* CASCADE RISK SECTION */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-900">What Happens If You Wait?</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                      <div className="text-sm font-semibold text-green-700 mb-1">
+                        ✓ Fix Now (Recommended)
+                      </div>
+                      <div className="text-2xl font-bold text-green-700">
+                        ${(aiAnalysis.current_fix_cost || contractorCost).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-green-600 mt-1">
+                        Address the issue today
+                      </div>
+                    </div>
+                    
+                    <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                      <div className="text-sm font-semibold text-red-700 mb-1">
+                        ⚠️ If You Wait
+                      </div>
+                      <div className="text-2xl font-bold text-red-700">
+                        ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
+                      </div>
+                      <div className="text-xs text-red-600 mt-1">
+                        Potential cost in {aiAnalysis.urgency_timeline || '6-12 months'}
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
-                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                    <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
-                    <p className="text-2xl font-bold text-green-700">
-                      ${((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) * taskCount).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-green-800 mt-1">
-                      That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
-                      {taskCount > 1 && ` Across ${taskCount} units, that adds up fast!`}
-                    </p>
-                  </div>
-                )}
+                  {/* Cascade Risk Details */}
+                  {aiAnalysis.cascade_risk_reason && (
+                    <div className={`p-4 rounded-lg border-2 ${
+                      aiAnalysis.cascade_risk_score >= 7 
+                        ? 'bg-red-50 border-red-300' 
+                        : 'bg-orange-50 border-orange-300'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                          aiAnalysis.cascade_risk_score >= 7 ? 'text-red-600' : 'text-orange-600'
+                        }`} />
+                        <div className="flex-1">
+                          <div className="font-semibold mb-2 text-gray-900">
+                            🔗 Cascade Risk: {aiAnalysis.cascade_risk_score}/10
+                          </div>
+                          <p className="text-sm mb-3 text-gray-800">{aiAnalysis.cascade_risk_reason}</p>
+                          
+                          {aiAnalysis.cascade_risk_score >= 7 && (
+                            <div className="bg-red-100 rounded p-3 text-sm font-semibold text-red-800">
+                              ⚠️ HIGH RISK: This issue will likely trigger expensive cascade failures if ignored!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expandable Cost Impact Reason */}
+                  {aiAnalysis.cost_impact_reason && (
+                    <details className="mt-4 border-2 border-gray-200 rounded-lg overflow-hidden">
+                      <summary className="cursor-pointer p-3 hover:bg-gray-50 font-semibold text-sm bg-white">
+                        Why does waiting cost ${((aiAnalysis.delayed_fix_cost || 0) - (aiAnalysis.current_fix_cost || contractorCost)).toLocaleString()} more?
+                      </summary>
+                      <div className="p-4 text-sm text-gray-700 border-t border-gray-200 bg-gray-50">
+                        {aiAnalysis.cost_impact_reason}
+                      </div>
+                    </details>
+                  )}
+
+                  {/* Key Warning */}
+                  {aiAnalysis.key_warning && (
+                    <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-yellow-900 mb-1">⚡ Critical Warning</div>
+                          <p className="text-sm text-yellow-800">{aiAnalysis.key_warning}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Savings Calculation */}
+                  {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
+                    <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <span className="font-semibold text-green-900">
+                          Potential Savings by Acting Now
+                        </span>
+                      </div>
+                      <div className="text-2xl font-bold text-green-700">
+                        ${((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) * taskCount).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-green-800 mt-1">
+                        That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
+                        {taskCount > 1 && ` Across ${taskCount} units, that adds up fast!`}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center">
@@ -744,7 +913,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {/* EDIT MODE: Show current unit as read-only */}
               {!isSingleFamily && isMultiUnit && isEditing && (
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-blue-900 mb-2 block flex items-center gap-2">
@@ -756,7 +924,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   </p>
                   <div className="bg-white border-2 border-blue-400 rounded-lg p-3">
                     <p className="text-base font-bold text-blue-900">
-                      {editingTask?.unit_tag || 'N/A'}
+                      {editingTask?.unit_tag || 'Not assigned to a specific unit'}
                     </p>
                   </div>
                   <p className="text-xs text-gray-600 mt-2 italic">
@@ -765,7 +933,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               )}
 
-              {/* CREATE MODE: Multi-Unit Checkbox Selection */}
               {!isSingleFamily && isMultiUnit && !isEditing && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
@@ -776,11 +943,10 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     Select which units need this work. A separate task will be created for each unit you select.
                   </p>
 
-                  {/* Select All Toggle */}
                   <div className="flex items-center gap-3 p-2 bg-white rounded-lg mb-2">
                     <Checkbox
                       id="select-all-units"
-                      checked={selectedUnits.length === allUnitOptions.length + 1} // +1 for Common Area
+                      checked={selectedUnits.length === allUnitOptions.length + 1}
                       onCheckedChange={handleSelectAllUnits}
                     />
                     <label 
@@ -791,9 +957,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     </label>
                   </div>
 
-                  {/* Unit Checkboxes */}
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {/* Common Area */}
                     <div className="flex items-center gap-3 p-2 bg-white rounded-lg border">
                       <Checkbox
                         id="unit-common"
@@ -805,7 +969,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                       </label>
                     </div>
 
-                    {/* Individual Units */}
                     {allUnitOptions.map((unit, idx) => {
                       const unitTagValue = unit.unit_id || unit.nickname || `Unit ${idx + 1}`;
                       return (
@@ -824,7 +987,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     })}
                   </div>
 
-                  {/* Summary */}
                   {selectedUnits.length > 0 && (
                     <div className="mt-3 p-2 bg-green-50 border border-green-300 rounded">
                       <p className="text-xs text-green-900 font-semibold">
@@ -982,7 +1144,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                       🤖 After You Submit, AI Will Analyze:
                     </p>
                     <ul className="text-xs text-purple-800 leading-relaxed space-y-1">
-                      <li>• <strong>Current fix cost estimate</strong> based on description{photos.length > 0 ? ' & photos' : ''}</li>
+                      <li>• <strong>DIY vs. Contractor vs. 360° Operator costs</strong> - See all your options</li>
                       <li>• <strong>Cascade risk score (1-10)</strong> - What will fail next if ignored</li>
                       <li>• <strong>Delayed fix cost</strong> - What it costs if you wait 6-12 months</li>
                       <li>• <strong>Urgency timeline</strong> and why waiting costs more</li>
