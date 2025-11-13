@@ -65,7 +65,8 @@ export default function PriorityTaskCard({
   onSendToSchedule, 
   onMarkComplete, 
   onDelete,
-  property 
+  property,
+  compact = false
 }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = React.useState(false);
@@ -85,7 +86,7 @@ export default function PriorityTaskCard({
   const currentCost = task.current_fix_cost || 0;
   const delayedCost = task.delayed_fix_cost || 0;
   const potentialSavings = delayedCost - currentCost;
-  const isMultiUnit = property && property.door_count > 1; // Added isMultiUnit
+  const isMultiUnit = property && property.door_count > 1;
 
   const handleExecutionTypeChange = (newType) => {
     updateTaskMutation.mutate({
@@ -101,6 +102,59 @@ export default function PriorityTaskCard({
     });
   };
 
+  // Compact mode for grouped view
+  if (compact) {
+    return (
+      <Card className="border border-gray-300 bg-white">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              {task.unit_tag && (
+                <Badge className="bg-purple-600 text-white shrink-0">
+                  🚪 {task.unit_tag}
+                </Badge>
+              )}
+              <div className="flex items-center gap-2">
+                {task.status === 'Completed' ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                ) : task.status === 'Scheduled' ? (
+                  <Calendar className="w-5 h-5 text-yellow-600" />
+                ) : (
+                  <Clock className="w-5 h-5 text-gray-400" />
+                )}
+                <span className="text-sm font-semibold text-gray-900">
+                  {task.title} - {task.status}
+                </span>
+              </div>
+            </div>
+            
+            {task.status !== 'Completed' && (
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onSendToSchedule(task)}
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-8"
+                >
+                  Schedule
+                </Button>
+                <Button
+                  onClick={() => onMarkComplete(task)}
+                  size="sm"
+                  variant="outline"
+                  className="text-xs text-green-600 h-8"
+                >
+                  Complete
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Full card view
   return (
     <>
       <Card className={`border-2 transition-all hover:shadow-lg ${
@@ -121,6 +175,12 @@ export default function PriorityTaskCard({
                     High Cascade Risk
                   </Badge>
                 )}
+                {task.scope === 'building_wide' && (
+                  <Badge className="bg-blue-600 text-white gap-1">
+                    <Building2 className="w-3 h-3" />
+                    Building Wide
+                  </Badge>
+                )}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -139,10 +199,15 @@ export default function PriorityTaskCard({
                     Risk: {cascadeRiskScore}/10
                   </Badge>
                 )}
-                {isMultiUnit && task.unit_tag && ( // Added unit_tag badge
+                {isMultiUnit && task.unit_tag && (
                   <Badge className="bg-purple-600 text-white gap-1">
                     <Building2 className="w-3 h-3" />
                     {task.unit_tag}
+                  </Badge>
+                )}
+                {task.applies_to_unit_count && (
+                  <Badge variant="outline" className="text-xs">
+                    Covers {task.applies_to_unit_count} units
                   </Badge>
                 )}
                 {property && (
@@ -169,7 +234,6 @@ export default function PriorityTaskCard({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Cost Summary - Always Visible */}
           {(currentCost > 0 || delayedCost > 0) && (
             <div className="grid grid-cols-2 gap-3">
               {currentCost > 0 && (
@@ -208,10 +272,8 @@ export default function PriorityTaskCard({
             </div>
           )}
 
-          {/* Expanded Details */}
           {expanded && (
             <div className="space-y-4 border-t border-red-200 pt-4">
-              {/* Description */}
               {task.description && (
                 <div>
                   <p className="text-sm font-semibold text-gray-900 mb-1">Description:</p>
@@ -219,7 +281,6 @@ export default function PriorityTaskCard({
                 </div>
               )}
 
-              {/* Cascade Risk Explanation */}
               {task.cascade_risk_reason ? (
                 <div className={`rounded-lg p-3 border-2 ${
                   hasCascadeAlert 
@@ -246,7 +307,6 @@ export default function PriorityTaskCard({
                 </div>
               )}
 
-              {/* Cost Impact */}
               {task.cost_impact_reason && (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
@@ -257,7 +317,6 @@ export default function PriorityTaskCard({
                 </div>
               )}
 
-              {/* Urgency Timeline */}
               {task.urgency_timeline && (
                 <div className="flex items-center gap-2 bg-purple-50 border border-purple-300 rounded-lg p-3">
                   <Clock className="w-4 h-4 text-purple-600" />
@@ -266,7 +325,6 @@ export default function PriorityTaskCard({
                 </div>
               )}
 
-              {/* Photos */}
               {task.photo_urls && task.photo_urls.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-gray-900 mb-2">Photos:</p>
@@ -283,7 +341,6 @@ export default function PriorityTaskCard({
                 </div>
               )}
 
-              {/* Decision Controls */}
               <div className="grid md:grid-cols-2 gap-4 bg-red-50 rounded-lg p-4 border-2 border-red-300">
                 <div>
                   <label className="text-sm font-semibold text-red-900 mb-2 block">
@@ -339,7 +396,6 @@ export default function PriorityTaskCard({
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-4 border-t border-red-200">
             <Button
               onClick={() => setShowAddToCart(true)}
@@ -398,7 +454,6 @@ export default function PriorityTaskCard({
         </CardContent>
       </Card>
 
-      {/* Add to Cart Dialog */}
       {showAddToCart && (
         <AddToCartDialog
           open={showAddToCart}
@@ -408,11 +463,10 @@ export default function PriorityTaskCard({
         />
       )}
 
-      {/* Edit Task Form */}
       {showEditForm && (
         <ManualTaskForm
           propertyId={task.property_id}
-          property={property} // Added property prop
+          property={property}
           editingTask={task}
           onComplete={() => setShowEditForm(false)}
           onCancel={() => setShowEditForm(false)}

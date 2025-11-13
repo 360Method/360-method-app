@@ -28,14 +28,19 @@ import {
   Archive,
   BookOpen,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Grid3x3, // NEW IMPORT
+  List // NEW IMPORT
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
+import TaskGroupCard from "../components/prioritize/TaskGroupCard"; // NEW IMPORT
+import BulkActionBar from "../components/prioritize/BulkActionBar"; // NEW IMPORT
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import StepNavigation from "../components/navigation/StepNavigation";
-import UnitSelectionModal from "../components/prioritize/UnitSelectionModal"; // NEW IMPORT
+import TaskCreationIntentModal from "../components/prioritize/TaskCreationIntentModal"; // NEW IMPORT
+import EnhancedUnitSelectionModal from "../components/prioritize/EnhancedUnitSelectionModal"; // NEW IMPORT
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -63,6 +68,11 @@ const isInspectionTask = (template) => {
   );
 };
 
+// Generate UUID for batch operations
+const generateBatchId = () => {
+  return 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+};
+
 export default function PrioritizePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -75,7 +85,13 @@ export default function PrioritizePage() {
   const [sortBy, setSortBy] = React.useState('cascade_risk');
   const [showEducation, setShowEducation] = React.useState(false);
   const [addingTemplateId, setAddingTemplateId] = React.useState(null);
-  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
+  const [viewMode, setViewMode] = React.useState('grouped'); // 'grouped' or 'individual' // NEW STATE
+  const [selectedTasks, setSelectedTasks] = React.useState([]); // NEW STATE
+  const [unitFilter, setUnitFilter] = React.useState('all'); // NEW STATE
+  
+  // New intent modal state
+  const [intentModal, setIntentModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
+  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null }); // Kept, but now for EnhancedUnitSelectionModal
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -141,6 +157,34 @@ export default function PrioritizePage() {
     }
   });
 
+  // NEW: Bulk update mutation
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ taskIds, data }) => {
+      const updatePromises = taskIds.map(id => 
+        base44.entities.MaintenanceTask.update(id, data)
+      );
+      return await Promise.all(updatePromises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      setSelectedTasks([]); // Clear selection after bulk action
+    }
+  });
+
+  // NEW: Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (taskIds) => {
+      const deletePromises = taskIds.map(id => 
+        base44.entities.MaintenanceTask.delete(id)
+      );
+      return await Promise.all(deletePromises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      setSelectedTasks([]); // Clear selection after bulk action
+    }
+  });
+
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId) => base44.entities.MaintenanceTask.delete(taskId),
     onSuccess: () => {
@@ -182,8 +226,15 @@ export default function PrioritizePage() {
     task.status === 'Identified' || task.status === 'Deferred'
   );
 
-  // Apply filters and sorting
-  const filteredTasks = ticketQueueTasks.filter(task => {
+  // NEW: Apply unit filter
+  const unitFilteredTasks = unitFilter === 'all' 
+    ? ticketQueueTasks
+    : unitFilter === 'building_wide'
+    ? ticketQueueTasks.filter(t => t.scope === 'building_wide' || t.unit_tag === 'Common Area')
+    : ticketQueueTasks.filter(t => t.unit_tag === unitFilter);
+
+  // Apply priority filters
+  const filteredTasks = unitFilteredTasks.filter(task => {
     if (priorityFilter === 'all') return true;
     if (priorityFilter === 'high_cascade') return (task.cascade_risk_score || 0) >= 7;
     if (priorityFilter === 'high_priority') return task.priority === 'High';
@@ -202,6 +253,34 @@ export default function PrioritizePage() {
     }
     return 0;
   });
+
+  // NEW: Group tasks by batch_id for grouped view
+  const taskGroups = React.useMemo(() => {
+    const groups = {};
+    const singles = [];
+    
+    sortedTasks.forEach(task => {
+      if (task.batch_id) {
+        if (!groups[task.batch_id]) {
+          groups[task.batch_id] = [];
+        }
+        groups[task.batch_id].push(task);
+      } else {
+        singles.push(task);
+      }
+    });
+    
+    return { groups: Object.values(groups), singles };
+  }, [sortedTasks]);
+
+  // NEW: Get unique unit tags for filter
+  const uniqueUnitTags = React.useMemo(() => {
+    const tags = new Set();
+    ticketQueueTasks.forEach(task => { // Use ticketQueueTasks to get all potential units, not just filtered ones.
+      if (task.unit_tag && task.scope === 'per_unit') tags.add(task.unit_tag);
+    });
+    return Array.from(tags).sort();
+  }, [ticketQueueTasks]);
 
   // Calculate statistics
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
@@ -235,8 +314,49 @@ export default function PrioritizePage() {
     }
   };
 
-  // Helper to create a single task from template data
-  const createTaskFromTemplate = async (template, propertyId, unitTag = undefined) => {
+  // NEW: Bulk actions
+  const handleScheduleAll = () => {
+    bulkUpdateMutation.mutate({
+      taskIds: selectedTasks,
+      data: { status: 'Scheduled' }
+    });
+  };
+
+  const handleCompleteAll = () => {
+    if (confirm(`Mark ${selectedTasks.length} tasks as complete?`)) {
+      bulkUpdateMutation.mutate({
+        taskIds: selectedTasks,
+        data: { 
+          status: 'Completed',
+          completion_date: new Date().toISOString().split('T')[0]
+        }
+      });
+    }
+  };
+
+  const handleDeleteAll = () => {
+    if (confirm(`Delete ${selectedTasks.length} tasks permanently?`)) {
+      bulkDeleteMutation.mutate(selectedTasks);
+    }
+  };
+
+  const handleChangePriority = (newPriority) => {
+    bulkUpdateMutation.mutate({
+      taskIds: selectedTasks,
+      data: { priority: newPriority }
+    });
+  };
+
+  const toggleTaskSelection = (taskId) => {
+    setSelectedTasks(prev => 
+      prev.includes(taskId) 
+        ? prev.filter(id => id !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
+  // Helper to create a single task from template data - UPDATED
+  const createTaskFromTemplate = async (template, propertyId, unitTag = undefined, scope = 'property_wide', appliesToUnitCount = undefined, batchId = undefined) => {
     try {
       const taskData = {
         property_id: propertyId,
@@ -248,7 +368,10 @@ export default function PrioritizePage() {
         template_origin_id: template.id,
         recurring: true,
         recurrence_interval_days: template.suggested_interval_days || 365,
-        unit_tag: unitTag // Add unit_tag here
+        unit_tag: unitTag, // Add unit_tag here
+        scope: scope, // NEW
+        applies_to_unit_count: appliesToUnitCount, // NEW
+        batch_id: batchId // NEW
       };
 
       console.log('📝 Creating task:', taskData);
@@ -261,7 +384,7 @@ export default function PrioritizePage() {
     }
   };
 
-  // Template addition with scope awareness
+  // NEW: Template addition with intent modal awareness
   const handleAddTemplate = async (template) => {
     console.log('🎯 handleAddTemplate called for:', template.title);
     
@@ -278,36 +401,103 @@ export default function PrioritizePage() {
     }
     
     const currentProperty = properties.find(p => p.id === propertyId);
-    // Determine if the property is multi-unit based on door_count or units array presence
     const isMultiUnit = currentProperty && (currentProperty.door_count > 1 || (currentProperty.units && currentProperty.units.length > 0));
     
     // Determine template scope, default to 'property_wide' for backward compatibility
     const appliesToScope = template.applies_to_scope || 'property_wide';
     
-    if (appliesToScope === 'per_unit' && isMultiUnit) {
-      // Open unit selection modal if template is per-unit and property is multi-unit
-      console.log('🏢 Per-unit task on multi-unit property - opening modal');
-      setUnitSelectionModal({ open: true, template, property: currentProperty });
-      return; // Stop here, actual creation happens after modal confirmation
+    // If it's a single-unit property OR the template is property-wide, create directly
+    if (!isMultiUnit || appliesToScope === 'property_wide') {
+      console.log('🏠 Property-wide task or single-unit property - creating directly');
+      setAddingTemplateId(template.id); // Set loading state
+      try {
+        // If multi-unit but template is property-wide, tag as 'Common Area'. Otherwise, no unit tag.
+        const unitTagForPropertyWide = isMultiUnit ? 'Common Area' : undefined;
+        const taskScope = appliesToScope === 'property_wide' ? 'building_wide' : 'per_unit'; // For single unit, it's technically 'per_unit' but no tag needed.
+        await createTaskFromTemplate(template, propertyId, unitTagForPropertyWide, taskScope);
+        await refetchTasks();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setAddingTemplateId(null);
+      }
+      return;
     }
     
-    // For property-wide tasks or single-unit properties, proceed directly
-    console.log('🏠 Property-wide task or single-unit - creating directly');
-    setAddingTemplateId(template.id); // Set loading state for direct creation
-    try {
-      // If multi-unit but template is property-wide, tag as 'Common Area'. Otherwise, no unit tag.
-      const unitTagForPropertyWide = isMultiUnit ? 'Common Area' : undefined;
-      await createTaskFromTemplate(template, propertyId, unitTagForPropertyWide);
-      await refetchTasks(); // Refetch after single task creation
-    } catch (error) {
-      alert(error.message); // Display error from createTaskFromTemplate
-    } finally {
-      setAddingTemplateId(null); // Clear loading state
-    }
-    console.log('✅ Done with direct creation!');
+    // If multi-unit property AND per_unit template → Show intent modal
+    console.log('🏢 Per-unit template on multi-unit property - opening intent modal');
+    setIntentModal({ open: true, template, property: currentProperty });
   };
 
-  // Handle unit selection modal confirmation
+  // NEW: Handle intent modal selections
+  const handleIntentSelection = {
+    createBuildingWide: async () => {
+      const template = intentModal.template;
+      const property = intentModal.property;
+      setAddingTemplateId(template.id);
+      
+      try {
+        await createTaskFromTemplate(
+          template, 
+          property.id, 
+          `All Units (${property.door_count})`, // Unit tag indicating all units
+          'building_wide', // Explicitly building-wide scope
+          property.door_count // Number of units it applies to
+        );
+        await refetchTasks();
+        setIntentModal({ open: false, template: null, property: null });
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setAddingTemplateId(null);
+      }
+    },
+    
+    createPerUnit: async () => {
+      const template = intentModal.template;
+      const property = intentModal.property;
+      const batchId = generateBatchId(); // Generate a batch ID for these tasks
+      setAddingTemplateId(template.id);
+      
+      try {
+        // Get all units from the property, fallback to door_count if 'units' array is missing
+        const units = property.units || [];
+        const allUnits = units.length > 0 
+          ? units.map(u => u.unit_id || u.nickname || `Unit ${u.id}`)
+          : Array.from({ length: property.door_count }, (_, i) => `Unit ${i + 1}`);
+        
+        const createPromises = allUnits.map(unitTag => 
+          createTaskFromTemplate(
+            template, 
+            property.id, 
+            unitTag,
+            'per_unit', // Explicitly per-unit scope
+            undefined, // Not applicable for per_unit count
+            batchId // Assign the same batch ID to all
+          )
+        );
+        
+        await Promise.all(createPromises);
+        await refetchTasks();
+        setIntentModal({ open: false, template: null, property: null });
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setAddingTemplateId(null);
+      }
+    },
+    
+    chooseUnits: () => {
+      setUnitSelectionModal({ 
+        open: true, 
+        template: intentModal.template, 
+        property: intentModal.property 
+      });
+      setIntentModal({ open: false, template: null, property: null });
+    }
+  };
+
+  // Handle unit selection modal confirmation - UPDATED
   const handleUnitSelectionConfirm = async (selectedUnitTags) => {
     const template = unitSelectionModal.template;
     const property = unitSelectionModal.property;
@@ -319,12 +509,13 @@ export default function PrioritizePage() {
     }
     
     console.log('🏢 Creating tasks for selected units:', selectedUnitTags);
+    const batchId = generateBatchId(); // Generate a batch ID for these tasks
     setAddingTemplateId(template.id); // Set loading state for batch creation
     
     try {
       // Create a task for each selected unit
       const createPromises = selectedUnitTags.map(unitTag => 
-        createTaskFromTemplate(template, property.id, unitTag)
+        createTaskFromTemplate(template, property.id, unitTag, 'per_unit', undefined, batchId)
       );
       
       await Promise.all(createPromises);
@@ -371,6 +562,8 @@ export default function PrioritizePage() {
   const currentProperty = selectedProperty !== 'all' 
     ? properties.find(p => p.id === selectedProperty)
     : null;
+  
+  const isMultiUnitView = currentProperty && currentProperty.door_count > 1; // NEW: Check if property is multi-unit
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
@@ -656,54 +849,102 @@ export default function PrioritizePage() {
           </Card>
         </div>
 
-        {/* Filters and Actions */}
+        {/* Filters and Actions - UPDATED with View Mode */}
         <Card className="border-2 border-red-200 bg-white mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="flex flex-wrap gap-3 items-center flex-1">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-red-600" />
-                  <Label className="font-semibold text-red-900">Filter:</Label>
-                </div>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tasks</SelectItem>
-                    <SelectItem value="high_cascade">High Cascade Risk (7+)</SelectItem>
-                    <SelectItem value="high_priority">High Priority</SelectItem>
-                    <SelectItem value="High">Priority: High</SelectItem>
-                    <SelectItem value="Medium">Priority: Medium</SelectItem>
-                    <SelectItem value="Low">Priority: Low</SelectItem>
-                    <SelectItem value="routine">Priority: Routine</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="flex flex-wrap gap-3 items-center flex-1">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-red-600" />
+                    <Label className="font-semibold text-red-900">Filter:</Label>
+                  </div>
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tasks</SelectItem>
+                      <SelectItem value="high_cascade">High Cascade Risk (7+)</SelectItem>
+                      <SelectItem value="high_priority">High Priority</SelectItem>
+                      <SelectItem value="High">Priority: High</SelectItem>
+                      <SelectItem value="Medium">Priority: Medium</SelectItem>
+                      <SelectItem value="Low">Priority: Low</SelectItem>
+                      <SelectItem value="routine">Priority: Routine</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                <div className="flex items-center gap-2">
-                  <Label className="font-semibold text-red-900">Sort by:</Label>
+                  {isMultiUnitView && ( // NEW: Conditionally render unit filter
+                    <Select value={unitFilter} onValueChange={setUnitFilter}>
+                      <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Units</SelectItem>
+                        <SelectItem value="building_wide">Building Wide</SelectItem>
+                        {uniqueUnitTags.map(tag => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <Label className="font-semibold text-red-900">Sort:</Label>
+                  </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cascade_risk">Cascade Risk</SelectItem>
+                      <SelectItem value="cost">Cost to Fix</SelectItem>
+                      <SelectItem value="priority">Priority Level</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cascade_risk">Cascade Risk</SelectItem>
-                    <SelectItem value="cost">Cost to Fix</SelectItem>
-                    <SelectItem value="priority">Priority Level</SelectItem>
-                  </SelectContent>
-                </Select>
+
+                <Button
+                  onClick={() => setShowTaskForm(true)}
+                  disabled={selectedProperty === 'all' && properties.length > 1}
+                  className="bg-red-600 hover:bg-red-700 gap-2 w-full md:w-auto"
+                  style={{ minHeight: '44px' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Ticket
+                </Button>
               </div>
 
-              <Button
-                onClick={() => setShowTaskForm(true)}
-                disabled={selectedProperty === 'all' && properties.length > 1}
-                className="bg-red-600 hover:bg-red-700 gap-2 w-full md:w-auto"
-                style={{ minHeight: '44px' }}
-              >
-                <Plus className="w-4 h-4" />
-                Add Ticket
-              </Button>
+              {/* View Mode Toggle - NEW */}
+              <div className="flex items-center gap-2">
+                <Label className="font-semibold text-red-900">View:</Label>
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setViewMode('grouped')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                      viewMode === 'grouped' 
+                        ? 'bg-white shadow-sm font-semibold' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    style={{ minHeight: '40px' }}
+                  >
+                    <Grid3x3 className="w-4 h-4" />
+                    <span className="text-sm">Grouped</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('individual')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                      viewMode === 'individual' 
+                        ? 'bg-white shadow-sm font-semibold' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    style={{ minHeight: '40px' }}
+                  >
+                    <List className="w-4 h-4" />
+                    <span className="text-sm">Individual</span>
+                  </button>
+                </div>
+              </div>
             </div>
             {selectedProperty === 'all' && properties.length > 1 && (
               <p className="text-xs text-orange-600 mt-2">
@@ -744,7 +985,7 @@ export default function PrioritizePage() {
                     className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50"
                     style={{ backgroundColor: '#EFF6FF' }}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2"> {/* NEW: Flex container for title and scope badge */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-bold text-gray-900">{template.title}</h3>
                       <Badge 
                         className={appliesToScope === 'per_unit' ? 'bg-purple-600' : 'bg-gray-600'}
@@ -795,19 +1036,56 @@ export default function PrioritizePage() {
           </div>
         )}
 
-        {/* Tasks Grid */}
+        {/* Tasks Display - UPDATED with Grouped/Individual Views */}
         {sortedTasks.length > 0 ? (
           <div className="space-y-4">
-            {sortedTasks.map(task => (
-              <PriorityTaskCard
-                key={task.id}
-                task={task}
-                onSendToSchedule={handleSendToSchedule}
-                onMarkComplete={handleMarkComplete}
-                onDelete={handleDeleteTask}
-                property={currentProperty || properties.find(p => p.id === task.property_id)}
-              />
-            ))}
+            {viewMode === 'grouped' ? (
+              <>
+                {/* Grouped Tasks */}
+                {taskGroups.groups.map((group, idx) => (
+                  <TaskGroupCard
+                    key={group[0].batch_id || `group-${idx}`}
+                    tasks={group}
+                    property={currentProperty || properties.find(p => p.id === group[0].property_id)}
+                    onSendToSchedule={handleSendToSchedule}
+                    onMarkComplete={handleMarkComplete}
+                    onDelete={handleDeleteTask}
+                    selectedTasks={selectedTasks}
+                    onToggleTask={toggleTaskSelection}
+                  />
+                ))}
+                
+                {/* Single Tasks (not part of a batch) */}
+                {taskGroups.singles.map(task => (
+                  <PriorityTaskCard
+                    key={task.id}
+                    task={task}
+                    onSendToSchedule={handleSendToSchedule}
+                    onMarkComplete={handleMarkComplete}
+                    onDelete={handleDeleteTask}
+                    property={currentProperty || properties.find(p => p.id === task.property_id)}
+                    selectedTasks={selectedTasks}
+                    onToggleTask={toggleTaskSelection}
+                  />
+                ))}
+              </>
+            ) : (
+              <>
+                {/* Individual View - All tasks separately */}
+                {sortedTasks.map(task => (
+                  <PriorityTaskCard
+                    key={task.id}
+                    task={task}
+                    onSendToSchedule={handleSendToSchedule}
+                    onMarkComplete={handleMarkComplete}
+                    onDelete={handleDeleteTask}
+                    property={currentProperty || properties.find(p => p.id === task.property_id)}
+                    selectedTasks={selectedTasks}
+                    onToggleTask={toggleTaskSelection}
+                  />
+                ))}
+              </>
+            )}
           </div>
         ) : (
           <Card className="border-2 border-red-200 bg-white">
@@ -886,14 +1164,36 @@ export default function PrioritizePage() {
         />
       )}
 
-      {/* Unit Selection Modal */}
-      <UnitSelectionModal
+      {/* Intent Modal - NEW */}
+      <TaskCreationIntentModal
+        open={intentModal.open}
+        onClose={() => setIntentModal({ open: false, template: null, property: null })}
+        template={intentModal.template}
+        property={intentModal.property}
+        onCreateBuildingWide={handleIntentSelection.createBuildingWide}
+        onCreatePerUnit={handleIntentSelection.createPerUnit}
+        onChooseUnits={handleIntentSelection.chooseUnits}
+        isCreating={addingTemplateId === intentModal.template?.id}
+      />
+
+      {/* Enhanced Unit Selection Modal - Renamed/Updated */}
+      <EnhancedUnitSelectionModal
         open={unitSelectionModal.open}
         onClose={() => setUnitSelectionModal({ open: false, template: null, property: null })}
         template={unitSelectionModal.template}
         property={unitSelectionModal.property}
         onConfirm={handleUnitSelectionConfirm}
         isCreating={addingTemplateId === unitSelectionModal.template?.id}
+      />
+
+      {/* Bulk Action Bar - NEW */}
+      <BulkActionBar
+        selectedCount={selectedTasks.length}
+        onScheduleAll={handleScheduleAll}
+        onCompleteAll={handleCompleteAll}
+        onDeleteAll={handleDeleteAll}
+        onChangePriority={handleChangePriority}
+        onClearSelection={() => setSelectedTasks([])}
       />
     </div>
   );
