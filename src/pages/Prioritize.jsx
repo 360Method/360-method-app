@@ -22,7 +22,9 @@ import {
   Send,
   Eye,
   User,
-  Building2
+  Building2,
+  Inbox,
+  Archive
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -124,13 +126,13 @@ export default function PrioritizePage() {
     }
   });
 
-  // Filter tasks to only show those in the "Holding Cell" (Identified status)
-  const holdingCellTasks = allTasks.filter(task => 
+  // Filter tasks to only show those in the "Ticket Queue" (NOT Completed, NOT Scheduled, NOT In Progress)
+  const ticketQueueTasks = allTasks.filter(task => 
     task.status === 'Identified' || task.status === 'Deferred'
   );
 
   // Apply filters and sorting
-  const filteredTasks = holdingCellTasks.filter(task => {
+  const filteredTasks = ticketQueueTasks.filter(task => {
     if (priorityFilter === 'all') return true;
     if (priorityFilter === 'high_cascade') return (task.cascade_risk_score || 0) >= 7;
     if (priorityFilter === 'high_priority') return task.priority === 'High';
@@ -151,10 +153,10 @@ export default function PrioritizePage() {
   });
 
   // Calculate statistics
-  const highPriorityCount = holdingCellTasks.filter(t => t.priority === 'High').length;
-  const highCascadeCount = holdingCellTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
-  const totalCurrentCost = holdingCellTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
-  const totalDelayedCost = holdingCellTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
+  const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
+  const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
+  const totalCurrentCost = ticketQueueTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
+  const totalDelayedCost = ticketQueueTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
   const potentialSavings = totalDelayedCost - totalCurrentCost;
 
   // Handle task actions
@@ -219,28 +221,36 @@ export default function PrioritizePage() {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-lg">
-              <Target className="w-5 h-5 text-white" />
+              <Inbox className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
               <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-                Step 4: Prioritize Tasks
+                Step 4: Prioritize - Ticket Queue
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Review, enrich, and decide on your maintenance tasks
+                Central hub for all maintenance tasks - enrich, decide, then route to Schedule or Track
               </p>
             </div>
           </div>
 
-          {/* ACT Phase Indicator */}
-          <div className="flex items-center gap-2 bg-white rounded-lg p-3 border-2 border-red-300 shadow-sm">
-            <Badge className="bg-red-600 text-white">ACT Phase - Step 1 of 3</Badge>
-            <div className="flex items-center gap-1 text-xs text-gray-600">
-              <span className="font-bold text-red-600">→ Prioritize (Red)</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-gray-400">Schedule (Yellow)</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-gray-400">Execute (Green)</span>
+          {/* ACT Phase Workflow Indicator */}
+          <div className="bg-white rounded-lg p-3 border-2 border-red-300 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-red-600 text-white">ACT Phase - Step 1 of 3</Badge>
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <span className="font-bold text-red-600">→ Prioritize (Red)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-gray-400">Schedule (Yellow)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-gray-400">Execute (Green)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-gray-400">Track (Archive)</span>
+              </div>
             </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              <strong>Ticket Flow:</strong> Tasks arrive here from Inspections, Preserve, Upgrades, or Manual Entry → 
+              You enrich with AI → Choose DIY/Pro → Send to Schedule (yellow) or Mark Complete to archive in Track
+            </p>
           </div>
         </div>
 
@@ -254,10 +264,10 @@ export default function PrioritizePage() {
               <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="font-bold text-red-900 mb-1">
-                  🎯 Why Prioritizing Matters
+                  🎟️ Understanding the Ticket Queue
                 </h3>
                 <p className="text-sm text-red-800">
-                  Click to learn how smart prioritization saves thousands in cascade failures
+                  Click to learn how the central ticket system routes all maintenance work
                 </p>
               </div>
               {showEducation ? (
@@ -270,23 +280,64 @@ export default function PrioritizePage() {
             {showEducation && (
               <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-red-200 pt-4">
                 <p className="leading-relaxed">
-                  <strong>The Holding Cell Workflow:</strong> Tasks from inspections, preserve analysis, upgrades, 
-                  or manual entries arrive here. You enrich them with AI analysis, prioritize by cascade risk and 
-                  cost impact, then decide: <span className="text-red-600 font-bold">DIY</span> or{' '}
-                  <span className="text-red-600 font-bold">Request Professional Service</span> (add to cart).
+                  <strong>This is your central command for ALL maintenance:</strong> Every task - whether discovered 
+                  during inspections, flagged by Preserve analysis, planned upgrades, or manually entered - arrives 
+                  in this Ticket Queue. Here you make the critical decisions that route work through your system.
                 </p>
-                <div className="bg-white rounded-lg p-3 border border-red-200">
-                  <p className="font-semibold text-red-900 mb-2">📍 Your Decision Points:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• <strong>Review AI Analysis:</strong> Cost estimates, cascade risks, urgency timelines</li>
-                    <li>• <strong>Choose DIY or Pro:</strong> Mark execution type based on complexity</li>
-                    <li>• <strong>Add to Cart:</strong> For professional service requests</li>
-                    <li>• <strong>Send to Schedule:</strong> Moves task to Schedule tab (yellow) for timeline planning</li>
+                
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                      <Inbox className="w-4 h-4" />
+                      Ticket Sources
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Seasonal Inspections (issues found)</li>
+                      <li>• Preserve Analysis (lifecycle planning)</li>
+                      <li>• Upgrade Projects (improvement ideas)</li>
+                      <li>• Manual Entry (ad-hoc discoveries)</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4" />
+                      Decision Points
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Review AI cost & cascade analysis</li>
+                      <li>• Set priority level (High/Medium/Low)</li>
+                      <li>• Choose DIY or Professional service</li>
+                      <li>• Add to cart OR send to Schedule</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-3 border-2 border-yellow-300">
+                  <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Exit Routes from Ticket Queue
+                  </p>
+                  <ul className="space-y-2 text-xs">
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-yellow-700">→ Schedule (Yellow):</span>
+                      <span>Send here to plan when work will be done - moves to timeline view</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-green-700">→ Track (Archive):</span>
+                      <span>Mark complete to archive - moves to historical record with costs tracked</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-blue-700">→ Cart (Bundle):</span>
+                      <span>Add to cart to request professional service - submit multiple tasks together</span>
+                    </li>
                   </ul>
                 </div>
-                <p className="text-xs italic text-red-700">
-                  💡 Pro Tip: Tasks with cascade risk score 7+ should be prioritized immediately to prevent 
-                  expensive chain reactions.
+
+                <p className="text-xs italic text-red-700 bg-red-100 border border-red-300 rounded p-2">
+                  💡 <strong>Pro Tip:</strong> Nothing leaves this queue until YOU decide. Tasks stay here until 
+                  you send them to Schedule, mark complete (archive to Track), or delete them. This prevents 
+                  work from slipping through the cracks.
                 </p>
               </div>
             )}
@@ -333,15 +384,15 @@ export default function PrioritizePage() {
           <Card className="border-none shadow-md bg-gradient-to-br from-red-50 to-red-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <Target className="w-5 h-5 text-red-600" />
+                <Inbox className="w-5 h-5 text-red-600" />
                 <Badge className="bg-red-600 text-white text-xs">
-                  Holding Cell
+                  Tickets
                 </Badge>
               </div>
               <p className="text-2xl font-bold text-red-700">
-                {holdingCellTasks.length}
+                {ticketQueueTasks.length}
               </p>
-              <p className="text-xs text-gray-600">Tasks to Review</p>
+              <p className="text-xs text-gray-600">In Queue</p>
             </CardContent>
           </Card>
 
@@ -432,7 +483,7 @@ export default function PrioritizePage() {
                 style={{ minHeight: '44px' }}
               >
                 <Plus className="w-4 h-4" />
-                Add Task
+                Add Ticket
               </Button>
             </div>
             {selectedProperty === 'all' && properties.length > 1 && (
@@ -460,12 +511,12 @@ export default function PrioritizePage() {
         ) : (
           <Card className="border-2 border-red-200 bg-white">
             <CardContent className="p-8 text-center">
-              <Target className="w-16 h-16 mx-auto mb-4 text-red-300" />
+              <Inbox className="w-16 h-16 mx-auto mb-4 text-red-300" />
               <h3 className="font-bold text-xl mb-2 text-red-900">
-                {holdingCellTasks.length === 0 ? 'No Tasks in Holding Cell' : 'No Tasks Match Filters'}
+                {ticketQueueTasks.length === 0 ? 'Ticket Queue is Empty' : 'No Tasks Match Filters'}
               </h3>
               <p className="text-gray-600 mb-6">
-                {holdingCellTasks.length === 0 
+                {ticketQueueTasks.length === 0 
                   ? 'Add your first maintenance task or run an inspection to discover issues.'
                   : 'Try adjusting your filters to see more tasks.'}
               </p>
@@ -476,7 +527,7 @@ export default function PrioritizePage() {
                   className="bg-red-600 hover:bg-red-700 gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Task Manually
+                  Add Ticket
                 </Button>
                 {selectedProperty !== 'all' && (
                   <Button
@@ -499,38 +550,42 @@ export default function PrioritizePage() {
         <Card className="mt-6 border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <ArrowRight className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <Archive className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-red-900 mb-2">Next Steps After Prioritizing:</h3>
+                <h3 className="font-bold text-red-900 mb-2">Ticket Routing - What Happens Next:</h3>
                 <div className="grid md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-white rounded-lg p-3 border border-red-200">
-                    <p className="font-semibold text-red-900 mb-1 flex items-center gap-2">
-                      <Wrench className="w-4 h-4" />
-                      DIY
-                    </p>
-                    <p className="text-xs text-gray-700">
-                      Mark execution type as DIY, then send to Schedule tab to plan when you'll do it
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-red-200">
-                    <p className="font-semibold text-red-900 mb-1 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4" />
-                      Request Service
-                    </p>
-                    <p className="text-xs text-gray-700">
-                      Add to cart to bundle service requests, then submit for professional quotes
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-yellow-200">
+                  <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-400">
                     <p className="font-semibold text-yellow-900 mb-1 flex items-center gap-2">
                       <Send className="w-4 h-4" />
-                      Send to Schedule
+                      Send to Schedule (Yellow)
                     </p>
                     <p className="text-xs text-gray-700">
-                      Moves task to Schedule tab (yellow) for timeline planning
+                      Moves ticket to Schedule tab for timeline planning - changes status to "Scheduled"
+                    </p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
+                    <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
+                      <Archive className="w-4 h-4" />
+                      Mark Complete
+                    </p>
+                    <p className="text-xs text-gray-700">
+                      Archives ticket to Track (historical record) - changes status to "Completed"
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-400">
+                    <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      Add to Cart
+                    </p>
+                    <p className="text-xs text-gray-700">
+                      Bundle multiple service requests, then submit for professional quotes
                     </p>
                   </div>
                 </div>
+                <p className="text-xs italic text-red-700 mt-3 bg-red-100 border border-red-300 rounded p-2">
+                  💡 <strong>Remember:</strong> All work in ACT phase (Prioritize → Schedule → Execute) eventually 
+                  archives to Track. Track is your historical record with all costs, dates, and outcomes.
+                </p>
               </div>
             </div>
           </CardContent>
