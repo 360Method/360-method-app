@@ -6,9 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Building2 } from "lucide-react";
+import { HelpCircle, Building2, Home } from "lucide-react";
 
 export default function RentalConfigStep({ data, propertyUseType, onChange, onNext, onBack }) {
+  // Detect if this is a multi-unit property (Duplex, Triplex, Fourplex, etc.)
+  const isMultiUnitProperty = data.property_type && [
+    "Duplex", "Triplex", "Fourplex", 
+    "Small Multi-Family (5-12 units)", 
+    "Apartment Building (13+ units)"
+  ].includes(data.property_type) && (data.door_count || 0) > 1;
+
+  // For multi-unit primary_with_rental, use unit-by-unit configuration
+  const useUnitBasedConfig = propertyUseType === 'primary_with_rental' && isMultiUnitProperty;
+
   const [formData, setFormData] = React.useState({
     rental_config: data.rental_config || {
       rental_type: '',
@@ -29,13 +39,40 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
       management_type: '',
       monthly_rent: '',
       nightly_rate: ''
-    }
+    },
+    units: data.units || []
   });
 
   // Scroll to top when component mounts
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // Initialize units array for multi-unit configuration if needed
+  React.useEffect(() => {
+    if (useUnitBasedConfig && formData.units.length === 0 && data.door_count) {
+      const initialUnits = [];
+      for (let i = 0; i < data.door_count; i++) {
+        initialUnits.push({
+          unit_id: `unit-${i + 1}`,
+          nickname: `Unit ${String.fromCharCode(65 + i)}`,
+          square_footage: data.units?.[i]?.square_footage || "",
+          bedrooms: data.units?.[i]?.bedrooms || "",
+          bathrooms: data.units?.[i]?.bathrooms || "",
+          occupancy_status: "Vacant",
+          is_furnished: false,
+          furnishing_level: "unfurnished",
+          tenant_name: "",
+          tenant_email: "",
+          tenant_phone: "",
+          monthly_rent: ""
+        });
+      }
+      const updated = { ...formData, units: initialUnits };
+      setFormData(updated);
+      onChange(updated);
+    }
+  }, [useUnitBasedConfig, data.door_count]);
 
   // For full rental properties, sync number_of_rental_units with door_count
   React.useEffect(() => {
@@ -46,11 +83,20 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
 
   const updateRentalConfig = (field, value) => {
     const updated = {
+      ...formData,
       rental_config: {
         ...formData.rental_config,
         [field]: value
       }
     };
+    setFormData(updated);
+    onChange(updated);
+  };
+
+  const updateUnit = (index, field, value) => {
+    const updatedUnits = [...formData.units];
+    updatedUnits[index] = { ...updatedUnits[index], [field]: value };
+    const updated = { ...formData, units: updatedUnits };
     setFormData(updated);
     onChange(updated);
   };
@@ -63,29 +109,53 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     updateRentalConfig(field, updated);
   };
 
+  const toggleUnitArrayItem = (unitIndex, field, item) => {
+    const unit = formData.units[unitIndex];
+    const currentArray = unit[field] || [];
+    const updated = currentArray.includes(item)
+      ? currentArray.filter(i => i !== item)
+      : [...currentArray, item];
+    updateUnit(unitIndex, field, updated);
+  };
+
   const handleNext = () => {
-    const config = formData.rental_config;
-    
-    // Validation based on property type
-    if (propertyUseType === 'primary_with_rental') {
-      if (!config.rental_type) {
-        alert("Please specify what you're renting out");
+    if (useUnitBasedConfig) {
+      // Validate unit configuration
+      const hasOwnerUnit = formData.units.some(u => u.occupancy_status === 'Owner-Occupied');
+      const hasRentalUnit = formData.units.some(u => u.occupancy_status === 'Tenant-Occupied' || u.occupancy_status === 'Vacant');
+      
+      if (!hasOwnerUnit) {
+        alert("Please mark at least one unit as Owner-Occupied (the unit you live in)");
         return;
       }
-      if (!config.number_of_rental_units || !config.rental_square_footage) {
-        alert("Please provide rental units and square footage");
+      if (!hasRentalUnit) {
+        alert("Please mark at least one unit as a rental (Tenant-Occupied or Vacant)");
         return;
       }
-    }
-    
-    if (propertyUseType === 'vacation_rental') {
-      if (!config.platforms || config.platforms.length === 0) {
-        alert("Please select at least one platform");
-        return;
+    } else {
+      const config = formData.rental_config;
+      
+      // Validation based on property type
+      if (propertyUseType === 'primary_with_rental') {
+        if (!config.rental_type) {
+          alert("Please specify what you're renting out");
+          return;
+        }
+        if (!config.number_of_rental_units || !config.rental_square_footage) {
+          alert("Please provide rental units and square footage");
+          return;
+        }
       }
-      if (!config.average_stay_length || !config.bookings_per_year) {
-        alert("Please provide booking patterns information");
-        return;
+      
+      if (propertyUseType === 'vacation_rental') {
+        if (!config.platforms || config.platforms.length === 0) {
+          alert("Please select at least one platform");
+          return;
+        }
+        if (!config.average_stay_length || !config.bookings_per_year) {
+          alert("Please provide booking patterns information");
+          return;
+        }
       }
     }
     
@@ -97,7 +167,252 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
 
   // Render based on property type
   const renderContent = () => {
-    if (propertyUseType === 'primary_with_rental') {
+    // Multi-unit primary with rental (Triplex example: owner lives in one, rents others)
+    if (useUnitBasedConfig) {
+      return (
+        <>
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <Building2 className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '18px' }}>
+                    Multi-Unit Property Configuration
+                  </h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    Your <strong>{data.property_type}</strong> has <strong>{data.door_count} independent units</strong>. 
+                    Let's configure each one - mark which unit you live in and which ones are rentals.
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    💡 This helps us track maintenance, costs, and turnovers separately for each unit.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Unit-by-unit configuration */}
+          {formData.units.map((unit, index) => (
+            <Card key={unit.unit_id} className="border-2 border-purple-300 mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">{index + 1}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '20px' }}>
+                      {unit.nickname || `Unit ${index + 1}`}
+                    </h3>
+                    {unit.square_footage && unit.bedrooms && (
+                      <p className="text-sm text-gray-600">
+                        {unit.square_footage} sq ft • {unit.bedrooms} bed • {unit.bathrooms} bath
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Occupancy Status */}
+                  <div>
+                    <Label className="font-semibold mb-3 block">How is this unit used?</Label>
+                    <div className="space-y-2">
+                      {[
+                        { value: 'Owner-Occupied', label: 'Owner-Occupied', sub: 'I live in this unit', icon: '🏠' },
+                        { value: 'Tenant-Occupied', label: 'Tenant-Occupied', sub: 'Currently rented to a tenant', icon: '👥' },
+                        { value: 'Vacant', label: 'Vacant', sub: 'Available for rent', icon: '🔓' }
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            unit.occupancy_status === option.value
+                              ? 'border-purple-600 bg-purple-50 shadow-md'
+                              : 'border-gray-300 hover:border-purple-400 bg-white'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`unit-${index}-occupancy`}
+                            value={option.value}
+                            checked={unit.occupancy_status === option.value}
+                            onChange={(e) => updateUnit(index, 'occupancy_status', e.target.value)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">
+                              {option.icon} {option.label}
+                            </p>
+                            <p className="text-sm text-gray-600">{option.sub}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* If tenant-occupied or vacant, show rental details */}
+                  {(unit.occupancy_status === 'Tenant-Occupied' || unit.occupancy_status === 'Vacant') && (
+                    <div className="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg space-y-4">
+                      <h4 className="font-bold text-orange-900 text-sm">
+                        🏘️ Rental Details for this Unit
+                      </h4>
+
+                      {/* Furnishing */}
+                      <div>
+                        <Label className="font-semibold mb-2 block text-sm">Is this unit furnished?</Label>
+                        <div className="space-y-2">
+                          {[
+                            { value: 'fully_furnished', label: 'Fully Furnished', sub: 'All furniture & housewares' },
+                            { value: 'partially_furnished', label: 'Partially Furnished', sub: 'Major furniture only' },
+                            { value: 'unfurnished', label: 'Unfurnished', sub: 'Tenant brings everything' }
+                          ].map((option) => (
+                            <label
+                              key={option.value}
+                              className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                unit.furnishing_level === option.value
+                                  ? 'border-orange-600 bg-white'
+                                  : 'border-gray-300 hover:border-orange-400 bg-white'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`unit-${index}-furnishing`}
+                                checked={unit.furnishing_level === option.value}
+                                onChange={() => {
+                                  updateUnit(index, 'furnishing_level', option.value);
+                                  updateUnit(index, 'is_furnished', option.value !== 'unfurnished');
+                                }}
+                                className="mt-1"
+                              />
+                              <div>
+                                <p className="font-semibold text-gray-900 text-sm">{option.label}</p>
+                                <p className="text-xs text-gray-600">{option.sub}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Monthly rent */}
+                      <div>
+                        <Label className="font-semibold text-sm">Monthly Rent (optional)</Label>
+                        <Input
+                          type="number"
+                          value={unit.monthly_rent}
+                          onChange={(e) => updateUnit(index, 'monthly_rent', e.target.value)}
+                          placeholder="1800"
+                          className="mt-2"
+                          style={{ minHeight: '48px' }}
+                        />
+                      </div>
+
+                      {/* Tenant info if occupied */}
+                      {unit.occupancy_status === 'Tenant-Occupied' && (
+                        <div className="space-y-3 p-3 bg-white rounded border">
+                          <p className="text-sm font-semibold text-gray-700">Tenant Information (optional)</p>
+                          <Input
+                            value={unit.tenant_name}
+                            onChange={(e) => updateUnit(index, 'tenant_name', e.target.value)}
+                            placeholder="Tenant Name"
+                            style={{ minHeight: '48px' }}
+                          />
+                          <Input
+                            value={unit.tenant_email}
+                            onChange={(e) => updateUnit(index, 'tenant_email', e.target.value)}
+                            placeholder="tenant@email.com"
+                            type="email"
+                            style={{ minHeight: '48px' }}
+                          />
+                          <Input
+                            value={unit.tenant_phone}
+                            onChange={(e) => updateUnit(index, 'tenant_phone', e.target.value)}
+                            placeholder="(360) 555-1234"
+                            type="tel"
+                            style={{ minHeight: '48px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Overall rental management */}
+          <Card className="border-2 border-green-300 bg-green-50 mb-6">
+            <CardContent className="p-6">
+              <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
+                📅 Overall Rental Management
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="font-semibold">Typical rental duration</Label>
+                  <Select
+                    value={formData.rental_config.rental_duration}
+                    onValueChange={(value) => updateRentalConfig('rental_duration', value)}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select duration..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="long_term">Long-term (12+ months lease)</SelectItem>
+                      <SelectItem value="medium_term">Medium-term (1-6 months)</SelectItem>
+                      <SelectItem value="short_term">Short-term (High turnover)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="font-semibold flex items-center gap-2">
+                    Estimated turnovers per year (across all rental units)
+                    <div className="group relative">
+                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                      <div className="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg w-48 z-10">
+                        How many times per year do tenants move out across all units?
+                      </div>
+                    </div>
+                  </Label>
+                  <Select
+                    value={String(formData.rental_config.annual_turnovers)}
+                    onValueChange={(value) => updateRentalConfig('annual_turnovers', parseInt(value))}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="1">1-2 times</SelectItem>
+                      <SelectItem value="3">3-5 times</SelectItem>
+                      <SelectItem value="6">6-10 times</SelectItem>
+                      <SelectItem value="12">12+ times</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="font-semibold">Property management</Label>
+                  <Select
+                    value={formData.rental_config.management_type}
+                    onValueChange={(value) => updateRentalConfig('management_type', value)}
+                  >
+                    <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="self_managed">Self-managed (I handle everything)</SelectItem>
+                      <SelectItem value="property_manager">Property manager</SelectItem>
+                      <SelectItem value="cleaning_service">Cleaning service only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      );
+    }
+
+    // Single-family home with rental component
+    if (propertyUseType === 'primary_with_rental' && !useUnitBasedConfig) {
       return (
         <>
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
@@ -807,9 +1122,11 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
           Rental Configuration
         </h2>
         <p className="text-gray-600 mb-4">
-          {isPrimaryWithRental 
-            ? "Tell us about the rental portion of your property"
-            : `Configure your ${data.door_count || 1}-unit rental property`}
+          {useUnitBasedConfig
+            ? `Configure each of your ${data.door_count} units`
+            : isPrimaryWithRental 
+              ? "Tell us about the rental portion of your property"
+              : `Configure your ${data.door_count || 1}-unit rental property`}
         </p>
         <div className="flex gap-2">
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
