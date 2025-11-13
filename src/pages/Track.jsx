@@ -17,6 +17,7 @@ import WinsDashboard from '@/components/track/WinsDashboard';
 import TimelineView from '@/components/track/TimelineView';
 import PhotoGallery from '@/components/track/PhotoGallery';
 import InsightsView from '@/components/track/InsightsView';
+import ExportMenu from '@/components/track/ExportMenu';
 import ManualTaskForm from '@/components/tasks/ManualTaskForm';
 
 export default function TrackPage() {
@@ -216,6 +217,11 @@ export default function TrackPage() {
     
     return items.sort((a, b) => b.date - a.date);
   }, [completedTasks, systems, inspections, upgrades]);
+
+  // Get current property object for exports
+  const currentProperty = useMemo(() => {
+    return properties.find(p => p.id === selectedProperty);
+  }, [properties, selectedProperty]);
 
   // Generate AI insights
   const handleGenerateInsights = async () => {
@@ -459,16 +465,25 @@ Provide comprehensive analysis with this structure:
               Your Wins 🎉
             </h1>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTaskForm(true)}
-              className="flex items-center gap-2"
-              style={{ minHeight: '44px' }}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Log Task</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportMenu
+                timelineItems={timelineItems}
+                metrics={metrics}
+                systems={systems}
+                property={currentProperty}
+                aiInsights={aiInsights}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTaskForm(true)}
+                className="flex items-center gap-2"
+                style={{ minHeight: '44px' }}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Log Task</span>
+              </Button>
+            </div>
           </div>
           
           {/* Property Selector */}
