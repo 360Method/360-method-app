@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -551,7 +550,7 @@ export default function PrioritizePage() {
                   <ul className="space-y-1 text-xs">
                     <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, service heating system</li>
                     <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal, salt walkways</li>
-                    <li>• 🌸 <strong>Spring:</b> AC tune-up, power wash exterior, fertilize lawn</li>
+                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, power wash exterior, fertilize lawn</li>
                     <li>• ☀️ <strong>Summer:</strong> Replace HVAC filters, pest control, seal driveway</li>
                   </ul>
                   <p className="text-xs text-gray-600 mt-2 italic">
