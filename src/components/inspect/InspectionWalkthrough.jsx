@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -88,7 +87,7 @@ const INSPECTION_AREAS = [
   { id: 'safety', name: 'Safety Systems', icon: '🚨', whatToCheck: 'smoke detectors, CO detectors, fire extinguishers, test dates' }
 ];
 
-// NEW: Helper function to determine if task is seasonal and get completion window
+// Helper function to determine if task is seasonal and get completion window
 function determineSeasonalMetadata(systemType, season, description) {
   const currentMonth = format(new Date(), 'MMMM');
   const currentSeason = season || currentMonth;
@@ -97,27 +96,26 @@ function determineSeasonalMetadata(systemType, season, description) {
   const seasonalTasks = {
     'HVAC System': {
       seasonal: true,
-      window: 'March-April' // Before cooling season
+      window: 'March-April'
     },
     'Gutters & Downspouts': {
       seasonal: true,
-      window: 'September-November' // Before rain season
+      window: 'September-November'
     },
     'Roof System': {
       seasonal: true,
-      window: 'Spring' // After winter damage
+      window: 'Spring'
     },
     'Exterior Siding & Envelope': {
       seasonal: true,
-      window: 'April-September' // Warm weather work
+      window: 'April-September'
     },
     'Windows & Doors': {
       seasonal: true,
-      window: 'September-October' // Before cold weather
+      window: 'September-October'
     }
   };
   
-  // Check if this system type is seasonal
   if (seasonalTasks[systemType]) {
     return {
       seasonal: true,
@@ -125,7 +123,6 @@ function determineSeasonalMetadata(systemType, season, description) {
     };
   }
   
-  // Check description for seasonal keywords
   const descLower = (description || '').toLowerCase();
   if (descLower.includes('annual') || descLower.includes('yearly')) {
     return {
@@ -141,7 +138,6 @@ function determineSeasonalMetadata(systemType, season, description) {
     };
   }
   
-  // Default: not seasonal
   return {
     seasonal: false,
     recommended_completion_window: null
@@ -174,7 +170,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
   });
 
-  // Save inspection data mutation - called after each area completion
   const saveInspectionMutation = useMutation({
     mutationFn: async (data) => {
       return base44.entities.Inspection.update(inspection.id, data);
@@ -184,21 +179,18 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     },
   });
 
-  // Create task mutation for transferring issues to priority queue
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
       return base44.entities.MaintenanceTask.create(taskData);
     },
   });
 
-  // Update system baseline mutation
   const updateSystemMutation = useMutation({
     mutationFn: async ({ systemId, updates }) => {
       return base44.entities.SystemBaseline.update(systemId, updates);
     },
   });
 
-  // Get systems grouped by baseline for smart grouping
   const systemsByType = baselineSystems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
       acc[system.system_type] = [];
@@ -207,7 +199,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     return acc;
   }, {});
 
-  // Calculate progress by zones or areas
   const getProgress = () => {
     if (routeMode === 'physical') {
       const totalZones = INSPECTION_ZONES.length;
@@ -221,35 +212,29 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
 
   const progress = getProgress();
 
-  // Handle zone completion
   const handleZoneComplete = (zoneId) => {
     if (!completedZones.includes(zoneId)) {
       setCompletedZones(prev => [...prev, zoneId]);
     }
   };
 
-  // Group areas by physical zones for efficient routing
   const getAreasInZone = (zoneId) => {
     const zone = INSPECTION_ZONES.find(z => z.id === zoneId);
     if (!zone) return [];
     return INSPECTION_AREAS.filter(area => zone.areas.includes(area.id));
   };
 
-  // UPDATED: Save inspection data immediately after area completion
   const handleAreaComplete = async (areaId, data) => {
-    // Update local state
     const updatedInspectionData = {
       ...inspectionData,
       [areaId]: data
     };
     setInspectionData(updatedInspectionData);
 
-    // Calculate new stats based on updated local state
     const allIssues = Object.values(updatedInspectionData).flat();
     const issuesCount = allIssues.length;
     const completionPercent = Math.round((Object.keys(updatedInspectionData).length / INSPECTION_AREAS.length) * 100);
 
-    // Save to backend immediately
     try {
       await saveInspectionMutation.mutateAsync({
         checklist_items: allIssues,
@@ -264,16 +249,14 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     setCurrentAreaIndex(null);
   };
 
-  // UPDATED: Complete inspection and transfer issues to priority queue WITH SEASONAL METADATA
   const handleFinishInspection = async () => {
-    setIsCompleting(true); // Start loading state
+    setIsCompleting(true);
 
     try {
       const allIssues = Object.values(inspectionData).flat();
       const issuesCount = allIssues.length;
       const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
 
-      // Mark inspection as completed
       await saveInspectionMutation.mutateAsync({
         checklist_items: allIssues,
         issues_found: issuesCount,
@@ -282,11 +265,9 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         inspection_date: new Date().toISOString().split('T')[0]
       });
 
-      // Transfer non-quick-fix issues to priority queue
       const tasksToCreate = allIssues.filter(issue => issue.is_quick_fix === false);
 
       for (const issue of tasksToCreate) {
-        // NEW: Determine seasonal metadata for this task
         const seasonalMeta = determineSeasonalMetadata(
           issue.system || 'General',
           inspection.season,
@@ -309,15 +290,12 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
           has_cascade_alert: (issue.cascade_risk_score || 0) >= 7,
           execution_type: issue.who_will_fix === 'diy' ? 'DIY' : issue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided',
           estimated_hours: issue.max_hours || null,
-          
-          // NEW: Add seasonal metadata
           seasonal: seasonalMeta.seasonal,
           recommended_completion_window: seasonalMeta.recommended_completion_window
         };
 
         await createTaskMutation.mutateAsync(taskData);
 
-        // Update related baseline systems
         if (issue.system && issue.system !== 'General') {
           const systemsToUpdate = baselineSystems.filter(s => s.system_type === issue.system);
           for (const system of systemsToUpdate) {
@@ -352,14 +330,11 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         }
       }
 
-      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
       queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
 
-
-      // Navigate to complete screen
       onComplete();
     } catch (error) {
       console.error('Error completing inspection:', error);
@@ -386,7 +361,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     );
   }
 
-  // Physical Zone View
   if (routeMode === 'physical') {
     return (
       <div className="min-h-screen bg-white pb-24">
@@ -401,7 +375,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             Back to Inspect
           </Button>
 
-          {/* Header */}
           <div className="mb-6">
             <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
               Physical Walkthrough
@@ -409,7 +382,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             <p className="text-gray-600">Follow the optimal route through your property</p>
           </div>
 
-          {/* Progress Card */}
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
               <div className="flex items-center justify-between mb-2">
@@ -428,7 +400,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             </CardHeader>
           </Card>
 
-          {/* Zone Cards */}
           <div className="space-y-4 mb-6">
             {INSPECTION_ZONES.map((zone, zoneIdx) => {
               const areasInZone = getAreasInZone(zone.id);
@@ -472,7 +443,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                         const isAreaComplete = inspectionData[area.id];
                         const issueCount = (inspectionData[area.id] || []).length;
 
-                        // Get relevant systems for this area
                         const relevantSystemTypes = AREA_TO_SYSTEM_MAP[area.id] || [];
                         const systemsInArea = relevantSystemTypes.flatMap(type => systemsByType[type] || []);
 
@@ -527,7 +497,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             })}
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-3">
             <Button
               onClick={() => setRouteMode('traditional')}
@@ -538,7 +507,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
               Switch to Traditional View
             </Button>
 
-            {/* Auto-save notification */}
             {progress.completed > 0 && (
               <Card className="border-2 border-blue-300 bg-blue-50">
                 <CardContent className="p-4">
@@ -557,7 +525,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
               </Card>
             )}
 
-            {/* Complete Inspection Button */}
             {progress.percent >= 50 && (
               <Button
                 onClick={handleFinishInspection}
@@ -584,7 +551,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     );
   }
 
-  // Traditional Area View
   return (
     <div className="min-h-screen bg-white pb-24">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
@@ -675,7 +641,6 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             Switch to Physical Walkthrough
           </Button>
 
-          {/* Auto-save notification */}
           {progress.completed > 0 && (
             <Card className="border-2 border-blue-300 bg-blue-50">
               <CardContent className="p-4">
@@ -689,11 +654,11 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                       Your inspection data is automatically saved after each area. You can safely leave and come back anytime.
                     </p>
                   </div>
-                </CardContent>
+                </div>
+              </CardContent>
             </Card>
           )}
 
-          {/* Complete Inspection Button */}
           {progress.percent >= 50 && (
             <Button
               onClick={handleFinishInspection}
@@ -711,7 +676,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                   <CheckCircle2 className="w-5 h-5" />
                   Complete Inspection & Add Issues to Priority Queue
                 </>
-                )}
+              )}
             </Button>
           )}
         </div>
