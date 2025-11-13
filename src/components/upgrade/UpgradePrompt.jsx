@@ -1,22 +1,32 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Lock, TrendingUp, Users } from "lucide-react";
+import { Sparkles, Lock, TrendingUp, Users, FileText, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-export default function UpgradePrompt({ context = "general", onDismiss }) {
+export default function UpgradePrompt({ context = "general", onDismiss, currentDoors = 0 }) {
   const prompts = {
     property_limit: {
       icon: Lock,
       color: "#FF6B35",
       title: "Property Limit Reached",
-      message: "You've reached the 1 property limit on the Free tier.",
-      features: [
-        "Add up to 3 properties",
-        "Portfolio dashboard",
-        "Cross-property analytics"
-      ],
+      message: currentDoors > 25 
+        ? `You have ${currentDoors} doors - upgrade to Premium or Enterprise.`
+        : currentDoors > 3
+        ? `You have ${currentDoors} doors across your properties.`
+        : "You've reached your tier's property or door limit.",
+      features: currentDoors > 25 
+        ? [
+          "Premium: Up to 100 doors ($50 base + $3/door)",
+          "Enterprise: Unlimited doors ($299 flat)",
+          "Multi-user accounts (Enterprise only)"
+        ]
+        : [
+          "Pro: Up to 25 doors ($8 base + $2/door)",
+          "Premium: Up to 100 doors ($50 base)",
+          "Enterprise: Unlimited ($299 flat)"
+        ],
       cta: "View Plans & Pricing",
       ctaUrl: createPageUrl("Pricing")
     },
@@ -26,47 +36,59 @@ export default function UpgradePrompt({ context = "general", onDismiss }) {
       title: "Unlock Cascade Risk Alerts",
       message: "See which small issues could become expensive disasters.",
       features: [
-        "Cascade risk scoring",
-        "Cost projections",
+        "AI cascade risk scoring",
+        "Cost impact projections",
         "Priority recommendations"
       ],
-      cta: "Upgrade to Pro - $8/month",
+      cta: "Upgrade to Pro - Starting $8/month",
       ctaUrl: createPageUrl("Pricing")
     },
-    contractor_marketplace: {
-      icon: Users,
-      color: "#28A745",
-      title: "Find Trusted Contractors",
-      message: "Get quotes and compare contractors in your area.",
+    export_reports: {
+      icon: FileText,
+      color: "#8B5CF6",
+      title: "Export Reports (Pro+)",
+      message: "Export detailed PDF reports of your maintenance history.",
       features: [
-        "Contractor marketplace",
-        "Request & compare quotes",
-        "Track contractor work"
+        "Professional PDF reports",
+        "Portfolio analytics",
+        "Historical cost tracking"
       ],
-      cta: "Upgrade to Pro - $8/month",
+      cta: "Upgrade to Pro - Starting $8/month",
       ctaUrl: createPageUrl("Pricing")
     },
-    homecare: {
-      icon: Sparkles,
-      color: "#1B365D",
-      title: "Need Help Managing All This?",
-      message: "HomeCare members get professional help with everything.",
+    share_access: {
+      icon: Share2,
+      color: "#8B5CF6",
+      title: "Share Access (Premium+)",
+      message: "Invite team members or property managers to collaborate.",
       features: [
-        "4 seasonal diagnostics/year",
-        "6-16 hours included labor",
-        "24/7 concierge support",
-        "Keep all Pro features"
+        "Share with multiple users",
+        "Role-based permissions",
+        "Activity tracking"
       ],
-      cta: "Explore HomeCare - From $124/month",
-      ctaUrl: createPageUrl("HomeCare")
+      cta: "Upgrade to Premium - Starting $50/month",
+      ctaUrl: createPageUrl("Pricing")
+    },
+    portfolio_comparison: {
+      icon: TrendingUp,
+      color: "#8B5CF6",
+      title: "Portfolio Comparison (Premium+)",
+      message: "Compare performance across all your properties.",
+      features: [
+        "Cross-property analytics",
+        "Budget forecasting tools",
+        "Investment ROI tracking"
+      ],
+      cta: "Upgrade to Premium - Starting $50/month",
+      ctaUrl: createPageUrl("Pricing")
     }
   };
 
-  const prompt = prompts[context] || prompts.general;
+  const prompt = prompts[context] || prompts.property_limit;
   const Icon = prompt.icon || Sparkles;
 
   return (
-    <Card className="border-2 mobile-card" style={{ borderColor: prompt.color, backgroundColor: `${prompt.color}10` }}>
+    <Card className="border-2 mobile-card shadow-lg" style={{ borderColor: prompt.color, backgroundColor: `${prompt.color}10` }}>
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div 

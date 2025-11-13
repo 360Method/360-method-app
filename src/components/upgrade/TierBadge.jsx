@@ -1,59 +1,76 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Sparkles } from "lucide-react";
+import { Sparkles, Zap, TrendingUp, Crown } from "lucide-react";
 
-export default function TierBadge({ tier }) {
-  if (!tier || tier === 'free') return null;
-
+export default function TierBadge({ tier, size = "default" }) {
   const tierConfig = {
-    pro: {
-      label: 'PRO',
-      color: '#28A745',
+    free: {
+      label: "Free",
+      bg: "#6B7280",
       icon: Sparkles
     },
+    good: {
+      label: "Pro",
+      bg: "#28A745",
+      icon: Zap
+    },
+    better: {
+      label: "Premium",
+      bg: "#8B5CF6",
+      icon: TrendingUp
+    },
+    best: {
+      label: "Enterprise",
+      bg: "#F59E0B",
+      icon: Crown
+    },
+    // Legacy support
+    pro: {
+      label: "Pro",
+      bg: "#28A745",
+      icon: Zap
+    },
+    premium: {
+      label: "Premium",
+      bg: "#8B5CF6",
+      icon: TrendingUp
+    },
+    enterprise: {
+      label: "Enterprise",
+      bg: "#F59E0B",
+      icon: Crown
+    },
     homecare_essential: {
-      label: 'HomeCare Essential',
-      color: '#1B365D',
+      label: "HomeCare Essential",
+      bg: "#1B365D",
       icon: Crown
     },
     homecare_premium: {
-      label: 'HomeCare Premium',
-      color: '#FF6B35',
+      label: "HomeCare Premium",
+      bg: "#1B365D",
       icon: Crown
     },
     homecare_elite: {
-      label: 'HomeCare Elite',
-      color: '#8B5CF6',
-      icon: Crown
-    },
-    propertycare_essential: {
-      label: 'PropertyCare Essential',
-      color: '#1B365D',
-      icon: Crown
-    },
-    propertycare_premium: {
-      label: 'PropertyCare Premium',
-      color: '#FF6B35',
-      icon: Crown
-    },
-    propertycare_elite: {
-      label: 'PropertyCare Elite',
-      color: '#8B5CF6',
+      label: "HomeCare Elite",
+      bg: "#1B365D",
       icon: Crown
     }
   };
 
-  const config = tierConfig[tier];
-  if (!config) return null;
-
+  const config = tierConfig[tier] || tierConfig.free;
   const Icon = config.icon;
+  
+  // Don't render for free tier
+  if (tier === 'free') return null;
+
+  const sizeClasses = size === "sm" ? "text-xs px-2 py-1" : "text-sm px-3 py-1.5";
 
   return (
     <Badge 
-      className="font-semibold"
-      style={{ backgroundColor: config.color }}
+      className={`text-white gap-1.5 ${sizeClasses}`}
+      style={{ backgroundColor: config.bg }}
     >
-      <Icon className="w-3 h-3 mr-1" />
+      <Icon className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
       {config.label}
     </Badge>
   );

@@ -1,15 +1,16 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Home, 
-  Edit, 
-  Trash2, 
-  TrendingUp, 
+import {
+  Plus,
+  Home,
+  Edit,
+  Trash2,
+  TrendingUp,
   MapPin,
   Calendar,
   DollarSign,
@@ -28,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { calculateTotalDoors, getTierConfig, canAddProperty } from "../components/shared/TierCalculator";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -72,15 +74,15 @@ export default function PropertiesPage() {
   });
 
   // Determine property limit based on tier
-  const userTier = user?.tier || 'free';
-  const propertyLimit = userTier === 'free' ? 1 : userTier === 'pro' ? 25 : Infinity;
-  const canAddProperty = properties.length < propertyLimit;
+  const currentTier = user?.tier || 'free';
+  const totalDoors = calculateTotalDoors(properties);
+  const addPropertyCheck = canAddProperty(currentTier, properties.length, totalDoors);
 
   // CASCADE DELETE: Delete property and ALL related data
   const deletePropertyMutation = useMutation({
     mutationFn: async (propertyId) => {
       setIsDeleting(true);
-      
+
       // Step 1: Delete all related data in parallel
       const [tasks, inspections, baselines] = await Promise.all([
         base44.entities.MaintenanceTask.filter({ property_id: propertyId }),
@@ -186,7 +188,7 @@ export default function PropertiesPage() {
   };
 
   const handleAddProperty = () => {
-    if (!canAddProperty) {
+    if (!addPropertyCheck.canAdd) {
       setShowUpgradePrompt(true);
     } else {
       setShowWizard(true);
@@ -207,14 +209,14 @@ export default function PropertiesPage() {
 
   const getDeleteMessage = () => {
     if (!deletingProperty || !deletionCounts) return '';
-    
+
     const { tasks, inspections, baselines } = deletionCounts;
     const hasData = tasks > 0 || inspections > 0 || baselines > 0;
-    
+
     let message = `⚠️ CASCADE DELETION WARNING\n\n`;
     message += `You are about to permanently delete:\n\n`;
     message += `📍 Property: ${deletingProperty.address}\n\n`;
-    
+
     if (hasData) {
       message += `This will also delete ALL related data:\n`;
       if (baselines > 0) message += `• ${baselines} System Baseline${baselines > 1 ? 's' : ''}\n`;
@@ -222,23 +224,23 @@ export default function PropertiesPage() {
       if (inspections > 0) message += `• ${inspections} Inspection${inspections > 1 ? 's' : ''}\n`;
       message += `\n`;
     }
-    
+
     message += `🚨 THIS ACTION CANNOT BE UNDONE\n\n`;
     message += `All history, reports, and documentation for this property will be permanently erased from the system.`;
-    
+
     return message;
   };
 
   const getReconfigureMessage = () => {
     if (!reconfigureProperty || !reconfigureCounts) return '';
-    
+
     const { tasks, inspections, baselines } = reconfigureCounts;
     const hasData = tasks > 0 || inspections > 0 || baselines > 0;
-    
+
     let message = `⚠️ RECONFIGURATION WARNING\n\n`;
     message += `You are about to reconfigure:\n`;
     message += `📍 ${reconfigureProperty.address}\n\n`;
-    
+
     if (hasData) {
       message += `This property currently has:\n`;
       if (baselines > 0) message += `• ${baselines} System Baseline${baselines > 1 ? 's' : ''}\n`;
@@ -254,20 +256,21 @@ export default function PropertiesPage() {
     } else {
       message += `This property has no baseline systems, tasks, or inspections yet, so reconfiguration is safe.\n`;
     }
-    
+
     return message;
   };
 
   // Portfolio analytics
   const totalValue = properties.reduce((sum, p) => sum + (p.current_value || 0), 0);
-  const avgHealthScore = properties.length > 0 
-    ? properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length 
+  const avgHealthScore = properties.length > 0
+    ? properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length
     : 0;
-  const totalDoors = properties.reduce((sum, p) => sum + (p.door_count || 1), 0);
+  // totalDoors is now calculated at the top of the component using `calculateTotalDoors` utility.
+
 
   if (showWizard) {
     return (
-      <PropertyWizard 
+      <PropertyWizard
         onComplete={handleWizardComplete}
         onCancel={() => {
           setShowWizard(false);
@@ -289,7 +292,7 @@ export default function PropertiesPage() {
               My Properties
             </h1>
             <p className="text-gray-600">
-              {properties.length === 0 
+              {properties.length === 0
                 ? "Add your first property to get started"
                 : `Managing ${properties.length} propert${properties.length === 1 ? 'y' : 'ies'}`
               }
@@ -352,6 +355,13 @@ export default function PropertiesPage() {
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
+                <MapPin className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+                <p className="text-xs text-gray-600 mb-1">Total Doors</p>
+                <p className="text-2xl font-bold text-orange-700">{totalDoors}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
                 <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-2" />
                 <p className="text-xs text-gray-600 mb-1">Portfolio Value</p>
                 <p className="text-2xl font-bold text-green-700">
@@ -366,19 +376,12 @@ export default function PropertiesPage() {
                 <p className="text-2xl font-bold text-purple-700">{avgHealthScore.toFixed(0)}%</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <MapPin className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-1">Total Doors</p>
-                <p className="text-2xl font-bold text-orange-700">{totalDoors}</p>
-              </CardContent>
-            </Card>
           </div>
         )}
 
-        {/* Upgrade Notice for Free Tier */}
-        {userTier === 'free' && properties.length >= 1 && showUpgradePrompt && (
-          <UpgradePrompt 
+        {/* Upgrade Notice */}
+        {!addPropertyCheck.canAdd && showUpgradePrompt && (
+          <UpgradePrompt
             context="property_limit"
             onDismiss={() => setShowUpgradePrompt(false)}
           />
@@ -465,7 +468,7 @@ export default function PropertiesPage() {
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Reconfigure Property
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => handleDeleteProperty(property)}
                         className="text-red-600"
                       >
