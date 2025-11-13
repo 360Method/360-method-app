@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ export default function Dashboard() {
     properties.find(p => p.id === selectedPropertyFilter);
   
   const isShowingAllProperties = selectedPropertyFilter === 'all';
-  const displayedProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
+  const displayedProperties = isShowingAllProperties ? properties.filter(p => !p.is_draft) : (filteredProperty ? [filteredProperty] : []);
 
   // Fetch data based on selected property filter
   const { data: allSystems = [] } = useQuery({
@@ -89,7 +90,7 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: properties.length > 0
+    enabled: displayedProperties.length > 0
   });
 
   const { data: allTasks = [] } = useQuery({
@@ -101,7 +102,7 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: properties.length > 0
+    enabled: displayedProperties.length > 0
   });
 
   const { data: allInspections = [] } = useQuery({
@@ -113,7 +114,7 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: properties.length > 0
+    enabled: displayedProperties.length > 0
   });
 
   const updateUserMutation = useMutation({
@@ -314,7 +315,7 @@ export default function Dashboard() {
                     <div className="bg-white rounded-lg p-3 border border-purple-200">
                       <div className="flex items-center gap-2 mb-1">
                         <Target className="w-4 h-4 text-purple-600" />
-                        <p className="font-semibold text-sm text-gray-900">Plan Ahead</p>
+                        <p className="font-semibold text-sm">Plan Ahead</p>
                       </div>
                       <p className="text-xs text-gray-600">Budget 2-5 years ahead with lifecycle forecasting</p>
                     </div>
@@ -555,7 +556,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
                 {isShowingAllProperties ?
-                `Managing ${properties.length} ${properties.length === 1 ? 'property' : 'properties'}` :
+                `Managing ${displayedProperties.length} ${displayedProperties.length === 1 ? 'property' : 'properties'}` :
                 `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
                 }
               </p>
@@ -580,7 +581,7 @@ export default function Dashboard() {
         </div>
 
         {/* Property Selector - Prominent for Multi-Property Users */}
-        {properties.length > 1 &&
+        {properties.filter(p => !p.is_draft).length > 1 &&
         <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -596,10 +597,10 @@ export default function Dashboard() {
                     <SelectItem value="all">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4" />
-                        <span className="font-semibold">All Properties ({properties.length})</span>
+                        <span className="font-semibold">All Properties ({properties.filter(p => !p.is_draft).length})</span>
                       </div>
                     </SelectItem>
-                    {properties.map(prop => {
+                    {properties.filter(p => !p.is_draft).map(prop => {
                       const doorCount = prop.door_count || 1;
                       const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : '';
                       return (
@@ -743,7 +744,7 @@ export default function Dashboard() {
                   <Home className="w-5 h-5 text-blue-600" />
                   <Badge className="bg-blue-600 text-white text-xs">
                     {isShowingAllProperties ? 
-                      (isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length) :
+                      (isFreeTier ? `${properties.filter(p => !p.is_draft).length}/${propertyLimit}` : properties.filter(p => !p.is_draft).length) :
                       '1'
                     }
                   </Badge>
@@ -839,7 +840,7 @@ export default function Dashboard() {
                 </CardTitle>
                 <p className="text-xs text-indigo-700 font-normal">
                   {isShowingAllProperties ?
-                  `Tracking across all ${properties.length} properties` :
+                  `Tracking across all ${displayedProperties.length} properties` :
                   `Tracking for ${filteredProperty?.address || 'this property'}`
                   } • Click to learn why this matters
                 </p>

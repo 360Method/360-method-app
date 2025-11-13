@@ -1,6 +1,8 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +20,9 @@ import {
   Zap,
   TrendingUp,
   ArrowUpDown,
-  Lightbulb, // Added Lightbulb
-  ChevronRight, // Added ChevronRight
-  ChevronDown // Added ChevronDown
+  Lightbulb,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
@@ -34,6 +36,10 @@ const Label = ({ children, className = "", ...props }) => (
 );
 
 export default function PrioritizePage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const propertyIdFromUrl = searchParams.get('property');
+
   const [selectedProperty, setSelectedProperty] = React.useState(null);
   const [priorityFilter, setPriorityFilter] = React.useState("all");
   const [showTaskForm, setShowTaskForm] = React.useState(false);
@@ -44,7 +50,10 @@ export default function PrioritizePage() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list();
+      return allProps.filter(p => !p.is_draft);
+    },
     initialData: [],
   });
 
@@ -75,11 +84,21 @@ export default function PrioritizePage() {
     initialData: [],
   });
 
+  // Initialize selected property from URL or first available property
   React.useEffect(() => {
     if (properties.length > 0 && !selectedProperty) {
-      setSelectedProperty(properties[0]);
+      if (propertyIdFromUrl) {
+        const propertyFromUrl = properties.find(p => p.id === propertyIdFromUrl);
+        if (propertyFromUrl) {
+          setSelectedProperty(propertyFromUrl);
+        } else {
+          setSelectedProperty(properties[0]);
+        }
+      } else {
+        setSelectedProperty(properties[0]);
+      }
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, propertyIdFromUrl]);
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, updates }) =>
@@ -282,7 +301,7 @@ export default function PrioritizePage() {
             <div className="mb-6"> {/* Added margin bottom for spacing */}
               <Label className="mb-2 block">Select Property:</Label>
               <Select
-                value={selectedProperty?.id}
+                value={selectedProperty?.id || ""}
                 onValueChange={(id) => setSelectedProperty(properties.find(p => p.id === id))}
               >
                 <SelectTrigger className="w-full md:w-96" style={{ minHeight: '48px' }}>
