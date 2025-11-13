@@ -174,7 +174,7 @@ export default function PrioritizePage() {
   // Create task from template mutation
   const createFromTemplateMutation = useMutation({
     mutationFn: async ({ template, propertyId }) => {
-      return base44.entities.MaintenanceTask.create({
+      return await base44.entities.MaintenanceTask.create({
         property_id: propertyId,
         title: template.title,
         description: template.description,
@@ -188,6 +188,11 @@ export default function PrioritizePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      setAddingTemplateId(null);
+    },
+    onError: (error) => {
+      console.error('Failed to add template:', error);
+      alert('Failed to add task. Please try again.');
       setAddingTemplateId(null);
     }
   });
@@ -305,14 +310,17 @@ export default function PrioritizePage() {
     }
   };
 
-  const handleAddTemplate = (template) => {
+  const handleAddTemplate = async (template) => {
     if (selectedProperty === 'all' && properties.length > 1) {
       alert('Please select a specific property to add this task.');
       return;
     }
     
     const propertyId = selectedProperty !== 'all' ? selectedProperty : properties[0]?.id;
-    if (!propertyId) return;
+    if (!propertyId) {
+      alert('No property selected. Please select a property first.');
+      return;
+    }
     
     setAddingTemplateId(template.id);
     createFromTemplateMutation.mutate({ template, propertyId });
