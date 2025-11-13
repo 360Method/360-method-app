@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
 import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -225,9 +227,11 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     scheduled_date: prefilledDate || null,
     execution_type: "Not Decided",
     current_fix_cost: "",
-    urgency_timeline: "",
-    unit_tag: ""
+    urgency_timeline: ""
   });
+  const [selectedUnits, setSelectedUnits] = React.useState(
+    editingTask?.unit_tag ? [editingTask.unit_tag] : []
+  );
   const [photos, setPhotos] = React.useState(editingTask?.photo_urls || []);
   const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
   const [aiEnriching, setAiEnriching] = React.useState(false);
@@ -237,21 +241,44 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const isEditing = !!editingTask?.id;
   const isMultiUnit = property && (property.door_count > 1 || (property.units && property.units.length > 0));
   const unitOptions = property?.units || [];
+  
+  // Fallback unit options if property.units is empty
+  const fallbackUnits = property?.door_count > 1 
+    ? Array.from({ length: property.door_count }, (_, i) => ({
+        unit_id: `Unit ${i + 1}`,
+        nickname: `Unit ${i + 1}`
+      }))
+    : [];
+  
+  const allUnitOptions = unitOptions.length > 0 ? unitOptions : fallbackUnits;
 
   const createTaskMutation = useMutation({
-    mutationFn: async (taskData) => {
+    mutationFn: async (tasksData) => { // tasksData is now expected to be an array of task objects
       if (isEditing) {
-        return await base44.entities.MaintenanceTask.update(editingTask.id, taskData);
+        // Editing: only update single task
+        return await base44.entities.MaintenanceTask.update(editingTask.id, tasksData[0]);
       } else {
-        return await base44.entities.MaintenanceTask.create(taskData);
+        // Creating: may create multiple tasks
+        if (tasksData.length === 1) {
+          return await base44.entities.MaintenanceTask.create(tasksData[0]);
+        } else {
+          // Bulk create for multiple units
+          const createPromises = tasksData.map(taskData => 
+            base44.entities.MaintenanceTask.create(taskData)
+          );
+          return await Promise.all(createPromises);
+        }
       }
     },
-    onSuccess: async (savedTask) => {
+    onSuccess: async (savedTasks) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       
+      // For AI enrichment, use the first task from the savedTasks array (or the single savedTask object)
+      const firstTask = Array.isArray(savedTasks) ? savedTasks[0] : savedTasks;
+      
       setAiEnriching(true);
-      const cascadeResult = await enrichTaskWithAI(savedTask.id, savedTask, photos);
+      const cascadeResult = await enrichTaskWithAI(firstTask.id, firstTask, photos);
       setAiEnriching(false);
       
       if (cascadeResult) {
@@ -286,10 +313,28 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleToggleUnit = (unitId) => {
+    setSelectedUnits(prev => 
+      prev.includes(unitId) 
+        ? prev.filter(id => id !== unitId)
+        : [...prev, unitId]
+    );
+  };
+
+  const handleSelectAllUnits = () => {
+    // +1 for "Common Area"
+    const allUnitIds = ['Common Area', ...allUnitOptions.map(u => u.unit_id || u.nickname)];
+    if (selectedUnits.length === allUnitIds.length) { 
+      setSelectedUnits([]);
+    } else {
+      setSelectedUnits(allUnitIds);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const taskData = {
+    const baseTaskData = {
       property_id: propertyId,
       title: formData.title,
       description: formData.description,
@@ -298,23 +343,55 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       status: formData.status,
       execution_type: formData.execution_type,
       photo_urls: photos,
-      unit_tag: formData.unit_tag || undefined,
       current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
       urgency_timeline: formData.urgency_timeline || undefined,
       scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined
     };
 
-    createTaskMutation.mutate(taskData);
+    let tasksToCreate = [];
+
+    if (isEditing) {
+      // When editing, only one task is updated. Preserve its original unit_tag.
+      tasksToCreate.push({ 
+        ...baseTaskData, 
+        unit_tag: editingTask.unit_tag || undefined // Preserve existing unit_tag
+      });
+    } else if (isMultiUnit && selectedUnits.length > 0) {
+      // Creating multiple tasks for selected units
+      tasksToCreate = selectedUnits.map(unitTag => ({
+        ...baseTaskData,
+        unit_tag: unitTag
+      }));
+    } else {
+      // Creating a single task:
+      // - For a single-unit property, unit_tag is undefined.
+      // - For a multi-unit property where no specific units were selected, it's a common area task.
+      tasksToCreate.push({
+        ...baseTaskData,
+        unit_tag: isMultiUnit ? "Common Area" : undefined // Explicitly "Common Area" if multi-unit but no units selected
+      });
+    }
+
+    createTaskMutation.mutate(tasksToCreate);
   };
 
   const canGoNext = () => {
-    if (step === 1) return formData.title.trim().length > 0 && formData.description.trim().length > 0;
+    if (step === 1) {
+      const isBaseInfoValid = formData.title.trim().length > 0 && formData.description.trim().length > 0;
+      // For new tasks in multi-unit properties, ensure at least one unit is selected (or common area)
+      if (!isEditing && isMultiUnit) {
+        return isBaseInfoValid && selectedUnits.length > 0;
+      }
+      return isBaseInfoValid;
+    }
     if (step === 2) return true;
     return true;
   };
 
   // Show AI Analysis Results
   if (showAiResults) {
+    const taskCount = isEditing ? 1 : (selectedUnits.length > 0 ? selectedUnits.length : 1);
+    
     return (
       <Dialog open={true} onOpenChange={(isOpen) => {
         if (!isOpen) {
@@ -332,17 +409,21 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
               ) : (
                 <>
                   <CheckCircle2 className="w-6 h-6 text-green-600" />
-                  Task Saved Successfully
+                  Task{taskCount > 1 ? 's' : ''} Saved Successfully
                 </>
               )}
             </DialogTitle>
             {aiAnalysis ? (
               <DialogDescription>
                 Here's what we found based on your description{photos.length > 0 ? ' and photos' : ''}
+                {taskCount > 1 && ` • ${taskCount} tasks created (one per unit)`}
               </DialogDescription>
             ) : (
               <DialogDescription>
-                Your maintenance task has been saved to your priority queue
+                {taskCount > 1 
+                  ? `${taskCount} maintenance tasks have been created (one for each selected unit)`
+                  : 'Your maintenance task has been saved to your priority queue'
+                }
               </DialogDescription>
             )}
           </DialogHeader>
@@ -359,7 +440,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     <p className="text-3xl font-bold text-green-700">
                       ${aiAnalysis.current_fix_cost?.toLocaleString() || 'N/A'}
                     </p>
-                    <p className="text-xs text-green-800 mt-1">Estimated cost today</p>
+                    <p className="text-xs text-green-800 mt-1">Estimated cost {taskCount > 1 ? 'per unit ' : ''}today</p>
                   </div>
 
                   <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
@@ -370,9 +451,19 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     <p className="text-3xl font-bold text-red-700">
                       ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
                     </p>
-                    <p className="text-xs text-red-800 mt-1">Estimated cost in 6-12 months</p>
+                    <p className="text-xs text-red-800 mt-1">Estimated cost {taskCount > 1 ? 'per unit ' : ''}in 6-12 months</p>
                   </div>
                 </div>
+
+                {taskCount > 1 && (
+                  <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3">
+                    <p className="text-sm text-blue-900 font-semibold">
+                      📋 Multiple Units: The costs shown are per unit. Total estimated cost: 
+                      <strong> ${((aiAnalysis.current_fix_cost || 0) * taskCount).toLocaleString()}</strong> now vs 
+                      <strong> ${((aiAnalysis.delayed_fix_cost || 0) * taskCount).toLocaleString()}</strong> if delayed
+                    </p>
+                  </div>
+                )}
 
                 <div className={`border-2 rounded-lg p-4 ${
                   aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
@@ -422,10 +513,11 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
                     <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
                     <p className="text-2xl font-bold text-green-700">
-                      ${(aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost).toLocaleString()}
+                      ${((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) * taskCount).toLocaleString()}
                     </p>
                     <p className="text-xs text-green-800 mt-1">
                       That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
+                      {taskCount > 1 && ` Across ${taskCount} units, that adds up fast!`}
                     </p>
                   </div>
                 )}
@@ -433,10 +525,14 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             ) : (
               <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center">
                 <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-3" />
-                <h3 className="font-bold text-green-900 text-xl mb-2">Task {isEditing ? 'Updated' : 'Created'}!</h3>
+                <h3 className="font-bold text-green-900 text-xl mb-2">
+                  {taskCount > 1 ? `${taskCount} Tasks Created!` : 'Task Created!'}
+                </h3>
                 <p className="text-sm text-gray-700">
-                  Your maintenance task has been {isEditing ? 'updated' : 'added to your priority queue'}.
-                  {!isEditing && ' You can find it in the Prioritize section.'}
+                  {taskCount > 1 
+                    ? `Created ${taskCount} separate tasks (one for each selected unit). You can find them in the Prioritize section.`
+                    : 'Your maintenance task has been added to your priority queue.'
+                  }
                 </p>
               </div>
             )}
@@ -624,42 +720,74 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {isMultiUnit && (
+              {/* Multi-Unit Checkbox Selection */}
+              {isMultiUnit && !isEditing && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
-                    Tag by Unit (Multi-Unit Property)
+                    Select Units (Multi-Unit Property)
                   </label>
                   <p className="text-xs text-purple-800 mb-3">
-                    Tagging by unit helps you sort maintenance history later in Track
+                    Select which units need this work. A separate task will be created for each unit you select.
                   </p>
-                  <Select
-                    value={formData.unit_tag || "none"}
-                    onValueChange={(value) => setFormData({ ...formData, unit_tag: value === "none" ? "" : value })}
-                  >
-                    <SelectTrigger className="bg-white" style={{ minHeight: '48px' }}>
-                      <SelectValue placeholder="Select unit (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">All Units / Common Area</SelectItem>
-                      {unitOptions.length > 0 ? (
-                        unitOptions.map((unit, idx) => (
-                          <SelectItem key={unit.unit_id || idx} value={unit.unit_id || unit.nickname || `Unit ${idx + 1}`}>
-                            {unit.nickname || unit.unit_id || `Unit ${idx + 1}`}
-                            {unit.bedrooms && ` - ${unit.bedrooms}bd`}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <>
-                          <SelectItem value="Unit 1">Unit 1</SelectItem>
-                          <SelectItem value="Unit 2">Unit 2</SelectItem>
-                          <SelectItem value="Unit 3">Unit 3</SelectItem>
-                          <SelectItem value="Unit 4">Unit 4</SelectItem>
-                          <SelectItem value="Common Area">Common Area</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+
+                  {/* Select All Toggle */}
+                  <div className="flex items-center gap-3 p-2 bg-white rounded-lg mb-2">
+                    <Checkbox
+                      id="select-all-units"
+                      checked={selectedUnits.length === allUnitOptions.length + 1} // +1 for Common Area
+                      onCheckedChange={handleSelectAllUnits}
+                    />
+                    <label 
+                      htmlFor="select-all-units" 
+                      className="text-sm font-bold text-gray-900 cursor-pointer flex-1"
+                    >
+                      Select All ({allUnitOptions.length + 1} options)
+                    </label>
+                  </div>
+
+                  {/* Unit Checkboxes */}
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {/* Common Area */}
+                    <div className="flex items-center gap-3 p-2 bg-white rounded-lg border">
+                      <Checkbox
+                        id="unit-common"
+                        checked={selectedUnits.includes('Common Area')}
+                        onCheckedChange={() => handleToggleUnit('Common Area')}
+                      />
+                      <label htmlFor="unit-common" className="text-sm font-semibold text-gray-700 cursor-pointer flex-1">
+                        🏢 Common Area
+                      </label>
+                    </div>
+
+                    {/* Individual Units */}
+                    {allUnitOptions.map((unit, idx) => {
+                      const unitTagValue = unit.unit_id || unit.nickname || `Unit ${idx + 1}`;
+                      return (
+                        <div key={unitTagValue} className="flex items-center gap-3 p-2 bg-white rounded-lg border">
+                          <Checkbox
+                            id={`unit-${unitTagValue}`}
+                            checked={selectedUnits.includes(unitTagValue)}
+                            onCheckedChange={() => handleToggleUnit(unitTagValue)}
+                          />
+                          <label htmlFor={`unit-${unitTagValue}`} className="text-sm text-gray-900 cursor-pointer flex-1">
+                            {unit.nickname || unitTagValue}
+                            {unit.bedrooms && <span className="text-xs text-gray-500 ml-1">• {unit.bedrooms}bd</span>}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary */}
+                  {selectedUnits.length > 0 && (
+                    <div className="mt-3 p-2 bg-green-50 border border-green-300 rounded">
+                      <p className="text-xs text-green-900 font-semibold">
+                        ✅ {selectedUnits.length} task{selectedUnits.length > 1 ? 's' : ''} will be created
+                        {selectedUnits.length > 1 && ' (one per unit)'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -771,10 +899,17 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     <span className="text-gray-600 font-medium">Execution:</span>
                     <span className="font-semibold text-gray-900">{formData.execution_type}</span>
                   </div>
-                  {isMultiUnit && formData.unit_tag && (
+                  {isMultiUnit && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600 font-medium">Unit:</span>
-                      <span className="font-semibold text-purple-700">{formData.unit_tag}</span>
+                      <span className="text-gray-600 font-medium">{isEditing || selectedUnits.length <= 1 ? 'Unit:' : 'Units:'}</span>
+                      <span className="font-semibold text-purple-700">
+                        {isEditing
+                          ? (editingTask.unit_tag || 'N/A')
+                          : selectedUnits.length > 1
+                            ? `${selectedUnits.length} Selected`
+                            : (selectedUnits.length === 1 ? selectedUnits[0] : 'Common Area')
+                        }
+                      </span>
                     </div>
                   )}
                   {formData.scheduled_date && (
@@ -845,14 +980,14 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             ) : (
               <Button
                 type="submit"
-                disabled={createTaskMutation.isPending || aiEnriching || !formData.title || !formData.description}
+                disabled={createTaskMutation.isPending || aiEnriching || !formData.title || !formData.description || (!isEditing && isMultiUnit && selectedUnits.length === 0)}
                 className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
                 style={{ minHeight: '48px' }}
               >
                 {createTaskMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving Task...
+                    {isEditing ? 'Saving Task...' : (isMultiUnit && selectedUnits.length > 1 ? 'Creating Tasks...' : 'Saving Task...')}
                   </>
                 ) : aiEnriching ? (
                   <>
@@ -862,7 +997,9 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    {isEditing ? 'Save Changes & Analyze' : 'Create Task & Analyze'}
+                    {isEditing ? 'Save Changes & Analyze' : 
+                     (isMultiUnit && selectedUnits.length > 1 ? `Create ${selectedUnits.length} Tasks & Analyze` : 
+                     'Create Task & Analyze')}
                   </>
                 )}
               </Button>
