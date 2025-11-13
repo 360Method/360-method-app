@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -172,52 +173,6 @@ export default function PrioritizePage() {
     enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
-  // Create task from template mutation
-  const createFromTemplateMutation = useMutation({
-    mutationFn: async ({ template, propertyId }) => {
-      console.log('🚀 Creating task from template:', { 
-        templateTitle: template.title, 
-        templateId: template.id,
-        propertyId 
-      });
-      
-      const taskData = {
-        property_id: propertyId,
-        title: template.title,
-        description: template.description,
-        system_type: template.system_type,
-        priority: template.priority || 'Routine',
-        status: 'Identified',
-        template_origin_id: template.id,
-        recurring: true,
-        recurrence_interval_days: template.suggested_interval_days || 365
-      };
-      
-      console.log('📝 Task data being created:', taskData);
-      
-      const result = await base44.entities.MaintenanceTask.create(taskData);
-      console.log('✅ Task created successfully:', result);
-      return result;
-    },
-    onSuccess: async (data, variables) => {
-      console.log('🎉 Task creation succeeded!');
-      console.log('New task data:', data);
-      
-      // Force refetch of tasks
-      await refetchTasks();
-      
-      // Clear loading state
-      setAddingTemplateId(null);
-      
-      console.log('✅ Cleared loading state and refetched tasks');
-    },
-    onError: (error) => {
-      console.error('❌ Failed to add template:', error);
-      alert(`Failed to add task: ${error.message || 'Unknown error'}`);
-      setAddingTemplateId(null);
-    }
-  });
-
   // Mutations for task management
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
@@ -331,33 +286,58 @@ export default function PrioritizePage() {
     }
   };
 
+  // SIMPLIFIED: Direct template addition
   const handleAddTemplate = async (template) => {
-    console.log('🔵 Button clicked! Template:', template.title);
-    console.log('🔵 Selected property:', selectedProperty);
-    console.log('🔵 Properties available:', properties.length);
+    console.log('🎯 DIRECT ADD - Button clicked for:', template.title);
     
+    // Validate property selection
     if (selectedProperty === 'all' && properties.length > 1) {
-      console.warn('⚠️ Multiple properties selected, cannot add');
       alert('Please select a specific property to add this task.');
       return;
     }
     
     const propertyId = selectedProperty !== 'all' ? selectedProperty : properties[0]?.id;
     if (!propertyId) {
-      console.error('❌ No property ID available');
       alert('No property selected. Please select a property first.');
       return;
     }
     
-    console.log('🔵 Using property ID:', propertyId);
-    console.log('🔵 Setting loading state for template:', template.id);
+    // Set loading state
     setAddingTemplateId(template.id);
+    console.log('⏳ Loading state set for template:', template.id);
     
     try {
-      await createFromTemplateMutation.mutateAsync({ template, propertyId });
-      console.log('✅ Template added successfully!');
+      // Create task directly
+      console.log('🚀 Creating task from template...');
+      const taskData = {
+        property_id: propertyId,
+        title: template.title,
+        description: template.description,
+        system_type: template.system_type,
+        priority: template.priority || 'Routine',
+        status: 'Identified',
+        template_origin_id: template.id,
+        recurring: true,
+        recurrence_interval_days: template.suggested_interval_days || 365
+      };
+      
+      console.log('📝 Task data:', taskData);
+      const newTask = await base44.entities.MaintenanceTask.create(taskData);
+      console.log('✅ Task created:', newTask);
+      
+      // Refetch tasks immediately
+      console.log('🔄 Refetching tasks...');
+      await refetchTasks();
+      console.log('✅ Tasks refetched!');
+      
+      // Clear loading state
+      setAddingTemplateId(null);
+      console.log('✅ All done! Button should be clickable again.');
+      
     } catch (error) {
-      console.error('❌ Error in handleAddTemplate:', error);
+      console.error('❌ Error adding template:', error);
+      alert(`Failed to add task: ${error.message || 'Unknown error'}`);
+      setAddingTemplateId(null);
     }
   };
 
@@ -760,7 +740,7 @@ export default function PrioritizePage() {
               <div className="grid md:grid-cols-2 gap-4">
                 {relevantTemplates.map(template => {
                   const isAdding = addingTemplateId === template.id;
-                  const isDisabled = createFromTemplateMutation.isPending || isAdding || (selectedProperty === 'all' && properties.length > 1);
+                  const isDisabled = isAdding || (selectedProperty === 'all' && properties.length > 1);
                   
                   return (
                     <Card key={template.id} className="border border-blue-200 bg-white hover:shadow-md transition-shadow">
@@ -789,29 +769,30 @@ export default function PrioritizePage() {
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            console.log('🖱️ Raw button click detected for:', template.title);
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🖱️ BUTTON CLICKED!', template.title);
                             handleAddTemplate(template);
                           }}
                           disabled={isDisabled}
-                          className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors mt-2 ${
-                            isDisabled 
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                              : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-                          }`}
-                          style={{ minHeight: '40px' }}
-                          type="button"
+                          className="w-full gap-2"
+                          style={{ 
+                            minHeight: '44px',
+                            backgroundColor: isDisabled ? '#D1D5DB' : '#2563EB',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer'
+                          }}
                         >
                           {isAdding ? (
-                            <>Adding...</>
+                            <>⏳ Adding...</>
                           ) : (
                             <>
-                              <Plus className="w-4 h-4 inline mr-2" />
+                              <Plus className="w-4 h-4" />
                               Add to Queue
                             </>
                           )}
-                        </button>
+                        </Button>
                       </CardContent>
                     </Card>
                   );
