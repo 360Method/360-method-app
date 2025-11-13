@@ -1,110 +1,107 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, AlertCircle, Info } from "lucide-react";
 
-export default function ConfirmDialog({ 
-  open, 
-  onClose, 
-  onConfirm, 
-  title = "Confirm Action",
-  message = "Are you sure you want to proceed?",
+export default function ConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "destructive" // "destructive", "warning", or "default"
+  variant = "default" // 'default', 'destructive', 'warning'
 }) {
-  const [confirming, setConfirming] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleConfirm = async () => {
-    if (!onConfirm || typeof onConfirm !== 'function') {
-      console.error('ConfirmDialog: onConfirm prop is required and must be a function');
-      if (onClose && typeof onClose === 'function') {
-        onClose();
-      }
-      return;
-    }
-
-    setConfirming(true);
+    setIsLoading(true);
     try {
       await onConfirm();
-      if (onClose && typeof onClose === 'function') {
-        onClose();
-      }
-    } catch (error) {
-      console.error('ConfirmDialog action failed:', error);
     } finally {
-      setConfirming(false);
+      setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (onClose && typeof onClose === 'function') {
+    if (!isLoading) {
       onClose();
     }
   };
 
-  const getVariantColor = () => {
+  if (!open) return null;
+
+  const getVariantStyles = () => {
     switch (variant) {
-      case "destructive":
-        return { bg: "bg-red-100", icon: "text-red-600", button: "#DC3545" };
-      case "warning":
-        return { bg: "bg-orange-100", icon: "text-orange-600", button: "#FF6B35" };
+      case 'destructive':
+        return {
+          bg: 'bg-red-50',
+          icon: <AlertTriangle className="w-8 h-8 text-red-600" />,
+          button: 'bg-red-600 hover:bg-red-700 text-white'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-orange-50',
+          icon: <AlertCircle className="w-8 h-8 text-orange-600" />,
+          button: 'bg-orange-600 hover:bg-orange-700 text-white'
+        };
       default:
-        return { bg: "bg-blue-100", icon: "text-blue-600", button: "#28A745" };
+        return {
+          bg: 'bg-blue-50',
+          icon: <Info className="w-8 h-8 text-blue-600" />,
+          button: 'bg-blue-600 hover:bg-blue-700 text-white'
+        };
     }
   };
 
-  const colors = getVariantColor();
+  const styles = getVariantStyles();
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogOverlay className="bg-black/75" />
-      <DialogContent className="max-w-md bg-white" style={{ backgroundColor: '#FFFFFF' }}>
-        <DialogHeader style={{ backgroundColor: '#FFFFFF' }}>
-          <DialogTitle className="flex items-center gap-3" style={{ color: '#1B365D' }}>
-            <div className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-              <AlertTriangle className={`w-6 h-6 ${colors.icon}`} />
-            </div>
-            <span>{title}</span>
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="py-4" style={{ backgroundColor: '#FFFFFF' }}>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{message}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      {/* Overlay */}
+      <div 
+        className="absolute inset-0 bg-black/75"
+        onClick={handleClose}
+      />
+      
+      {/* Dialog */}
+      <div 
+        className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+        style={{ zIndex: 101 }}
+      >
+        <div className="flex items-start gap-4 mb-4">
+          <div className={`${styles.bg} rounded-full p-2 flex-shrink-0`}>
+            {styles.icon}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {title}
+            </h3>
+            <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+              {message}
+            </p>
+          </div>
         </div>
 
-        <div className="flex gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 mt-6">
           <Button
-            type="button"
-            variant="outline"
             onClick={handleClose}
-            disabled={confirming}
-            className="flex-1"
-            style={{ 
-              backgroundColor: '#FFFFFF', 
-              borderColor: '#CCCCCC', 
-              color: '#333333',
-              minHeight: '48px' 
-            }}
+            variant="outline"
+            disabled={isLoading}
+            style={{ minHeight: '44px' }}
           >
             {cancelText}
           </Button>
           <Button
-            type="button"
             onClick={handleConfirm}
-            disabled={confirming || !onConfirm}
-            className="flex-1"
-            style={{ 
-              backgroundColor: colors.button,
-              color: '#FFFFFF',
-              minHeight: '48px',
-              opacity: !onConfirm ? 0.5 : 1
-            }}
+            disabled={isLoading}
+            className={styles.button}
+            style={{ minHeight: '44px' }}
           >
-            {confirming ? 'Processing...' : confirmText}
+            {isLoading ? 'Processing...' : confirmText}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

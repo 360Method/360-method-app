@@ -14,7 +14,8 @@ import {
   Calendar,
   DollarSign,
   Lightbulb,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import PropertyWizard from "../components/properties/PropertyWizard";
@@ -42,6 +43,9 @@ export default function PropertiesPage() {
   const [deletionCounts, setDeletionCounts] = React.useState(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [editingDraft, setEditingDraft] = React.useState(null);
+  const [reconfigureProperty, setReconfigureProperty] = React.useState(null);
+  const [reconfigureConfirmOpen, setReconfigureConfirmOpen] = React.useState(false);
+  const [reconfigureCounts, setReconfigureCounts] = React.useState(null);
 
   const queryClient = useQueryClient();
 
@@ -117,12 +121,38 @@ export default function PropertiesPage() {
   const handleWizardComplete = () => {
     setShowWizard(false);
     setEditingDraft(null);
+    setReconfigureProperty(null);
     queryClient.invalidateQueries({ queryKey: ['properties'] });
     queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
   };
 
   const handleEditProperty = (property) => {
     setEditingProperty(property);
+  };
+
+  const handleReconfigureProperty = async (property) => {
+    // Count related data before showing warning
+    const [tasks, inspections, baselines] = await Promise.all([
+      base44.entities.MaintenanceTask.filter({ property_id: property.id }),
+      base44.entities.Inspection.filter({ property_id: property.id }),
+      base44.entities.SystemBaseline.filter({ property_id: property.id })
+    ]);
+
+    setReconfigureCounts({
+      tasks: tasks.length,
+      inspections: inspections.length,
+      baselines: baselines.length
+    });
+    setReconfigureProperty(property);
+    setReconfigureConfirmOpen(true);
+  };
+
+  const handleConfirmReconfigure = () => {
+    setReconfigureConfirmOpen(false);
+    setReconfigureCounts(null);
+    // Open wizard with existing property data
+    setEditingDraft(reconfigureProperty);
+    setShowWizard(true);
   };
 
   const handleDeleteProperty = async (property) => {
@@ -192,6 +222,35 @@ export default function PropertiesPage() {
     return message;
   };
 
+  const getReconfigureMessage = () => {
+    if (!reconfigureProperty || !reconfigureCounts) return '';
+    
+    const { tasks, inspections, baselines } = reconfigureCounts;
+    const hasData = tasks > 0 || inspections > 0 || baselines > 0;
+    
+    let message = `⚠️ RECONFIGURATION WARNING\n\n`;
+    message += `You are about to reconfigure:\n`;
+    message += `📍 ${reconfigureProperty.address}\n\n`;
+    
+    if (hasData) {
+      message += `This property currently has:\n`;
+      if (baselines > 0) message += `• ${baselines} System Baseline${baselines > 1 ? 's' : ''}\n`;
+      if (tasks > 0) message += `• ${tasks} Maintenance Task${tasks > 1 ? 's' : ''}\n`;
+      if (inspections > 0) message += `• ${inspections} Inspection${inspections > 1 ? 's' : ''}\n`;
+      message += `\n`;
+      message += `⚠️ IMPORTANT: Changing key property attributes (type, door count, structure) may affect:\n`;
+      message += `• System baseline recommendations\n`;
+      message += `• Task priorities and scheduling\n`;
+      message += `• Inspection checklists\n`;
+      message += `• Financial calculations and reports\n\n`;
+      message += `Existing data will remain, but may need review for accuracy after reconfiguration.\n`;
+    } else {
+      message += `This property has no baseline systems, tasks, or inspections yet, so reconfiguration is safe.\n`;
+    }
+    
+    return message;
+  };
+
   // Portfolio analytics
   const totalValue = properties.reduce((sum, p) => sum + (p.current_value || 0), 0);
   const avgHealthScore = properties.length > 0 
@@ -206,6 +265,7 @@ export default function PropertiesPage() {
         onCancel={() => {
           setShowWizard(false);
           setEditingDraft(null);
+          setReconfigureProperty(null);
         }}
         existingDraft={editingDraft}
       />
@@ -392,7 +452,11 @@ export default function PropertiesPage() {
                     <DropdownMenuContent align="end" className="bg-white">
                       <DropdownMenuItem onClick={() => handleEditProperty(property)}>
                         <Edit className="w-4 h-4 mr-2" />
-                        Edit Details
+                        Quick Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleReconfigureProperty(property)}>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reconfigure Property
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDeleteProperty(property)}
@@ -476,6 +540,24 @@ export default function PropertiesPage() {
           property={editingProperty}
           open={!!editingProperty}
           onClose={() => setEditingProperty(null)}
+        />
+      )}
+
+      {/* Reconfigure Warning Dialog */}
+      {reconfigureConfirmOpen && reconfigureProperty && (
+        <ConfirmDialog
+          open={reconfigureConfirmOpen}
+          onClose={() => {
+            setReconfigureConfirmOpen(false);
+            setReconfigureProperty(null);
+            setReconfigureCounts(null);
+          }}
+          onConfirm={handleConfirmReconfigure}
+          title="⚠️ Reconfigure Property?"
+          message={getReconfigureMessage()}
+          confirmText="Yes, Reconfigure"
+          cancelText="Cancel"
+          variant="warning"
         />
       )}
 
