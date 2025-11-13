@@ -606,9 +606,9 @@ export default function Baseline() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
@@ -793,7 +793,7 @@ export default function Baseline() {
                         </p>
                       </div>
                       <div className="bg-green-100 rounded-lg p-4 text-left">
-                        <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
+                        <p className="xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
                         <ul className="text-xs text-green-800 space-y-1">
                           <li>• Complete documentation</li>
                           <li>• Physical inspection mindset</li>

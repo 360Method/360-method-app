@@ -9,17 +9,17 @@ import { Progress } from "@/components/ui/progress";
 import {
   Building2,
   Home,
-  TrendingDown, // Kept from original
+  TrendingDown,
   TrendingUp,
   DollarSign,
-  AlertTriangle, // Kept from original
+  AlertTriangle,
   Users,
   Briefcase,
   Award,
   Plus,
-  Lightbulb, // Added
-  ChevronRight, // Added
-  ChevronDown // Added
+  Lightbulb,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -28,7 +28,7 @@ import StepNavigation from "../components/navigation/StepNavigation";
 
 export default function Scale() {
   const [whyExpanded, setWhyExpanded] = React.useState(false);
-  const [selectedProperty, setSelectedProperty] = React.useState('all'); // Added for StepNavigation prop
+  const [selectedProperty, setSelectedProperty] = React.useState('all');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -74,9 +74,9 @@ export default function Scale() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={9} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 

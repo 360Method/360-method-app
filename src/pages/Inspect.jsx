@@ -239,9 +239,9 @@ export default function Inspect() {
   // Main inspection dashboard view
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={2} propertyId={selectedPropertyId !== '' ? selectedPropertyId : null} />
         </div>
 

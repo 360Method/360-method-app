@@ -184,18 +184,18 @@ export default function ExecutePage() {
   // No properties fallback
   if (properties.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-6">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">
           <Card className="border-2 border-green-300 bg-white">
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-6 md:p-8 text-center">
               <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-600" />
-              <h2 className="font-bold text-2xl mb-2" style={{ color: '#1B365D' }}>
+              <h2 className="font-bold text-xl md:text-2xl mb-2" style={{ color: '#1B365D' }}>
                 Add Your First Property
               </h2>
               <p className="text-gray-600 mb-6">
                 Start by adding a property to begin executing maintenance tasks.
               </p>
-              <Button asChild className="bg-green-600 hover:bg-green-700">
+              <Button asChild className="bg-green-600 hover:bg-green-700" style={{ minHeight: '48px' }}>
                 <Link to={createPageUrl("Properties")}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Property
@@ -216,9 +216,9 @@ export default function ExecutePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 

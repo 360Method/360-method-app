@@ -357,9 +357,9 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto p-4 md:p-8 space-y-6">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={3} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 

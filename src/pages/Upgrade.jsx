@@ -128,8 +128,8 @@ export default function Upgrade() {
 
   if (showNewProjectForm || editingProject) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
+      <div className="min-h-screen bg-white pb-20">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6 md:pt-8">
           <UpgradeDialog // Renamed from UpgradeProjectForm
             properties={properties}
             project={editingProject}
@@ -152,9 +152,9 @@ export default function Upgrade() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={8} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 

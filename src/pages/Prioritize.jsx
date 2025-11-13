@@ -192,18 +192,18 @@ export default function PrioritizePage() {
   // No properties fallback
   if (properties.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 pb-20">
+        <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">
           <Card className="border-2 border-red-300 bg-white">
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-6 md:p-8 text-center">
               <Target className="w-16 h-16 mx-auto mb-4 text-red-600" />
-              <h2 className="font-bold text-2xl mb-2" style={{ color: '#1B365D' }}>
+              <h2 className="font-bold text-xl md:text-2xl mb-2" style={{ color: '#1B365D' }}>
                 Add Your First Property
               </h2>
               <p className="text-gray-600 mb-6">
                 Start by adding a property to begin prioritizing maintenance tasks.
               </p>
-              <Button asChild className="bg-red-600 hover:bg-red-700">
+              <Button asChild className="bg-red-600 hover:bg-red-700" style={{ minHeight: '48px' }}>
                 <Link to={createPageUrl("Properties")}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Property
@@ -222,9 +222,9 @@ export default function PrioritizePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         {/* Step Navigation */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={4} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
@@ -372,7 +372,7 @@ export default function PrioritizePage() {
                     <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, check heating system (cold climates)</li>
                     <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal prep, inspect insulation</li>
                     <li>• 🌸 <strong>Spring:</strong> AC tune-up, roof inspection, exterior paint check</li>
-                    <li>• ☀️ <strong>Summer:</strong> HVAC filter changes, pest control, deck maintenance</li>
+                    <li>• ☀️ <strong>Summer:</b> HVAC filter changes, pest control, deck maintenance</li>
                   </ul>
                 </div>
 
