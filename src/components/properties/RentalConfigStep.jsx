@@ -44,80 +44,49 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     units: data.units || []
   });
 
+  const [initialized, setInitialized] = React.useState(false);
+
   // Scroll to top when component mounts
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Initialize or update units array for multi-unit configuration
+  // Initialize units array for multi-unit configuration - ONLY ONCE
   React.useEffect(() => {
-    if (useUnitBasedConfig && data.door_count) {
-      if (formData.units.length === 0 || formData.units.length !== data.door_count) {
-        // Initialize new units or adjust number of units if door_count changed
-        const initialUnits = [];
-        for (let i = 0; i < data.door_count; i++) {
-          const existingUnitData = data.units?.[i];
-          const existingUnitFormData = formData.units?.[i]; // Try to preserve user input from existing units
-
-          initialUnits.push({
-            unit_id: existingUnitFormData?.unit_id || existingUnitData?.unit_id || `unit-${i + 1}`,
-            nickname: existingUnitFormData?.nickname || existingUnitData?.nickname || `Unit ${String.fromCharCode(65 + i)}`,
-            square_footage: existingUnitFormData?.square_footage ?? existingUnitData?.square_footage ?? "",
-            bedrooms: existingUnitFormData?.bedrooms ?? existingUnitData?.bedrooms ?? "",
-            bathrooms: existingUnitFormData?.bathrooms ?? existingUnitData?.bathrooms ?? "",
-            occupancy_status: existingUnitFormData?.occupancy_status || existingUnitData?.occupancy_status || "Vacant",
-            is_furnished: existingUnitFormData?.is_furnished ?? existingUnitData?.is_furnished ?? false,
-            furnishing_level: existingUnitFormData?.furnishing_level || existingUnitData?.furnishing_level || "unfurnished",
-            tenant_name: existingUnitFormData?.tenant_name || existingUnitData?.tenant_name || "",
-            tenant_email: existingUnitFormData?.tenant_email || existingUnitData?.tenant_email || "",
-            tenant_phone: existingUnitFormData?.tenant_phone || existingUnitData?.tenant_phone || "",
-            monthly_rent: existingUnitFormData?.monthly_rent ?? existingUnitData?.monthly_rent ?? ""
-          });
-        }
-        const updated = { ...formData, units: initialUnits };
-        setFormData(updated);
-        onChange(updated);
-      } else if (formData.units.length > 0) {
-        // Ensure existing units have all required fields with default values if they are undefined/null
-        let needsUpdate = false;
-        const updatedUnits = formData.units.map((unit, i) => {
-          const updatedUnit = {
-            ...unit,
-            is_furnished: unit.is_furnished ?? false,
-            furnishing_level: unit.furnishing_level || "unfurnished",
-            tenant_name: unit.tenant_name || "",
-            tenant_email: unit.tenant_email || "",
-            tenant_phone: unit.tenant_phone || "",
-            monthly_rent: unit.monthly_rent ?? ""
-          };
-
-          // Check if any default was applied or if current values differ
-          if (
-            updatedUnit.is_furnished !== (unit.is_furnished ?? false) ||
-            updatedUnit.furnishing_level !== (unit.furnishing_level || "unfurnished") ||
-            updatedUnit.tenant_name !== (unit.tenant_name || "") ||
-            updatedUnit.tenant_email !== (unit.tenant_email || "") ||
-            updatedUnit.tenant_phone !== (unit.tenant_phone || "") ||
-            updatedUnit.monthly_rent !== (unit.monthly_rent ?? "")
-          ) {
-            needsUpdate = true;
-          }
-          return updatedUnit;
+    if (useUnitBasedConfig && !initialized && data.door_count) {
+      const initialUnits = [];
+      for (let i = 0; i < data.door_count; i++) {
+        const existingUnit = data.units?.[i];
+        initialUnits.push({
+          unit_id: existingUnit?.unit_id || `unit-${i + 1}`,
+          nickname: existingUnit?.nickname || `Unit ${String.fromCharCode(65 + i)}`,
+          square_footage: existingUnit?.square_footage || "",
+          bedrooms: existingUnit?.bedrooms || "",
+          bathrooms: existingUnit?.bathrooms || "",
+          occupancy_status: existingUnit?.occupancy_status || "Vacant",
+          is_furnished: existingUnit?.is_furnished || false,
+          furnishing_level: existingUnit?.furnishing_level || "unfurnished",
+          tenant_name: existingUnit?.tenant_name || "",
+          tenant_email: existingUnit?.tenant_email || "",
+          tenant_phone: existingUnit?.tenant_phone || "",
+          monthly_rent: existingUnit?.monthly_rent || ""
         });
-        
-        if (needsUpdate) {
-          const updated = { ...formData, units: updatedUnits };
-          setFormData(updated);
-          onChange(updated);
-        }
       }
+      setFormData(prev => ({ ...prev, units: initialUnits }));
+      setInitialized(true);
     }
-  }, [useUnitBasedConfig, data.door_count, data.units, formData.units]); // Added formData.units to dependencies for robust comparison
+  }, [useUnitBasedConfig, data.door_count, initialized, data.units]);
 
   // For full rental properties, sync number_of_rental_units with door_count
   React.useEffect(() => {
     if (propertyUseType !== 'primary_with_rental' && data.door_count) {
-      updateRentalConfig('number_of_rental_units', data.door_count);
+      setFormData(prev => ({
+        ...prev,
+        rental_config: {
+          ...prev.rental_config,
+          number_of_rental_units: data.door_count
+        }
+      }));
     }
   }, [data.door_count, propertyUseType]);
 
@@ -162,16 +131,11 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     if (useUnitBasedConfig) {
       // Validate unit configuration
       const hasOwnerUnit = formData.units.some(u => u.occupancy_status === 'Owner-Occupied');
-      const hasRentalUnit = formData.units.some(u => u.occupancy_status === 'Tenant-Occupied' || u.occupancy_status === 'Vacant');
       
       if (!hasOwnerUnit) {
         alert("Please mark at least one unit as Owner-Occupied (the unit you live in)");
         return;
       }
-      // Removed the alert for hasRentalUnit being false, as it's not strictly required
-      // for a multi-unit primary_with_rental scenario where all others might be 'Vacant' or still configured.
-      // The current flow implies that if primary_with_rental and multi-unit,
-      // it means some unit *will* be rented out eventually.
     } else {
       const config = formData.rental_config;
       
@@ -1106,7 +1070,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <Label className="font-semibold">Estimated bookings per year</Label>
                 <Select
                   value={String(formData.rental_config.bookings_per_year)}
-                  onValueChange={(value) => updateRentalConfig('bookings_per_year', parseInt(value))}
+                  onValueChange={(value) => updateRentalConfig('bookings_per_per', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
                     <SelectValue placeholder="Select..." />
