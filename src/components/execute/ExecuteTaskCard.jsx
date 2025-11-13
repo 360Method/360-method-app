@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import {
 import { format, addDays } from "date-fns";
 import DIYExecutionModal from "./DIYExecutionModal";
 import ContractorExecutionCard from "./ContractorExecutionCard";
+import OperatorTaskCard from "./OperatorTaskCard";
 import QuickCompleteModal from "./QuickCompleteModal";
 import AlreadyDoneModal from "./AlreadyDoneModal";
 
@@ -54,13 +55,20 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
   const [showQuickComplete, setShowQuickComplete] = useState(false);
   const [showAlreadyDone, setShowAlreadyDone] = useState(false);
   
+  // Route to specialized card for Operator tasks
+  if (task.execution_method === '360_Operator') {
+    return <OperatorTaskCard task={task} urgency={urgency} properties={properties} />;
+  }
+  
+  // Route to specialized card for Contractor tasks
+  if (task.execution_method === 'Contractor') {
+    return <ContractorExecutionCard task={task} />;
+  }
+  
+  // DIY tasks continue below
   const styles = URGENCY_STYLES[urgency];
   const MethodIcon = METHOD_ICONS[task.execution_method] || Wrench;
-
-  // Determine if task is "simple" (eligible for quick complete)
   const isSimpleTask = (task.estimated_hours || task.diy_time_hours || 2) < 0.5;
-
-  // Find property info
   const property = properties.find(p => p.id === task.property_id);
 
   const updateTaskMutation = useMutation({
@@ -71,7 +79,7 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
     }
   });
 
-  const handlePostpone = (days, label) => {
+  const handlePostpone = (days) => {
     const newDate = format(addDays(new Date(), days), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
@@ -87,11 +95,6 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
       });
     }
   };
-
-  // For contractor tasks, use the dedicated contractor card
-  if (task.execution_method === 'Contractor') {
-    return <ContractorExecutionCard task={task} />;
-  }
 
   return (
     <>
@@ -111,7 +114,6 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
               </CardTitle>
               
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Property Badge */}
                 {property && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">
                     <Home className="w-3 h-3" />
@@ -164,7 +166,6 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
             </p>
           )}
           
-          {/* KEY WARNING (if high cascade risk) */}
           {task.key_warning && task.cascade_risk_score >= 7 && (
             <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
               <div className="flex items-start gap-2">
@@ -176,45 +177,38 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
             </div>
           )}
           
-          {/* ACTION BUTTONS */}
-          {task.execution_method === 'DIY' && (
-            <div className="flex gap-2 flex-wrap">
-              {/* Full DIY Guide */}
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => setShowDIYModal(true)}
+              className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
+              style={{ minHeight: '48px' }}
+            >
+              <Wrench className="w-4 h-4" />
+              Start DIY Guide
+            </Button>
+            
+            {isSimpleTask && (
               <Button
-                onClick={() => setShowDIYModal(true)}
-                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
+                onClick={() => setShowQuickComplete(true)}
+                variant="outline"
+                className="flex-1 border-2 border-green-300 gap-2"
                 style={{ minHeight: '48px' }}
               >
-                <Wrench className="w-4 h-4" />
-                Start DIY Guide
+                <Zap className="w-4 h-4" />
+                Quick Complete
               </Button>
-              
-              {/* Quick Complete (for simple tasks) */}
-              {isSimpleTask && (
-                <Button
-                  onClick={() => setShowQuickComplete(true)}
-                  variant="outline"
-                  className="flex-1 border-2 border-green-300 gap-2"
-                  style={{ minHeight: '48px' }}
-                >
-                  <Zap className="w-4 h-4" />
-                  Quick Complete
-                </Button>
-              )}
-              
-              {/* Already Done */}
-              <Button
-                onClick={() => setShowAlreadyDone(true)}
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-800"
-                style={{ minHeight: '48px' }}
-              >
-                Already Done?
-              </Button>
-            </div>
-          )}
+            )}
+            
+            <Button
+              onClick={() => setShowAlreadyDone(true)}
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-800"
+              style={{ minHeight: '48px' }}
+            >
+              Already Done?
+            </Button>
+          </div>
           
-          {/* POSTPONE & DELETE */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-200">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -226,13 +220,13 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handlePostpone(1, 'tomorrow')}>
+                <DropdownMenuItem onClick={() => handlePostpone(1)}>
                   Tomorrow
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlePostpone(3, '3 days')}>
+                <DropdownMenuItem onClick={() => handlePostpone(3)}>
                   In 3 Days
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlePostpone(7, 'next week')}>
+                <DropdownMenuItem onClick={() => handlePostpone(7)}>
                   Next Week
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -249,7 +243,6 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
         </CardContent>
       </Card>
 
-      {/* MODALS */}
       {showDIYModal && (
         <DIYExecutionModal
           task={task}

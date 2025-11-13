@@ -15,11 +15,13 @@ import {
   Building2,
   ArrowRight,
   PlayCircle,
-  Sparkles
+  Wrench,
+  HardHat,
+  Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, startOfDay, parseISO, isBefore } from "date-fns";
+import { format, startOfDay, parseISO, isBefore, isSameDay } from "date-fns";
 import ExecuteTaskCard from "../components/execute/ExecuteTaskCard";
 import StepNavigation from "../components/navigation/StepNavigation";
 
@@ -63,22 +65,19 @@ export default function ExecutePage() {
 
   const today = startOfDay(new Date());
 
-  // Filter for tasks due today or overdue
-  // Exclude 360_Operator tasks (they're handled separately)
+  // NEW: Show ALL execution methods including 360_Operator
   const tasksForDisplay = allTasks.filter(task => {
-    if (task.execution_method === '360_Operator') return false;
     if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
     if (!task.scheduled_date) return false;
     
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
-      return isBefore(taskDate, today) || taskDate.getTime() === today.getTime();
+      return isSameDay(taskDate, today) || isBefore(taskDate, today);
     } catch {
       return false;
     }
   });
 
-  // Count overdue
   const overdueCount = tasksForDisplay.filter(task => {
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
@@ -100,13 +99,18 @@ export default function ExecutePage() {
     return aHours - bHours;
   });
 
+  // OPTIONAL: Group by execution method for visual distinction
+  const operatorTasks = sortedTasks.filter(t => t.execution_method === '360_Operator');
+  const diyTasks = sortedTasks.filter(t => t.execution_method === 'DIY');
+  const contractorTasks = sortedTasks.filter(t => t.execution_method === 'Contractor');
+
   // Progress calculation
   const completedToday = allTasks.filter(task => {
     if (task.status !== 'Completed') return false;
     if (!task.completion_date) return false;
     try {
       const completionDate = startOfDay(new Date(task.completion_date));
-      return completionDate.getTime() === today.getTime();
+      return isSameDay(completionDate, today);
     } catch {
       return false;
     }
@@ -149,7 +153,7 @@ export default function ExecutePage() {
           <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Simplified Header */}
+        {/* Simplified Header with Progress Ring */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
@@ -272,28 +276,112 @@ export default function ExecutePage() {
           </Card>
         )}
 
-        {/* FLAT TASK LIST (sorted by priority, then duration) */}
+        {/* TASK LIST - Grouped by Execution Method */}
         {sortedTasks.length > 0 ? (
-          <div className="space-y-3">
-            {sortedTasks.map(task => {
-              const isOverdue = (() => {
-                try {
-                  const taskDate = startOfDay(parseISO(task.scheduled_date));
-                  return isBefore(taskDate, today);
-                } catch {
-                  return false;
-                }
-              })();
-              
-              return (
-                <ExecuteTaskCard
-                  key={task.id}
-                  task={task}
-                  urgency={isOverdue ? 'overdue' : 'today'}
-                  properties={properties}
-                />
-              );
-            })}
+          <div className="space-y-6">
+            
+            {/* Operator Tasks Section */}
+            {operatorTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Star className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-lg font-bold text-gray-900">360° Operator Services</h3>
+                  <Badge variant="outline" className="ml-auto border-blue-600 text-blue-600">
+                    {operatorTasks.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {operatorTasks.map(task => {
+                    const isOverdue = (() => {
+                      try {
+                        const taskDate = startOfDay(parseISO(task.scheduled_date));
+                        return isBefore(taskDate, today);
+                      } catch {
+                        return false;
+                      }
+                    })();
+                    
+                    return (
+                      <ExecuteTaskCard
+                        key={task.id}
+                        task={task}
+                        urgency={isOverdue ? 'overdue' : 'today'}
+                        properties={properties}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* DIY Tasks Section */}
+            {diyTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Wrench className="w-5 h-5 text-green-600" />
+                  <h3 className="text-lg font-bold text-gray-900">DIY Tasks</h3>
+                  <Badge variant="outline" className="ml-auto border-green-600 text-green-600">
+                    {diyTasks.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {diyTasks.map(task => {
+                    const isOverdue = (() => {
+                      try {
+                        const taskDate = startOfDay(parseISO(task.scheduled_date));
+                        return isBefore(taskDate, today);
+                      } catch {
+                        return false;
+                      }
+                    })();
+                    
+                    return (
+                      <ExecuteTaskCard
+                        key={task.id}
+                        task={task}
+                        urgency={isOverdue ? 'overdue' : 'today'}
+                        properties={properties}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Contractor Tasks Section */}
+            {contractorTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <HardHat className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Contractor Services</h3>
+                  <Badge variant="outline" className="ml-auto border-gray-600 text-gray-600">
+                    {contractorTasks.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {contractorTasks.map(task => {
+                    const isOverdue = (() => {
+                      try {
+                        const taskDate = startOfDay(parseISO(task.scheduled_date));
+                        return isBefore(taskDate, today);
+                      } catch {
+                        return false;
+                      }
+                    })();
+                    
+                    return (
+                      <ExecuteTaskCard
+                        key={task.id}
+                        task={task}
+                        urgency={isOverdue ? 'overdue' : 'today'}
+                        properties={properties}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
           </div>
         ) : (
           // IMPROVED EMPTY STATE
@@ -338,6 +426,10 @@ export default function ExecutePage() {
                   </Link>
                 </Button>
               </div>
+              
+              <p className="text-xs text-gray-500 mt-6">
+                Note: 360° Operator tasks will appear here on their scheduled date.
+              </p>
             </CardContent>
           </Card>
         )}
