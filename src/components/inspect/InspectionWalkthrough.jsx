@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
 import AreaInspection from "./AreaInspection";
+import { format } from 'date-fns';
 
 // Physical zone-based routing for efficient inspection
 const INSPECTION_ZONES = [
@@ -86,6 +87,66 @@ const INSPECTION_AREAS = [
   { id: 'bathrooms', name: 'Bathrooms', icon: '🚽', whatToCheck: 'fixtures, caulking, ventilation, water pressure' },
   { id: 'safety', name: 'Safety Systems', icon: '🚨', whatToCheck: 'smoke detectors, CO detectors, fire extinguishers, test dates' }
 ];
+
+// NEW: Helper function to determine if task is seasonal and get completion window
+function determineSeasonalMetadata(systemType, season, description) {
+  const currentMonth = format(new Date(), 'MMMM');
+  const currentSeason = season || currentMonth;
+  
+  // Define seasonal tasks and their recommended windows
+  const seasonalTasks = {
+    'HVAC System': {
+      seasonal: true,
+      window: 'March-April' // Before cooling season
+    },
+    'Gutters & Downspouts': {
+      seasonal: true,
+      window: 'September-November' // Before rain season
+    },
+    'Roof System': {
+      seasonal: true,
+      window: 'Spring' // After winter damage
+    },
+    'Exterior Siding & Envelope': {
+      seasonal: true,
+      window: 'April-September' // Warm weather work
+    },
+    'Windows & Doors': {
+      seasonal: true,
+      window: 'September-October' // Before cold weather
+    }
+  };
+  
+  // Check if this system type is seasonal
+  if (seasonalTasks[systemType]) {
+    return {
+      seasonal: true,
+      recommended_completion_window: seasonalTasks[systemType].window
+    };
+  }
+  
+  // Check description for seasonal keywords
+  const descLower = (description || '').toLowerCase();
+  if (descLower.includes('annual') || descLower.includes('yearly')) {
+    return {
+      seasonal: true,
+      recommended_completion_window: currentSeason
+    };
+  }
+  
+  if (descLower.includes('filter') && systemType === 'HVAC System') {
+    return {
+      seasonal: true,
+      recommended_completion_window: 'Every 3 months'
+    };
+  }
+  
+  // Default: not seasonal
+  return {
+    seasonal: false,
+    recommended_completion_window: null
+  };
+}
 
 export default function InspectionWalkthrough({ inspection, property, onComplete, onCancel }) {
   const [currentAreaIndex, setCurrentAreaIndex] = React.useState(null);
@@ -203,7 +264,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     setCurrentAreaIndex(null);
   };
 
-  // UPDATED: Complete inspection and transfer issues to priority queue
+  // UPDATED: Complete inspection and transfer issues to priority queue WITH SEASONAL METADATA
   const handleFinishInspection = async () => {
     setIsCompleting(true); // Start loading state
 
@@ -225,6 +286,13 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
       const tasksToCreate = allIssues.filter(issue => issue.is_quick_fix === false);
 
       for (const issue of tasksToCreate) {
+        // NEW: Determine seasonal metadata for this task
+        const seasonalMeta = determineSeasonalMetadata(
+          issue.system || 'General',
+          inspection.season,
+          issue.description || issue.notes
+        );
+
         const taskData = {
           property_id: property.id,
           title: issue.item_name || issue.description?.substring(0, 50) || 'Inspection Issue',
@@ -240,7 +308,11 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
           cost_impact_reason: issue.cost_impact_reason || '',
           has_cascade_alert: (issue.cascade_risk_score || 0) >= 7,
           execution_type: issue.who_will_fix === 'diy' ? 'DIY' : issue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided',
-          estimated_hours: issue.max_hours || null
+          estimated_hours: issue.max_hours || null,
+          
+          // NEW: Add seasonal metadata
+          seasonal: seasonalMeta.seasonal,
+          recommended_completion_window: seasonalMeta.recommended_completion_window
         };
 
         await createTaskMutation.mutateAsync(taskData);
@@ -284,6 +356,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
 
 
       // Navigate to complete screen
@@ -616,8 +689,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                       Your inspection data is automatically saved after each area. You can safely leave and come back anytime.
                     </p>
                   </div>
-                </div>
-              </CardContent>
+                </CardContent>
             </Card>
           )}
 
@@ -639,7 +711,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                   <CheckCircle2 className="w-5 h-5" />
                   Complete Inspection & Add Issues to Priority Queue
                 </>
-              )}
+                )}
             </Button>
           )}
         </div>
