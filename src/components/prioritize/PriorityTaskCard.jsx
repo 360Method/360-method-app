@@ -1,372 +1,412 @@
 import React from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { AlertTriangle, DollarSign, Clock, TrendingDown, ChevronDown, ChevronUp, Info, ShoppingCart, Calendar as CalendarIcon, CheckCircle2, Trash2, Edit } from "lucide-react";
-import { format, isValid, parseISO } from "date-fns";
-
+import {
+  AlertTriangle,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Clock,
+  Wrench,
+  User,
+  AlertCircle,
+  Trash2,
+  ShoppingCart,
+  Send,
+  Edit,
+  CheckCircle2,
+  TrendingUp
+} from "lucide-react";
+import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
 import ManualTaskForm from "../tasks/ManualTaskForm";
 
 const PRIORITY_COLORS = {
-  High: "bg-red-100 text-red-800 border-red-200",
-  Medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  Low: "bg-blue-100 text-blue-800 border-blue-200",
-  Routine: "bg-gray-100 text-gray-800 border-gray-200"
+  High: 'bg-red-600',
+  Medium: 'bg-yellow-600',
+  Low: 'bg-blue-600',
+  Routine: 'bg-gray-600'
 };
 
 const PRIORITY_ICONS = {
-  High: "🔴",
-  Medium: "🟡",
-  Low: "🔵",
-  Routine: "⚪"
+  High: '🔥',
+  Medium: '⚡',
+  Low: '💡',
+  Routine: '🔄'
 };
 
-const GENERIC_CASCADE_EXAMPLES = {
-  "HVAC": "Small refrigerant leak → Compressor works harder → Compressor burns out → Full system replacement ($5K-8K)",
-  "Plumbing": "Small leak → Water damage → Mold growth → Structural damage → $8K-15K repair",
-  "Electrical": "Loose connection → Arcing → Fire hazard → Electrical fire → $20K-50K+ damage",
-  "Roof": "Small leak → Rotted deck → Interior damage → Mold growth → Structural issues → $30K+ disaster",
-  "Foundation": "Small crack → Water intrusion → Foundation settling → Structural damage → $15K-40K repair",
-  "Gutters": "Clog → Overflow → Foundation damage → Basement flooding → Landscaping erosion → $10K-30K damage",
-  "Exterior": "Damaged siding → Water intrusion → Insulation damage → Mold → Interior damage → $8K-20K repair",
-  "Windows/Doors": "Seal failure → Water intrusion → Frame rot → Wall damage → Mold → $5K-15K repair",
-  "Appliances": "Worn hose → Burst → Flood → Water damage → Mold → $8K-15K cleanup",
-  "Landscaping": "Poor grading → Water pools → Foundation damage → Basement issues → $10K-25K repair",
-  "General": "Small issue → Secondary damage → Tertiary failures → Emergency repair at 3X cost"
-};
+const GENERIC_CASCADE_EXAMPLES = [
+  "Small leaks lead to water damage → mold → structural issues",
+  "Clogged gutters → foundation damage → basement flooding",
+  "HVAC neglect → system failure during peak season → emergency costs",
+  "Minor roof damage → water intrusion → ceiling/insulation replacement"
+];
 
-const safeFormatDate = (dateValue, formatString) => {
-  if (!dateValue) return null;
-  
+function safeFormatDate(dateString) {
+  if (!dateString) return null;
   try {
-    const date = typeof dateValue === 'string' ? parseISO(dateValue) : new Date(dateValue);
-    return isValid(date) ? format(date, formatString) : null;
-  } catch (error) {
-    console.error('Error formatting date:', error);
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    return format(date, 'MMM d, yyyy');
+  } catch {
     return null;
   }
-};
+}
 
-export default function PriorityTaskCard({ task, rank, onPriorityChange, onStatusChange, onDelete, propertyId }) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [showCartDialog, setShowCartDialog] = React.useState(false);
-  const [showEditDialog, setShowEditDialog] = React.useState(false);
-  const [schedulePopoverOpen, setSchedulePopoverOpen] = React.useState(false);
+export default function PriorityTaskCard({ 
+  task, 
+  onSendToSchedule, 
+  onMarkComplete, 
+  onDelete,
+  property 
+}) {
+  const queryClient = useQueryClient();
+  const [expanded, setExpanded] = React.useState(false);
+  const [showAddToCart, setShowAddToCart] = React.useState(false);
+  const [showEditForm, setShowEditForm] = React.useState(false);
 
-  const costSavings = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
-
-  const cascadeExample = task.cascade_risk_reason 
-    || GENERIC_CASCADE_EXAMPLES[task.system_type] 
-    || GENERIC_CASCADE_EXAMPLES["General"];
-
-  const handleDateSelect = (date) => {
-    if (!date) return;
-    
-    try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      onStatusChange(task.id, 'Scheduled', formattedDate);
-      setSchedulePopoverOpen(false);
-    } catch (error) {
-      console.error('Error selecting date:', error);
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
     }
+  });
+
+  const cascadeRiskScore = task.cascade_risk_score || 0;
+  const hasCascadeAlert = cascadeRiskScore >= 7;
+  const currentCost = task.current_fix_cost || 0;
+  const delayedCost = task.delayed_fix_cost || 0;
+  const potentialSavings = delayedCost - currentCost;
+
+  const handleExecutionTypeChange = (newType) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { execution_type: newType }
+    });
   };
 
-  const scheduledDateDisplay = safeFormatDate(task.scheduled_date, 'MMM d');
+  const handlePriorityChange = (newPriority) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { priority: newPriority }
+    });
+  };
 
   return (
     <>
-      <Card className="border-2 border-gray-200 hover:border-orange-300 hover:shadow-xl transition-all">
-        <CardHeader className="pb-3 bg-gradient-to-r from-white to-gray-50">
+      <Card className={`border-2 transition-all hover:shadow-lg ${
+        hasCascadeAlert 
+          ? 'border-red-400 bg-gradient-to-br from-red-50 to-orange-50' 
+          : 'border-red-200 bg-white'
+      }`}>
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center font-bold text-white shadow-lg flex-shrink-0 text-sm md:text-base">
-                #{rank}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-base md:text-lg mb-2 break-words">
-                  {task.title}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <CardTitle className="text-lg break-words">
+                  {PRIORITY_ICONS[task.priority]} {task.title}
                 </CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Badge className={`${PRIORITY_COLORS[task.priority]} text-xs`}>
-                    {PRIORITY_ICONS[task.priority]} {task.priority}
+                {hasCascadeAlert && (
+                  <Badge className="bg-red-600 text-white animate-pulse gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    High Cascade Risk
                   </Badge>
-                  {task.system_type && (
-                    <Badge variant="outline" className="text-xs">{task.system_type}</Badge>
-                  )}
-                  {task.has_cascade_alert && (
-                    <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
-                      ⚠️ Cascade
-                    </Badge>
-                  )}
-                  {task.scheduled_date && scheduledDateDisplay && (
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
-                      📅 {scheduledDateDisplay}
-                    </Badge>
-                  )}
-                </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={PRIORITY_COLORS[task.priority]}>
+                  {task.priority}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {task.system_type}
+                </Badge>
+                {cascadeRiskScore > 0 && (
+                  <Badge className={
+                    cascadeRiskScore >= 7 ? 'bg-red-600' :
+                    cascadeRiskScore >= 4 ? 'bg-orange-600' :
+                    'bg-blue-600'
+                  }>
+                    Risk: {cascadeRiskScore}/10
+                  </Badge>
+                )}
+                {property && (
+                  <Badge variant="outline" className="text-xs">
+                    {property.address || property.street_address || 'Property'}
+                  </Badge>
+                )}
               </div>
             </div>
-            
+
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => setExpanded(!expanded)}
               className="flex-shrink-0"
-              style={{ minHeight: '44px', minWidth: '44px' }}
             >
-              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              {expanded ? (
+                <ChevronUp className="w-5 h-5 text-red-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-red-600" />
+              )}
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-3 md:p-4">
-          <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3">
-            <div className="bg-orange-50 rounded-lg p-2 md:p-3 text-center border border-orange-200">
-              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-600 mx-auto mb-1" />
-              <p className="text-xs text-gray-600">Risk</p>
-              <p className="font-bold text-sm md:text-base text-orange-700">{task.cascade_risk_score || 0}/10</p>
+        <CardContent className="space-y-4">
+          {/* Cost Summary - Always Visible */}
+          {(currentCost > 0 || delayedCost > 0) && (
+            <div className="grid grid-cols-2 gap-3">
+              {currentCost > 0 && (
+                <div className="bg-green-50 border border-green-300 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <span className="text-xs font-semibold text-green-900">Fix Now</span>
+                  </div>
+                  <p className="text-xl font-bold text-green-700">
+                    ${currentCost.toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {delayedCost > 0 && (
+                <div className="bg-red-50 border border-red-300 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    <span className="text-xs font-semibold text-red-900">If You Wait</span>
+                  </div>
+                  <p className="text-xl font-bold text-red-700">
+                    ${delayedCost.toLocaleString()}
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="bg-green-50 rounded-lg p-2 md:p-3 text-center border border-green-200">
-              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-green-600 mx-auto mb-1" />
-              <p className="text-xs text-gray-600">Fix Now</p>
-              <p className="font-bold text-sm md:text-base text-green-700">${((task.current_fix_cost || 0)/1000).toFixed(1)}K</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-2 md:p-3 text-center border border-blue-200">
-              <Clock className="w-4 h-4 md:w-5 md:h-5 text-blue-600 mx-auto mb-1" />
-              <p className="text-xs text-gray-600">Timeline</p>
-              <p className="font-bold text-xs md:text-sm text-blue-700">{task.urgency_timeline || 'ASAP'}</p>
-            </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => setShowCartDialog(true)}
-              className="gap-2 w-full"
-              style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-sm">Add to Cart</span>
-            </Button>
-            
-            <Popover open={schedulePopoverOpen} onOpenChange={setSchedulePopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="gap-2 w-full border-2 border-blue-400 text-blue-700 hover:bg-blue-50"
-                  style={{ minHeight: '48px' }}
-                >
-                  <CalendarIcon className="w-4 h-4" />
-                  <span className="text-sm">{task.scheduled_date ? 'Reschedule' : 'Schedule'}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={task.scheduled_date ? new Date(task.scheduled_date) : undefined}
-                  onSelect={handleDateSelect}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          {potentialSavings > 0 && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-600 p-3 rounded">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm font-bold text-yellow-900">
+                  Save ${potentialSavings.toLocaleString()} by acting now
+                </span>
+              </div>
+            </div>
+          )}
 
-          {isExpanded && (
-            <div className="mt-4 space-y-4 pt-4 border-t-2 border-gray-200">
+          {/* Expanded Details */}
+          {expanded && (
+            <div className="space-y-4 border-t border-red-200 pt-4">
+              {/* Description */}
               {task.description && (
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-1">Description:</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
                 </div>
               )}
 
-              {task.has_cascade_alert && (
-                <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg p-4 shadow-md">
-                  <div className="flex items-start gap-3">
-                    <TrendingDown className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2 flex-wrap">
-                        💥 Cascade Risk Alert
-                        {task.cascade_risk_score && (
-                          <Badge className="bg-orange-600 text-white">
-                            {task.cascade_risk_score}/10 Risk
-                          </Badge>
-                        )}
-                      </h4>
-                      <p className="text-sm text-gray-800 leading-relaxed mb-3">
-                        This triggers a chain reaction of increasingly expensive damage if ignored.
-                      </p>
-                      <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
-                        <p className="text-xs font-semibold text-orange-900 mb-2 flex items-center gap-1">
-                          <Info className="w-3 h-3" />
-                          Cascade Pattern:
-                        </p>
-                        <p className="text-xs md:text-sm text-gray-800 leading-relaxed break-words">
-                          {cascadeExample}
-                        </p>
-                      </div>
-                    </div>
+              {/* Cascade Risk Explanation */}
+              {task.cascade_risk_reason ? (
+                <div className={`rounded-lg p-3 border-2 ${
+                  hasCascadeAlert 
+                    ? 'bg-red-50 border-red-400' 
+                    : cascadeRiskScore >= 4 
+                    ? 'bg-orange-50 border-orange-300' 
+                    : 'bg-blue-50 border-blue-300'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className={`w-4 h-4 ${
+                      hasCascadeAlert ? 'text-red-600' : 
+                      cascadeRiskScore >= 4 ? 'text-orange-600' : 
+                      'text-blue-600'
+                    }`} />
+                    <span className="text-sm font-bold text-gray-900">Cascade Risk Analysis:</span>
                   </div>
+                  <p className="text-sm text-gray-800 leading-relaxed">{task.cascade_risk_reason}</p>
+                </div>
+              ) : cascadeRiskScore > 0 && (
+                <div className="bg-blue-50 border border-blue-300 rounded-lg p-3">
+                  <p className="text-xs text-blue-800 italic">
+                    <strong>Example cascade scenarios:</strong> {GENERIC_CASCADE_EXAMPLES[Math.floor(Math.random() * GENERIC_CASCADE_EXAMPLES.length)]}
+                  </p>
                 </div>
               )}
 
-              {(task.current_fix_cost || task.delayed_fix_cost) && (
-                <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg p-4 shadow-md">
-                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    Cost Impact
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="bg-white rounded-lg p-3 border-2 border-green-300">
-                      <p className="text-xs text-gray-600 mb-1">Fix Now:</p>
-                      <p className="text-xl md:text-2xl font-bold text-green-700">
-                        ${(task.current_fix_cost || 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border-2 border-red-300">
-                      <p className="text-xs text-gray-600 mb-1">Fix Later:</p>
-                      <p className="text-xl md:text-2xl font-bold text-red-700">
-                        ${(task.delayed_fix_cost || 0).toLocaleString()}
-                      </p>
-                    </div>
+              {/* Cost Impact */}
+              {task.cost_impact_reason && (
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-bold text-gray-900">Why Waiting Costs More:</span>
                   </div>
-
-                  {costSavings > 0 && (
-                    <div className="bg-white rounded-lg p-3 border-2 border-green-300">
-                      <p className="text-sm font-bold text-green-800 text-center">
-                        ✅ Act now and save: ${costSavings.toLocaleString()}
-                      </p>
-                    </div>
-                  )}
-
-                  {task.cost_impact_reason && (
-                    <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mt-3">
-                      <p className="text-xs font-semibold text-yellow-900 mb-1">Why waiting costs more:</p>
-                      <p className="text-xs text-gray-800">{task.cost_impact_reason}</p>
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-800 leading-relaxed">{task.cost_impact_reason}</p>
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 pt-3 border-t">
-                <Button
-                  onClick={() => setShowEditDialog(true)}
-                  variant="outline"
-                  className="gap-2 w-full border-2 border-purple-400 text-purple-700 hover:bg-purple-50"
-                  style={{ minHeight: '48px' }}
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Task Details
-                </Button>
+              {/* Urgency Timeline */}
+              {task.urgency_timeline && (
+                <div className="flex items-center gap-2 bg-purple-50 border border-purple-300 rounded-lg p-3">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm font-semibold text-purple-900">Timeline to Critical:</span>
+                  <span className="text-sm font-bold text-purple-700">{task.urgency_timeline}</span>
+                </div>
+              )}
 
+              {/* Photos */}
+              {task.photo_urls && task.photo_urls.length > 0 && (
                 <div>
-                  <Label className="text-xs text-gray-600 mb-2 block">Change Priority:</Label>
-                  <Select
-                    value={task.priority}
-                    onValueChange={(value) => onPriorityChange(task.id, value)}
+                  <p className="text-sm font-semibold text-gray-900 mb-2">Photos:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {task.photo_urls.map((url, idx) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Task photo ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Decision Controls */}
+              <div className="grid md:grid-cols-2 gap-4 bg-red-50 rounded-lg p-4 border-2 border-red-300">
+                <div>
+                  <label className="text-sm font-semibold text-red-900 mb-2 block">
+                    🔧 Execution Type
+                  </label>
+                  <Select 
+                    value={task.execution_type || 'Not Decided'} 
+                    onValueChange={handleExecutionTypeChange}
                   >
-                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                    <SelectTrigger className="bg-white" style={{ minHeight: '44px' }}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="High">🔴 High Priority</SelectItem>
-                      <SelectItem value="Medium">🟡 Medium Priority</SelectItem>
-                      <SelectItem value="Low">🔵 Low Priority</SelectItem>
-                      <SelectItem value="Routine">⚪ Routine</SelectItem>
+                      <SelectItem value="DIY">
+                        <div className="flex items-center gap-2">
+                          <Wrench className="w-4 h-4" />
+                          <span>DIY - I'll do it myself</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Professional">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          <span>Professional - Hire a pro</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Not Decided">
+                        <span>Not Decided</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={() => onStatusChange(task.id, 'Completed')}
-                    className="w-full gap-2"
-                    style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                <div>
+                  <label className="text-sm font-semibold text-red-900 mb-2 block">
+                    🎯 Priority Level
+                  </label>
+                  <Select 
+                    value={task.priority} 
+                    onValueChange={handlePriorityChange}
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-sm">Complete</span>
-                  </Button>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2 border-2 border-red-300 text-red-700 hover:bg-red-50"
-                        style={{ minHeight: '48px' }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span className="text-sm">Delete</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Task?</AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-2">
-                          <p>Are you sure you want to delete this task?</p>
-                          <div className="bg-gray-50 rounded p-3 mt-2">
-                            <p className="font-semibold text-gray-900 text-sm">{task.title}</p>
-                            {task.system_type && (
-                              <p className="text-xs text-gray-600 mt-1">System: {task.system_type}</p>
-                            )}
-                          </div>
-                          <p className="text-red-600 font-semibold text-sm mt-2">
-                            ⚠️ This cannot be undone.
-                          </p>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDelete(task.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete Task
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    <SelectTrigger className="bg-white" style={{ minHeight: '44px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High">🔥 High - Urgent</SelectItem>
+                      <SelectItem value="Medium">⚡ Medium - Important</SelectItem>
+                      <SelectItem value="Low">💡 Low - Can Wait</SelectItem>
+                      <SelectItem value="Routine">🔄 Routine - Scheduled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-red-200">
+            <Button
+              onClick={() => setShowAddToCart(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-red-600 text-red-600 hover:bg-red-50"
+              style={{ minHeight: '44px' }}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Add to Cart
+            </Button>
+
+            <Button
+              onClick={() => onSendToSchedule(task)}
+              className="gap-2 bg-yellow-600 hover:bg-yellow-700"
+              size="sm"
+              style={{ minHeight: '44px' }}
+            >
+              <Send className="w-4 h-4" />
+              Send to Schedule
+            </Button>
+
+            <Button
+              onClick={() => setShowEditForm(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              style={{ minHeight: '44px' }}
+            >
+              <Edit className="w-4 h-4" />
+              Edit Details
+            </Button>
+
+            <Button
+              onClick={() => onMarkComplete(task)}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-green-600 text-green-600 hover:bg-green-50"
+              style={{ minHeight: '44px' }}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Mark Complete
+            </Button>
+
+            <Button
+              onClick={() => onDelete(task)}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-600 text-gray-600 hover:bg-gray-50"
+              style={{ minHeight: '44px' }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <AddToCartDialog
-        open={showCartDialog}
-        onClose={() => setShowCartDialog(false)}
-        prefilledData={{
-          property_id: task.property_id,
-          source_type: "task",
-          source_id: task.id,
-          title: task.title,
-          description: task.description,
-          system_type: task.system_type,
-          priority: task.priority,
-          photo_urls: task.photo_urls || [],
-          estimated_hours: Math.ceil((task.current_fix_cost || 500) / 150),
-          estimated_cost_min: task.current_fix_cost,
-          estimated_cost_max: task.delayed_fix_cost,
-          customer_notes: task.cascade_risk_reason ? `⚠️ Cascade Risk: ${task.cascade_risk_reason}` : ''
-        }}
-      />
+      {/* Add to Cart Dialog */}
+      {showAddToCart && (
+        <AddToCartDialog
+          open={showAddToCart}
+          onClose={() => setShowAddToCart(false)}
+          task={task}
+          propertyId={task.property_id}
+        />
+      )}
 
-      {showEditDialog && (
+      {/* Edit Task Form */}
+      {showEditForm && (
         <ManualTaskForm
           propertyId={task.property_id}
           editingTask={task}
-          onComplete={() => {
-            setShowEditDialog(false);
-            // Trigger refresh by calling onStatusChange with current status
-            onStatusChange(task.id, task.status);
-          }}
-          onCancel={() => setShowEditDialog(false)}
-          open={showEditDialog}
+          onComplete={() => setShowEditForm(false)}
+          onCancel={() => setShowEditForm(false)}
+          open={showEditForm}
         />
       )}
     </>

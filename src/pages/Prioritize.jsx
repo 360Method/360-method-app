@@ -1,33 +1,33 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Plus,
   AlertTriangle,
-  TrendingDown,
-  ListOrdered,
-  Filter,
-  Home,
-  Calendar,
+  Flame,
+  Target,
   DollarSign,
-  Zap,
-  TrendingUp,
-  ArrowUpDown,
-  Lightbulb,
-  ChevronRight,
-  ChevronDown
+  Calendar,
+  Plus,
+  ArrowRight,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Wrench,
+  ShoppingCart,
+  Send,
+  Eye,
+  User,
+  Building2
 } from "lucide-react";
-
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
-import AIMaintenanceCalendar from "../components/prioritize/AIMaintenanceCalendar";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -37,449 +37,515 @@ const Label = ({ children, className = "", ...props }) => (
 
 export default function PrioritizePage() {
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const propertyIdFromUrl = searchParams.get('property');
-
-  const [selectedProperty, setSelectedProperty] = React.useState(null);
-  const [priorityFilter, setPriorityFilter] = React.useState("all");
-  const [showTaskForm, setShowTaskForm] = React.useState(false);
-  const [sortBy, setSortBy] = React.useState("smart"); // 'smart', 'cost', 'date'
-  const [whyExpanded, setWhyExpanded] = React.useState(false); // New state for the educational card
-
   const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(location.search);
+  const propertyIdFromUrl = urlParams.get('property');
 
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
+  const [showTaskForm, setShowTaskForm] = React.useState(false);
+  const [priorityFilter, setPriorityFilter] = React.useState('all');
+  const [sortBy, setSortBy] = React.useState('cascade_risk');
+  const [showEducation, setShowEducation] = React.useState(false);
+
+  // Fetch properties
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list();
+      const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
-    },
-    initialData: [],
-  });
-
-  const { data: maintenanceTasks = [] } = useQuery({
-    queryKey: ['maintenanceTasks', selectedProperty?.id],
-    queryFn: () => selectedProperty?.id 
-      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty.id })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
-    initialData: [],
-  });
-
-  const { data: systemBaselines = [] } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty?.id],
-    queryFn: () => selectedProperty?.id
-      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty.id })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
-    initialData: [],
-  });
-
-  const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', selectedProperty?.id],
-    queryFn: () => selectedProperty?.id
-      ? base44.entities.Inspection.filter({ property_id: selectedProperty.id })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
-    initialData: [],
-  });
-
-  // Initialize selected property from URL or first available property
-  React.useEffect(() => {
-    if (properties.length > 0 && !selectedProperty) {
-      if (propertyIdFromUrl) {
-        const propertyFromUrl = properties.find(p => p.id === propertyIdFromUrl);
-        if (propertyFromUrl) {
-          setSelectedProperty(propertyFromUrl);
-        } else {
-          setSelectedProperty(properties[0]);
-        }
-      } else {
-        setSelectedProperty(properties[0]);
-      }
     }
-  }, [properties, selectedProperty, propertyIdFromUrl]);
+  });
 
+  // Set initial selected property
+  React.useEffect(() => {
+    if (propertyIdFromUrl && properties.length > 0) {
+      const foundProperty = properties.find(p => p.id === propertyIdFromUrl);
+      if (foundProperty) {
+        setSelectedProperty(propertyIdFromUrl);
+      }
+    } else if (selectedProperty === 'all' && properties.length === 1) {
+      setSelectedProperty(properties[0].id);
+    }
+  }, [propertyIdFromUrl, properties, selectedProperty]);
+
+  // Fetch tasks based on selected property
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ['maintenanceTasks', selectedProperty],
+    queryFn: async () => {
+      if (selectedProperty === 'all') {
+        return await base44.entities.MaintenanceTask.list('-created_date');
+      } else {
+        return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
+      }
+    },
+    enabled: properties.length > 0 && selectedProperty !== null
+  });
+
+  // Fetch system baselines for context
+  const { data: systemBaselines = [] } = useQuery({
+    queryKey: ['systemBaselines', selectedProperty],
+    queryFn: async () => {
+      if (selectedProperty === 'all') {
+        return await base44.entities.SystemBaseline.list();
+      } else {
+        return await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+      }
+    },
+    enabled: properties.length > 0 && selectedProperty !== null
+  });
+
+  // Fetch inspections for context
+  const { data: inspections = [] } = useQuery({
+    queryKey: ['inspections', selectedProperty],
+    queryFn: async () => {
+      if (selectedProperty === 'all') {
+        return await base44.entities.Inspection.list('-created_date');
+      } else {
+        return await base44.entities.Inspection.filter({ property_id: selectedProperty }, '-created_date');
+      }
+    },
+    enabled: properties.length > 0 && selectedProperty !== null
+  });
+
+  // Mutations for task management
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, updates }) =>
-      base44.entities.MaintenanceTask.update(id, updates),
+    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-    },
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+    }
   });
 
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId) => base44.entities.MaintenanceTask.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-    },
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+    }
   });
 
-  // Filter out completed tasks
-  const activeTasks = maintenanceTasks.filter(t => t.status !== 'Completed');
+  // Filter tasks to only show those in the "Holding Cell" (Identified status)
+  const holdingCellTasks = allTasks.filter(task => 
+    task.status === 'Identified' || task.status === 'Deferred'
+  );
 
-  // Apply priority filter
-  let filteredTasks = activeTasks;
-  if (priorityFilter !== "all") {
-    filteredTasks = activeTasks.filter(t => t.priority === priorityFilter);
-  }
+  // Apply filters and sorting
+  const filteredTasks = holdingCellTasks.filter(task => {
+    if (priorityFilter === 'all') return true;
+    if (priorityFilter === 'high_cascade') return (task.cascade_risk_score || 0) >= 7;
+    if (priorityFilter === 'high_priority') return task.priority === 'High';
+    return task.priority === priorityFilter;
+  });
 
-  // Apply sorting
+  // Sort tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (sortBy === 'smart') {
-      // Smart prioritization: cascade risk + priority. Higher score is higher priority.
-      // Cascade risk 1-10 (multiply by 10 for weight), priority: High=3, Medium=2, Low=1, Routine=0
-      const priorityValueA = a.priority === 'High' ? 3 : a.priority === 'Medium' ? 2 : a.priority === 'Low' ? 1 : 0;
-      const priorityValueB = b.priority === 'High' ? 3 : b.priority === 'Medium' ? 2 : b.priority === 'Low' ? 1 : 0;
-      
-      const scoreA = (a.cascade_risk_score || 0) * 10 + priorityValueA;
-      const scoreB = (b.cascade_risk_score || 0) * 10 + priorityValueB;
-      
-      return scoreB - scoreA; // Descending score
+    if (sortBy === 'cascade_risk') {
+      return (b.cascade_risk_score || 0) - (a.cascade_risk_score || 0);
     } else if (sortBy === 'cost') {
-      // Sort by potential savings (delayed - current), descending
-      const savingsA = (a.delayed_fix_cost || 0) - (a.current_fix_cost || 0);
-      const savingsB = (b.delayed_fix_cost || 0) - (b.current_fix_cost || 0);
-      return savingsB - savingsA;
-    } else if (sortBy === 'date') {
-      // Sort by scheduled date (null dates last)
-      if (!a.scheduled_date && !b.scheduled_date) return 0;
-      if (!a.scheduled_date) return 1;
-      if (!b.scheduled_date) return -1;
-      return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+      return (b.current_fix_cost || 0) - (a.current_fix_cost || 0);
+    } else if (sortBy === 'priority') {
+      const priorityOrder = { High: 3, Medium: 2, Low: 1, Routine: 0 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
     }
     return 0;
   });
 
-  const handlePriorityChange = (taskId, newPriority) => {
-    updateTaskMutation.mutate({ id: taskId, updates: { priority: newPriority } });
+  // Calculate statistics
+  const highPriorityCount = holdingCellTasks.filter(t => t.priority === 'High').length;
+  const highCascadeCount = holdingCellTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
+  const totalCurrentCost = holdingCellTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
+  const totalDelayedCost = holdingCellTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
+  const potentialSavings = totalDelayedCost - totalCurrentCost;
+
+  // Handle task actions
+  const handleSendToSchedule = (task) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { status: 'Scheduled' }
+    });
   };
 
-  const handleStatusChange = (taskId, newStatus, scheduledDate = null) => {
-    const updates = { status: newStatus };
-    if (newStatus === 'Scheduled' && scheduledDate) {
-      updates.scheduled_date = scheduledDate;
+  const handleMarkComplete = (task) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { 
+        status: 'Completed',
+        completion_date: new Date().toISOString().split('T')[0]
+      }
+    });
+  };
+
+  const handleDeleteTask = (task) => {
+    if (window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
+      deleteTaskMutation.mutate(task.id);
     }
-    if (newStatus === 'Completed') {
-      updates.completion_date = new Date().toISOString().split('T')[0];
-    }
-    updateTaskMutation.mutate({ id: taskId, updates });
   };
 
-  const handleDeleteTask = (taskId) => {
-    deleteTaskMutation.mutate(taskId);
-  };
-
-  // Calculate stats
-  const stats = {
-    highPriority: activeTasks.filter(t => t.priority === 'High').length,
-    cascadeRisks: activeTasks.filter(t => t.has_cascade_alert).length,
-    totalCurrentCost: activeTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0),
-    totalPotentialSavings: activeTasks.reduce((sum, t) => {
-      const savings = (t.delayed_fix_cost || 0) - (t.current_fix_cost || 0);
-      return sum + savings;
-    }, 0)
-  };
-
-  const workflowStats = {
-    unscheduled: activeTasks.filter(t => t.status === 'Identified' || !t.scheduled_date).length,
-    scheduled: activeTasks.filter(t => t.status === 'Scheduled' && t.scheduled_date).length,
-    readyToExecute: activeTasks.filter(t => {
-      if (t.status !== 'Scheduled') return false;
-      if (!t.scheduled_date) return false;
-      const taskDate = new Date(t.scheduled_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return taskDate <= today;
-    }).length
-  };
-
-  if (showTaskForm) {
+  // No properties fallback
+  if (properties.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
-        <div className="max-w-3xl mx-auto">
-          <ManualTaskForm
-            propertyId={selectedProperty?.id}
-            onComplete={() => {
-              setShowTaskForm(false);
-              queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-            }}
-            onCancel={() => setShowTaskForm(false)}
-          />
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-2 border-red-300 bg-white">
+            <CardContent className="p-8 text-center">
+              <Target className="w-16 h-16 mx-auto mb-4 text-red-600" />
+              <h2 className="font-bold text-2xl mb-2" style={{ color: '#1B365D' }}>
+                Add Your First Property
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Start by adding a property to begin prioritizing maintenance tasks.
+              </p>
+              <Button asChild className="bg-red-600 hover:bg-red-700">
+                <Link to={createPageUrl("Properties")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Property
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
+  const currentProperty = selectedProperty !== 'all' 
+    ? properties.find(p => p.id === selectedProperty)
+    : null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* Phase & Step Header */}
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
-              Phase II - ACT
-            </Badge>
-            <Badge variant="outline" className="text-sm px-3 py-1">
-              Step 4 of 9
-            </Badge>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-lg">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+                Step 4: Prioritize Tasks
+              </h1>
+              <p className="text-gray-600" style={{ fontSize: '16px' }}>
+                Review, enrich, and decide on your maintenance tasks
+              </p>
+            </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Prioritize
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Smart task ranking based on cascade risk and cost impact
-          </p>
+
+          {/* ACT Phase Indicator */}
+          <div className="flex items-center gap-2 bg-white rounded-lg p-3 border-2 border-red-300 shadow-sm">
+            <Badge className="bg-red-600 text-white">ACT Phase - Step 1 of 3</Badge>
+            <div className="flex items-center gap-1 text-xs text-gray-600">
+              <span className="font-bold text-red-600">→ Prioritize (Red)</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-gray-400">Schedule (Yellow)</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-gray-400">Execute (Green)</span>
+            </div>
+          </div>
         </div>
 
-        {/* Why This Step Matters - Educational Card */}
-        <Card className="mb-6 border-2 border-orange-200 bg-orange-50">
-          <CardHeader className="pb-3">
+        {/* Educational Card - Expandable */}
+        <Card className="border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50 mb-6">
+          <CardContent className="p-4">
             <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
+              onClick={() => setShowEducation(!showEducation)}
               className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
             >
-              <Lightbulb className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-orange-900 mb-1">Why Prioritize Matters</h3>
-                <p className="text-sm text-orange-800">
-                  Prioritize launches the ACT phase. It transforms your awareness into action by ranking tasks based on cascade risk, cost impact, and urgency - ensuring you tackle the right problems first.
+                <h3 className="font-bold text-red-900 mb-1">
+                  🎯 Why Prioritizing Matters
+                </h3>
+                <p className="text-sm text-red-800">
+                  Click to learn how smart prioritization saves thousands in cascade failures
                 </p>
               </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              {showEducation ? (
+                <ChevronUp className="w-5 h-5 text-red-600 flex-shrink-0" />
               ) : (
-                <ChevronRight className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                <ChevronDown className="w-5 h-5 text-red-600 flex-shrink-0" />
               )}
             </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Prioritize is Step 4 and begins the ACT phase. It takes everything you learned in AWARE (your baseline, inspection findings, and historical patterns) and uses AI to create an intelligent task queue. This prevents you from wasting time on low-impact work while critical issues grow.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 The Smart Ranking Algorithm:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-                    <li>• <strong>Cascade Risk Score (1-10):</strong> How likely is this to trigger chain failures?</li>
-                    <li>• <strong>Cost Impact:</strong> Current fix cost vs. delayed fix cost</li>
-                    <li>• <strong>Urgency Timeline:</strong> How much time before this becomes critical?</li>
-                    <li>• <strong>System Dependencies:</strong> What else could this affect?</li>
+
+            {showEducation && (
+              <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-red-200 pt-4">
+                <p className="leading-relaxed">
+                  <strong>The Holding Cell Workflow:</strong> Tasks from inspections, preserve analysis, upgrades, 
+                  or manual entries arrive here. You enrich them with AI analysis, prioritize by cascade risk and 
+                  cost impact, then decide: <span className="text-red-600 font-bold">DIY</span> or{' '}
+                  <span className="text-red-600 font-bold">Request Professional Service</span> (add to cart).
+                </p>
+                <div className="bg-white rounded-lg p-3 border border-red-200">
+                  <p className="font-semibold text-red-900 mb-2">📍 Your Decision Points:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• <strong>Review AI Analysis:</strong> Cost estimates, cascade risks, urgency timelines</li>
+                    <li>• <strong>Choose DIY or Pro:</strong> Mark execution type based on complexity</li>
+                    <li>• <strong>Add to Cart:</strong> For professional service requests</li>
+                    <li>• <strong>Send to Schedule:</strong> Moves task to Schedule tab (yellow) for timeline planning</li>
                   </ul>
                 </div>
-                <div className="bg-orange-50 rounded p-3 border-l-4 border-orange-600">
-                  <p className="text-xs text-orange-900">
-                    <strong>Key Insight:</strong> Tasks with cascade risk scores of 7+ should be addressed immediately - they can trigger $10K-50K+ in additional damage if delayed.
-                  </p>
-                </div>
+                <p className="text-xs italic text-red-700">
+                  💡 Pro Tip: Tasks with cascade risk score 7+ should be prioritized immediately to prevent 
+                  expensive chain reactions.
+                </p>
               </div>
-            </CardContent>
-          )}
+            )}
+          </CardContent>
         </Card>
 
-        {properties.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">No Properties Yet</h2>
-              <p className="text-gray-600">Add a property to start prioritizing maintenance tasks.</p>
-              <Button
-                onClick={() => setShowTaskForm(true)}
-                className="mt-6 gap-2"
-                style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-              >
-                <Plus className="w-5 h-5" />
-                Add Your First Task
-              </Button>
+        {/* Property Selector */}
+        {properties.length > 1 && (
+          <Card className="mb-6 border-2 border-red-200 bg-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-red-600" />
+                  <Label className="text-base font-bold text-red-900">Filter by Property:</Label>
+                </div>
+                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        <span className="font-semibold">All Properties ({properties.length})</span>
+                      </div>
+                    </SelectItem>
+                    {properties.map(prop => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4" />
+                          <span>{prop.address || prop.street_address || 'Unnamed Property'}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <>
-            <div className="mb-6"> {/* Added margin bottom for spacing */}
-              <Label className="mb-2 block">Select Property:</Label>
-              <Select
-                value={selectedProperty?.id || ""}
-                onValueChange={(id) => setSelectedProperty(properties.find(p => p.id === id))}
-              >
-                <SelectTrigger className="w-full md:w-96" style={{ minHeight: '48px' }}>
-                  <SelectValue placeholder="Select a property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map(prop => (
-                    <SelectItem key={prop.id} value={prop.id}>
-                      {prop.address || prop.street_address || 'Unnamed Property'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedProperty && (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6"> {/* Added margin bottom */}
-                  <Card className="border-2 border-red-200 bg-red-50">
-                    <CardContent className="p-3 md:p-4 text-center">
-                      <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-red-600 mx-auto mb-2" />
-                      <p className="text-xs md:text-sm text-gray-600 mb-1">High Priority</p>
-                      <p className="text-xl md:text-3xl font-bold text-red-700">{stats.highPriority}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-2 border-orange-200 bg-orange-50">
-                    <CardContent className="p-3 md:p-4 text-center">
-                      <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-orange-600 mx-auto mb-2" />
-                      <p className="text-xs md:text-sm text-gray-600 mb-1">Cascade Risks</p>
-                      <p className="text-xl md:text-3xl font-bold text-orange-700">{stats.cascadeRisks}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-2 border-green-200 bg-green-50">
-                    <CardContent className="p-3 md:p-4 text-center">
-                      <Zap className="w-6 h-6 md:w-8 md:h-8 text-green-600 mx-auto mb-2" />
-                      <p className="text-xs md:text-sm text-gray-600 mb-1">Current Cost</p>
-                      <p className="text-xl md:text-3xl font-bold text-green-700">
-                        ${(stats.totalCurrentCost / 1000).toFixed(1)}K
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-2 border-blue-200 bg-blue-50">
-                    <CardContent className="p-3 md:p-4 text-center">
-                      <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-blue-600 mx-auto mb-2" />
-                      <p className="text-xs md:text-sm text-gray-600 mb-1">Potential Savings</p>
-                      <p className="text-xl md:text-3xl font-bold text-blue-700">
-                        ${(stats.totalPotentialSavings / 1000).toFixed(1)}K
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card className="border-2 border-blue-300 bg-blue-50 mb-6"> {/* Added margin bottom */}
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                      <Calendar className="w-5 h-5 md:w-6 md:h-6" />
-                      Workflow Progress
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3 md:gap-4">
-                      <div className="text-center p-3 md:p-4 bg-white rounded-lg border-2 border-yellow-200">
-                        <p className="text-xs md:text-sm text-gray-600 mb-1">📋 Unscheduled</p>
-                        <p className="text-2xl md:text-3xl font-bold text-yellow-700">{workflowStats.unscheduled}</p>
-                      </div>
-                      <div className="text-center p-3 md:p-4 bg-white rounded-lg border-2 border-blue-200">
-                        <p className="text-xs md:text-sm text-gray-600 mb-1">📅 Scheduled</p>
-                        <p className="text-2xl md:text-3xl font-bold text-blue-700">{workflowStats.scheduled}</p>
-                      </div>
-                      <div className="text-center p-3 md:p-4 bg-white rounded-lg border-2 border-green-200">
-                        <p className="text-xs md:text-sm text-gray-600 mb-1">✅ Ready</p>
-                        <p className="text-2xl md:text-3xl font-bold text-green-700">{workflowStats.readyToExecute}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs md:text-sm text-gray-600 text-center italic mt-4">
-                      Move tasks from Unscheduled → Scheduled → Ready to Execute
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <AIMaintenanceCalendar
-                  propertyId={selectedProperty.id}
-                  systems={systemBaselines}
-                  inspections={inspections}
-                />
-
-                <Card className="border-2 border-purple-300">
-                  <CardHeader>
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <CardTitle className="text-lg md:text-xl" style={{ color: '#1B365D' }}>
-                        Priority Queue ({sortedTasks.length} tasks)
-                      </CardTitle>
-                      <Button
-                        onClick={() => setShowTaskForm(true)}
-                        className="gap-2"
-                        style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Task
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                      <div className="flex-1">
-                        <Label className="mb-2 block text-xs md:text-sm">Filter by Priority:</Label>
-                        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                          <SelectTrigger className="w-full md:w-64" style={{ minHeight: '48px' }}>
-                            <div className="flex items-center gap-2">
-                              <Filter className="w-4 h-4" />
-                              <SelectValue placeholder="All Priorities" />
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Priorities</SelectItem>
-                            <SelectItem value="High">🔴 High Priority</SelectItem>
-                            <SelectItem value="Medium">🟡 Medium Priority</SelectItem>
-                            <SelectItem value="Low">🔵 Low Priority</SelectItem>
-                            <SelectItem value="Routine">⚪ Routine</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex-1">
-                        <Label className="mb-2 block text-xs md:text-sm">Sort by:</Label>
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                          <SelectTrigger className="w-full md:w-64" style={{ minHeight: '48px' }}>
-                            <div className="flex items-center gap-2">
-                              <ArrowUpDown className="w-4 h-4" />
-                              <SelectValue placeholder="Smart Priority (AI)" />
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="smart">🎯 Smart Priority (AI)</SelectItem>
-                            <SelectItem value="cost">💰 Cost Savings</SelectItem>
-                            <SelectItem value="date">📅 Scheduled Date</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {sortedTasks.length === 0 ? (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                        <p className="text-gray-600 mb-4">No tasks in your priority queue yet.</p>
-                        <Button
-                          onClick={() => setShowTaskForm(true)}
-                          className="gap-2"
-                          style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Your First Task
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {sortedTasks.map((task, index) => (
-                          <PriorityTaskCard
-                            key={task.id}
-                            task={task}
-                            rank={index + 1}
-                            onPriorityChange={handlePriorityChange}
-                            onStatusChange={handleStatusChange}
-                            onDelete={handleDeleteTask}
-                            propertyId={selectedProperty.id}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </>
         )}
+
+        {/* Key Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <Card className="border-none shadow-md bg-gradient-to-br from-red-50 to-red-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Target className="w-5 h-5 text-red-600" />
+                <Badge className="bg-red-600 text-white text-xs">
+                  Holding Cell
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold text-red-700">
+                {holdingCellTasks.length}
+              </p>
+              <p className="text-xs text-gray-600">Tasks to Review</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-orange-50 to-orange-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Flame className="w-5 h-5 text-orange-600" />
+                {highCascadeCount > 0 && (
+                  <Badge className="bg-orange-600 text-white text-xs animate-pulse">
+                    Urgent
+                  </Badge>
+                )}
+              </div>
+              <p className="text-2xl font-bold text-orange-700">
+                {highCascadeCount}
+              </p>
+              <p className="text-xs text-gray-600">High Cascade Risk</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-yellow-50 to-yellow-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <DollarSign className="w-5 h-5 text-yellow-600" />
+              </div>
+              <p className="text-2xl font-bold text-yellow-700">
+                ${(totalCurrentCost / 1000).toFixed(0)}k
+              </p>
+              <p className="text-xs text-gray-600">Fix Now Cost</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <AlertTriangle className="w-5 h-5 text-green-600" />
+              </div>
+              <p className="text-2xl font-bold text-green-700">
+                ${(potentialSavings / 1000).toFixed(0)}k
+              </p>
+              <p className="text-xs text-gray-600">Potential Savings</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Actions */}
+        <Card className="border-2 border-red-200 bg-white mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="flex flex-wrap gap-3 items-center flex-1">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-red-600" />
+                  <Label className="font-semibold text-red-900">Filter:</Label>
+                </div>
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tasks</SelectItem>
+                    <SelectItem value="high_cascade">High Cascade Risk (7+)</SelectItem>
+                    <SelectItem value="high_priority">High Priority</SelectItem>
+                    <SelectItem value="High">Priority: High</SelectItem>
+                    <SelectItem value="Medium">Priority: Medium</SelectItem>
+                    <SelectItem value="Low">Priority: Low</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center gap-2">
+                  <Label className="font-semibold text-red-900">Sort by:</Label>
+                </div>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-40" style={{ minHeight: '44px' }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cascade_risk">Cascade Risk</SelectItem>
+                    <SelectItem value="cost">Cost to Fix</SelectItem>
+                    <SelectItem value="priority">Priority Level</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                onClick={() => setShowTaskForm(true)}
+                disabled={selectedProperty === 'all' && properties.length > 1}
+                className="bg-red-600 hover:bg-red-700 gap-2"
+                style={{ minHeight: '44px' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Task
+              </Button>
+            </div>
+            {selectedProperty === 'all' && properties.length > 1 && (
+              <p className="text-xs text-orange-600 mt-2">
+                Select a specific property to add tasks.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tasks Grid */}
+        {sortedTasks.length > 0 ? (
+          <div className="space-y-4">
+            {sortedTasks.map(task => (
+              <PriorityTaskCard
+                key={task.id}
+                task={task}
+                onSendToSchedule={handleSendToSchedule}
+                onMarkComplete={handleMarkComplete}
+                onDelete={handleDeleteTask}
+                property={currentProperty || properties.find(p => p.id === task.property_id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="border-2 border-red-200 bg-white">
+            <CardContent className="p-8 text-center">
+              <Target className="w-16 h-16 mx-auto mb-4 text-red-300" />
+              <h3 className="font-bold text-xl mb-2 text-red-900">
+                {holdingCellTasks.length === 0 ? 'No Tasks in Holding Cell' : 'No Tasks Match Filters'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {holdingCellTasks.length === 0 
+                  ? 'Add your first maintenance task or run an inspection to discover issues.'
+                  : 'Try adjusting your filters to see more tasks.'}
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={() => setShowTaskForm(true)}
+                  disabled={selectedProperty === 'all' && properties.length > 1}
+                  className="bg-red-600 hover:bg-red-700 gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Task Manually
+                </Button>
+                {selectedProperty !== 'all' && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-50"
+                  >
+                    <Link to={createPageUrl("Inspect") + `?property=${selectedProperty}`}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Run Inspection
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Workflow Reminder */}
+        <Card className="mt-6 border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <ArrowRight className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-red-900 mb-2">Next Steps After Prioritizing:</h3>
+                <div className="grid md:grid-cols-3 gap-3 text-sm">
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="font-semibold text-red-900 mb-1 flex items-center gap-2">
+                      <Wrench className="w-4 h-4" />
+                      DIY
+                    </p>
+                    <p className="text-xs text-gray-700">
+                      Mark execution type as DIY, then send to Schedule tab to plan when you'll do it
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <p className="font-semibold text-red-900 mb-1 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      Request Service
+                    </p>
+                    <p className="text-xs text-gray-700">
+                      Add to cart to bundle service requests, then submit for professional quotes
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-yellow-200">
+                    <p className="font-semibold text-yellow-900 mb-1 flex items-center gap-2">
+                      <Send className="w-4 h-4" />
+                      Send to Schedule
+                    </p>
+                    <p className="text-xs text-gray-700">
+                      Moves task to Schedule tab (yellow) for timeline planning
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Manual Task Form */}
+      {showTaskForm && (
+        <ManualTaskForm
+          propertyId={selectedProperty !== 'all' ? selectedProperty : properties[0]?.id}
+          onComplete={() => setShowTaskForm(false)}
+          onCancel={() => setShowTaskForm(false)}
+          open={showTaskForm}
+        />
+      )}
     </div>
   );
 }
