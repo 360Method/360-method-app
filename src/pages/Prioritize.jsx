@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +26,7 @@ import {
   Inbox,
   Archive,
   BookOpen,
-  CheckCircle2 // Added CheckCircle2 import
+  CheckCircle2
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -140,7 +139,7 @@ export default function PrioritizePage() {
     if (priorityFilter === 'all') return true;
     if (priorityFilter === 'high_cascade') return (task.cascade_risk_score || 0) >= 7;
     if (priorityFilter === 'high_priority') return task.priority === 'High';
-    if (priorityFilter === 'routine') return task.priority === 'Routine'; // Added 'routine' filter
+    if (priorityFilter === 'routine') return task.priority === 'Routine';
     return task.priority === priorityFilter;
   });
 
@@ -160,7 +159,7 @@ export default function PrioritizePage() {
   // Calculate statistics
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
   const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
-  const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length; // Added routineCount calculation
+  const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length;
   const totalCurrentCost = ticketQueueTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const totalDelayedCost = ticketQueueTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
   const potentialSavings = totalDelayedCost - totalCurrentCost;
@@ -357,7 +356,7 @@ export default function PrioritizePage() {
                   </div>
                 </div>
 
-                {/* New: Routine Seasonal Maintenance Card */}
+                {/* Routine Seasonal Maintenance Card */}
                 <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300">
                   <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -372,7 +371,7 @@ export default function PrioritizePage() {
                     <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, check heating system (cold climates)</li>
                     <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal prep, inspect insulation</li>
                     <li>• 🌸 <strong>Spring:</strong> AC tune-up, roof inspection, exterior paint check</li>
-                    <li>• ☀️ <strong>Summer:</b> HVAC filter changes, pest control, deck maintenance</li>
+                    <li>• ☀️ <strong>Summer:</strong> HVAC filter changes, pest control, deck maintenance</li>
                   </ul>
                 </div>
 
@@ -472,7 +471,6 @@ export default function PrioritizePage() {
             </CardContent>
           </Card>
 
-          {/* Updated Card for Seasonal Routine */}
           <Card className="border-none shadow-md bg-gradient-to-br from-gray-50 to-gray-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
@@ -490,7 +488,6 @@ export default function PrioritizePage() {
             </CardContent>
           </Card>
 
-          {/* Updated Card for Potential Savings */}
           <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
@@ -524,7 +521,7 @@ export default function PrioritizePage() {
                     <SelectItem value="High">Priority: High</SelectItem>
                     <SelectItem value="Medium">Priority: Medium</SelectItem>
                     <SelectItem value="Low">Priority: Low</SelectItem>
-                    <SelectItem value="routine">Priority: Routine</SelectItem> {/* Added 'routine' option */}
+                    <SelectItem value="routine">Priority: Routine</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -546,7 +543,7 @@ export default function PrioritizePage() {
               <Button
                 onClick={() => setShowTaskForm(true)}
                 disabled={selectedProperty === 'all' && properties.length > 1}
-                className="bg-red-600 hover:bg-red-700 gap-2"
+                className="bg-red-600 hover:bg-red-700 gap-2 w-full md:w-auto"
                 style={{ minHeight: '44px' }}
               >
                 <Plus className="w-4 h-4" />
@@ -584,14 +581,15 @@ export default function PrioritizePage() {
               </h3>
               <p className="text-gray-600 mb-6">
                 {ticketQueueTasks.length === 0 
-                  ? 'Add your first maintenance task, run an inspection, or check Schedule tab for seasonal maintenance suggestions.' // Updated text
+                  ? 'Add your first maintenance task, run an inspection, or check Schedule tab for seasonal maintenance suggestions.'
                   : 'Try adjusting your filters to see more tasks.'}
               </p>
-              <div className="flex gap-3 justify-center flex-wrap"> {/* Added flex-wrap for better mobile layout */}
+              <div className="flex gap-3 justify-center flex-wrap">
                 <Button
                   onClick={() => setShowTaskForm(true)}
                   disabled={selectedProperty === 'all' && properties.length > 1}
                   className="bg-red-600 hover:bg-red-700 gap-2"
+                  style={{ minHeight: '48px' }}
                 >
                   <Plus className="w-4 h-4" />
                   Add Ticket
@@ -602,17 +600,18 @@ export default function PrioritizePage() {
                       asChild
                       variant="outline"
                       className="border-red-600 text-red-600 hover:bg-red-50"
+                      style={{ minHeight: '48px' }}
                     >
                       <Link to={createPageUrl("Inspect") + `?property=${selectedProperty}`}>
                         <Eye className="w-4 h-4 mr-2" />
                         Run Inspection
                       </Link>
                     </Button>
-                    {/* New: View Seasonal Tasks Button */}
                     <Button
                       asChild
                       variant="outline"
                       className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      style={{ minHeight: '48px' }}
                     >
                       <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
                         <Calendar className="w-4 h-4 mr-2" />
@@ -655,7 +654,7 @@ export default function PrioritizePage() {
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
                     <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> {/* Ensured CheckCircle2 icon is used */}
+                      <CheckCircle2 className="w-4 h-4" />
                       Mark Complete
                     </p>
                     <p className="text-xs text-gray-700 leading-relaxed">
