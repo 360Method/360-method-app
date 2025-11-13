@@ -11,9 +11,9 @@ export const calculateTotalDoors = (properties) => {
 /**
  * Tier Configuration
  * SCOUT (free) - Learn the Method - 1 property, any size
- * PIONEER (good) - AI-Powered Pro - Up to 25 properties/doors, $8 base + $2/door after 3
- * COMMANDER (better) - Advanced AI + Collaboration - Up to 100 doors, $50 base + $3/door after 15
- * ELITE (best) - Full Enterprise Suite - Unlimited, $299 flat rate
+ * PIONEER (good) - AI-Powered Pro - Up to 25 properties/doors
+ * COMMANDER (better) - Advanced AI + Collaboration - Up to 100 doors
+ * ELITE (best) - Full Enterprise Suite - Unlimited, flat rate
  */
 export const getTierConfig = (tier) => {
   const configs = {
@@ -87,20 +87,21 @@ export const getTierConfig = (tier) => {
 
 /**
  * Calculate pricing for PIONEER (good) tier
- * $8/month base (covers first 3 doors)
- * +$2/month per door after that
+ * Annual: $8/month base (covers first 3 doors) + $2/door after
+ * Monthly: $12/month base (covers first 3 doors) + $2/door after
  * Up to 25 doors max
  */
-export const calculateGoodPricing = (totalDoors) => {
+export const calculateGoodPricing = (totalDoors, billingCycle = 'annual') => {
   const baseDoors = 3;
-  const basePrice = 8;
-  const pricePerDoor = 2;
+  const basePrice = billingCycle === 'annual' ? 8 : 12;
+  const pricePerDoor = 2; // Same for both cycles
   
   if (totalDoors <= baseDoors) {
     return {
       monthlyPrice: basePrice,
       annualPrice: basePrice * 12,
       additionalDoors: 0,
+      billingCycle,
       breakdown: {
         base: basePrice,
         additionalCost: 0
@@ -116,6 +117,7 @@ export const calculateGoodPricing = (totalDoors) => {
     monthlyPrice,
     annualPrice: monthlyPrice * 12,
     additionalDoors,
+    billingCycle,
     breakdown: {
       base: basePrice,
       additionalCost
@@ -125,20 +127,21 @@ export const calculateGoodPricing = (totalDoors) => {
 
 /**
  * Calculate pricing for COMMANDER (better) tier
- * $50/month base (covers first 15 doors)
- * +$3/month per door after that
+ * Annual: $50/month base (covers first 15 doors) + $3/door after
+ * Monthly: $60/month base (covers first 15 doors) + $3/door after
  * Up to 100 doors max
  */
-export const calculateBetterPricing = (totalDoors) => {
+export const calculateBetterPricing = (totalDoors, billingCycle = 'annual') => {
   const baseDoors = 15;
-  const basePrice = 50;
-  const pricePerDoor = 3;
+  const basePrice = billingCycle === 'annual' ? 50 : 60;
+  const pricePerDoor = 3; // Same for both cycles
   
   if (totalDoors <= baseDoors) {
     return {
       monthlyPrice: basePrice,
       annualPrice: basePrice * 12,
       additionalDoors: 0,
+      billingCycle,
       breakdown: {
         base: basePrice,
         additionalCost: 0
@@ -154,6 +157,7 @@ export const calculateBetterPricing = (totalDoors) => {
     monthlyPrice,
     annualPrice: monthlyPrice * 12,
     additionalDoors,
+    billingCycle,
     breakdown: {
       base: basePrice,
       additionalCost
@@ -163,16 +167,20 @@ export const calculateBetterPricing = (totalDoors) => {
 
 /**
  * Calculate pricing for ELITE (best) tier
- * $299/month flat rate
+ * Annual: $299/month flat rate
+ * Monthly: $350/month flat rate
  * Unlimited properties and doors
  */
-export const calculateBestPricing = () => {
+export const calculateBestPricing = (billingCycle = 'annual') => {
+  const monthlyPrice = billingCycle === 'annual' ? 299 : 350;
+  
   return {
-    monthlyPrice: 299,
-    annualPrice: 299 * 12,
+    monthlyPrice,
+    annualPrice: monthlyPrice * 12,
     additionalDoors: 0,
+    billingCycle,
     breakdown: {
-      base: 299,
+      base: monthlyPrice,
       additionalCost: 0
     }
   };
@@ -191,12 +199,12 @@ export const getRecommendedTier = (totalDoors) => {
 /**
  * Calculate pricing for all tiers
  */
-export const calculateAllTierPricing = (totalDoors) => {
+export const calculateAllTierPricing = (totalDoors, billingCycle = 'annual') => {
   return {
-    free: { monthlyPrice: 0, annualPrice: 0 },
-    good: calculateGoodPricing(totalDoors),
-    better: calculateBetterPricing(totalDoors),
-    best: calculateBestPricing()
+    free: { monthlyPrice: 0, annualPrice: 0, billingCycle },
+    good: calculateGoodPricing(totalDoors, billingCycle),
+    better: calculateBetterPricing(totalDoors, billingCycle),
+    best: calculateBestPricing(billingCycle)
   };
 };
 

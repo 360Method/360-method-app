@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users, BarChart3, FileText, Share2, ArrowUp, Compass, Flag, Star } from "lucide-react";
+import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users, BarChart3, FileText, Share2, ArrowUp, Compass, Flag, Star, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing, getRecommendedTier } from "../components/shared/TierCalculator";
@@ -16,6 +16,7 @@ export default function Pricing() {
   const [isChangingTier, setIsChangingTier] = React.useState(false);
   const [showTierDialog, setShowTierDialog] = React.useState(false);
   const [selectedNewTier, setSelectedNewTier] = React.useState(null);
+  const [billingCycle, setBillingCycle] = React.useState('annual'); // 'annual' or 'monthly'
   const pricingCardsRef = React.useRef(null);
 
   const { data: user } = useQuery({
@@ -61,9 +62,22 @@ export default function Pricing() {
   const totalDoors = calculateTotalDoors(properties);
   const recommendedTier = getRecommendedTier(totalDoors);
 
-  const goodPricing = calculateGoodPricing(totalDoors);
-  const betterPricing = calculateBetterPricing(totalDoors);
-  const bestPricing = calculateBestPricing();
+  const goodPricing = calculateGoodPricing(totalDoors, billingCycle);
+  const betterPricing = calculateBetterPricing(totalDoors, billingCycle);
+  const bestPricing = calculateBestPricing(billingCycle);
+
+  // Get pricing objects for both annual and monthly to calculate savings
+  const goodAnnualPricingObj = calculateGoodPricing(totalDoors, 'annual');
+  const goodMonthlyPricingObj = calculateGoodPricing(totalDoors, 'monthly');
+  const goodMonthlySavings = goodMonthlyPricingObj.monthlyPrice - goodAnnualPricingObj.monthlyPrice;
+  
+  const betterAnnualPricingObj = calculateBetterPricing(totalDoors, 'annual');
+  const betterMonthlyPricingObj = calculateBetterPricing(totalDoors, 'monthly');
+  const betterMonthlySavings = betterMonthlyPricingObj.monthlyPrice - betterAnnualPricingObj.monthlyPrice;
+  
+  const bestAnnualPricingObj = calculateBestPricing('annual');
+  const bestMonthlyPricingObj = calculateBestPricing('monthly');
+  const bestMonthlySavings = bestMonthlyPricingObj.monthlyPrice - bestAnnualPricingObj.monthlyPrice;
 
   // Get pricing for selected new tier
   let selectedNewTierPricing = null;
@@ -226,44 +240,76 @@ export default function Pricing() {
           </p>
         </div>
 
-        {/* Why AI-Powered Homeownership Matters */}
-        <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 mb-6 md:mb-8 shadow-lg">
+        {/* Billing Cycle Toggle */}
+        <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 mb-6 md:mb-8 shadow-lg">
           <CardContent className="p-4 md:p-6">
-            <div className="flex flex-col md:flex-row items-start gap-3 md:gap-4">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <Brain className="w-5 h-5 md:w-6 md:h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-blue-900 mb-2 md:mb-3 text-base md:text-lg">
-                  🏆 How the 360° Method Makes You a Better Homeowner
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="font-semibold text-blue-900 mb-1 text-xs md:text-sm">🧠 From Guessing → Knowing</p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      AI analyzes your home's systems and tells you <em>exactly</em> what needs attention, when, and why - before problems become expensive emergencies.
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="font-semibold text-blue-900 mb-1 text-xs md:text-sm">💰 From Reactive → Proactive</p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Cascade risk scoring prevents $10K-50K disasters by catching small issues early. You'll spend less fixing problems because you stopped them from happening.
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="font-semibold text-blue-900 mb-1 text-xs md:text-sm">📊 From Overwhelmed → Organized</p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      AI prioritizes your 47 potential tasks into a clear queue. You'll know the 3 things that matter most, with cost breakdowns and timelines.
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="font-semibold text-blue-900 mb-1 text-xs md:text-sm">🎯 From Uncertain → Confident</p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Historical tracking shows you're protecting your investment. You'll have data proving your home is safer, more valuable, and lower-risk than before.
-                    </p>
-                  </div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-900 mb-1 text-base md:text-lg">
+                    💰 Choose Your Billing Cycle
+                  </h3>
+                  <p className="text-xs md:text-sm text-blue-800 leading-relaxed">
+                    <strong>Annual billing</strong> locks in the best rates. <strong>Monthly billing</strong> offers more flexibility with a small premium.
+                  </p>
                 </div>
               </div>
+
+              {/* Toggle Buttons */}
+              <div className="flex bg-white rounded-lg p-1 border-2 border-blue-200 shadow-sm">
+                <button
+                  onClick={() => setBillingCycle('annual')}
+                  className={`px-4 md:px-6 py-2 rounded-md font-semibold text-sm md:text-base transition-all ${
+                    billingCycle === 'annual'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  style={{ minHeight: '44px' }}
+                >
+                  Annual
+                  <span className="block text-xs font-normal">Save up to 20%</span>
+                </button>
+                <button
+                  onClick={() => setBillingCycle('monthly')}
+                  className={`px-4 md:px-6 py-2 rounded-md font-semibold text-sm md:text-base transition-all ${
+                    billingCycle === 'monthly'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  style={{ minHeight: '44px' }}
+                >
+                  Monthly
+                  <span className="block text-xs font-normal">Flexible</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Explanation */}
+            <div className="mt-4 bg-white rounded-lg p-3 md:p-4 border border-blue-200">
+              <div className="grid md:grid-cols-2 gap-3 text-xs md:text-sm">
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">✓ Annual Billing (Best Value)</p>
+                  <ul className="text-gray-700 space-y-1 ml-4 list-disc">
+                    <li>Pioneer: Starts at <strong>${goodAnnualPricingObj.monthlyPrice}/month</strong> (billed ${goodAnnualPricingObj.annualPrice}/year)</li>
+                    <li>Commander: Starts at <strong>${betterAnnualPricingObj.monthlyPrice}/month</strong> (billed ${betterAnnualPricingObj.annualPrice}/year)</li>
+                    <li>Elite: <strong>${bestAnnualPricingObj.monthlyPrice}/month</strong> (billed ${bestAnnualPricingObj.annualPrice}/year)</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">◎ Monthly Billing (More Flexibility)</p>
+                  <ul className="text-gray-700 space-y-1 ml-4 list-disc">
+                    <li>Pioneer: Starts at <strong>${goodMonthlyPricingObj.monthlyPrice}/month</strong></li>
+                    <li>Commander: Starts at <strong>${betterMonthlyPricingObj.monthlyPrice}/month</strong></li>
+                    <li>Elite: <strong>${bestMonthlyPricingObj.monthlyPrice}/month</strong></li>
+                  </ul>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mt-3 italic">
+                *Additional door pricing remains the same for both billing cycles: +$2/door after 3 for Pioneer; +$3/door after 15 for Commander.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -286,6 +332,11 @@ export default function Pricing() {
                         <p className="text-2xl md:text-3xl font-bold text-green-700">
                           ${goodPricing.monthlyPrice}<span className="text-sm">/mo</span>
                         </p>
+                        {billingCycle === 'annual' && (
+                          <p className="text-xs text-green-700 font-semibold mt-1">
+                            Billed ${goodPricing.annualPrice}/year
+                          </p>
+                        )}
                         {goodPricing.additionalDoors > 0 && (
                           <p className="text-xs text-gray-600 mt-1">
                             ${goodPricing.breakdown.base} + ${goodPricing.breakdown.additionalCost} for {goodPricing.additionalDoors} extra door{goodPricing.additionalDoors > 1 ? 's' : ''}
@@ -299,6 +350,11 @@ export default function Pricing() {
                         <p className="text-2xl md:text-3xl font-bold text-purple-700">
                           ${betterPricing.monthlyPrice}<span className="text-sm">/mo</span>
                         </p>
+                        {billingCycle === 'annual' && (
+                          <p className="text-xs text-purple-700 font-semibold mt-1">
+                            Billed ${betterPricing.annualPrice}/year
+                          </p>
+                        )}
                         {betterPricing.additionalDoors > 0 && (
                           <p className="text-xs text-gray-600 mt-1">
                             ${betterPricing.breakdown.base} + ${betterPricing.breakdown.additionalCost} for {betterPricing.additionalDoors} extra door{betterPricing.additionalDoors > 1 ? 's' : ''}
@@ -311,6 +367,11 @@ export default function Pricing() {
                       <p className="text-2xl md:text-3xl font-bold text-orange-700">
                         ${bestPricing.monthlyPrice}<span className="text-sm">/mo</span>
                       </p>
+                      {billingCycle === 'annual' && (
+                        <p className="text-xs text-orange-700 font-semibold mt-1">
+                          Billed ${bestPricing.annualPrice}/year
+                        </p>
+                      )}
                       <p className="text-xs text-gray-600 mt-1">
                         Flat rate, unlimited doors
                       </p>
@@ -396,7 +457,7 @@ export default function Pricing() {
               </CardContent>
             </Card>
 
-            {/* Pioneer Tier (Good) */}
+            {/* Pioneer Tier (Good/Pro) */}
             <Card className={`border-2 ${currentTier === 'good' ? 'border-green-600 shadow-lg' : recommendedTier === 'good' ? 'border-green-400 shadow-lg' : 'border-green-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'good' ? (
@@ -415,12 +476,19 @@ export default function Pricing() {
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">AI-Powered Pro</p>
                 <div className="mb-3 md:mb-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl md:text-4xl font-bold text-green-700">$8</span>
+                    <span className="text-3xl md:text-4xl font-bold text-green-700">${goodPricing.monthlyPrice}</span>
                     <span className="text-gray-600 text-sm">/month</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Up to 3 doors • +$2/door after
-                  </p>
+                  {billingCycle === 'annual' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Billed ${goodPricing.annualPrice}/year
+                    </p>
+                  )}
+                  {billingCycle === 'monthly' && goodMonthlySavings > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Save ${goodMonthlySavings}/mo with annual billing
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-2 md:p-3 mb-3 md:mb-4 border border-green-200">
@@ -477,7 +545,7 @@ export default function Pricing() {
               </CardContent>
             </Card>
 
-            {/* Commander Tier (Better) */}
+            {/* Commander Tier (Better/Premium) */}
             <Card className={`border-2 ${currentTier === 'better' ? 'border-purple-600 shadow-lg' : recommendedTier === 'better' ? 'border-purple-400 shadow-lg' : 'border-purple-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'better' ? (
@@ -496,12 +564,19 @@ export default function Pricing() {
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">Advanced AI + Collaboration</p>
                 <div className="mb-3 md:mb-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl md:text-4xl font-bold text-purple-700">$50</span>
+                    <span className="text-3xl md:text-4xl font-bold text-purple-700">${betterPricing.monthlyPrice}</span>
                     <span className="text-gray-600 text-sm">/month</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Up to 15 doors • +$3/door after
-                  </p>
+                  {billingCycle === 'annual' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Billed ${betterPricing.annualPrice}/year
+                    </p>
+                  )}
+                  {billingCycle === 'monthly' && betterMonthlySavings > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Save ${betterMonthlySavings}/mo with annual billing
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-purple-50 rounded-lg p-2 md:p-3 mb-3 md:mb-4 border border-purple-200">
@@ -558,7 +633,7 @@ export default function Pricing() {
               </CardContent>
             </Card>
 
-            {/* Elite Tier (Best) */}
+            {/* Elite Tier (Best/Enterprise) */}
             <Card className={`border-2 ${currentTier === 'best' ? 'border-orange-600 shadow-lg' : recommendedTier === 'best' ? 'border-orange-400 shadow-lg' : 'border-orange-200'}`}>
               <CardContent className="p-4 md:p-6">
                 {currentTier === 'best' ? (
@@ -577,12 +652,19 @@ export default function Pricing() {
                 <p className="text-xs text-gray-500 mb-2 md:mb-3">Full Enterprise Suite</p>
                 <div className="mb-3 md:mb-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl md:text-4xl font-bold text-orange-700">$299</span>
+                    <span className="text-3xl md:text-4xl font-bold text-orange-700">${bestPricing.monthlyPrice}</span>
                     <span className="text-gray-600 text-sm">/month</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Unlimited doors • Flat rate
-                  </p>
+                  {billingCycle === 'annual' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Billed ${bestPricing.annualPrice}/year
+                    </p>
+                  )}
+                  {billingCycle === 'monthly' && bestMonthlySavings > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Save ${bestMonthlySavings}/mo with annual billing
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-orange-50 rounded-lg p-2 md:p-3 mb-3 md:mb-4 border border-orange-200">
@@ -742,34 +824,34 @@ export default function Pricing() {
             
             <div className="space-y-3 md:space-y-4">
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Pioneer (Good):</strong> $8/month covers your first 3 doors. Add $2/month for each door beyond that, up to 25 doors maximum.
+                <strong>Pioneer (Good):</strong> ${goodMonthlyPricingObj.monthlyPrice}/month covers your first 3 doors. Add $2/month for each door beyond that, up to 25 doors maximum.
               </p>
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Commander (Better):</strong> $50/month covers your first 15 doors. Add $3/month for each door beyond that, up to 100 doors maximum.
+                <strong>Commander (Better):</strong> ${betterMonthlyPricingObj.monthlyPrice}/month covers your first 15 doors. Add $3/month for each door beyond that, up to 100 doors maximum.
               </p>
               <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                <strong>Elite (Best):</strong> $299/month flat rate, unlimited doors. Best value for 80+ doors.
+                <strong>Elite (Best):</strong> ${bestMonthlyPricingObj.monthlyPrice}/month flat rate, unlimited doors. Best value for 80+ doors.
               </p>
 
               <div className="bg-white rounded-lg p-3 md:p-4 mt-3 md:mt-4">
-                <p className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Real-World Examples:</p>
+                <p className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Real-World Examples (based on monthly billing):</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs md:text-sm text-gray-700">
                   <div>
                     <strong>Pioneer Tier:</strong>
                     <ul className="space-y-1 ml-4 mt-2">
-                      <li>• 1 house = <strong>$8/mo</strong></li>
-                      <li>• 1 house + 1 duplex (3 doors) = <strong>$8/mo</strong></li>
-                      <li>• 2 houses + 1 fourplex (6 doors) = <strong>$14/mo</strong></li>
-                      <li>• Portfolio with 25 doors = <strong>$52/mo</strong></li>
+                      <li>• 1 house = <strong>${calculateGoodPricing(1, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• 1 house + 1 duplex (3 doors) = <strong>${calculateGoodPricing(3, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• 2 houses + 1 fourplex (6 doors) = <strong>${calculateGoodPricing(6, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• Portfolio with 25 doors = <strong>${calculateGoodPricing(25, 'monthly').monthlyPrice}/mo</strong></li>
                     </ul>
                   </div>
                   <div>
                     <strong>Commander Tier:</strong>
                     <ul className="space-y-1 ml-4 mt-2">
-                      <li>• 15 doors = <strong>$50/mo</strong></li>
-                      <li>• 30 doors = <strong>$95/mo</strong></li>
-                      <li>• 50 doors = <strong>$155/mo</strong></li>
-                      <li>• 100 doors = <strong>$305/mo</strong></li>
+                      <li>• 15 doors = <strong>${calculateBetterPricing(15, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• 30 doors = <strong>${calculateBetterPricing(30, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• 50 doors = <strong>${calculateBetterPricing(50, 'monthly').monthlyPrice}/mo</strong></li>
+                      <li>• 100 doors = <strong>${calculateBetterPricing(100, 'monthly').monthlyPrice}/mo</strong></li>
                     </ul>
                   </div>
                 </div>
@@ -777,7 +859,7 @@ export default function Pricing() {
 
               <div className="bg-green-50 rounded-lg p-3 border-l-4 border-green-600">
                 <p className="text-xs md:text-sm text-green-900 leading-relaxed">
-                  <strong>💡 Smart Tip:</strong> Elite becomes better value around 80 doors ($299 flat vs. $245+ variable). Plus you get multi-user accounts and dedicated support.
+                  <strong>💡 Smart Tip:</strong> Elite becomes better value around 80 doors (${bestMonthlyPricingObj.monthlyPrice} flat vs. ${calculateBetterPricing(80, 'monthly').monthlyPrice}+ variable). Plus you get multi-user accounts and dedicated support.
                 </p>
               </div>
             </div>
@@ -990,6 +1072,7 @@ export default function Pricing() {
           newTierConfig={getTierConfig(selectedNewTier)}
           newTierPricing={selectedNewTierPricing}
           totalDoors={totalDoors}
+          billingCycle={billingCycle}
           isLoading={isChangingTier}
         />
       )}

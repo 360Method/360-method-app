@@ -14,6 +14,7 @@ export default function TierChangeDialog({
   newTierConfig,
   newTierPricing,
   totalDoors,
+  billingCycle = 'annual',
   isLoading = false
 }) {
   if (!open) return null;
@@ -141,6 +142,15 @@ export default function TierChangeDialog({
                     <p className="font-bold text-xl" style={{ color: newTierConfig.color }}>
                       ${newTierPricing.monthlyPrice}<span className="text-sm">/mo</span>
                     </p>
+                    {billingCycle === 'annual' ? (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Billed ${newTierPricing.annualPrice}/year
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Billed monthly
+                      </p>
+                    )}
                     {newTierPricing.additionalDoors > 0 && (
                       <p className="text-xs text-gray-600 mt-1">
                         ${newTierPricing.breakdown.base} + ${newTierPricing.breakdown.additionalCost} for {newTierPricing.additionalDoors} doors
@@ -251,8 +261,12 @@ export default function TierChangeDialog({
                     <span className="font-semibold">${newTierPricing.monthlyPrice}</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-600">
-                    <span>Annual:</span>
+                    <span>{billingCycle === 'annual' ? 'Annual (billed upfront):' : 'Annual (if monthly):'}</span>
                     <span>${newTierPricing.annualPrice}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Billing Cycle:</span>
+                    <span className="font-semibold capitalize">{billingCycle}</span>
                   </div>
                 </div>
               </div>
