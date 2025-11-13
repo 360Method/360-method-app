@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,12 @@ export default function PropertyConfirmation({ data, onEdit, onConfirm, isCreati
   React.useEffect(() => {
     console.log('PropertyConfirmation - Received data:', data);
   }, [data]);
+
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const getPropertyUseLabel = (type) => {
     const labels = {
       'primary': 'Primary Residence',
@@ -26,6 +33,10 @@ export default function PropertyConfirmation({ data, onEdit, onConfirm, isCreati
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Badge className="bg-green-600 text-white">Step {hasRentalConfig ? '5 of 5' : '4 of 4'}</Badge>
+          <span className="text-sm text-gray-600">Review & confirm</span>
+        </div>
         <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
           Confirm Property Details
         </h2>
@@ -37,6 +48,7 @@ export default function PropertyConfirmation({ data, onEdit, onConfirm, isCreati
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#28A745' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#28A745' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#28A745' }} />
+          {hasRentalConfig && <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#28A745' }} />}
         </div>
       </div>
 

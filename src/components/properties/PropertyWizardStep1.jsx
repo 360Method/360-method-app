@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,11 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
   const [appliedFields, setAppliedFields] = React.useState({});
   const [successMessage, setSuccessMessage] = React.useState(null);
+
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Reset AI property data state when returning to this step
   React.useEffect(() => {
@@ -314,14 +320,19 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-          Add New Property - Step 1 of 4
+        <div className="flex items-center gap-2 mb-3">
+          <Badge className="bg-blue-600 text-white">Step 1 of 5</Badge>
+          <span className="text-sm text-gray-600">Let's get started!</span>
+        </div>
+        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+          Property Address
         </h2>
         <p className="text-gray-600 mb-4">
           Let's start with your property's address
         </p>
         <div className="flex gap-2">
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
+          <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
@@ -419,6 +430,17 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                   <p className="font-semibold text-purple-900">Searching public records...</p>
                   <p className="text-sm text-gray-700">Looking up Zillow, Redfin, and county assessor data</p>
                 </div>
+              </div>
+            )}
+
+            {!loadingPropertyData && !aiPropertyData && propertyDataFetched && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="font-semibold text-yellow-900 mb-2">
+                  ⚠️ No AI Property Data Found
+                </p>
+                <p className="text-sm text-gray-700">
+                  We couldn't find public records for this address at the moment. You can manually enter details in the next steps.
+                </p>
               </div>
             )}
 
@@ -660,6 +682,7 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                   {formData.property_type === "Fourplex" && "4 separate units. You'll track maintenance for each unit individually."}
                   {formData.property_type === "Condo/Townhouse" && "You own the interior. HOA typically handles exterior/common areas."}
                   {formData.property_type === "Mobile/Manufactured Home" && "Special systems and foundation considerations."}
+                  {(formData.property_type === "Small Multi-Family (5-12 units)" || formData.property_type === "Apartment Building (13+ units)") && "For multi-family properties, you'll manage common area systems and systems specific to each unit."}
                 </p>
               </CardContent>
             </Card>

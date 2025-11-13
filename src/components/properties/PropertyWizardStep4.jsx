@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge"; // Added Badge import
 
 export default function PropertyWizardStep4({ data, onChange, onNext, onBack, isCreating }) {
   const [formData, setFormData] = React.useState({
@@ -19,6 +21,11 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack, is
     insurance_provider: data.insurance_provider || "",
     insurance_policy: data.insurance_policy || ""
   });
+
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const updateField = (field, value) => {
     const updated = { ...formData, [field]: value };
@@ -44,11 +51,17 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack, is
       }
     : null;
 
+  const hasRentalConfig = data.property_use_type === 'rental' || data.property_use_type === 'mixed'; // Adjusted logic for rental config
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-          Add New Property - Step 4 of 4
+        <div className="flex items-center gap-2 mb-3">
+          <Badge className="bg-green-600 text-white">Step {hasRentalConfig ? '4 of 5' : '3 of 4'}</Badge>
+          <span className="text-sm text-gray-600">Financial information</span>
+        </div>
+        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+          Financial Details
         </h2>
         <p className="text-gray-600 mb-4">
           Property: {data.street_address}, {data.city}, {data.state}
@@ -58,6 +71,7 @@ export default function PropertyWizardStep4({ data, onChange, onNext, onBack, is
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
+          {hasRentalConfig && <div className="h-2 flex-1 rounded-full bg-gray-200" />}
         </div>
       </div>
 

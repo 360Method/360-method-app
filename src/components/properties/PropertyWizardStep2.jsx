@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,11 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
     garage_type: !!data.garage_type
   };
 
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   React.useEffect(() => {
     // Initialize units array if multi-family
     if (isMultiFamily && formData.units.length === 0) {
@@ -66,7 +72,7 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
       setFormData(updated);
       onChange(updated);
     }
-  }, [isMultiFamily]);
+  }, [isMultiFamily, formData.door_count, formData.units.length, onChange]); // Added dependencies
 
   const updateField = (field, value) => {
     const updated = { ...formData, [field]: value };
@@ -103,8 +109,12 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-          Add New Property - Step 2 of 4
+        <div className="flex items-center gap-2 mb-3">
+          <Badge className="bg-blue-600 text-white">Step 2 of 5</Badge>
+          <span className="text-sm text-gray-600">Tell us about your property</span>
+        </div>
+        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+          Property Details
         </h2>
         <p className="text-gray-600 mb-4">
           Property: {data.street_address}, {data.city}, {data.state}<br />
@@ -113,6 +123,7 @@ export default function PropertyWizardStep2({ data, onChange, onNext, onBack }) 
         <div className="flex gap-2">
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
+          <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
         </div>

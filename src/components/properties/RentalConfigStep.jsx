@@ -13,7 +13,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     rental_config: data.rental_config || {
       rental_type: '',
       rental_type_other: '',
-      number_of_rental_units: 1,
+      number_of_rental_units: propertyUseType !== 'primary_with_rental' ? (data.door_count || 1) : 1,
       rental_square_footage: '',
       is_furnished: false,
       furnishing_level: 'unfurnished',
@@ -36,6 +36,13 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // For full rental properties, sync number_of_rental_units with door_count
+  React.useEffect(() => {
+    if (propertyUseType !== 'primary_with_rental' && data.door_count) {
+      updateRentalConfig('number_of_rental_units', data.door_count);
+    }
+  }, [data.door_count, propertyUseType]);
 
   const updateRentalConfig = (field, value) => {
     const updated = {
@@ -84,6 +91,9 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     
     onNext();
   };
+
+  // Determine if this is a primary_with_rental (needs extra questions)
+  const isPrimaryWithRental = propertyUseType === 'primary_with_rental';
 
   // Render based on property type
   const renderContent = () => {
@@ -346,6 +356,23 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     if (propertyUseType === 'rental_unfurnished') {
       return (
         <>
+          {/* Auto-populated door count notice for full rental properties */}
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="font-semibold text-blue-900 text-sm">
+                    📋 Number of Units: {data.door_count || 1}
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    Based on property details from previous step
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-2 border-green-300 bg-green-50 mb-6">
             <CardContent className="p-6">
               <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
@@ -438,6 +465,23 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     if (propertyUseType === 'rental_furnished') {
       return (
         <>
+          {/* Auto-populated door count notice */}
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="font-semibold text-blue-900 text-sm">
+                    📋 Number of Units: {data.door_count || 1}
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    Based on property details from previous step
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
             <CardContent className="p-6">
               <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
@@ -586,6 +630,23 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     if (propertyUseType === 'vacation_rental') {
       return (
         <>
+          {/* Auto-populated door count notice */}
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="font-semibold text-blue-900 text-sm">
+                    📋 Number of Units: {data.door_count || 1}
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    Based on property details from previous step
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-2 border-teal-300 bg-teal-50 mb-6">
             <CardContent className="p-6">
               <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '20px' }}>
@@ -746,7 +807,9 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
           Rental Configuration
         </h2>
         <p className="text-gray-600 mb-4">
-          Help us understand your rental setup so we can provide accurate maintenance planning
+          {isPrimaryWithRental 
+            ? "Tell us about the rental portion of your property"
+            : `Configure your ${data.door_count || 1}-unit rental property`}
         </p>
         <div className="flex gap-2">
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
