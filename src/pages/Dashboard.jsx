@@ -63,19 +63,41 @@ export default function Dashboard() {
     queryFn: () => base44.auth.me()
   });
 
+  // Get primary property for single-property filtering
+  const primaryProperty = properties.length > 0 ? properties[0] : null;
+
+  // Fetch data filtered by primary property if single property, otherwise all
   const { data: allSystems = [] } = useQuery({
-    queryKey: ['allSystemBaselines'],
-    queryFn: () => base44.entities.SystemBaseline.list()
+    queryKey: ['allSystemBaselines', primaryProperty?.id],
+    queryFn: () => {
+      if (properties.length === 1 && primaryProperty) {
+        return base44.entities.SystemBaseline.filter({ property_id: primaryProperty.id });
+      }
+      return base44.entities.SystemBaseline.list();
+    },
+    enabled: properties.length > 0
   });
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['allMaintenanceTasks'],
-    queryFn: () => base44.entities.MaintenanceTask.list('-created_date')
+    queryKey: ['allMaintenanceTasks', primaryProperty?.id],
+    queryFn: () => {
+      if (properties.length === 1 && primaryProperty) {
+        return base44.entities.MaintenanceTask.filter({ property_id: primaryProperty.id }, '-created_date');
+      }
+      return base44.entities.MaintenanceTask.list('-created_date');
+    },
+    enabled: properties.length > 0
   });
 
   const { data: allInspections = [] } = useQuery({
-    queryKey: ['allInspections'],
-    queryFn: () => base44.entities.Inspection.list('-created_date')
+    queryKey: ['allInspections', primaryProperty?.id],
+    queryFn: () => {
+      if (properties.length === 1 && primaryProperty) {
+        return base44.entities.Inspection.filter({ property_id: primaryProperty.id }, '-created_date');
+      }
+      return base44.entities.Inspection.list('-created_date');
+    },
+    enabled: properties.length > 0
   });
 
   const updateUserMutation = useMutation({
@@ -505,9 +527,6 @@ export default function Dashboard() {
 
   }
 
-  // For single property, get the first property for seasonal suggestions
-  const primaryProperty = properties[0];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="mobile-container md:max-w-7xl md:mx-auto">
@@ -624,7 +643,7 @@ export default function Dashboard() {
                     'bg-purple-600 hover:bg-purple-700'}`
                     }>
 
-                        <Link to={rec.url}>
+                        <Link to={rec.url + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
                           {rec.action}
                           <ChevronRight className="w-4 h-4" />
                         </Link>
