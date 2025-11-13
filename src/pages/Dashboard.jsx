@@ -77,18 +77,23 @@ export default function Dashboard() {
   });
 
   // Determine which property to show based on filter
-  const filteredProperty = selectedPropertyFilter === 'all' ? null : 
+  const filteredProperty = selectedPropertyFilter === 'all' ? null :
     properties.find(p => p.id === selectedPropertyFilter);
-  
+
   const isShowingAllProperties = selectedPropertyFilter === 'all';
   const displayedProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
 
-  // Fetch data based on selected property filter
+  // Get active property IDs for filtering
+  const activePropertyIds = properties.map(p => p.id);
+
+  // Fetch data based on selected property filter - FIXED to only show data for active properties
   const { data: allSystems = [] } = useQuery({
     queryKey: ['allSystemBaselines', selectedPropertyFilter],
-    queryFn: () => {
+    queryFn: async () => {
       if (selectedPropertyFilter === 'all') {
-        return base44.entities.SystemBaseline.list();
+        // Fetch all systems, then filter to only active properties
+        const allSystemsList = await base44.entities.SystemBaseline.list();
+        return allSystemsList.filter(s => activePropertyIds.includes(s.property_id));
       } else {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
@@ -98,9 +103,11 @@ export default function Dashboard() {
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['allMaintenanceTasks', selectedPropertyFilter],
-    queryFn: () => {
+    queryFn: async () => {
       if (selectedPropertyFilter === 'all') {
-        return base44.entities.MaintenanceTask.list('-created_date');
+        // Fetch all tasks, then filter to only active properties
+        const allTasksList = await base44.entities.MaintenanceTask.list('-created_date');
+        return allTasksList.filter(t => activePropertyIds.includes(t.property_id));
       } else {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
@@ -110,9 +117,11 @@ export default function Dashboard() {
 
   const { data: allInspections = [] } = useQuery({
     queryKey: ['allInspections', selectedPropertyFilter],
-    queryFn: () => {
+    queryFn: async () => {
       if (selectedPropertyFilter === 'all') {
-        return base44.entities.Inspection.list('-created_date');
+        // Fetch all inspections, then filter to only active properties
+        const allInspectionsList = await base44.entities.Inspection.list('-created_date');
+        return allInspectionsList.filter(i => activePropertyIds.includes(i.property_id));
       } else {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
@@ -295,7 +304,7 @@ export default function Dashboard() {
                     🚀 Start Your 5-Minute Quick Setup
                   </h3>
                   <p className="text-sm md:text-base text-gray-700 mb-4 leading-relaxed">
-                    Our guided onboarding helps you add your first property, understand how the 360° Method works, 
+                    Our guided onboarding helps you add your first property, understand how the 360° Method works,
                     and choose the best documentation path for your needs. You'll be protecting your investment in minutes!
                   </p>
 
@@ -369,7 +378,7 @@ export default function Dashboard() {
                       Phase I: AWARE
                     </h4>
                     <p className="text-sm text-gray-700 mb-3">
-                      <strong>Know what you have.</strong> Document every system, inspect regularly, and track all maintenance. 
+                      <strong>Know what you have.</strong> Document every system, inspect regularly, and track all maintenance.
                       This creates your property's "digital twin" and baseline knowledge.
                     </p>
                     <div className="grid md:grid-cols-3 gap-3">
@@ -410,7 +419,7 @@ export default function Dashboard() {
                       Phase II: ACT
                     </h4>
                     <p className="text-sm text-gray-700 mb-3">
-                      <strong>Make smart decisions.</strong> Prioritize what matters most, schedule work strategically, 
+                      <strong>Make smart decisions.</strong> Prioritize what matters most, schedule work strategically,
                       and execute maintenance before small issues become expensive disasters.
                     </p>
                     <div className="grid md:grid-cols-3 gap-3">
@@ -451,7 +460,7 @@ export default function Dashboard() {
                       Phase III: ADVANCE
                     </h4>
                     <p className="text-sm text-gray-700 mb-3">
-                      <strong>Build long-term value.</strong> Forecast future expenses, invest in strategic upgrades, 
+                      <strong>Build long-term value.</strong> Forecast future expenses, invest in strategic upgrades,
                       and scale your operations across multiple properties for maximum ROI.
                     </p>
                     <div className="grid md:grid-cols-3 gap-3">
@@ -488,7 +497,7 @@ export default function Dashboard() {
                   <div>
                     <h4 className="font-bold text-purple-900 mb-1">The Result:</h4>
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      <strong>Prevent $25K-50K+ in disasters</strong> • <strong>Add $8K-15K to resale value</strong> • 
+                      <strong>Prevent $25K-50K+ in disasters</strong> • <strong>Add $8K-15K to resale value</strong> •
                       <strong> Budget 2-5 years ahead</strong> • <strong>Save 30%+ on maintenance costs</strong>
                     </p>
                   </div>
@@ -496,7 +505,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Free Tier Notice */}
           {isFreeTier &&
           <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
@@ -525,7 +534,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           }
-          
+
           {/* Manual Property Add Option - Bottom of Page */}
           <div className="text-center pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 mb-3">
@@ -636,7 +645,7 @@ export default function Dashboard() {
               {!isShowingAllProperties && filteredProperty && filteredProperty.door_count > 1 && (
                 <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-xs text-purple-900">
-                    <strong>Multi-Unit Property:</strong> This property has {filteredProperty.door_count} units. 
+                    <strong>Multi-Unit Property:</strong> This property has {filteredProperty.door_count} units.
                     All metrics and costs reflect the entire property.
                   </p>
                 </div>
@@ -746,7 +755,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <Home className="w-5 h-5 text-blue-600" />
                   <Badge className="bg-blue-600 text-white text-xs">
-                    {isShowingAllProperties ? 
+                    {isShowingAllProperties ?
                       (isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length) :
                       '1'
                     }
@@ -858,7 +867,7 @@ export default function Dashboard() {
               <div className="bg-white rounded-lg p-4 border border-indigo-200">
                 <h4 className="font-bold text-indigo-900 mb-2 text-sm">💡 Why the 360° Method Matters:</h4>
                 <p className="text-xs text-gray-700 leading-relaxed mb-3">
-                  Most homeowners react to problems—they replace systems when they fail during peak season at emergency pricing. 
+                  Most homeowners react to problems—they replace systems when they fail during peak season at emergency pricing.
                   The 360° Method flips this: <strong>you stay ahead of issues, plan replacements on your timeline, and save 30%+ on maintenance costs.</strong>
                 </p>
                 <div className="grid md:grid-cols-3 gap-3 text-xs">
@@ -1031,7 +1040,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Overall Progress Summary */}
             <div className="p-4 bg-white rounded-lg border-2 border-indigo-300 shadow-sm">
               <div className="flex items-center justify-between mb-2">
