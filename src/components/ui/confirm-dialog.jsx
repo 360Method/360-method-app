@@ -11,19 +11,13 @@ export default function ConfirmDialog({
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "destructive" // "destructive" or "default"
+  variant = "destructive" // "destructive", "warning", or "default"
 }) {
   const [confirming, setConfirming] = React.useState(false);
 
   const handleConfirm = async () => {
-    // Guard clause: if onConfirm is not provided or not a function, just close
     if (!onConfirm || typeof onConfirm !== 'function') {
-      console.error('ConfirmDialog: onConfirm prop is required and must be a function', {
-        open,
-        title,
-        hasOnConfirm: !!onConfirm,
-        onConfirmType: typeof onConfirm
-      });
+      console.error('ConfirmDialog: onConfirm prop is required and must be a function');
       if (onClose && typeof onClose === 'function') {
         onClose();
       }
@@ -49,17 +43,28 @@ export default function ConfirmDialog({
     }
   };
 
+  const getVariantColor = () => {
+    switch (variant) {
+      case "destructive":
+        return { bg: "bg-red-100", icon: "text-red-600", button: "#DC3545" };
+      case "warning":
+        return { bg: "bg-orange-100", icon: "text-orange-600", button: "#FF6B35" };
+      default:
+        return { bg: "bg-blue-100", icon: "text-blue-600", button: "#28A745" };
+    }
+  };
+
+  const colors = getVariantColor();
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogOverlay className="bg-black/75" />
       <DialogContent className="max-w-md bg-white" style={{ backgroundColor: '#FFFFFF' }}>
         <DialogHeader style={{ backgroundColor: '#FFFFFF' }}>
           <DialogTitle className="flex items-center gap-3" style={{ color: '#1B365D' }}>
-            {variant === "destructive" && (
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-            )}
+            <div className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0`}>
+              <AlertTriangle className={`w-6 h-6 ${colors.icon}`} />
+            </div>
             <span>{title}</span>
           </DialogTitle>
         </DialogHeader>
@@ -90,7 +95,7 @@ export default function ConfirmDialog({
             disabled={confirming || !onConfirm}
             className="flex-1"
             style={{ 
-              backgroundColor: variant === "destructive" ? '#DC3545' : '#28A745',
+              backgroundColor: colors.button,
               color: '#FFFFFF',
               minHeight: '48px',
               opacity: !onConfirm ? 0.5 : 1
