@@ -32,6 +32,11 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
     }
   });
 
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const updateRentalConfig = (field, value) => {
     const updated = {
       rental_config: {
@@ -731,17 +736,23 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* Header with Step Progress */}
       <div className="mb-6">
-        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '24px' }}>
-          Add New Property - Rental Configuration
+        <div className="flex items-center gap-2 mb-3">
+          <Badge className="bg-orange-600 text-white">Step 3 of 5</Badge>
+          <span className="text-sm text-gray-600">Almost there!</span>
+        </div>
+        <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
+          Rental Configuration
         </h2>
         <p className="text-gray-600 mb-4">
-          Help us understand your rental setup
+          Help us understand your rental setup so we can provide accurate maintenance planning
         </p>
         <div className="flex gap-2">
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
           <div className="h-2 flex-1 rounded-full" style={{ backgroundColor: '#FF6B35' }} />
+          <div className="h-2 flex-1 rounded-full bg-gray-200" />
           <div className="h-2 flex-1 rounded-full bg-gray-200" />
         </div>
       </div>
