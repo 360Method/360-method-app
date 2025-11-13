@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Home,
   AlertTriangle,
@@ -30,7 +31,8 @@ import {
   Wrench,
   BookOpen,
   Users,
-  MapPin } from
+  MapPin,
+  Building2 } from
 "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -41,11 +43,18 @@ import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import MiniCalendar from "../components/dashboard/MiniCalendar";
 
+const Label = ({ children, className = "", ...props }) => (
+  <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
+    {children}
+  </label>
+);
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
@@ -63,39 +72,46 @@ export default function Dashboard() {
     queryFn: () => base44.auth.me()
   });
 
-  // Get primary property for single-property filtering
-  const primaryProperty = properties.length > 0 ? properties[0] : null;
+  // Determine which property to show based on filter
+  const filteredProperty = selectedPropertyFilter === 'all' ? null : 
+    properties.find(p => p.id === selectedPropertyFilter);
+  
+  const isShowingAllProperties = selectedPropertyFilter === 'all';
+  const displayedProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
 
-  // Fetch data filtered by primary property if single property, otherwise all
+  // Fetch data based on selected property filter
   const { data: allSystems = [] } = useQuery({
-    queryKey: ['allSystemBaselines', primaryProperty?.id],
+    queryKey: ['allSystemBaselines', selectedPropertyFilter],
     queryFn: () => {
-      if (properties.length === 1 && primaryProperty) {
-        return base44.entities.SystemBaseline.filter({ property_id: primaryProperty.id });
+      if (selectedPropertyFilter === 'all') {
+        return base44.entities.SystemBaseline.list();
+      } else {
+        return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
-      return base44.entities.SystemBaseline.list();
     },
     enabled: properties.length > 0
   });
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['allMaintenanceTasks', primaryProperty?.id],
+    queryKey: ['allMaintenanceTasks', selectedPropertyFilter],
     queryFn: () => {
-      if (properties.length === 1 && primaryProperty) {
-        return base44.entities.MaintenanceTask.filter({ property_id: primaryProperty.id }, '-created_date');
+      if (selectedPropertyFilter === 'all') {
+        return base44.entities.MaintenanceTask.list('-created_date');
+      } else {
+        return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
-      return base44.entities.MaintenanceTask.list('-created_date');
     },
     enabled: properties.length > 0
   });
 
   const { data: allInspections = [] } = useQuery({
-    queryKey: ['allInspections', primaryProperty?.id],
+    queryKey: ['allInspections', selectedPropertyFilter],
     queryFn: () => {
-      if (properties.length === 1 && primaryProperty) {
-        return base44.entities.Inspection.filter({ property_id: primaryProperty.id }, '-created_date');
+      if (selectedPropertyFilter === 'all') {
+        return base44.entities.Inspection.list('-created_date');
+      } else {
+        return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
-      return base44.entities.Inspection.list('-created_date');
     },
     enabled: properties.length > 0
   });
@@ -113,13 +129,13 @@ export default function Dashboard() {
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
   const canAddProperty = properties.length < propertyLimit;
 
-  // Calculate metrics
-  const avgHealthScore = properties.length > 0 ?
-  Math.round(properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length) :
+  // Calculate metrics based on displayed properties
+  const avgHealthScore = displayedProperties.length > 0 ?
+  Math.round(displayedProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayedProperties.length) :
   0;
 
-  const avgBaselineCompletion = properties.length > 0 ?
-  Math.round(properties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / properties.length) :
+  const avgBaselineCompletion = displayedProperties.length > 0 ?
+  Math.round(displayedProperties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / displayedProperties.length) :
   0;
 
   const highPriorityTasks = allTasks.filter((t) =>
@@ -140,8 +156,8 @@ export default function Dashboard() {
     t.status === 'Completed';
   }).length;
 
-  const totalSpent = properties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
-  const totalPrevented = properties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
+  const totalSpent = displayedProperties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
+  const totalPrevented = displayedProperties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
 
   const upcomingTasks = scheduledTasks.
   map((t) => ({
@@ -538,9 +554,9 @@ export default function Dashboard() {
                 {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                {properties.length === 1 ?
-                `Managing ${primaryProperty?.address || 'your property'}` :
-                `Managing ${properties.length} properties`
+                {isShowingAllProperties ?
+                `Managing ${properties.length} ${properties.length === 1 ? 'property' : 'properties'}` :
+                `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
                 }
               </p>
             </div>
@@ -562,6 +578,68 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Property Selector - Prominent for Multi-Property Users */}
+        {properties.length > 1 &&
+        <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-indigo-600" />
+                  <Label className="text-base font-bold text-indigo-900">View Property:</Label>
+                </div>
+                <Select value={selectedPropertyFilter} onValueChange={setSelectedPropertyFilter}>
+                  <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        <span className="font-semibold">All Properties ({properties.length})</span>
+                      </div>
+                    </SelectItem>
+                    {properties.map(prop => {
+                      const doorCount = prop.door_count || 1;
+                      const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : '';
+                      return (
+                        <SelectItem key={prop.id} value={prop.id}>
+                          <div className="flex items-center gap-2">
+                            <Home className="w-4 h-4" />
+                            <span>{prop.address || prop.street_address || 'Unnamed Property'}</span>
+                            {doorCount > 1 && (
+                              <Badge className="bg-purple-600 text-white text-xs ml-2">
+                                {doorCount} units
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {!isShowingAllProperties && (
+                  <Button
+                    onClick={() => setSelectedPropertyFilter('all')}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1">
+                    <Building2 className="w-4 h-4" />
+                    View All
+                  </Button>
+                )}
+              </div>
+              {!isShowingAllProperties && filteredProperty && filteredProperty.door_count > 1 && (
+                <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-xs text-purple-900">
+                    <strong>Multi-Unit Property:</strong> This property has {filteredProperty.door_count} units. 
+                    All metrics and costs reflect the entire property.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        }
 
         {/* Onboarding Restart Card - Only show if user skipped */}
         {user?.onboarding_skipped &&
@@ -643,7 +721,7 @@ export default function Dashboard() {
                     'bg-purple-600 hover:bg-purple-700'}`
                     }>
 
-                        <Link to={rec.url + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+                        <Link to={rec.url + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                           {rec.action}
                           <ChevronRight className="w-4 h-4" />
                         </Link>
@@ -664,21 +742,24 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <Home className="w-5 h-5 text-blue-600" />
                   <Badge className="bg-blue-600 text-white text-xs">
-                    {isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length}
+                    {isShowingAllProperties ? 
+                      (isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length) :
+                      '1'
+                    }
                   </Badge>
                 </div>
                 <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                  {properties.length}
+                  {displayedProperties.length}
                 </p>
                 <p className="text-xs text-gray-600 flex items-center gap-1">
-                  {properties.length === 1 ? 'Property' : 'Properties'}
+                  {displayedProperties.length === 1 ? 'Property' : 'Properties'}
                   <ChevronRight className="w-3 h-3" />
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+          <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-orange-50 to-red-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -700,7 +781,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+          <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-green-50 to-emerald-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -718,7 +799,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link to={createPageUrl("Track") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+          <Link to={createPageUrl("Track") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
             <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 hover:scale-105">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -757,7 +838,10 @@ export default function Dashboard() {
                   Your 360° Method Progress
                 </CardTitle>
                 <p className="text-xs text-indigo-700 font-normal">
-                  Tracking across {properties.length === 1 ? 'your property' : `all ${properties.length} properties`} • Click to learn why this matters
+                  {isShowingAllProperties ?
+                  `Tracking across all ${properties.length} properties` :
+                  `Tracking for ${filteredProperty?.address || 'this property'}`
+                  } • Click to learn why this matters
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-indigo-600 flex-shrink-0 transform transition-transform" id="method-chevron" />
@@ -803,7 +887,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Know what you have</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Baseline") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Baseline") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {avgBaselineCompletion >= 66 ? '✓' : '1'}
                     </span>
@@ -813,7 +897,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Inspect") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Inspect") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allInspections.length > 0 ? '✓' : '2'}
                     </span>
@@ -823,7 +907,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Track") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Track") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalSpent > 0 ? '✓' : '3'}
                     </span>
@@ -837,7 +921,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-blue-600 text-blue-600 hover:bg-blue-50">
 
-                  <Link to={createPageUrl("Baseline") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+                  <Link to={createPageUrl("Baseline") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -853,7 +937,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {allTasks.length > 0 ? '✓' : '4'}
                     </span>
@@ -863,7 +947,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Schedule") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Schedule") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {scheduledTasks.length > 0 ? '✓' : '5'}
                     </span>
@@ -873,7 +957,7 @@ export default function Dashboard() {
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Execute") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Execute") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {completedTasksThisMonth > 0 ? '✓' : '6'}
                     </span>
@@ -890,7 +974,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-orange-600 text-orange-600 hover:bg-orange-50">
 
-                  <Link to={createPageUrl("Prioritize") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+                  <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -906,14 +990,14 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
                 <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {totalPrevented > 0 ? '✓' : '7'}
                     </span>
                     <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
-                  <Link to={createPageUrl("Upgrade") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
+                  <Link to={createPageUrl("Upgrade") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
                     <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                       8
                     </span>
@@ -937,7 +1021,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full text-xs border-green-600 text-green-600 hover:bg-green-50">
 
-                  <Link to={createPageUrl("Preserve") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+                  <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                     Take Action
                   </Link>
                 </Button>
@@ -1082,7 +1166,7 @@ export default function Dashboard() {
                   size="sm"
                   className="w-full justify-start gap-2">
 
-                  <Link to={createPageUrl("Inspect") + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}>
+                  <Link to={createPageUrl("Inspect") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                     <ClipboardCheck className="w-4 h-4" />
                     Start Inspection
                   </Link>
@@ -1129,7 +1213,7 @@ export default function Dashboard() {
                   {recentActivity.slice(0, 3).map((activity, idx) =>
                 <Link
                   key={idx}
-                  to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track') + (properties.length === 1 ? `?property=${primaryProperty.id}` : '')}
+                  to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track') + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}
                   className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors group">
 
                       <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
@@ -1154,10 +1238,10 @@ export default function Dashboard() {
           }
 
           {/* Seasonal Suggestions - Compact */}
-          {primaryProperty &&
+          {filteredProperty &&
           <SeasonalTaskSuggestions
-            propertyId={primaryProperty.id}
-            property={primaryProperty}
+            propertyId={filteredProperty.id}
+            property={filteredProperty}
             compact={true} />
 
           }
