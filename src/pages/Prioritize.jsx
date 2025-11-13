@@ -75,6 +75,12 @@ export default function PrioritizePage() {
   const [showEducation, setShowEducation] = React.useState(false);
   const [addingTemplateId, setAddingTemplateId] = React.useState(null);
 
+  // Debug mount
+  React.useEffect(() => {
+    console.log('🟢 Prioritize page mounted');
+    return () => console.log('🔴 Prioritize page unmounted');
+  }, []);
+
   // Fetch current user
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -133,46 +139,6 @@ export default function PrioritizePage() {
     enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
-  // Fetch system baselines for context - only for user's properties
-  const { data: systemBaselines = [] } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty, currentUser?.email],
-    queryFn: async () => {
-      if (selectedProperty === 'all') {
-        const propertyIds = properties.map(p => p.id);
-        if (propertyIds.length === 0) return [];
-        
-        const allBaselines = await base44.entities.SystemBaseline.list();
-        return allBaselines.filter(baseline => propertyIds.includes(baseline.property_id));
-      } else {
-        const propertyBelongsToUser = properties.some(p => p.id === selectedProperty);
-        if (!propertyBelongsToUser) return [];
-        
-        return await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
-      }
-    },
-    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
-  });
-
-  // Fetch inspections for context - only for user's properties
-  const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', selectedProperty, currentUser?.email],
-    queryFn: async () => {
-      if (selectedProperty === 'all') {
-        const propertyIds = properties.map(p => p.id);
-        if (propertyIds.length === 0) return [];
-        
-        const allInspections = await base44.entities.Inspection.list('-created_date');
-        return allInspections.filter(inspection => propertyIds.includes(inspection.property_id));
-      } else {
-        const propertyBelongsToUser = properties.some(p => p.id === selectedProperty);
-        if (!propertyBelongsToUser) return [];
-        
-        return await base44.entities.Inspection.filter({ property_id: selectedProperty }, '-created_date');
-      }
-    },
-    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
-  });
-
   // Mutations for task management
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
@@ -226,6 +192,16 @@ export default function PrioritizePage() {
     
     return seasonMatch && climateMatch && notAlreadyAdded;
   });
+
+  // Debug templates rendering
+  React.useEffect(() => {
+    console.log('📦 Template stats:', {
+      allTemplates: allTemplates.length,
+      relevantTemplates: relevantTemplates.length,
+      currentSeason,
+      climateZones
+    });
+  }, [allTemplates.length, relevantTemplates.length, currentSeason]);
 
   // Filter tasks to only show those in the "Ticket Queue" (NOT Completed, NOT Scheduled, NOT In Progress)
   const ticketQueueTasks = allTasks.filter(task => 
@@ -372,14 +348,6 @@ export default function PrioritizePage() {
     ? properties.find(p => p.id === selectedProperty)
     : null;
 
-  console.log('📊 Render stats:', {
-    selectedProperty,
-    propertiesCount: properties.length,
-    templatesCount: relevantTemplates.length,
-    tasksCount: allTasks.length,
-    addingTemplateId
-  });
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
@@ -453,6 +421,21 @@ export default function PrioritizePage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* TEST BUTTON - ALWAYS VISIBLE */}
+        <div className="mb-6 p-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg">
+          <p className="text-sm font-bold mb-2">🧪 DEBUG: Test if buttons work at all</p>
+          <button
+            onClick={() => {
+              console.log('✅ TEST BUTTON WORKS!');
+              alert('Test button clicked! Buttons ARE working.');
+            }}
+            className="bg-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700"
+            style={{ minHeight: '44px', cursor: 'pointer' }}
+          >
+            Click Me to Test
+          </button>
         </div>
 
         {/* Educational Card - Expandable */}
@@ -723,7 +706,7 @@ export default function PrioritizePage() {
 
         {/* Seasonal Maintenance Suggestions */}
         {relevantTemplates.length > 0 && (
-          <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-cyan-50 mb-6">
+          <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-cyan-50 mb-6" style={{ position: 'relative', zIndex: 1 }}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Sparkles className="w-5 h-5 text-blue-600" />
@@ -733,66 +716,46 @@ export default function PrioritizePage() {
                 </Badge>
               </CardTitle>
               <p className="text-sm text-gray-700">
-                Recommended maintenance work for your property climate. These are physical tasks to complete, not inspections.
+                Recommended maintenance work for your property climate. Click button below to add.
               </p>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
-                {relevantTemplates.map(template => {
+                {relevantTemplates.map((template, index) => {
                   const isAdding = addingTemplateId === template.id;
                   const isDisabled = isAdding || (selectedProperty === 'all' && properties.length > 1);
                   
+                  console.log(`🔍 Rendering template ${index}:`, template.title, { isAdding, isDisabled });
+                  
                   return (
-                    <Card key={template.id} className="border border-blue-200 bg-white hover:shadow-md transition-shadow">
+                    <Card key={template.id} className="border border-blue-200 bg-white" style={{ position: 'relative', zIndex: 1 }}>
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 mb-1">{template.title}</h4>
-                            <p className="text-xs text-gray-600 mb-2">{template.description}</p>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              <Badge className="bg-gray-600 text-white text-xs">
-                                {template.priority || 'Routine'}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {template.system_type}
-                              </Badge>
-                              {template.estimated_time_minutes && (
-                                <Badge variant="outline" className="text-xs">
-                                  ~{Math.round(template.estimated_time_minutes / 60)}h
-                                </Badge>
-                              )}
-                            </div>
-                            {template.why_important && (
-                              <p className="text-xs text-gray-700 italic mt-2">
-                                💡 {template.why_important}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Button
+                        <h4 className="font-semibold text-gray-900 mb-1">{template.title}</h4>
+                        <p className="text-xs text-gray-600 mb-3">{template.description}</p>
+                        
+                        <button
+                          type="button"
                           onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🖱️ BUTTON CLICKED!', template.title);
+                            console.log('🖱️ RAW CLICK EVENT!', template.title, e);
                             handleAddTemplate(template);
                           }}
+                          onMouseDown={(e) => console.log('👇 MOUSE DOWN', template.title)}
+                          onMouseUp={(e) => console.log('👆 MOUSE UP', template.title)}
                           disabled={isDisabled}
-                          className="w-full gap-2"
+                          className={`w-full px-4 py-3 rounded-md font-semibold text-sm transition-colors ${
+                            isDisabled 
+                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                              : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                          }`}
                           style={{ 
-                            minHeight: '44px',
-                            backgroundColor: isDisabled ? '#D1D5DB' : '#2563EB',
-                            cursor: isDisabled ? 'not-allowed' : 'pointer'
+                            minHeight: '48px',
+                            position: 'relative',
+                            zIndex: 10,
+                            pointerEvents: isDisabled ? 'none' : 'auto'
                           }}
                         >
-                          {isAdding ? (
-                            <>⏳ Adding...</>
-                          ) : (
-                            <>
-                              <Plus className="w-4 h-4" />
-                              Add to Queue
-                            </>
-                          )}
-                        </Button>
+                          {isAdding ? '⏳ Adding...' : `➕ Add ${template.title.substring(0, 20)}...`}
+                        </button>
                       </CardContent>
                     </Card>
                   );
@@ -917,6 +880,12 @@ export default function PrioritizePage() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="mt-6 p-4 bg-gray-100 rounded">
+          <p className="text-sm text-gray-600">
+            Debug info: {relevantTemplates.length} templates available, Adding template ID: {addingTemplateId || 'none'}
+          </p>
+        </div>
       </div>
 
       {/* Manual Task Form */}
