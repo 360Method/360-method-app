@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, AlertCircle, CheckCircle } from "lucide-react";
@@ -104,6 +105,13 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
   const [error, setError] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualAddress, setManualAddress] = useState({
+    street_address: "",
+    unit_number: "",
+    city: "",
+    state: "",
+    zip_code: ""
+  });
 
   useEffect(() => {
     console.log('🎯 AddressAutocomplete mounted');
@@ -118,13 +126,14 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
       }, 100);
     });
 
-    // Timeout fallback
+    // Timeout fallback - enable manual entry after 10 seconds
     const timeout = setTimeout(() => {
       if (!ready) {
-        console.error('❌ Timeout loading Google Maps');
+        console.error('❌ Timeout loading Google Maps - enabling manual entry');
         setError(true);
+        setShowManualEntry(true);
       }
-    }, 15000);
+    }, 10000);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -174,6 +183,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     } catch (err) {
       console.error('❌ Error initializing autocomplete:', err);
       setError(true);
+      setShowManualEntry(true);
     }
   };
 
@@ -216,73 +226,129 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     }
   };
 
-  // Error state
-  if (error) {
-    return (
-      <Card className="border-2 border-red-300 bg-red-50">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900 mb-2">
-                Google Maps Failed to Load
-              </p>
-              <p className="text-xs text-gray-600 mb-3">
-                <strong>Common issues:</strong><br/>
-                • Places API not enabled in Google Cloud Console<br/>
-                • Billing not set up (required even for free tier)<br/>
-                • API key restrictions blocking the domain<br/>
-                • Check browser console (F12) for detailed errors
-              </p>
-              <Button
-                onClick={() => setShowManualEntry(true)}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                Continue with Manual Entry
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleManualSubmit = () => {
+    if (!manualAddress.street_address || !manualAddress.city || !manualAddress.state || !manualAddress.zip_code) {
+      alert("Please fill in all required address fields");
+      return;
+    }
+
+    const addressData = {
+      ...manualAddress,
+      formatted_address: `${manualAddress.street_address}${manualAddress.unit_number ? ' ' + manualAddress.unit_number : ''}, ${manualAddress.city}, ${manualAddress.state} ${manualAddress.zip_code}`,
+      address_verified: true,
+      verification_source: 'manual_entry',
+      coordinates: null,
+      place_id: null,
+      county: ""
+    };
+
+    setSelectedAddress(addressData);
+    if (onAddressSelect) {
+      onAddressSelect(addressData);
+    }
+  };
 
   // Manual entry mode
   if (showManualEntry) {
     return (
-      <Card className="border-2 border-blue-300 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900 mb-2">
-                Manual Address Entry Mode
-              </p>
-              <p className="text-sm text-gray-700 mb-3">
-                Enter address details manually below. Map verification will be limited.
-              </p>
-              {!error && (
-                <Button
-                  onClick={() => setShowManualEntry(false)}
-                  variant="outline"
-                  size="sm"
-                >
-                  ← Back to Address Search
-                </Button>
-              )}
+      <div className="space-y-4">
+        <Card className="border-2 border-blue-300 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Manual Address Entry
+                </p>
+                <p className="text-xs text-gray-700 mb-3">
+                  Enter your property address manually. You can still use all features!
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-sm font-semibold">Street Address *</Label>
+            <Input
+              value={manualAddress.street_address}
+              onChange={(e) => setManualAddress({...manualAddress, street_address: e.target.value})}
+              placeholder="123 Main St"
+              style={{ minHeight: '48px' }}
+            />
+          </div>
+
+          <div>
+            <Label className="text-sm font-semibold">Unit/Apt # (optional)</Label>
+            <Input
+              value={manualAddress.unit_number}
+              onChange={(e) => setManualAddress({...manualAddress, unit_number: e.target.value})}
+              placeholder="Apt 4B"
+              style={{ minHeight: '48px' }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm font-semibold">City *</Label>
+              <Input
+                value={manualAddress.city}
+                onChange={(e) => setManualAddress({...manualAddress, city: e.target.value})}
+                placeholder="Vancouver"
+                style={{ minHeight: '48px' }}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold">State *</Label>
+              <Input
+                value={manualAddress.state}
+                onChange={(e) => setManualAddress({...manualAddress, state: e.target.value.toUpperCase()})}
+                placeholder="WA"
+                maxLength={2}
+                style={{ minHeight: '48px' }}
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div>
+            <Label className="text-sm font-semibold">ZIP Code *</Label>
+            <Input
+              value={manualAddress.zip_code}
+              onChange={(e) => setManualAddress({...manualAddress, zip_code: e.target.value})}
+              placeholder="98660"
+              maxLength={5}
+              style={{ minHeight: '48px' }}
+            />
+          </div>
+
+          <Button
+            onClick={handleManualSubmit}
+            className="w-full"
+            style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
+          >
+            Verify Address
+          </Button>
+
+          {!error && ready && (
+            <Button
+              onClick={() => setShowManualEntry(false)}
+              variant="outline"
+              className="w-full"
+              style={{ minHeight: '48px' }}
+            >
+              ← Back to Address Search
+            </Button>
+          )}
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Loading state */}
-      {!ready && (
+      {!ready && !error && (
         <Card className="border-2 border-blue-300 bg-blue-50">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -319,7 +385,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
           style={{ minHeight: '48px' }}
           className="w-full"
         />
-        {!ready && (
+        {!ready && !error && (
           <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-gray-400" />
         )}
       </div>
@@ -363,7 +429,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
         <p className="text-xs text-gray-600">
           Can't find your address? <button 
             onClick={() => setShowManualEntry(true)}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 hover:underline font-semibold"
           >
             Enter manually instead
           </button>

@@ -1,9 +1,10 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench, AlertCircle } from "lucide-react";
+import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 import { base44 } from "@/api/base44Client";
@@ -415,7 +416,6 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
                 coordinates={formData.coordinates} 
                 address={formData.formatted_address}
                 onConfirm={() => {
-                  // Optional: Handle map confirmation if needed
                   console.log('Map location confirmed');
                 }}
               />
@@ -424,135 +424,50 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
         </CardContent>
       </Card>
 
-      {/* Operator Availability Check */}
-      {formData.address_verified && (
-        <Card className="border-2 mobile-card mb-6" style={{ borderColor: operatorInfo?.available ? '#28A745' : '#FFA500' }}>
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              {checkingOperator ? (
-                <>
-                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Checking service availability...</p>
-                    <p className="text-sm text-gray-600 mt-1">Looking for certified operators in your area</p>
-                  </div>
-                </>
-              ) : operatorInfo?.available ? (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                    <Wrench className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold mb-2" style={{ color: '#28A745', fontSize: '20px' }}>
-                      🎉 Great News!
-                    </h3>
-                    <p className="text-gray-900 mb-3">
-                      <strong>A Certified 360° Method Operator is available in your area!</strong>
-                    </p>
-                    <div className="bg-white p-4 rounded-lg border border-green-200 mb-3">
-                      <p className="text-sm font-semibold text-gray-900 mb-1">
-                        <Building2 className="w-4 h-4 inline mr-2" />
-                        {operatorInfo.operator}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Serving {operatorInfo.area}
-                      </p>
-                      {operatorInfo.contact && (
-                        <div className="mt-2 text-sm text-gray-700">
-                          <p>📞 {operatorInfo.contact.phone}</p>
-                          <p>✉️ {operatorInfo.contact.email}</p>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 inline text-green-600 mr-1" />
-                      Professional maintenance, repairs, and inspections available
+      {/* Operator Availability Check - Simplified */}
+      {formData.address_verified && operatorInfo && !checkingOperator && (
+        <Card className="border-2 mobile-card mb-6" style={{ borderColor: operatorInfo.available ? '#28A745' : '#1B365D' }}>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                operatorInfo.available ? 'bg-green-600' : 'bg-blue-600'
+              }`}>
+                {operatorInfo.available ? (
+                  <Wrench className="w-5 h-5 text-white" />
+                ) : (
+                  <Home className="w-5 h-5 text-white" />
+                )}
+              </div>
+              <div className="flex-1">
+                {operatorInfo.available ? (
+                  <>
+                    <p className="font-bold text-green-900 mb-1">
+                      ✅ Certified Operator Available!
                     </p>
                     <p className="text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 inline text-green-600 mr-1" />
-                      Priority scheduling for emergencies
+                      <strong>{operatorInfo.operator}</strong> serves your area and can help with maintenance & repairs.
                     </p>
-                    <p className="text-sm text-gray-700 mt-2">
-                      💡 You can request services after setting up your property!
+                  </>
+                ) : operatorInfo.comingSoon ? (
+                  <>
+                    <p className="font-bold text-orange-600 mb-1">
+                      Coming Soon to {operatorInfo.area}
                     </p>
-                  </div>
-                </>
-              ) : operatorInfo?.comingSoon ? (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold mb-2" style={{ color: '#FF6B35', fontSize: '20px' }}>
-                      We're Expanding to Your Area!
-                    </h3>
-                    <p className="text-gray-900 mb-3">
-                      Professional services are coming soon to <strong>{operatorInfo.area}</strong>
+                    <p className="text-sm text-gray-700">
+                      Professional services launching soon. All DIY features available now!
                     </p>
-                    {operatorInfo.launchDate && operatorInfo.launchDate !== 'TBD' && (
-                      <p className="text-sm text-gray-700 mb-3">
-                        🗓️ Expected launch: <strong>{operatorInfo.launchDate}</strong>
-                      </p>
-                    )}
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-3">
-                      <p className="text-sm font-semibold text-blue-900 mb-2">
-                        ✨ You can still use all features now:
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Track maintenance and inspections
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Get AI-powered insights and recommendations
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Manage DIY projects
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Work with your own contractors
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Home className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                      Full Software Access Available
-                    </h3>
-                    <p className="text-gray-900 mb-3">
-                      Professional operator services aren't available in your area yet, but you have complete access to our platform!
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-blue-900 mb-1">
+                      Full DIY Software Access
                     </p>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <p className="text-sm font-semibold text-blue-900 mb-2">
-                        ✨ Everything you need for property management:
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Complete maintenance tracking system
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        AI-powered recommendations
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        DIY guides and resources
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 inline text-blue-600 mr-1" />
-                        Coordinate with your own contractors
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
+                    <p className="text-sm text-gray-700">
+                      Track maintenance, get AI recommendations, and manage contractors.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
