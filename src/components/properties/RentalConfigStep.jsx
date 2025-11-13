@@ -222,29 +222,32 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                         { value: 'Tenant-Occupied', label: 'Tenant-Occupied', sub: 'Currently rented to a tenant', icon: '👥' },
                         { value: 'Vacant', label: 'Vacant', sub: 'Available for rent', icon: '🔓' }
                       ].map((option) => (
-                        <label
+                        <button
                           key={option.value}
-                          className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          type="button"
+                          onClick={() => updateUnit(index, 'occupancy_status', option.value)}
+                          className={`w-full flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all text-left ${
                             unit.occupancy_status === option.value
                               ? 'border-purple-600 bg-purple-50 shadow-md'
                               : 'border-gray-300 hover:border-purple-400 bg-white'
                           }`}
                         >
-                          <input
-                            type="radio"
-                            name={`unit-${index}-occupancy`}
-                            value={option.value}
-                            checked={unit.occupancy_status === option.value}
-                            onChange={(e) => updateUnit(index, 'occupancy_status', e.target.value)}
-                            className="mt-1"
-                          />
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            unit.occupancy_status === option.value
+                              ? 'border-purple-600 bg-purple-600'
+                              : 'border-gray-400 bg-white'
+                          }`}>
+                            {unit.occupancy_status === option.value && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">
                               {option.icon} {option.label}
                             </p>
                             <p className="text-sm text-gray-600">{option.sub}</p>
                           </div>
-                        </label>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -265,30 +268,33 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                             { value: 'partially_furnished', label: 'Partially Furnished', sub: 'Major furniture only' },
                             { value: 'unfurnished', label: 'Unfurnished', sub: 'Tenant brings everything' }
                           ].map((option) => (
-                            <label
+                            <button
                               key={option.value}
-                              className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              type="button"
+                              onClick={() => {
+                                updateUnit(index, 'furnishing_level', option.value);
+                                updateUnit(index, 'is_furnished', option.value !== 'unfurnished');
+                              }}
+                              className={`w-full flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all text-left ${
                                 unit.furnishing_level === option.value
                                   ? 'border-orange-600 bg-white shadow-md'
                                   : 'border-gray-300 hover:border-orange-400 bg-white'
                               }`}
                             >
-                              <input
-                                type="radio"
-                                name={`unit-${index}-furnishing`}
-                                value={option.value}
-                                checked={unit.furnishing_level === option.value}
-                                onChange={(e) => {
-                                  updateUnit(index, 'furnishing_level', e.target.value);
-                                  updateUnit(index, 'is_furnished', e.target.value !== 'unfurnished');
-                                }}
-                                className="mt-1"
-                              />
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                unit.furnishing_level === option.value
+                                  ? 'border-orange-600 bg-orange-600'
+                                  : 'border-gray-400 bg-white'
+                              }`}>
+                                {unit.furnishing_level === option.value && (
+                                  <div className="w-2 h-2 rounded-full bg-white" />
+                                )}
+                              </div>
                               <div>
                                 <p className="font-semibold text-gray-900 text-sm">{option.label}</p>
                                 <p className="text-xs text-gray-600">{option.sub}</p>
                               </div>
-                            </label>
+                            </button>
                           ))}
                         </div>
                       </div>
