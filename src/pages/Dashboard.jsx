@@ -65,7 +65,10 @@ export default function Dashboard() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date')
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list('-created_date');
+      return allProps.filter(p => !p.is_draft);
+    }
   });
 
   const { data: user } = useQuery({
@@ -78,7 +81,7 @@ export default function Dashboard() {
     properties.find(p => p.id === selectedPropertyFilter);
   
   const isShowingAllProperties = selectedPropertyFilter === 'all';
-  const displayedProperties = isShowingAllProperties ? properties.filter(p => !p.is_draft) : (filteredProperty ? [filteredProperty] : []);
+  const displayedProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
 
   // Fetch data based on selected property filter
   const { data: allSystems = [] } = useQuery({
@@ -581,7 +584,7 @@ export default function Dashboard() {
         </div>
 
         {/* Property Selector - Prominent for Multi-Property Users */}
-        {properties.filter(p => !p.is_draft).length > 1 &&
+        {properties.length > 1 &&
         <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -597,10 +600,10 @@ export default function Dashboard() {
                     <SelectItem value="all">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4" />
-                        <span className="font-semibold">All Properties ({properties.filter(p => !p.is_draft).length})</span>
+                        <span className="font-semibold">All Properties ({properties.length})</span>
                       </div>
                     </SelectItem>
-                    {properties.filter(p => !p.is_draft).map(prop => {
+                    {properties.map(prop => {
                       const doorCount = prop.door_count || 1;
                       const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : '';
                       return (
@@ -744,7 +747,7 @@ export default function Dashboard() {
                   <Home className="w-5 h-5 text-blue-600" />
                   <Badge className="bg-blue-600 text-white text-xs">
                     {isShowingAllProperties ? 
-                      (isFreeTier ? `${properties.filter(p => !p.is_draft).length}/${propertyLimit}` : properties.filter(p => !p.is_draft).length) :
+                      (isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length) :
                       '1'
                     }
                   </Badge>
