@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,10 +9,13 @@ import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users,
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing, getRecommendedTier } from "../components/shared/TierCalculator";
+import TierChangeDialog from "../components/pricing/TierChangeDialog";
 
 export default function Pricing() {
   const queryClient = useQueryClient();
   const [isChangingTier, setIsChangingTier] = React.useState(false);
+  const [showTierDialog, setShowTierDialog] = React.useState(false);
+  const [selectedNewTier, setSelectedNewTier] = React.useState(null);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
@@ -33,14 +37,19 @@ export default function Pricing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-user'] });
       setIsChangingTier(false);
+      setShowTierDialog(false);
+      setSelectedNewTier(null);
     },
   });
 
   const handleChangeTier = (tier) => {
-    if (confirm(`Switch to ${getTierConfig(tier).displayName} tier?`)) {
-      setIsChangingTier(true);
-      changeTierMutation.mutate(tier);
-    }
+    setSelectedNewTier(tier);
+    setShowTierDialog(true);
+  };
+
+  const handleConfirmTierChange = () => {
+    setIsChangingTier(true);
+    changeTierMutation.mutate(selectedNewTier);
   };
 
   const currentTier = user?.tier || 'free';
@@ -50,6 +59,13 @@ export default function Pricing() {
   const goodPricing = calculateGoodPricing(totalDoors);
   const betterPricing = calculateBetterPricing(totalDoors);
   const bestPricing = calculateBestPricing();
+
+  // Get pricing for selected new tier
+  let selectedNewTierPricing = null;
+  if (selectedNewTier === 'free') selectedNewTierPricing = { monthlyPrice: 0 }; // Free tier has $0 price
+  if (selectedNewTier === 'good') selectedNewTierPricing = goodPricing;
+  if (selectedNewTier === 'better') selectedNewTierPricing = betterPricing;
+  if (selectedNewTier === 'best') selectedNewTierPricing = bestPricing;
 
   const comparisonFeatures = [
     { 
@@ -889,6 +905,25 @@ export default function Pricing() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tier Change Dialog */}
+      {selectedNewTier && (
+        <TierChangeDialog
+          open={showTierDialog}
+          onClose={() => {
+            setShowTierDialog(false);
+            setSelectedNewTier(null);
+          }}
+          onConfirm={handleConfirmTierChange}
+          currentTier={currentTier}
+          newTier={selectedNewTier}
+          currentTierConfig={getTierConfig(currentTier)}
+          newTierConfig={getTierConfig(selectedNewTier)}
+          newTierPricing={selectedNewTierPricing}
+          totalDoors={totalDoors}
+          isLoading={isChangingTier}
+        />
+      )}
     </div>
   );
 }

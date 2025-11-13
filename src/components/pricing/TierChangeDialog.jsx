@@ -1,0 +1,298 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { X, ArrowRight, Brain, Sparkles, Zap, TrendingUp, Crown, Check, AlertTriangle } from "lucide-react";
+
+export default function TierChangeDialog({ 
+  open, 
+  onClose, 
+  onConfirm,
+  currentTier,
+  newTier,
+  currentTierConfig,
+  newTierConfig,
+  newTierPricing,
+  totalDoors,
+  isLoading = false
+}) {
+  if (!open) return null;
+
+  const isUpgrade = ['free', 'good', 'better', 'best'].indexOf(newTier) > ['free', 'good', 'better', 'best'].indexOf(currentTier);
+  const isDowngrade = !isUpgrade;
+
+  const getTierIcon = (tier) => {
+    switch(tier) {
+      case 'free': return Sparkles;
+      case 'good': return Zap;
+      case 'better': return TrendingUp;
+      case 'best': return Crown;
+      default: return Sparkles;
+    }
+  };
+
+  const CurrentIcon = getTierIcon(currentTier);
+  const NewIcon = getTierIcon(newTier);
+
+  // Feature changes
+  const getFeatureChanges = () => {
+    const features = {
+      free: ['Basic tracking', '1 property limit'],
+      good: ['AI cascade alerts', 'AI cost forecasting', 'AI insights', 'Portfolio analytics', 'Export reports', 'Up to 25 doors'],
+      better: ['Everything in Pro', 'AI portfolio comparison', 'AI budget forecasting', 'Team collaboration', 'White-label reports', 'Up to 100 doors'],
+      best: ['Everything in Premium', 'Custom AI reports', 'Multi-user accounts', 'Dedicated manager', 'Phone support', 'Unlimited doors']
+    };
+
+    const currentFeatures = features[currentTier] || [];
+    const newFeatures = features[newTier] || [];
+
+    if (isUpgrade) {
+      return {
+        gaining: newFeatures.slice(currentFeatures.length),
+        keeping: currentFeatures
+      };
+    } else {
+      return {
+        losing: currentFeatures.slice(newFeatures.length),
+        keeping: newFeatures
+      };
+    }
+  };
+
+  const changes = getFeatureChanges();
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/75"
+        onClick={onClose}
+      />
+      
+      {/* Dialog */}
+      <Card 
+        className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        style={{ zIndex: 101 }}
+      >
+        <CardContent className="p-0">
+          {/* Header */}
+          <div 
+            className="p-6 border-b"
+            style={{ 
+              background: isUpgrade 
+                ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+                : 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+            }}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                {isUpgrade ? (
+                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                    <ArrowRight className="w-6 h-6 text-white" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-white" />
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {isUpgrade ? 'Confirm Upgrade' : 'Confirm Downgrade'}
+                  </h2>
+                  <p className="text-white/90 text-sm mt-1">
+                    {isUpgrade 
+                      ? 'You\'re leveling up your homeownership game!' 
+                      : 'Are you sure you want to downgrade?'
+                    }
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-white/80 hover:text-white transition-colors"
+                style={{ minHeight: '44px', minWidth: '44px' }}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Tier Comparison */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                <p className="text-white/70 text-xs mb-2">Current Plan</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <CurrentIcon className="w-5 h-5 text-white" />
+                  <span className="font-bold text-white text-lg">{currentTierConfig.displayName}</span>
+                </div>
+                <p className="text-white/90 text-sm">
+                  {currentTier === 'free' ? '$0/month' : 'Current pricing'}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border-2" style={{ borderColor: newTierConfig.color }}>
+                <p className="text-gray-600 text-xs mb-2">New Plan</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <NewIcon className="w-5 h-5" style={{ color: newTierConfig.color }} />
+                  <span className="font-bold text-lg" style={{ color: newTierConfig.color }}>
+                    {newTierConfig.displayName}
+                  </span>
+                </div>
+                {newTier !== 'free' && newTierPricing ? (
+                  <div>
+                    <p className="font-bold text-xl" style={{ color: newTierConfig.color }}>
+                      ${newTierPricing.monthlyPrice}<span className="text-sm">/mo</span>
+                    </p>
+                    {newTierPricing.additionalDoors > 0 && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        ${newTierPricing.breakdown.base} + ${newTierPricing.breakdown.additionalCost} for {newTierPricing.additionalDoors} doors
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="font-bold text-xl text-gray-700">$0/mo</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-6">
+            {/* Why This Change Matters */}
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-3" style={{ color: '#1B365D' }}>
+                {isUpgrade ? '🎯 What You\'re Gaining:' : '⚠️ What You\'re Losing:'}
+              </h3>
+              
+              {isUpgrade ? (
+                <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200 mb-4">
+                  <p className="text-sm text-green-900 leading-relaxed">
+                    <strong>Why this makes you a better homeowner:</strong> {newTierConfig.displayName} unlocks AI intelligence that transforms you from reactive to proactive - preventing disasters before they happen and saving thousands in emergency repairs.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-orange-50 rounded-lg p-4 border-2 border-orange-200 mb-4">
+                  <p className="text-sm text-orange-900 leading-relaxed">
+                    <strong>Important:</strong> Downgrading removes AI features that help prevent costly disasters. You'll lose cascade risk alerts, spending forecasts, and smart prioritization that saves most users $8,400/year in prevented emergencies.
+                  </p>
+                </div>
+              )}
+
+              {/* Feature Lists */}
+              <div className="space-y-3">
+                {isUpgrade && changes.gaining.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">✨ New Features:</p>
+                    <div className="space-y-1">
+                      {changes.gaining.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <Brain className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: newTierConfig.color }} />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isDowngrade && changes.losing.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-red-700 mb-2">❌ Features You'll Lose:</p>
+                    <div className="space-y-1">
+                      {changes.losing.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm text-red-600">
+                          <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {changes.keeping.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">✓ You'll Keep:</p>
+                    <div className="space-y-1">
+                      {changes.keeping.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                          <Check className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Data Safety */}
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
+              <p className="text-sm font-semibold text-blue-900 mb-1">
+                💾 Your Data is Safe
+              </p>
+              <p className="text-xs text-blue-800 leading-relaxed">
+                All your properties, baselines, inspections, and maintenance history stay intact. 
+                {isDowngrade && ' If you exceed the new tier\'s limits, extra properties are archived (not deleted) and can be reactivated by upgrading again.'}
+              </p>
+            </div>
+
+            {/* Pricing Breakdown (for paid tiers) */}
+            {newTier !== 'free' && newTierPricing && totalDoors > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  📊 Your Pricing:
+                </p>
+                <div className="space-y-1 text-sm text-gray-700">
+                  <div className="flex justify-between">
+                    <span>Properties/Doors:</span>
+                    <span className="font-semibold">{totalDoors} door{totalDoors !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Monthly:</span>
+                    <span className="font-semibold">${newTierPricing.monthlyPrice}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Annual:</span>
+                    <span>${newTierPricing.annualPrice}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                disabled={isLoading}
+                className="flex-1"
+                style={{ minHeight: '56px' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={onConfirm}
+                disabled={isLoading}
+                className="flex-1 font-bold text-lg"
+                style={{ 
+                  backgroundColor: isUpgrade ? '#10B981' : '#F59E0B',
+                  minHeight: '56px' 
+                }}
+              >
+                {isLoading ? (
+                  'Switching...'
+                ) : isUpgrade ? (
+                  <>✓ Upgrade Now</>
+                ) : (
+                  <>Confirm Downgrade</>
+                )}
+              </Button>
+            </div>
+
+            {/* Instant Activation */}
+            <p className="text-xs text-center text-gray-500 mt-4">
+              ⚡ Changes take effect immediately • No payment required (demo mode)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
