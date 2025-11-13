@@ -754,7 +754,7 @@ export default function PrioritizePage() {
                 </Badge>
               </CardTitle>
               <p className="text-sm text-gray-700">
-                Recommended maintenance work for your property's climate. These are physical tasks to complete, not inspections.
+                Recommended maintenance work for your property climate. These are physical tasks to complete, not inspections.
               </p>
             </CardHeader>
             <CardContent>
