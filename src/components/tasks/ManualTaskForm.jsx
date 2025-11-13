@@ -21,7 +21,6 @@ async function enrichTaskWithAI(taskId, taskData, photoUrls = []) {
   }
 
   try {
-    // Build comprehensive prompt for AI analysis
     const hasPhotos = photoUrls && photoUrls.length > 0;
     
     const cascadeAnalysisPrompt = `Analyze this maintenance issue and provide detailed risk assessment:
@@ -53,7 +52,6 @@ Based on this information${hasPhotos ? ' and the attached photos' : ''}, provide
 
 Be realistic with costs - use actual contractor and material pricing. Be dire and specific about cascade risks to motivate action.`;
 
-    // Execute AI analysis with photos if available
     const cascadeAnalysis = await base44.integrations.Core.InvokeLLM({
       prompt: cascadeAnalysisPrompt,
       file_urls: hasPhotos ? photoUrls : undefined,
@@ -74,7 +72,6 @@ Be realistic with costs - use actual contractor and material pricing. Be dire an
       return null;
     });
 
-    // Execute other AI calls in parallel
     const [timeEstimate, sowResult, toolsAndMaterials, videoResults] = await Promise.all([
       base44.integrations.Core.InvokeLLM({
         prompt: `Given the maintenance task:
@@ -158,7 +155,6 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
 
     const updateData = { ai_enrichment_completed: true };
 
-    // Add cascade analysis data if available
     if (cascadeAnalysis) {
       if (cascadeAnalysis.current_fix_cost) updateData.current_fix_cost = cascadeAnalysis.current_fix_cost;
       if (cascadeAnalysis.cascade_risk_score) updateData.cascade_risk_score = cascadeAnalysis.cascade_risk_score;
@@ -167,7 +163,6 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
       if (cascadeAnalysis.cost_impact_reason) updateData.cost_impact_reason = cascadeAnalysis.cost_impact_reason;
       if (cascadeAnalysis.urgency_timeline) updateData.urgency_timeline = cascadeAnalysis.urgency_timeline;
       
-      // Update cascade alert flag if risk is high
       if (cascadeAnalysis.cascade_risk_score >= 7) {
         updateData.has_cascade_alert = true;
       }
@@ -190,7 +185,7 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
     await base44.entities.MaintenanceTask.update(taskId, updateData);
     console.log(`Task ${taskId} successfully enriched with AI insights`);
     
-    return cascadeAnalysis; // Return cascade analysis for immediate display
+    return cascadeAnalysis;
   } catch (error) {
     console.error('Error enriching task with AI:', error);
     await base44.entities.MaintenanceTask.update(taskId, {
@@ -236,16 +231,15 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
   const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
   const [aiEnriching, setAiEnriching] = React.useState(false);
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
+  const [showAiResults, setShowAiResults] = React.useState(false);
 
   const isEditing = !!editingTask?.id;
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
       if (isEditing) {
-        // Update existing task
         return await base44.entities.MaintenanceTask.update(editingTask.id, taskData);
       } else {
-        // Create new task
         return await base44.entities.MaintenanceTask.create(taskData);
       }
     },
@@ -253,20 +247,18 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       
-      // Only run AI enrichment for new tasks or if user requested re-analysis
-      if (!isEditing || formData.reanalyze) {
-        setAiEnriching(true);
-        const cascadeResult = await enrichTaskWithAI(savedTask.id, savedTask, photos);
-        setAiEnriching(false);
-        
-        if (cascadeResult) {
-          setAiAnalysis(cascadeResult);
-          // Show AI results before closing
-          return;
-        }
-      }
+      // Run AI enrichment and show results
+      setAiEnriching(true);
+      const cascadeResult = await enrichTaskWithAI(savedTask.id, savedTask, photos);
+      setAiEnriching(false);
       
-      onComplete();
+      if (cascadeResult) {
+        setAiAnalysis(cascadeResult);
+        setShowAiResults(true);
+      } else {
+        // Even if AI fails, show a success message instead of auto-closing
+        setShowAiResults(true);
+      }
     }
   });
 
@@ -319,103 +311,131 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
     return true;
   };
 
-  // Show AI Analysis Results
-  if (aiAnalysis && !aiEnriching) {
+  // Show AI Analysis Results - User must click to close
+  if (showAiResults) {
     return (
-      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onComplete()}>
+      <Dialog open={open} onOpenChange={() => {}}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              AI Cost & Risk Analysis
+              {aiAnalysis ? (
+                <>
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                  AI Cost & Risk Analysis
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  Task Saved Successfully
+                </>
+              )}
             </DialogTitle>
-            <DialogDescription>
-              Here's what we found based on your description{photos.length > 0 ? ' and photos' : ''}
-            </DialogDescription>
+            {aiAnalysis ? (
+              <DialogDescription>
+                Here's what we found based on your description{photos.length > 0 ? ' and photos' : ''}
+              </DialogDescription>
+            ) : (
+              <DialogDescription>
+                Your maintenance task has been saved to your priority queue
+              </DialogDescription>
+            )}
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Cost Analysis */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                  <h3 className="font-bold text-green-900">Fix Now</h3>
-                </div>
-                <p className="text-3xl font-bold text-green-700">
-                  ${aiAnalysis.current_fix_cost?.toLocaleString() || 'N/A'}
-                </p>
-                <p className="text-xs text-green-800 mt-1">Estimated cost today</p>
-              </div>
+            {aiAnalysis ? (
+              <>
+                {/* Cost Analysis */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                      <h3 className="font-bold text-green-900">Fix Now</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-green-700">
+                      ${aiAnalysis.current_fix_cost?.toLocaleString() || 'N/A'}
+                    </p>
+                    <p className="text-xs text-green-800 mt-1">Estimated cost today</p>
+                  </div>
 
-              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                  <h3 className="font-bold text-red-900">If You Wait</h3>
+                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <h3 className="font-bold text-red-900">If You Wait</h3>
+                    </div>
+                    <p className="text-3xl font-bold text-red-700">
+                      ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
+                    </p>
+                    <p className="text-xs text-red-800 mt-1">Estimated cost in 6-12 months</p>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-red-700">
-                  ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
-                </p>
-                <p className="text-xs text-red-800 mt-1">Estimated cost in 6-12 months</p>
-              </div>
-            </div>
 
-            {/* Cascade Risk */}
-            <div className={`border-2 rounded-lg p-4 ${
-              aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
-              aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-50 border-orange-400' :
-              'bg-blue-50 border-blue-400'
-            }`}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-lg">Cascade Risk Assessment</h3>
-                <Badge className={
-                  aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-600' :
-                  aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-600' :
-                  'bg-blue-600'
-                }>
-                  Risk Score: {aiAnalysis.cascade_risk_score}/10
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-800 mb-3 font-medium">
-                {aiAnalysis.cascade_risk_reason}
-              </p>
-              {aiAnalysis.cascade_risk_score >= 7 && (
-                <div className="bg-red-100 border border-red-300 rounded p-3 mt-2">
-                  <p className="text-xs text-red-900 font-bold">
-                    ⚠️ HIGH RISK: This issue will likely trigger expensive cascade failures if ignored!
+                {/* Cascade Risk */}
+                <div className={`border-2 rounded-lg p-4 ${
+                  aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
+                  aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-50 border-orange-400' :
+                  'bg-blue-50 border-blue-400'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-lg">Cascade Risk Assessment</h3>
+                    <Badge className={
+                      aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-600' :
+                      aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-600' :
+                      'bg-blue-600'
+                    }>
+                      Risk Score: {aiAnalysis.cascade_risk_score}/10
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-800 mb-3 font-medium">
+                    {aiAnalysis.cascade_risk_reason}
                   </p>
+                  {aiAnalysis.cascade_risk_score >= 7 && (
+                    <div className="bg-red-100 border border-red-300 rounded p-3 mt-2">
+                      <p className="text-xs text-red-900 font-bold">
+                        ⚠️ HIGH RISK: This issue will likely trigger expensive cascade failures if ignored!
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Why Waiting Costs More */}
-            {aiAnalysis.cost_impact_reason && (
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  Why Waiting Costs More:
-                </h3>
-                <p className="text-sm text-gray-800">{aiAnalysis.cost_impact_reason}</p>
-              </div>
-            )}
+                {/* Why Waiting Costs More */}
+                {aiAnalysis.cost_impact_reason && (
+                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                    <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5" />
+                      Why Waiting Costs More:
+                    </h3>
+                    <p className="text-sm text-gray-800">{aiAnalysis.cost_impact_reason}</p>
+                  </div>
+                )}
 
-            {/* Urgency Timeline */}
-            {aiAnalysis.urgency_timeline && (
-              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
-                <h3 className="font-bold text-purple-900 mb-2">Timeline to Critical:</h3>
-                <p className="text-lg font-bold text-purple-700">{aiAnalysis.urgency_timeline}</p>
-              </div>
-            )}
+                {/* Urgency Timeline */}
+                {aiAnalysis.urgency_timeline && (
+                  <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                    <h3 className="font-bold text-purple-900 mb-2">Timeline to Critical:</h3>
+                    <p className="text-lg font-bold text-purple-700">{aiAnalysis.urgency_timeline}</p>
+                  </div>
+                )}
 
-            {/* Savings Potential */}
-            {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
-              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
-                <p className="text-2xl font-bold text-green-700">
-                  ${(aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost).toLocaleString()}
-                </p>
-                <p className="text-xs text-green-800 mt-1">
-                  That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
+                {/* Savings Potential */}
+                {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
+                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                    <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
+                    <p className="text-2xl font-bold text-green-700">
+                      ${(aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-green-800 mt-1">
+                      That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center">
+                <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-3" />
+                <h3 className="font-bold text-green-900 text-xl mb-2">Task Created!</h3>
+                <p className="text-sm text-gray-700">
+                  Your maintenance task has been added to your priority queue.
+                  {isEditing ? ' Changes have been saved.' : ' You can find it in the Prioritize section.'}
                 </p>
               </div>
             )}
@@ -428,7 +448,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
               style={{ minHeight: '48px' }}
             >
               <CheckCircle2 className="w-4 h-4 mr-2" />
-              Got It - Task Saved
+              {aiAnalysis ? 'Got It - Close' : 'Close'}
             </Button>
           </div>
         </DialogContent>
@@ -444,7 +464,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
             {isEditing ? '✏️ Edit' : '➕ Add'} Maintenance Task
             {aiEnriching && (
               <Badge className="gap-1 bg-purple-600 text-white">
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-3 h-3 />
                 AI Analyzing...
               </Badge>
             )}
@@ -682,39 +702,43 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
             </div>
           )}
 
-          {/* Step 3: Review */}
+          {/* Step 3: Review & Submit */}
           {step === 3 && (
             <div className="space-y-4">
               <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
                 <p className="text-sm text-green-900 font-semibold mb-1">✅ Review & Save</p>
-                <p className="text-xs text-green-800">AI will analyze your task and provide cost estimates and cascade risk analysis</p>
+                <p className="text-xs text-green-800">Double-check everything before submitting - AI will analyze after you click the button below</p>
               </div>
 
               {/* Review Summary */}
-              <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
-                <p className="font-semibold text-gray-900 mb-3 text-sm">📋 Review Your Task:</p>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Title:</span>
-                    <span className="font-semibold text-gray-900">{formData.title}</span>
+              <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-sm">
+                <p className="font-semibold text-gray-900 mb-3 text-sm">📋 Task Summary:</p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 font-medium">Title:</span>
+                    <span className="font-semibold text-gray-900 text-right">{formData.title}</span>
+                  </div>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 font-medium">Description:</span>
+                    <span className="text-gray-900 text-right text-xs">{formData.description.substring(0, 80)}{formData.description.length > 80 ? '...' : ''}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">System:</span>
+                    <span className="text-gray-600 font-medium">System:</span>
                     <span className="font-semibold text-gray-900">{formData.system_type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Priority:</span>
+                    <span className="text-gray-600 font-medium">Priority:</span>
                     <Badge className={PRIORITY_LEVELS.find(p => p.value === formData.priority)?.color}>
                       {formData.priority}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Execution:</span>
+                    <span className="text-gray-600 font-medium">Execution:</span>
                     <span className="font-semibold text-gray-900">{formData.execution_type}</span>
                   </div>
                   {formData.scheduled_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Scheduled:</span>
+                      <span className="text-gray-600 font-medium">Scheduled:</span>
                       <span className="font-semibold text-gray-900">
                         {format(new Date(formData.scheduled_date), 'MMM d, yyyy')}
                       </span>
@@ -722,7 +746,7 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                   )}
                   {photos.length > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Photos:</span>
+                      <span className="text-gray-600 font-medium">Photos:</span>
                       <span className="font-semibold text-gray-900">{photos.length} attached</span>
                     </div>
                   )}
@@ -735,25 +759,31 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                   <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-purple-900 mb-1">
-                      🤖 AI Will Analyze & Generate:
+                      🤖 After You Submit, AI Will Analyze:
                     </p>
                     <ul className="text-xs text-purple-800 leading-relaxed space-y-1">
-                      <li>• <strong>Current fix cost estimate</strong></li>
+                      <li>• <strong>Current fix cost estimate</strong> based on description{photos.length > 0 ? ' & photos' : ''}</li>
                       <li>• <strong>Cascade risk score (1-10)</strong> - What will fail next if ignored</li>
-                      <li>• <strong>Delayed fix cost</strong> - What it costs if you wait</li>
-                      <li>• Time estimation & tools needed</li>
-                      <li>• Statement of Work (SOW)</li>
-                      <li>• Video tutorial links</li>
+                      <li>• <strong>Delayed fix cost</strong> - What it costs if you wait 6-12 months</li>
+                      <li>• <strong>Urgency timeline</strong> and why waiting costs more</li>
+                      <li>• Time estimation, tools needed, & video tutorials</li>
                     </ul>
                   </div>
                 </div>
+              </div>
+
+              {/* Important: Wait for Results */}
+              <div className="bg-yellow-50 border-l-4 border-yellow-600 p-4 rounded">
+                <p className="text-xs text-yellow-900 font-semibold">
+                  ⏱️ After clicking "Create Task", please wait for AI analysis results before closing. This helps you understand the true cost and urgency of this maintenance item.
+                </p>
               </div>
             </div>
           )}
 
           {/* Navigation Buttons */}
           <div className="flex gap-3 pt-4 border-t">
-            {step > 1 && (
+            {step > 1 && !createTaskMutation.isPending && !aiEnriching && (
               <Button
                 type="button"
                 variant="outline"
@@ -781,20 +811,25 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                 className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
                 style={{ minHeight: '48px' }}
               >
-                {createTaskMutation.isPending || aiEnriching ? (
+                {createTaskMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {aiEnriching ? 'AI Analyzing...' : 'Saving...'}
+                    Saving Task...
+                  </>
+                ) : aiEnriching ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    AI Analyzing...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    {isEditing ? 'Update Task' : 'Create Task'}
+                    {isEditing ? 'Save Changes & Analyze' : 'Create Task & Analyze'}
                   </>
                 )}
               </Button>
             )}
-            {step === 1 && (
+            {step === 1 && !createTaskMutation.isPending && !aiEnriching && (
               <Button
                 type="button"
                 variant="ghost"
