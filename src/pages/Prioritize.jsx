@@ -26,7 +26,8 @@ import {
   Inbox,
   Archive,
   BookOpen,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -40,6 +41,15 @@ const Label = ({ children, className = "", ...props }) => (
   </label>
 );
 
+// Helper to get current season
+const getCurrentSeason = () => {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return "Spring";
+  if (month >= 5 && month <= 7) return "Summer";
+  if (month >= 8 && month <= 10) return "Fall";
+  return "Winter";
+};
+
 export default function PrioritizePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -51,6 +61,7 @@ export default function PrioritizePage() {
   const [priorityFilter, setPriorityFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('cascade_risk');
   const [showEducation, setShowEducation] = React.useState(false);
+  const [addingTemplateId, setAddingTemplateId] = React.useState(null);
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -66,6 +77,13 @@ export default function PrioritizePage() {
       return allProps.filter(p => !p.is_draft && p.created_by === currentUser?.email);
     },
     enabled: !!currentUser?.email
+  });
+
+  // Fetch seasonal maintenance templates
+  const { data: allTemplates = [] } = useQuery({
+    queryKey: ['maintenanceTemplates'],
+    queryFn: () => base44.entities.MaintenanceTemplate.list(),
+    initialData: []
   });
 
   // Set initial selected property
@@ -142,6 +160,27 @@ export default function PrioritizePage() {
     enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
+  // Create task from template mutation
+  const createFromTemplateMutation = useMutation({
+    mutationFn: async ({ template, propertyId }) => {
+      return base44.entities.MaintenanceTask.create({
+        property_id: propertyId,
+        title: template.title,
+        description: template.description,
+        system_type: template.system_type,
+        priority: template.priority,
+        status: 'Identified',
+        template_origin_id: template.id,
+        recurring: true,
+        recurrence_interval_days: template.suggested_interval_days || 365
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      setAddingTemplateId(null);
+    }
+  });
+
   // Mutations for task management
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
@@ -157,6 +196,38 @@ export default function PrioritizePage() {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
     }
+  });
+
+  // Get climate zones for filtering templates
+  const getPropertyClimateZones = () => {
+    if (selectedProperty === 'all') {
+      return [...new Set(properties.map(p => p.climate_zone).filter(Boolean))];
+    } else {
+      const property = properties.find(p => p.id === selectedProperty);
+      return property?.climate_zone ? [property.climate_zone] : [];
+    }
+  };
+
+  // Filter templates by current season and climate zone
+  const currentSeason = getCurrentSeason();
+  const climateZones = getPropertyClimateZones();
+  
+  const relevantTemplates = allTemplates.filter(template => {
+    // Check if template matches current season or is year-round
+    const seasonMatch = template.season === currentSeason || template.season === 'Year-Round';
+    
+    // Check if template matches property climate zones or is for all climates
+    const climateMatch = template.climate_zone === 'All Climates' || 
+                         climateZones.length === 0 || 
+                         climateZones.includes(template.climate_zone);
+    
+    // Don't show if already added as a task
+    const notAlreadyAdded = !allTasks.some(task => 
+      task.template_origin_id === template.id && 
+      (selectedProperty === 'all' || task.property_id === selectedProperty)
+    );
+    
+    return seasonMatch && climateMatch && notAlreadyAdded;
   });
 
   // Filter tasks to only show those in the "Ticket Queue" (NOT Completed, NOT Scheduled, NOT In Progress)
@@ -186,10 +257,10 @@ export default function PrioritizePage() {
     return 0;
   });
 
-  // Calculate statistics
+  // Calculate statistics (including templates)
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
   const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
-  const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length;
+  const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length + relevantTemplates.length;
   const totalCurrentCost = ticketQueueTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const totalDelayedCost = ticketQueueTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
   const potentialSavings = totalDelayedCost - totalCurrentCost;
@@ -216,6 +287,19 @@ export default function PrioritizePage() {
     if (window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
       deleteTaskMutation.mutate(task.id);
     }
+  };
+
+  const handleAddTemplate = (template) => {
+    if (selectedProperty === 'all' && properties.length > 1) {
+      alert('Please select a specific property to add this task.');
+      return;
+    }
+    
+    const propertyId = selectedProperty !== 'all' ? selectedProperty : properties[0]?.id;
+    if (!propertyId) return;
+    
+    setAddingTemplateId(template.id);
+    createFromTemplateMutation.mutate({ template, propertyId });
   };
 
   // No properties fallback
@@ -514,7 +598,7 @@ export default function PrioritizePage() {
               <p className="text-2xl font-bold text-gray-700">
                 {routineCount}
               </p>
-              <p className="text-xs text-gray-600">Seasonal Routine</p>
+              <p className="text-xs text-gray-600">Seasonal + Routine</p>
             </CardContent>
           </Card>
 
@@ -588,6 +672,74 @@ export default function PrioritizePage() {
           </CardContent>
         </Card>
 
+        {/* Seasonal Maintenance Suggestions */}
+        {relevantTemplates.length > 0 && (
+          <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-cyan-50 mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                Seasonal Maintenance - {currentSeason}
+                <Badge className="bg-blue-600 text-white ml-2">
+                  {relevantTemplates.length} Suggested
+                </Badge>
+              </CardTitle>
+              <p className="text-sm text-gray-700">
+                Climate-specific routine maintenance for your area. Click "Add to Queue" to track these tasks.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {relevantTemplates.map(template => (
+                  <Card key={template.id} className="border border-blue-200 bg-white hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{template.title}</h4>
+                          <p className="text-xs text-gray-600 mb-2">{template.description}</p>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <Badge className="bg-gray-600 text-white text-xs">
+                              {template.priority || 'Routine'}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {template.system_type}
+                            </Badge>
+                            {template.estimated_time_minutes && (
+                              <Badge variant="outline" className="text-xs">
+                                ~{Math.round(template.estimated_time_minutes / 60)}h
+                              </Badge>
+                            )}
+                          </div>
+                          {template.why_important && (
+                            <p className="text-xs text-gray-700 italic mt-2">
+                              💡 {template.why_important}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleAddTemplate(template)}
+                        disabled={addingTemplateId === template.id || (selectedProperty === 'all' && properties.length > 1)}
+                        size="sm"
+                        className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
+                        style={{ minHeight: '40px' }}
+                      >
+                        {addingTemplateId === template.id ? (
+                          <>Adding...</>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add to Queue
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tasks Grid */}
         {sortedTasks.length > 0 ? (
           <div className="space-y-4">
@@ -611,7 +763,7 @@ export default function PrioritizePage() {
               </h3>
               <p className="text-gray-600 mb-6">
                 {ticketQueueTasks.length === 0 
-                  ? 'Add your first maintenance task, run an inspection, or check Schedule tab for seasonal maintenance suggestions.'
+                  ? 'Add your first maintenance task, run an inspection, or check seasonal suggestions above.'
                   : 'Try adjusting your filters to see more tasks.'}
               </p>
               <div className="flex gap-3 justify-center flex-wrap">
