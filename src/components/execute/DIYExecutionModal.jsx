@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, CheckCircle2, Upload, Loader2, Clock, DollarSign } from "lucide-react";
+import CompletionCelebration from "./CompletionCelebration";
 
 export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
@@ -16,8 +17,9 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
   const [completionPhotos, setCompletionPhotos] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [completionSavings, setCompletionSavings] = useState(0);
   
-  // Parse SOW into steps
   const steps = task?.ai_sow?.split('\n').filter(s => s.trim().length > 0) || [
     "Gather all necessary tools and materials",
     "Follow the instructions carefully",
@@ -25,7 +27,6 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
     "Clean up work area"
   ];
   
-  // Timer effect
   useEffect(() => {
     let interval;
     if (timerRunning) {
@@ -70,36 +71,48 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      
-      const estimatedCost = task.contractor_cost || 0;
-      const actualTotal = parseFloat(actualCost) || 0;
-      const savings = estimatedCost - actualTotal;
-      
-      if (onComplete) onComplete();
-      onClose();
-      
-      // Show success message
-      alert(`🎉 Task completed! You saved $${Math.round(savings)} by doing it yourself!`);
     }
   });
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const actualHours = elapsedSeconds / 3600;
+    const actualCostValue = actualCost ? parseFloat(actualCost) : 0;
     
-    completeTaskMutation.mutate({
+    await completeTaskMutation.mutateAsync({
       status: 'Completed',
-      actual_cost: actualCost ? parseFloat(actualCost) : null,
+      actual_cost: actualCostValue,
       actual_hours: actualHours,
       completion_date: new Date().toISOString(),
       completion_photos: completionPhotos,
       completion_notes: completionNotes
     });
+    
+    // Calculate savings
+    const estimatedCost = task.contractor_cost || 0;
+    const savings = estimatedCost - actualCostValue;
+    
+    setCompletionSavings(savings);
+    setShowCelebration(true);
   };
   
   const progressPercentage = steps.length > 0 ? Math.round((checkedSteps.length / steps.length) * 100) : 0;
   const allStepsComplete = checkedSteps.length === steps.length && steps.length > 0;
 
   if (!task) return null;
+  
+  if (showCelebration) {
+    return (
+      <CompletionCelebration
+        task={task}
+        savings={completionSavings}
+        onClose={() => {
+          setShowCelebration(false);
+          onComplete();
+          onClose();
+        }}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

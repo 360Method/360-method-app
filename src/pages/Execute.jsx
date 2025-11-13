@@ -1,57 +1,34 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CheckCircle2,
   Calendar,
-  ChevronDown,
-  ChevronUp,
   AlertTriangle,
   Plus,
   Eye,
   Building2,
   ArrowRight,
-  ArrowLeft,
-  Wrench,
-  Clock,
-  ListChecks,
-  PlayCircle
+  PlayCircle,
+  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, addDays, subDays, startOfDay, isSameDay, parseISO, isBefore } from "date-fns";
+import { format, startOfDay, parseISO, isBefore } from "date-fns";
 import ExecuteTaskCard from "../components/execute/ExecuteTaskCard";
 import StepNavigation from "../components/navigation/StepNavigation";
 
-const SYSTEM_ICONS = {
-  HVAC: "❄️",
-  Plumbing: "🚰",
-  Electrical: "⚡",
-  Roof: "🏠",
-  Foundation: "🏗️",
-  Gutters: "🌧️",
-  Exterior: "🏘️",
-  "Windows/Doors": "🚪",
-  Appliances: "🔌",
-  Landscaping: "🌳",
-  General: "🔧"
-};
-
 export default function ExecutePage() {
   const location = useLocation();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
-  const [selectedDate, setSelectedDate] = React.useState(new Date());
-  const [showEducation, setShowEducation] = React.useState(false);
-  const [expandedSystems, setExpandedSystems] = React.useState({});
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -73,7 +50,7 @@ export default function ExecutePage() {
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['tasks', 'execute', selectedProperty, format(selectedDate, 'yyyy-MM-dd')],
+    queryKey: ['tasks', 'execute', selectedProperty],
     queryFn: async () => {
       if (selectedProperty === 'all') {
         return await base44.entities.MaintenanceTask.list('-scheduled_date');
@@ -84,60 +61,59 @@ export default function ExecutePage() {
     enabled: properties.length > 0 && selectedProperty !== null
   });
 
-  const selectedDateStart = startOfDay(selectedDate);
   const today = startOfDay(new Date());
 
-  // Filter for due today
-  const dueTodayTasks = allTasks.filter(task => {
+  // Filter for tasks due today or overdue
+  // Exclude 360_Operator tasks (they're handled separately)
+  const tasksForDisplay = allTasks.filter(task => {
+    if (task.execution_method === '360_Operator') return false;
     if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
     if (!task.scheduled_date) return false;
+    
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
-      return isSameDay(taskDate, selectedDateStart);
+      return isBefore(taskDate, today) || taskDate.getTime() === today.getTime();
     } catch {
       return false;
     }
   });
 
-  // Filter for overdue
-  const overdueTasks = allTasks.filter(task => {
-    if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
-    if (!task.scheduled_date) return false;
+  // Count overdue
+  const overdueCount = tasksForDisplay.filter(task => {
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
-      return isBefore(taskDate, selectedDateStart);
+      return isBefore(taskDate, today);
     } catch {
       return false;
     }
+  }).length;
+
+  // NEW: Simple sorted list (priority first, then quick tasks first for momentum)
+  const sortedTasks = tasksForDisplay.sort((a, b) => {
+    const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
+    const priorityDiff = (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
+    
+    if (priorityDiff !== 0) return priorityDiff;
+    
+    const aHours = a.estimated_hours || a.diy_time_hours || 999;
+    const bHours = b.estimated_hours || b.diy_time_hours || 999;
+    return aHours - bHours;
   });
 
-  const allExecutionTasks = [...overdueTasks, ...dueTodayTasks];
-
-  // Group by system
-  const tasksBySystem = allExecutionTasks.reduce((acc, task) => {
-    const system = task.system_type || 'General';
-    if (!acc[system]) {
-      acc[system] = [];
+  // Progress calculation
+  const completedToday = allTasks.filter(task => {
+    if (task.status !== 'Completed') return false;
+    if (!task.completion_date) return false;
+    try {
+      const completionDate = startOfDay(new Date(task.completion_date));
+      return completionDate.getTime() === today.getTime();
+    } catch {
+      return false;
     }
-    acc[system].push(task);
-    return acc;
-  }, {});
+  }).length;
 
-  const sortedSystems = Object.keys(tasksBySystem).sort((a, b) => 
-    tasksBySystem[b].length - tasksBySystem[a].length
-  );
-
-  const totalTasks = allExecutionTasks.length;
-  const tasksInProgress = allExecutionTasks.filter(t => t.status === 'In Progress').length;
-  const overdueCount = overdueTasks.length;
-  const totalEstimatedHours = allExecutionTasks.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
-
-  const toggleSystemExpanded = (system) => {
-    setExpandedSystems(prev => ({
-      ...prev,
-      [system]: !prev[system]
-    }));
-  };
+  const totalToday = tasksForDisplay.length + completedToday;
+  const completionPercentage = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
 
   if (properties.length === 0) {
     return (
@@ -165,51 +141,74 @@ export default function ExecutePage() {
     );
   }
 
-  const currentProperty = selectedProperty !== 'all' 
-    ? properties.find(p => p.id === selectedProperty)
-    : null;
-
-  const isToday = isSameDay(selectedDate, today);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-20">
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
         
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
+        {/* Simplified Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
-              <PlayCircle className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
+              <PlayCircle className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-                Step 6: Execute - Daily Work Manual
+              <h1 className="font-bold text-gray-900" style={{ fontSize: '28px', lineHeight: '1.2' }}>
+                Today's Tasks
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Complete scheduled tasks with AI how-to guides
+                {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
+            
+            {/* Progress Ring */}
+            {totalToday > 0 && (
+              <div className="relative w-16 h-16 flex-shrink-0">
+                <svg className="w-16 h-16 transform -rotate-90">
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="#e5e7eb"
+                    strokeWidth="6"
+                    fill="none"
+                  />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="#10b981"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray={`${completionPercentage * 1.76} 176`}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900">
+                  {completedToday}/{totalToday}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-lg p-3 border-2 border-green-300 shadow-sm">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Badge className="bg-green-600 text-white">ACT Phase - Step 3 of 3</Badge>
               <div className="flex items-center gap-1 text-xs text-gray-600 flex-wrap">
-                <span className="text-gray-400">Prioritize (Red)</span>
+                <span className="text-gray-400">Prioritize</span>
                 <ArrowRight className="w-3 h-3" />
-                <span className="text-gray-400">Schedule (Yellow)</span>
+                <span className="text-gray-400">Schedule</span>
                 <ArrowRight className="w-3 h-3" />
-                <span className="font-bold text-green-600">→ Execute (Green)</span>
-                <ArrowRight className="w-3 h-3" />
-                <span className="text-gray-400">Track (Archive)</span>
+                <span className="font-bold text-green-600">→ Execute</span>
               </div>
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
-              <strong>Today's Workbench:</strong> View scheduled tasks with complete AI-generated how-to guides → 
-              Follow scope of work, watch tutorials → Mark complete to archive in Track
+              <strong>Complete tasks →</strong> Follow AI guides, track time, upload photos → 
+              Auto-archives to Track with full cost/outcome data
             </p>
           </div>
         </div>
@@ -240,117 +239,23 @@ export default function ExecutePage() {
           </Card>
         )}
 
-        {/* Date Navigation */}
-        <Card className="mb-6 border-2 border-green-300 bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <Button
-                onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                style={{ minHeight: '44px' }}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Previous Day</span>
-                <span className="sm:hidden">Prev</span>
-              </Button>
-
-              <div className="flex-1 text-center">
-                <div className="flex items-center justify-center gap-2 mb-1 flex-wrap">
-                  <Calendar className="w-5 h-5 text-green-600" />
-                  <h3 className="font-bold text-lg md:text-xl text-green-900">
-                    {format(selectedDate, 'EEEE, MMM d, yyyy')}
-                  </h3>
-                </div>
-                {isToday ? (
-                  <Badge className="bg-green-600 text-white">Today's Tasks</Badge>
-                ) : isBefore(selectedDate, today) ? (
-                  <Badge className="bg-orange-600 text-white">Past Date</Badge>
-                ) : (
-                  <Badge className="bg-blue-600 text-white">Future Date</Badge>
-                )}
-              </div>
-
-              <Button
-                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                style={{ minHeight: '44px' }}
-              >
-                <span className="hidden sm:inline">Next Day</span>
-                <span className="sm:hidden">Next</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {!isToday && (
-              <div className="mt-3 text-center">
-                <Button
-                  onClick={() => setSelectedDate(new Date())}
-                  variant="outline"
-                  size="sm"
-                  className="border-green-600 text-green-600 hover:bg-green-50"
-                  style={{ minHeight: '44px' }}
-                >
-                  Jump to Today
-                </Button>
-              </div>
+        {/* Simple Inline Count */}
+        {sortedTasks.length > 0 && (
+          <div className="flex items-baseline gap-2 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {sortedTasks.length} task{sortedTasks.length !== 1 ? 's' : ''} to complete
+            </h2>
+            {overdueCount > 0 && (
+              <span className="text-sm text-red-600 font-semibold animate-pulse">
+                ({overdueCount} overdue)
+              </span>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Key Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <ListChecks className="w-5 h-5 text-green-600" />
-                <Badge className="bg-green-600 text-white text-xs">Total</Badge>
-              </div>
-              <p className="text-2xl font-bold text-green-700">{totalTasks}</p>
-              <p className="text-xs text-gray-600">Total Tasks</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <PlayCircle className="w-5 h-5 text-blue-600" />
-              </div>
-              <p className="text-2xl font-bold text-blue-700">{tasksInProgress}</p>
-              <p className="text-xs text-gray-600">In Progress</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-md bg-gradient-to-br from-orange-50 to-orange-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <AlertTriangle className="w-5 h-5 text-orange-600" />
-                {overdueCount > 0 && (
-                  <Badge className="bg-orange-600 text-white text-xs">Overdue</Badge>
-                )}
-              </div>
-              <p className="text-2xl font-bold text-orange-700">{overdueCount}</p>
-              <p className="text-xs text-gray-600">Past Due</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-md bg-gradient-to-br from-purple-50 to-purple-100">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Clock className="w-5 h-5 text-purple-600" />
-              </div>
-              <p className="text-2xl font-bold text-purple-700">{totalEstimatedHours.toFixed(1)}h</p>
-              <p className="text-xs text-gray-600">Estimated Time</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* OVERDUE SECTION */}
+        {/* OVERDUE ALERT */}
         {overdueCount > 0 && (
-          <Card className="mb-6 border-2 border-red-400 bg-gradient-to-br from-red-50 to-orange-50">
+          <Card className="mb-4 border-2 border-red-400 bg-gradient-to-br from-red-50 to-orange-50">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5 animate-pulse" />
@@ -367,99 +272,71 @@ export default function ExecutePage() {
           </Card>
         )}
 
-        {/* Tasks Grouped by System */}
-        {sortedSystems.length > 0 ? (
-          <div className="space-y-4">
-            {sortedSystems.map(system => {
-              const systemTasks = tasksBySystem[system];
-              const isExpanded = expandedSystems[system] !== false;
-
+        {/* FLAT TASK LIST (sorted by priority, then duration) */}
+        {sortedTasks.length > 0 ? (
+          <div className="space-y-3">
+            {sortedTasks.map(task => {
+              const isOverdue = (() => {
+                try {
+                  const taskDate = startOfDay(parseISO(task.scheduled_date));
+                  return isBefore(taskDate, today);
+                } catch {
+                  return false;
+                }
+              })();
+              
               return (
-                <Card key={system} className="border-2 border-green-200 bg-white">
-                  <CardHeader 
-                    className="cursor-pointer hover:bg-green-50 transition-colors"
-                    onClick={() => toggleSystemExpanded(system)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <span className="text-2xl">{SYSTEM_ICONS[system] || '🔧'}</span>
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg text-green-900">{system}</CardTitle>
-                          <p className="text-sm text-gray-600">
-                            {systemTasks.length} task{systemTasks.length !== 1 ? 's' : ''} • 
-                            {' '}{systemTasks.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0).toFixed(1)}h estimated
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-600 text-white">{systemTasks.length}</Badge>
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-green-600" />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  {isExpanded && (
-                    <CardContent className="space-y-3 pt-0">
-                      {systemTasks.map(task => {
-                        const isOverdue = overdueTasks.some(t => t.id === task.id);
-                        return (
-                          <ExecuteTaskCard
-                            key={task.id}
-                            task={task}
-                            urgency={isOverdue ? 'overdue' : 'today'}
-                          />
-                        );
-                      })}
-                    </CardContent>
-                  )}
-                </Card>
+                <ExecuteTaskCard
+                  key={task.id}
+                  task={task}
+                  urgency={isOverdue ? 'overdue' : 'today'}
+                  properties={properties}
+                />
               );
             })}
           </div>
         ) : (
+          // IMPROVED EMPTY STATE
           <Card className="border-2 border-green-200 bg-white">
-            <CardContent className="p-8 text-center">
-              <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-300" />
-              <h3 className="font-bold text-xl mb-2 text-green-900">
-                No Tasks Scheduled for {format(selectedDate, 'MMMM d')}
+            <CardContent className="p-8 md:p-12 text-center">
+              <div className="text-6xl md:text-7xl mb-4">✨</div>
+              <h3 className="font-bold text-2xl md:text-3xl mb-2 text-green-900">
+                All Caught Up!
               </h3>
-              <p className="text-gray-600 mb-6">
-                {isToday 
-                  ? "You're all caught up! Schedule tasks to see them here on their due date."
-                  : "No tasks scheduled for this date. Use the arrows above to navigate."}
+              <p className="text-gray-600 mb-6 text-lg">
+                No tasks scheduled for today. Great work!
               </p>
+              
+              {completedToday > 0 && (
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 mb-6 max-w-sm mx-auto">
+                  <p className="text-green-800 font-semibold">
+                    🎉 You completed {completedToday} task{completedToday !== 1 ? 's' : ''} today!
+                  </p>
+                </div>
+              )}
+              
               <div className="flex gap-3 justify-center flex-wrap">
-                {isToday && selectedProperty !== 'all' && (
-                  <Button
-                    asChild
-                    className="bg-yellow-600 hover:bg-yellow-700 gap-2"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
-                      <Calendar className="w-4 h-4" />
-                      Go to Schedule
-                    </Link>
-                  </Button>
-                )}
-                {isToday && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-red-600 text-red-600 hover:bg-red-50 gap-2"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <Link to={createPageUrl("Prioritize")}>
-                      <Eye className="w-4 h-4" />
-                      View Ticket Queue
-                    </Link>
-                  </Button>
-                )}
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-yellow-600 text-yellow-600 hover:bg-yellow-50 gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Schedule")}>
+                    <Calendar className="w-4 h-4" />
+                    View Schedule
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-red-600 hover:bg-red-700 gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Prioritize")}>
+                    <Eye className="w-4 h-4" />
+                    Add New Task
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -471,17 +348,12 @@ export default function ExecutePage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-green-900 mb-2">After Completing Tasks:</h3>
-                <p className="text-sm text-gray-800 mb-3">
-                  Mark tasks complete as you finish them. Completed tasks automatically archive to <strong>Track</strong> with 
-                  all costs, dates, and outcomes recorded for your property's historical record.
+                <h3 className="font-bold text-green-900 mb-2">💡 Quick Tip:</h3>
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  Tasks under 30 minutes show a <strong>"Quick Complete"</strong> button for faster logging. 
+                  Longer tasks open the full DIY guide with timer, checklist, and photo uploads. 
+                  Completed tasks automatically archive to <strong>Track</strong> with all details saved!
                 </p>
-                <div className="bg-white rounded-lg p-3 border border-green-300">
-                  <p className="text-xs text-gray-700 leading-relaxed">
-                    <strong>💡 Remember:</strong> Execute is where scheduled work gets done. All ACT phase work 
-                    (Prioritize → Schedule → Execute) flows into Track for permanent recordkeeping!
-                  </p>
-                </div>
               </div>
             </div>
           </CardContent>
