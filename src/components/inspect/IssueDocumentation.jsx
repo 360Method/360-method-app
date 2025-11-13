@@ -5,6 +5,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input"; // New import
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -105,9 +106,14 @@ export default function IssueDocumentation({
         description: editingIssue.description || editingIssue.notes || '',
         severity: editingIssue.severity || 'Flag',
         photo_urls: editingIssue.photo_urls || [],
-        is_quick_fix: editingIssue.completed ? true : null, // If completed, it was a quick fix. Otherwise, undecided for editing purposes.
+        is_quick_fix: editingIssue.completed && !editingIssue.resolved_during_inspection ? true : null, // If completed AND not resolved_during_inspection, then it was a quick fix. Otherwise, undecided.
         estimated_cost: editingIssue.estimated_cost || '',
-        who_will_fix: editingIssue.who_will_fix || ''
+        who_will_fix: editingIssue.who_will_fix || '',
+        resolvedDuringInspection: editingIssue.resolved_during_inspection || false, // New field
+        resolutionNotes: editingIssue.resolution_notes || '', // New field
+        resolutionCost: editingIssue.resolution_cost || 0, // New field
+        resolutionTimeMinutes: editingIssue.resolution_time_minutes || 0, // New field
+        resolutionPhotoUrl: editingIssue.resolution_photo_url || '' // New field
       };
     }
 
@@ -118,13 +124,19 @@ export default function IssueDocumentation({
       photo_urls: [],
       is_quick_fix: null,
       estimated_cost: '',
-      who_will_fix: ''
+      who_will_fix: '',
+      resolvedDuringInspection: false, // New field
+      resolutionNotes: '', // New field
+      resolutionCost: 0, // New field
+      resolutionTimeMinutes: 0, // New field
+      resolutionPhotoUrl: '' // New field
     };
   });
 
   // Initialize photos state with existing photos if editing
   const [photos, setPhotos] = React.useState(editingIssue?.photo_urls || []);
   const [uploading, setUploading] = React.useState(false);
+  const [uploadingResolution, setUploadingResolution] = React.useState(false); // New state for resolution photo
   // If editing, we assume the quick fix decision might have been made, so initially hide the question.
   // We'll show it if the fix decision needs to be changed.
   const [showQuickFixQuestion, setShowQuickFixQuestion] = React.useState(false);
@@ -141,7 +153,7 @@ export default function IssueDocumentation({
     // or if the relevant form data has changed (e.g., description, system type, etc.), re-run AI estimation.
     // We only trigger this if is_quick_fix is explicitly false (meaning it's a priority queue item)
     // or if it was initially undecided and now became false.
-    if (editingIssue && formData.is_quick_fix === false && !aiEstimate && !aiEstimating) {
+    if (editingIssue && formData.is_quick_fix === false && !formData.resolvedDuringInspection && !aiEstimate && !aiEstimating) { // Added !formData.resolvedDuringInspection
       const fetchEstimate = async () => {
         setAiEstimating(true);
         try {
@@ -171,7 +183,7 @@ export default function IssueDocumentation({
       };
       fetchEstimate();
     }
-  }, [editingIssue, formData.is_quick_fix, formData.description, formData.system, formData.severity, formData.estimated_cost, area.name, aiEstimate, aiEstimating]);
+  }, [editingIssue, formData.is_quick_fix, formData.resolvedDuringInspection, formData.description, formData.system, formData.severity, formData.estimated_cost, area.name, aiEstimate, aiEstimating]);
 
 
   const queryClient = useQueryClient();
@@ -228,6 +240,26 @@ export default function IssueDocumentation({
       ...prev,
       photo_urls: prev.photo_urls.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleResolutionPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingResolution(true);
+    try {
+      const result = await base44.integrations.Core.UploadFile({ file });
+      setFormData(prev => ({
+        ...prev,
+        resolutionPhotoUrl: result.file_url
+      }));
+    } catch (error) {
+      console.error("Resolution photo upload error:", error);
+      alert('Failed to upload resolution photo');
+    } finally {
+      setUploadingResolution(false);
+      e.target.value = '';
+    }
   };
 
   const handleQuickFixAnswer = async (isQuickFix) => {
@@ -289,12 +321,51 @@ export default function IssueDocumentation({
       photo_urls: formData.photo_urls,
       estimated_cost: formData.estimated_cost,
       who_will_fix: formData.who_will_fix,
+      // New resolution fields
+      resolved_during_inspection: formData.resolvedDuringInspection,
+      resolution_notes: formData.resolutionNotes,
+      resolution_cost: formData.resolutionCost,
+      resolution_time_minutes: formData.resolutionTimeMinutes,
+      resolution_photo_url: formData.resolutionPhotoUrl
     };
 
     let updatedIssue;
 
-    if (formData.is_quick_fix) {
-      // Quick fix path
+    if (formData.resolvedDuringInspection) {
+      // New: Issue fixed during inspection
+      const taskData = {
+        property_id: propertyId,
+        title: baseIssue.item_name,
+        description: `Issue found and FIXED during ${inspection.season} ${inspection.year} inspection in ${area.name}.\n\nOriginal Issue: ${baseIssue.description}\n\nRESOLUTION NOTES:\n${formData.resolutionNotes || 'No specific notes.'}\n\nCost: $${formData.resolutionCost || 0}\nTime: ${formData.resolutionTimeMinutes || 0} minutes.`,
+        system_type: baseIssue.system,
+        priority: baseIssue.severity === 'Urgent' ? 'High' : baseIssue.severity === 'Flag' ? 'Medium' : 'Low',
+        status: 'Completed',
+        execution_type: 'DIY', // Assuming DIY for resolution during inspection
+        completion_date: new Date().toISOString().split('T')[0],
+        actual_cost: formData.resolutionCost || 0,
+        actual_hours: (formData.resolutionTimeMinutes || 0) / 60, // Convert minutes to hours
+        completion_notes: formData.resolutionNotes || 'Fixed during inspection',
+        completion_photos: formData.resolutionPhotoUrl ? [formData.resolutionPhotoUrl] : [],
+        photo_urls: baseIssue.photo_urls, // Original issue photos
+        resolved_during_inspection: true, // Explicitly mark as resolved during inspection
+      };
+
+      try {
+        await createTaskMutation.mutateAsync(taskData);
+        console.log(`✓ Task created as completed and resolved during inspection: ${baseIssue.item_name}`);
+      } catch (error) {
+        console.error("Error creating completed task for in-inspection resolution:", error);
+      }
+
+      updatedIssue = {
+        ...baseIssue,
+        notes: `Fixed during inspection. ${formData.resolutionNotes}`,
+        completed: true,
+        is_quick_fix: false, // Not considered a "quick fix" in the old sense; it's a full resolution
+      };
+
+    } else if (formData.is_quick_fix) {
+      // Quick fix path (existing logic)
       updatedIssue = {
         ...baseIssue,
         notes: `Quick fix completed during inspection. ${formData.who_will_fix === 'diy' ? 'DIY repair' : 'Professional service'}. Estimated cost: ${formData.estimated_cost}.`,
@@ -302,7 +373,7 @@ export default function IssueDocumentation({
         is_quick_fix: true, // Explicitly set for quick fix
       };
     } else {
-      // Non-quick fix path (Priority Queue)
+      // Non-quick fix path (Priority Queue - existing logic)
       if (!aiEstimate) {
         console.error("AI estimate missing for non-quick fix. Cannot proceed.");
         return;
@@ -396,6 +467,7 @@ export default function IssueDocumentation({
   const canAskQuickFixQuestion = formData.system && formData.description && formData.estimated_cost;
   const canSubmitQuickFix = formData.is_quick_fix === true && formData.who_will_fix;
   const canSubmitPriorityQueue = formData.is_quick_fix === false && aiEstimate && formData.who_will_fix;
+  const canSubmitResolved = formData.resolvedDuringInspection && formData.resolutionNotes.trim() !== ''; // Must have notes if resolved
 
   return (
     <>
@@ -547,8 +619,140 @@ export default function IssueDocumentation({
                 </Select>
               </div>
 
+              {/* NEW: Fixed During Inspection Section */}
+              <div className="mt-4 pt-4 border-t">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.resolvedDuringInspection || false}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setFormData(prev => ({
+                        ...prev,
+                        resolvedDuringInspection: checked,
+                        // Reset other decision fields if this is checked, to ensure clean state
+                        is_quick_fix: checked ? null : prev.is_quick_fix,
+                        who_will_fix: checked ? '' : prev.who_will_fix,
+                        resolutionNotes: checked ? prev.resolutionNotes : '',
+                        resolutionCost: checked ? prev.resolutionCost : 0,
+                        resolutionTimeMinutes: checked ? prev.resolutionTimeMinutes : 0,
+                        resolutionPhotoUrl: checked ? prev.resolutionPhotoUrl : ''
+                      }));
+                      // Hide other questions if this is enabled
+                      if (checked) {
+                        setShowQuickFixQuestion(false);
+                        setEditingFixDecision(false);
+                        setAiEstimate(null); // Clear AI estimate if switching to fixed
+                      }
+                    }}
+                    className="w-4 h-4"
+                    style={{ minHeight: '20px', minWidth: '20px' }}
+                  />
+                  <span className="font-semibold text-green-700">
+                    ✓ This issue was fixed during the inspection
+                  </span>
+                </label>
+                
+                {formData.resolvedDuringInspection && (
+                  <div className="mt-3 space-y-3 bg-green-50 border border-green-200 rounded-lg p-4">
+                    
+                    <div>
+                      <Label htmlFor="resolution-notes">What did you do to fix it? <span className="text-red-500">*</span></Label>
+                      <Textarea
+                        id="resolution-notes"
+                        value={formData.resolutionNotes}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          resolutionNotes: e.target.value
+                        }))}
+                        placeholder="E.g., Replaced air filter with new one; Tightened loose screw; Reset breaker"
+                        rows={2}
+                        required
+                        className="w-full px-3 py-2 border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                        style={{ minHeight: '44px', backgroundColor: '#FFFFFF' }}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="resolution-cost">Cost (if any)</Label>
+                        <Input
+                          id="resolution-cost"
+                          type="number"
+                          value={formData.resolutionCost || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            resolutionCost: parseFloat(e.target.value) || 0
+                          }))}
+                          placeholder="0"
+                          className="w-full px-3 py-2 border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                          style={{ minHeight: '44px', backgroundColor: '#FFFFFF' }}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="resolution-time">Time (minutes)</Label>
+                        <Input
+                          id="resolution-time"
+                          type="number"
+                          value={formData.resolutionTimeMinutes || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            resolutionTimeMinutes: parseInt(e.target.value) || 0
+                          }))}
+                          placeholder="5"
+                          className="w-full px-3 py-2 border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                          style={{ minHeight: '44px', backgroundColor: '#FFFFFF' }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="resolution-photo">After photo (optional)</Label>
+                      <input
+                        id="resolution-photo"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleResolutionPhotoUpload}
+                        disabled={uploadingResolution}
+                        className="w-full text-sm"
+                        style={{ minHeight: '44px' }}
+                      />
+                      {uploadingResolution && <p className="text-sm text-gray-600 mt-1">Uploading...</p>}
+                      {formData.resolutionPhotoUrl && (
+                        <div className="mt-2 relative inline-block">
+                          <img 
+                            src={formData.resolutionPhotoUrl}
+                            alt="After fix"
+                            className="w-32 h-32 object-cover rounded border border-green-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, resolutionPhotoUrl: '' }))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            style={{ minHeight: '28px', minWidth: '28px' }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!canSubmitResolved || createTaskMutation.isPending}
+                      className="w-full"
+                      style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                    >
+                      {createTaskMutation.isPending ? 'Saving...' : editingIssue ? 'Update & Mark as Fixed' : 'Save as Fixed ✓'}
+                    </Button>
+                    
+                  </div>
+                )}
+              </div>
+
               {/* Quick Fix Question */}
-              {formData.is_quick_fix === null && !showQuickFixQuestion && !editingFixDecision && (
+              { !formData.resolvedDuringInspection && formData.is_quick_fix === null && !showQuickFixQuestion && !editingFixDecision && (
                 <Button
                   onClick={() => setShowQuickFixQuestion(true)}
                   disabled={!canAskQuickFixQuestion}
@@ -559,7 +763,7 @@ export default function IssueDocumentation({
                 </Button>
               )}
 
-              {(showQuickFixQuestion || editingFixDecision) && (
+              { !formData.resolvedDuringInspection && (showQuickFixQuestion || editingFixDecision) && (
                 <Card className="border-2 border-blue-300 bg-blue-50">
                   <CardContent className="p-6">
                     <h3 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '18px' }}>
@@ -590,7 +794,7 @@ export default function IssueDocumentation({
               )}
 
               {/* Quick Fix Path */}
-              {formData.is_quick_fix === true && !editingFixDecision && (
+              { !formData.resolvedDuringInspection && formData.is_quick_fix === true && !editingFixDecision && (
                 <Card className="border-2 border-green-300 bg-green-50">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -638,7 +842,7 @@ export default function IssueDocumentation({
               )}
 
               {/* Priority Queue Path with AI Estimate */}
-              {formData.is_quick_fix === false && !editingFixDecision && (
+              { !formData.resolvedDuringInspection && formData.is_quick_fix === false && !editingFixDecision && (
                 <>
                   {aiEstimating && (
                     <Card className="border-2 border-purple-300 bg-purple-50">
