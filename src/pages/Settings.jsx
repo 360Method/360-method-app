@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,7 @@ export default function Settings() {
   });
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
+  const [isChangingTier, setIsChangingTier] = React.useState(false);
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -79,13 +81,27 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       setIsSaving(false);
       setSaveSuccess(true);
+      setIsChangingTier(false);
       setTimeout(() => setSaveSuccess(false), 3000);
     },
+    onError: (error) => {
+      setIsSaving(false);
+      setIsChangingTier(false);
+      console.error("Failed to update user:", error);
+      alert("Failed to update settings. Please try again.");
+    }
   });
 
   const handleSave = async () => {
     setIsSaving(true);
     updateUserMutation.mutate(formData);
+  };
+
+  const handleChangeTier = (newTier) => {
+    if (confirm(`Switch to ${getTierConfig(newTier).displayName} tier?`)) {
+      setIsChangingTier(true);
+      updateUserMutation.mutate({ tier: newTier });
+    }
   };
 
   const handleRestartOnboarding = async () => {
@@ -193,7 +209,7 @@ export default function Settings() {
 
                 {currentTier === 'free' && (
                   <p className="text-lg text-gray-700 mb-3">
-                    <strong>$0/month</strong> • Limited features
+                    <strong>$0/month</strong> • Learning the Method
                   </p>
                 )}
 
@@ -228,9 +244,69 @@ export default function Settings() {
                 >
                   <Link to={createPageUrl("Pricing")}>
                     <ArrowUpCircle className="w-4 h-4" />
-                    Upgrade Plan
+                    Change Plan
                   </Link>
                 </Button>
+              )}
+            </div>
+
+            {/* Quick Tier Switcher */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <p className="text-sm font-semibold text-gray-900 mb-3">Quick Plan Switch:</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <Button
+                  onClick={() => handleChangeTier('free')}
+                  variant={currentTier === 'free' ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={currentTier === 'free' || isChangingTier}
+                  className={currentTier === 'free' ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'text-gray-900 border-gray-300'}
+                  style={{ minHeight: '44px' }}
+                >
+                  {isChangingTier && currentTier === 'free' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'free' ? '✓ Free' : 'Free'}
+                </Button>
+                <Button
+                  onClick={() => handleChangeTier('good')}
+                  variant={currentTier === 'good' ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={currentTier === 'good' || isChangingTier || totalDoors > 25}
+                  className={currentTier === 'good' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-gray-900 border-gray-300'}
+                  style={{ minHeight: '44px' }}
+                >
+                  {isChangingTier && currentTier === 'good' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'good' ? '✓ Pro' : 'Pro'}
+                </Button>
+                <Button
+                  onClick={() => handleChangeTier('better')}
+                  variant={currentTier === 'better' ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={currentTier === 'better' || isChangingTier || totalDoors > 100}
+                  className={currentTier === 'better' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-gray-900 border-gray-300'}
+                  style={{ minHeight: '44px' }}
+                >
+                  {isChangingTier && currentTier === 'better' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'better' ? '✓ Premium' : 'Premium'}
+                </Button>
+                <Button
+                  onClick={() => handleChangeTier('best')}
+                  variant={currentTier === 'best' ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={currentTier === 'best' || isChangingTier}
+                  className={currentTier === 'best' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-gray-900 border-gray-300'}
+                  style={{ minHeight: '44px' }}
+                >
+                  {isChangingTier && currentTier === 'best' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'best' ? '✓ Enterprise' : 'Enterprise'}
+                </Button>
+              </div>
+              {isChangingTier && (
+                <p className="text-xs text-center text-gray-600 mt-2">Updating your plan...</p>
+              )}
+              {(currentTier === 'good' && totalDoors > 25) && (
+                <p className="text-xs text-red-600 text-center mt-2">
+                  Pro tier has a 25-door limit. Please upgrade to a higher plan.
+                </p>
+              )}
+              {(currentTier === 'better' && totalDoors > 100) && (
+                <p className="text-xs text-red-600 text-center mt-2">
+                  Premium tier has a 100-door limit. Please upgrade to Enterprise.
+                </p>
               )}
             </div>
 
@@ -238,46 +314,52 @@ export default function Settings() {
             {currentTier === 'free' && totalDoors > 1 && (
               <div className="bg-white rounded-lg p-4 border-2 border-green-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Suggested Upgrade: Pro (Good)
+                  💡 Suggested: Upgrade to Pro
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  With {totalDoors} doors, Pro would cost <strong>${goodPricing.monthlyPrice}/month</strong> and unlock:
+                  With {totalDoors} doors, Pro costs <strong>${goodPricing.monthlyPrice}/month</strong> and unlocks AI that prevents disasters:
                 </p>
                 <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
-                  <li>Cascade risk alerts</li>
-                  <li>Portfolio analytics</li>
-                  <li>Export reports (PDF)</li>
+                  <li>AI cascade risk alerts (see chain reactions)</li>
+                  <li>AI spending forecasts (budget accurately)</li>
+                  <li>AI maintenance insights (become an expert)</li>
                 </ul>
+              </div>
+            )}
+
+            {currentTier === 'good' && totalDoors > 20 && totalDoors <= 25 && (
+              <div className="bg-white rounded-lg p-4 border-2 border-purple-300">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  💡 Consider: Premium (Better Value Soon)
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  You're at {totalDoors} doors paying ${goodPricing.monthlyPrice}/month. At 26+ doors, Premium becomes better value at $50 base.
+                </p>
               </div>
             )}
 
             {currentTier === 'good' && totalDoors > 25 && (
               <div className="bg-white rounded-lg p-4 border-2 border-purple-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Suggested Upgrade: Premium (Better)
+                  ⚠️ Door Limit Exceeded
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  You have {totalDoors} doors - Premium would cost <strong>${betterPricing.monthlyPrice}/month</strong> and add:
+                  You have {totalDoors} doors but Pro maxes at 25. Upgrade to Premium for up to 100 doors + advanced AI features.
                 </p>
-                <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
-                  <li>Portfolio comparison dashboard</li>
-                  <li>Budget forecasting tools</li>
-                  <li>Share access with team</li>
-                </ul>
               </div>
             )}
 
             {currentTier === 'better' && totalDoors > 80 && (
               <div className="bg-white rounded-lg p-4 border-2 border-orange-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Suggested Upgrade: Enterprise (Best)
+                  💡 Suggested: Enterprise (Save Money!)
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  With {totalDoors} doors, Enterprise at <strong>$299/month flat</strong> would save you ${betterPricing.monthlyPrice - 299}/month and add:
+                  At {totalDoors} doors, you're paying ${betterPricing.monthlyPrice}/month. Enterprise is $299 flat - saving you <strong>${(betterPricing.monthlyPrice - 299).toFixed(2)}/month</strong> plus you get:
                 </p>
                 <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
-                  <li>Unlimited doors (no per-door charges)</li>
-                  <li>Multi-user accounts with roles</li>
+                  <li>Multi-user accounts (add team members)</li>
+                  <li>Custom AI reporting</li>
                   <li>Dedicated account manager</li>
                   <li>Phone support (4hr response)</li>
                 </ul>
@@ -296,23 +378,6 @@ export default function Settings() {
                 ))}
               </ul>
             </div>
-
-            {/* Billing Actions */}
-            {currentTier !== 'free' && (
-              <div className="flex gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="gap-2 flex-1"
-                  style={{ minHeight: '48px' }}
-                >
-                  <Link to={createPageUrl("Pricing")}>
-                    <CreditCard className="w-4 h-4" />
-                    View Plans
-                  </Link>
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 
