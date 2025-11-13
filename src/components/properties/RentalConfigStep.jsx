@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -268,17 +269,18 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                               key={option.value}
                               className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
                                 unit.furnishing_level === option.value
-                                  ? 'border-orange-600 bg-white'
+                                  ? 'border-orange-600 bg-white shadow-md'
                                   : 'border-gray-300 hover:border-orange-400 bg-white'
                               }`}
                             >
                               <input
                                 type="radio"
                                 name={`unit-${index}-furnishing`}
+                                value={option.value}
                                 checked={unit.furnishing_level === option.value}
-                                onChange={() => {
-                                  updateUnit(index, 'furnishing_level', option.value);
-                                  updateUnit(index, 'is_furnished', option.value !== 'unfurnished');
+                                onChange={(e) => {
+                                  updateUnit(index, 'furnishing_level', e.target.value);
+                                  updateUnit(index, 'is_furnished', e.target.value !== 'unfurnished');
                                 }}
                                 className="mt-1"
                               />
