@@ -1,10 +1,11 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Sparkles, Crown, Shield, ArrowLeft, Loader2, Zap, TrendingUp, Brain } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Loader2, Flag, Star, Crown, Brain, Compass } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
@@ -54,13 +55,14 @@ export default function Checkout() {
 
   const plans = {
     good: {
-      name: 'Pro',
-      displayName: 'Good (Pro)',
+      name: 'Pioneer',
+      displayName: 'Pioneer',
       tier: 'good',
       pricing: calculateGoodPricing(totalDoors),
       color: '#28A745',
-      icon: Zap,
+      icon: Flag,
       features: [
+        'Everything in Scout, PLUS:',
         '🧠 AI cascade risk alerts',
         '🧠 AI cost forecasting',
         '🧠 AI spending insights',
@@ -71,17 +73,17 @@ export default function Checkout() {
         'Mobile-optimized'
       ],
       bestFor: 'Homeowners ready to prevent disasters with AI intelligence',
-      why: 'Pro gives you AI-powered vision that professionals use - seeing cascade risks before they cost thousands.'
+      why: 'Pioneer gives you AI-powered vision that professionals use - seeing cascade risks before they cost thousands.'
     },
     better: {
-      name: 'Premium',
-      displayName: 'Better (Premium)',
+      name: 'Commander',
+      displayName: 'Commander',
       tier: 'better',
       pricing: calculateBetterPricing(totalDoors),
       color: '#8B5CF6',
-      icon: TrendingUp,
+      icon: Star,
       features: [
-        '🧠 Everything in Pro, PLUS:',
+        'Everything in Pioneer, PLUS:',
         '🧠 AI portfolio comparison',
         '🧠 AI budget forecasting',
         'Up to 100 properties/doors',
@@ -90,17 +92,17 @@ export default function Checkout() {
         'Priority support (24hr response)'
       ],
       bestFor: 'Growing portfolios and professional investors',
-      why: 'Premium scales AI intelligence across your entire portfolio - like having an analyst on staff.'
+      why: 'Commander scales AI intelligence across your entire portfolio - like having an analyst on staff.'
     },
     best: {
-      name: 'Enterprise',
-      displayName: 'Best (Enterprise)',
+      name: 'Elite',
+      displayName: 'Elite',
       tier: 'best',
       pricing: calculateBestPricing(),
       color: '#F59E0B',
       icon: Crown,
       features: [
-        '🧠 Everything in Premium, PLUS:',
+        'Everything in Commander, PLUS:',
         '🧠 Custom AI reporting builder',
         'Unlimited properties/doors',
         'Multi-user accounts with roles',
@@ -109,7 +111,7 @@ export default function Checkout() {
         'API access (coming soon)'
       ],
       bestFor: 'Property management companies and large portfolios',
-      why: 'Enterprise gives you enterprise-grade AI and support - manage 100+ doors like a Fortune 500 facility team.'
+      why: 'Elite gives you enterprise-grade AI and support - manage 100+ doors like a Fortune 500 facility team.'
     }
   };
 
@@ -121,7 +123,7 @@ export default function Checkout() {
         <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
           <Card className="border-2 border-orange-300 bg-orange-50">
             <CardContent className="p-8 text-center">
-              <Shield className="w-16 h-16 mx-auto mb-4 text-orange-600" />
+              <Compass className="w-16 h-16 mx-auto mb-4 text-orange-600" />
               <h3 className="text-xl font-semibold mb-4">No Plan Selected</h3>
               <p className="text-gray-700 mb-6">
                 Please select a plan to continue.

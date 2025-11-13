@@ -1,77 +1,33 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Zap, TrendingUp, Crown } from "lucide-react";
+import { Compass, Flag, Star, Crown } from "lucide-react";
+import { getTierConfig } from "../shared/TierCalculator";
 
-export default function TierBadge({ tier, size = "default" }) {
-  const tierConfig = {
-    free: {
-      label: "Free",
-      bg: "#6B7280",
-      icon: Sparkles
-    },
-    good: {
-      label: "Pro",
-      bg: "#28A745",
-      icon: Zap
-    },
-    better: {
-      label: "Premium",
-      bg: "#8B5CF6",
-      icon: TrendingUp
-    },
-    best: {
-      label: "Enterprise",
-      bg: "#F59E0B",
-      icon: Crown
-    },
-    // Legacy support
-    pro: {
-      label: "Pro",
-      bg: "#28A745",
-      icon: Zap
-    },
-    premium: {
-      label: "Premium",
-      bg: "#8B5CF6",
-      icon: TrendingUp
-    },
-    enterprise: {
-      label: "Enterprise",
-      bg: "#F59E0B",
-      icon: Crown
-    },
-    homecare_essential: {
-      label: "HomeCare Essential",
-      bg: "#1B365D",
-      icon: Crown
-    },
-    homecare_premium: {
-      label: "HomeCare Premium",
-      bg: "#1B365D",
-      icon: Crown
-    },
-    homecare_elite: {
-      label: "HomeCare Elite",
-      bg: "#1B365D",
-      icon: Crown
-    }
+export default function TierBadge({ tier, size = "default", showIcon = true, className = "" }) {
+  const config = getTierConfig(tier);
+  
+  const icons = {
+    free: Compass,
+    good: Flag,
+    better: Star,
+    best: Crown
   };
 
-  const config = tierConfig[tier] || tierConfig.free;
-  const Icon = config.icon;
-  
-  // Don't render for free tier
-  if (tier === 'free') return null;
+  const Icon = icons[tier] || Compass;
 
-  const sizeClasses = size === "sm" ? "text-xs px-2 py-1" : "text-sm px-3 py-1.5";
+  const sizeClasses = {
+    sm: "text-xs px-2 py-0.5",
+    default: "text-sm px-3 py-1",
+    lg: "text-base px-4 py-1.5"
+  };
 
   return (
-    <Badge 
-      className={`text-white gap-1.5 ${sizeClasses}`}
-      style={{ backgroundColor: config.bg }}
+    <Badge
+      className={`${sizeClasses[size]} text-white inline-flex items-center gap-1.5 ${className}`}
+      style={{ backgroundColor: config.color }}
     >
-      <Icon className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
-      {config.label}
+      {showIcon && <Icon className={size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'} />}
+      <span className="font-semibold">{config.displayName}</span>
     </Badge>
   );
 }

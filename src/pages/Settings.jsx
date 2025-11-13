@@ -23,7 +23,10 @@ import {
   CreditCard,
   TrendingUp,
   Zap,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Compass, // New import
+  Flag,    // New import
+  Star     // New import
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -139,11 +142,11 @@ export default function Settings() {
 
   const getTierIcon = (tier) => {
     switch(tier) {
-      case 'free': return <Sparkles className="w-5 h-5 text-gray-600" />;
-      case 'good': return <Zap className="w-5 h-5 text-green-600" />;
-      case 'better': return <TrendingUp className="w-5 h-5 text-purple-600" />;
+      case 'free': return <Compass className="w-5 h-5 text-gray-600" />;
+      case 'good': return <Flag className="w-5 h-5 text-green-600" />;
+      case 'better': return <Star className="w-5 h-5 text-purple-600" />;
       case 'best': return <Crown className="w-5 h-5 text-orange-600" />;
-      default: return <Sparkles className="w-5 h-5 text-gray-600" />;
+      default: return <Compass className="w-5 h-5 text-gray-600" />;
     }
   };
 
@@ -184,7 +187,7 @@ export default function Settings() {
                     className="text-white"
                     style={{ backgroundColor: tierConfig.color }}
                   >
-                    {tierConfig.name.toUpperCase()}
+                    {tierConfig.displayName.toUpperCase()}
                   </Badge>
                 </div>
                 
@@ -262,7 +265,7 @@ export default function Settings() {
                   className={currentTier === 'free' ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'free' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'free' ? '✓ Free' : 'Free'}
+                  {isChangingTier && currentTier === 'free' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'free' ? '✓ Scout' : 'Scout'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('good')}
@@ -272,7 +275,7 @@ export default function Settings() {
                   className={currentTier === 'good' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'good' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'good' ? '✓ Pro' : 'Pro'}
+                  {isChangingTier && currentTier === 'good' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'good' ? '✓ Pioneer' : 'Pioneer'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('better')}
@@ -282,7 +285,7 @@ export default function Settings() {
                   className={currentTier === 'better' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'better' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'better' ? '✓ Premium' : 'Premium'}
+                  {isChangingTier && currentTier === 'better' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'better' ? '✓ Commander' : 'Commander'}
                 </Button>
                 <Button
                   onClick={() => handleChangeTier('best')}
@@ -292,7 +295,7 @@ export default function Settings() {
                   className={currentTier === 'best' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-gray-900 border-gray-300'}
                   style={{ minHeight: '44px' }}
                 >
-                  {isChangingTier && currentTier === 'best' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'best' ? '✓ Enterprise' : 'Enterprise'}
+                  {isChangingTier && currentTier === 'best' ? <RefreshCw className="w-4 h-4 animate-spin" /> : currentTier === 'best' ? '✓ Elite' : 'Elite'}
                 </Button>
               </div>
               {isChangingTier && (
@@ -300,12 +303,12 @@ export default function Settings() {
               )}
               {(currentTier === 'good' && totalDoors > 25) && (
                 <p className="text-xs text-red-600 text-center mt-2">
-                  Pro tier has a 25-door limit. Please upgrade to a higher plan.
+                  Pioneer tier has a 25-door limit. Please upgrade to a higher plan.
                 </p>
               )}
               {(currentTier === 'better' && totalDoors > 100) && (
                 <p className="text-xs text-red-600 text-center mt-2">
-                  Premium tier has a 100-door limit. Please upgrade to Enterprise.
+                  Commander tier has a 100-door limit. Please upgrade to Elite.
                 </p>
               )}
             </div>
@@ -314,10 +317,10 @@ export default function Settings() {
             {currentTier === 'free' && totalDoors > 1 && (
               <div className="bg-white rounded-lg p-4 border-2 border-green-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Suggested: Upgrade to Pro
+                  💡 Suggested: Upgrade to Pioneer
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  With {totalDoors} doors, Pro costs <strong>${goodPricing.monthlyPrice}/month</strong> and unlocks AI that prevents disasters:
+                  With {totalDoors} doors, Pioneer costs <strong>${goodPricing.monthlyPrice}/month</strong> and unlocks AI that prevents disasters:
                 </p>
                 <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
                   <li>AI cascade risk alerts (see chain reactions)</li>
@@ -330,10 +333,10 @@ export default function Settings() {
             {currentTier === 'good' && totalDoors > 20 && totalDoors <= 25 && (
               <div className="bg-white rounded-lg p-4 border-2 border-purple-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Consider: Premium (Better Value Soon)
+                  💡 Consider: Commander (Better Value Soon)
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  You're at {totalDoors} doors paying ${goodPricing.monthlyPrice}/month. At 26+ doors, Premium becomes better value at $50 base.
+                  You're at {totalDoors} doors paying ${goodPricing.monthlyPrice}/month. At 26+ doors, Commander becomes better value at $50 base.
                 </p>
               </div>
             )}
@@ -344,7 +347,7 @@ export default function Settings() {
                   ⚠️ Door Limit Exceeded
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  You have {totalDoors} doors but Pro maxes at 25. Upgrade to Premium for up to 100 doors + advanced AI features.
+                  You have {totalDoors} doors but Pioneer maxes at 25. Upgrade to Commander for up to 100 doors + advanced AI features.
                 </p>
               </div>
             )}
@@ -352,10 +355,10 @@ export default function Settings() {
             {currentTier === 'better' && totalDoors > 80 && (
               <div className="bg-white rounded-lg p-4 border-2 border-orange-300">
                 <p className="text-sm font-semibold text-gray-900 mb-2">
-                  💡 Suggested: Enterprise (Save Money!)
+                  💡 Suggested: Elite (Save Money!)
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  At {totalDoors} doors, you're paying ${betterPricing.monthlyPrice}/month. Enterprise is $299 flat - saving you <strong>${(betterPricing.monthlyPrice - 299).toFixed(2)}/month</strong> plus you get:
+                  At {totalDoors} doors, you're paying ${betterPricing.monthlyPrice}/month. Elite is $299 flat - saving you <strong>${(betterPricing.monthlyPrice - 299).toFixed(2)}/month</strong> plus you get:
                 </p>
                 <ul className="text-xs text-gray-700 space-y-1 ml-4 list-disc">
                   <li>Multi-user accounts (add team members)</li>
