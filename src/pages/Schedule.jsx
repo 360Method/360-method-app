@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Calendar as CalendarIcon,
   ChevronDown,
@@ -23,14 +21,13 @@ import {
   BookOpen,
   AlertTriangle,
   Target,
-  Send,
   Plus,
-  Sparkles,
   Eye
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, parseISO, startOfDay, isSameDay, addDays } from "date-fns";
+import { format, parseISO, startOfDay, addDays } from "date-fns";
+import CalendarView from "../components/schedule/CalendarView";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import StepNavigation from "../components/navigation/StepNavigation";
@@ -100,12 +97,15 @@ export default function SchedulePage() {
     }
   });
 
-  // Filter tasks that have been sent to Schedule (status = "Scheduled")
-  const scheduledTasks = allTasks.filter(task => task.status === 'Scheduled');
+  // Filter tasks that have execution_method set (ready to be scheduled)
+  const tasksReadyForScheduling = allTasks.filter(task =>
+    task.execution_method &&
+    (task.status === 'Identified' || task.status === 'Scheduled')
+  );
 
   // Split into tasks with dates and tasks without dates
-  const tasksWithDates = scheduledTasks.filter(t => t.scheduled_date);
-  const tasksWithoutDates = scheduledTasks.filter(t => !t.scheduled_date);
+  const tasksWithDates = tasksReadyForScheduling.filter(t => t.scheduled_date);
+  const tasksWithoutDates = tasksReadyForScheduling.filter(t => !t.scheduled_date);
 
   // Group unscheduled tasks by system type
   const tasksBySystem = tasksWithoutDates.reduce((acc, task) => {
@@ -117,19 +117,19 @@ export default function SchedulePage() {
     return acc;
   }, {});
 
-  const sortedSystems = Object.keys(tasksBySystem).sort((a, b) => 
+  const sortedSystems = Object.keys(tasksBySystem).sort((a, b) =>
     tasksBySystem[b].length - tasksBySystem[a].length
   );
 
   // Calculate statistics
-  const totalScheduled = scheduledTasks.length;
+  const totalScheduling = tasksReadyForScheduling.length;
   const tasksReadyForExecution = tasksWithDates.length;
   const awaitingDates = tasksWithoutDates.length;
-  const totalEstimatedHours = scheduledTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+  const totalEstimatedHours = tasksReadyForScheduling.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
 
   // Count tasks by next 7 days
   const today = startOfDay(new Date());
-  const next7Days = scheduledTasks.filter(t => {
+  const next7Days = tasksReadyForScheduling.filter(t => {
     if (!t.scheduled_date) return false;
     try {
       const taskDate = startOfDay(parseISO(t.scheduled_date));
@@ -140,12 +140,23 @@ export default function SchedulePage() {
     }
   }).length;
 
-  // Handle task actions
+  // Handler for drag-and-drop from calendar
+  const handleTaskDrop = (taskId, date) => {
+    updateTaskMutation.mutate({
+      taskId: taskId,
+      data: {
+        scheduled_date: format(date, 'yyyy-MM-dd'),
+        status: 'Scheduled'
+      }
+    });
+  };
+
   const handleSetDate = (task, date) => {
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
-        scheduled_date: format(date, 'yyyy-MM-dd')
+      data: {
+        scheduled_date: format(date, 'yyyy-MM-dd'),
+        status: 'Scheduled'
       }
     });
   };
@@ -153,21 +164,12 @@ export default function SchedulePage() {
   const handleSendBackToPrioritize = (task) => {
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
+      data: {
         status: 'Identified',
-        scheduled_date: null
+        scheduled_date: null,
+        execution_method: null
       }
     });
-  };
-
-  const handleSendToExecute = (task) => {
-    if (!task.scheduled_date) {
-      alert('Please set a date before sending to Execute.');
-      return;
-    }
-    // Status stays "Scheduled" - Execute will show it when the date comes
-    // Just confirm it's ready
-    alert(`"${task.title}" is ready for execution on ${format(parseISO(task.scheduled_date), 'MMM d, yyyy')}`);
   };
 
   const toggleSystemExpanded = (system) => {
@@ -204,7 +206,7 @@ export default function SchedulePage() {
     );
   }
 
-  const currentProperty = selectedProperty !== 'all' 
+  const currentProperty = selectedProperty !== 'all'
     ? properties.find(p => p.id === selectedProperty)
     : null;
 
@@ -227,7 +229,7 @@ export default function SchedulePage() {
                 Step 5: Schedule - Timeline Planner
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Assign dates to tasks from Prioritize, then send to Execute
+                Drag tasks to calendar dates, then they flow to Execute
               </p>
             </div>
           </div>
@@ -239,7 +241,7 @@ export default function SchedulePage() {
                 <BookOpen className="w-5 h-5 text-yellow-700" />
                 <h3 className="font-bold text-yellow-900">ACT Phase - Step 2 of 3:</h3>
               </div>
-              
+
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge className="bg-red-600 text-white">✓ 1. Prioritize</Badge>
                 <ArrowRight className="w-4 h-4 text-gray-600" />
@@ -249,8 +251,8 @@ export default function SchedulePage() {
               </div>
 
               <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Tasks arrive from Prioritize → Pick calendar dates → Organize timeline → 
-                Send to Execute (where AI how-to guides await) → Completed work auto-archives to Track
+                <strong>Your Job:</strong> Tasks with execution methods arrive from Prioritize → Drag them to calendar dates →
+                They auto-flow to Execute on scheduled day with AI how-to guides
               </p>
             </CardContent>
           </Card>
@@ -282,11 +284,11 @@ export default function SchedulePage() {
             {showEducation && (
               <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-yellow-200 pt-4">
                 <p className="leading-relaxed">
-                  <strong>Schedule is Step 2 of ACT:</strong> After you prioritize tasks in the Ticket Queue, 
-                  send them here to assign calendar dates. Once dates are set, tasks flow to Execute where you'll 
-                  see complete AI how-to guides. This creates a realistic timeline for your maintenance work.
+                  <strong>Schedule is Step 2 of ACT:</strong> After you've prioritized tasks and selected an execution method (DIY/Contractor/360° Operator),
+                  they arrive here. Your job is to assign calendar dates. Once a date is set, the task will automatically flow to "Execute"
+                  on that day, where you'll find comprehensive AI how-to guides. This creates your maintenance timeline.
                 </p>
-                
+
                 <div className="grid md:grid-cols-2 gap-3">
                   <div className="bg-white rounded-lg p-3 border border-yellow-200">
                     <p className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
@@ -294,10 +296,10 @@ export default function SchedulePage() {
                       What Arrives Here
                     </p>
                     <ul className="space-y-1 text-xs">
-                      <li>• Tasks you "Send to Schedule" from Prioritize</li>
-                      <li>• Status changed to "Scheduled"</li>
+                      <li>• Tasks from Prioritize with an execution method (DIY/Contractor/360° Operator) selected.</li>
+                      <li>• Status is "Identified" or "Scheduled" (if already dated)</li>
                       <li>• May or may not have dates yet</li>
-                      <li>• Can be DIY or Professional</li>
+                      <li>• Can be DIY, Contractor, or 360° Operator</li>
                       <li>• Already enriched with AI analysis</li>
                     </ul>
                   </div>
@@ -323,7 +325,7 @@ export default function SchedulePage() {
                     Next Stop: Execute (Green)
                   </p>
                   <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                    Once tasks have dates, they automatically appear in <strong>Execute</strong> on the scheduled day. 
+                    Once tasks have dates, they automatically appear in <strong>Execute</strong> on the scheduled day.
                     Execute shows:
                   </p>
                   <ul className="space-y-1 text-xs">
@@ -340,13 +342,13 @@ export default function SchedulePage() {
                   <ul className="space-y-1 text-xs">
                     <li>• <strong>Batch by system:</strong> Schedule similar tasks together (all HVAC work on one day)</li>
                     <li>• <strong>Season matters:</strong> Don't schedule roof work in winter or exterior painting in rain season</li>
-                    <li>• <strong>Send back anytime:</strong> Changed your mind? Send tasks back to Prioritize to reassess</li>
+                    <li>• <strong>Send back anytime:</strong> Changed your mind? Send tasks back to Prioritize to reassess execution method or prioritize differently.</li>
                     <li>• <strong>No rush:</strong> Tasks wait here until YOU assign dates - nothing happens automatically</li>
                   </ul>
                 </div>
 
                 <p className="text-xs italic text-yellow-700 bg-yellow-100 border border-yellow-300 rounded p-2">
-                  🗓️ <strong>Remember:</strong> Schedule is about <strong>WHEN</strong>, not HOW. The "how" lives in 
+                  🗓️ <strong>Remember:</strong> Schedule is about <strong>WHEN</strong>, not HOW. The "how" lives in
                   Execute with AI-generated instructions. Your job here is just timeline planning.
                 </p>
               </div>
@@ -369,17 +371,11 @@ export default function SchedulePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4" />
-                        <span className="font-semibold">All Properties ({properties.length})</span>
-                      </div>
+                      All Properties ({properties.length})
                     </SelectItem>
                     {properties.map(prop => (
                       <SelectItem key={prop.id} value={prop.id}>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4" />
-                          <span>{prop.address || prop.street_address || 'Unnamed Property'}</span>
-                        </div>
+                        {prop.address || prop.street_address || 'Unnamed Property'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -400,9 +396,9 @@ export default function SchedulePage() {
                 </Badge>
               </div>
               <p className="text-2xl font-bold text-yellow-700">
-                {totalScheduled}
+                {totalScheduling}
               </p>
-              <p className="text-xs text-gray-600">In Schedule</p>
+              <p className="text-xs text-gray-600">Ready to Schedule</p>
             </CardContent>
           </Card>
 
@@ -431,7 +427,7 @@ export default function SchedulePage() {
               <p className="text-2xl font-bold text-green-700">
                 {tasksReadyForExecution}
               </p>
-              <p className="text-xs text-gray-600">Ready for Execute</p>
+              <p className="text-xs text-gray-600">On Calendar</p>
             </CardContent>
           </Card>
 
@@ -456,9 +452,9 @@ export default function SchedulePage() {
         {/* View Mode Selector */}
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Label className="font-bold text-yellow-900">View Mode:</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={() => setViewMode('unscheduled')}
                   variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
@@ -475,7 +471,7 @@ export default function SchedulePage() {
                   className={viewMode === 'calendar' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
                   style={{ minHeight: '44px' }}
                 >
-                  📅 All Scheduled Tasks ({tasksReadyForExecution})
+                  📅 Calendar View ({tasksReadyForExecution})
                 </Button>
               </div>
             </div>
@@ -483,8 +479,58 @@ export default function SchedulePage() {
         </Card>
 
         {/* Main Content Area */}
-        {viewMode === 'unscheduled' ? (
-          // Tasks Needing Dates View - Grouped by System
+        {viewMode === 'calendar' ? (
+          // CALENDAR VIEW
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {/* Unscheduled Tasks Sidebar (Mobile: above calendar) */}
+            <div className="lg:col-span-1 order-2 lg:order-1">
+              <Card className="border-2 border-orange-300 bg-orange-50 sticky top-4">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Inbox className="w-5 h-5" />
+                    Ready to Schedule ({awaitingDates})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
+                  {tasksWithoutDates.length > 0 ? (
+                    tasksWithoutDates.map(task => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
+                        className="p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-move hover:bg-orange-50 transition-all"
+                      >
+                        <div className="font-semibold text-sm text-gray-900 mb-1">{task.title}</div>
+                        <div className="text-xs text-gray-600">
+                          {task.execution_method === 'DIY' && '🔧 DIY'}
+                          {task.execution_method === 'Contractor' && '👷 Contractor'}
+                          {task.execution_method === '360_Operator' && '⭐ 360° Operator'}
+                          {task.diy_cost && ` • $${task.diy_cost}`}
+                          {task.contractor_cost && !task.diy_cost && ` • $${task.contractor_cost}`}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-600 text-center py-4">
+                      All tasks have dates! 🎉
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Calendar */}
+            <div className="lg:col-span-3 order-1 lg:order-2">
+              <CalendarView
+                tasks={tasksWithDates}
+                onTaskClick={(task) => {/* Could open detail modal */}}
+                onDateClick={(date) => {/* Could open "Add task" modal */}}
+                onTaskDrop={(taskId, date) => handleTaskDrop(taskId, date)}
+              />
+            </div>
+          </div>
+        ) : (
+          // UNSCHEDULED LIST VIEW
           sortedSystems.length > 0 ? (
             <div className="space-y-4">
               <Card className="border-2 border-orange-300 bg-orange-50">
@@ -496,8 +542,7 @@ export default function SchedulePage() {
                         {awaitingDates} Task{awaitingDates !== 1 ? 's' : ''} Waiting for Calendar Dates
                       </h3>
                       <p className="text-sm text-orange-800">
-                        These tasks were sent from Prioritize but need dates assigned. Click each task to set a date, 
-                        then they'll move to "Ready for Execute" and appear in the Execute tab on the scheduled day.
+                        These tasks were sent from Prioritize with execution methods set. Assign dates to move them to the calendar.
                       </p>
                     </div>
                   </div>
@@ -510,7 +555,7 @@ export default function SchedulePage() {
 
                 return (
                   <Card key={system} className="border-2 border-yellow-200 bg-white">
-                    <CardHeader 
+                    <CardHeader
                       className="cursor-pointer hover:bg-yellow-50 transition-colors"
                       onClick={() => toggleSystemExpanded(system)}
                     >
@@ -518,25 +563,21 @@ export default function SchedulePage() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
                             <span className="text-2xl">
-                              {system === 'HVAC' ? '❄️' : 
+                              {system === 'HVAC' ? '❄️' :
                                system === 'Plumbing' ? '🚰' :
                                system === 'Electrical' ? '⚡' :
                                system === 'Roof' ? '🏠' : '🔧'}
                             </span>
                           </div>
                           <div>
-                            <CardTitle className="text-lg text-yellow-900">
-                              {system}
-                            </CardTitle>
+                            <CardTitle className="text-lg text-yellow-900">{system}</CardTitle>
                             <p className="text-sm text-gray-600">
                               {systemTasks.length} task{systemTasks.length !== 1 ? 's' : ''} need{systemTasks.length === 1 ? 's' : ''} dates
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-yellow-600 text-white">
-                            {systemTasks.length}
-                          </Badge>
+                          <Badge className="bg-yellow-600 text-white">{systemTasks.length}</Badge>
                           {isExpanded ? (
                             <ChevronUp className="w-5 h-5 text-yellow-600" />
                           ) : (
@@ -555,7 +596,6 @@ export default function SchedulePage() {
                             property={currentProperty || properties.find(p => p.id === task.property_id)}
                             onSetDate={handleSetDate}
                             onSendBack={handleSendBackToPrioritize}
-                            onSendToExecute={handleSendToExecute}
                           />
                         ))}
                       </CardContent>
@@ -572,68 +612,14 @@ export default function SchedulePage() {
                   All Tasks Have Dates!
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Every task in Schedule has a calendar date assigned. Switch to "All Scheduled Tasks" view to see your timeline.
+                  Switch to Calendar View to see your schedule.
                 </p>
                 <Button
                   onClick={() => setViewMode('calendar')}
                   className="bg-yellow-600 hover:bg-yellow-700"
+                  style={{ minHeight: '48px' }}
                 >
-                  View Timeline
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        ) : (
-          // All Scheduled Tasks View
-          tasksReadyForExecution > 0 ? (
-            <div className="space-y-4">
-              <Card className="border-2 border-green-300 bg-green-50">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <PlayCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-bold text-green-900 mb-1">
-                        {tasksReadyForExecution} Task{tasksReadyForExecution !== 1 ? 's' : ''} Ready for Execution
-                      </h3>
-                      <p className="text-sm text-green-800">
-                        These tasks have calendar dates assigned. They'll automatically appear in the <strong>Execute</strong> tab 
-                        on their scheduled dates with complete AI how-to guides.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Show tasks sorted by date */}
-              {tasksWithDates
-                .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
-                .map(task => (
-                  <ScheduleTaskCard
-                    key={task.id}
-                    task={task}
-                    property={currentProperty || properties.find(p => p.id === task.property_id)}
-                    onSetDate={handleSetDate}
-                    onSendBack={handleSendBackToPrioritize}
-                    onSendToExecute={handleSendToExecute}
-                    showDateFirst={true}
-                  />
-                ))}
-            </div>
-          ) : (
-            <Card className="border-2 border-yellow-200 bg-white">
-              <CardContent className="p-8 text-center">
-                <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-yellow-300" />
-                <h3 className="font-bold text-xl mb-2 text-yellow-900">
-                  No Tasks Ready for Execution
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Assign dates to tasks in the "Tasks Needing Dates" view first.
-                </p>
-                <Button
-                  onClick={() => setViewMode('unscheduled')}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  View Tasks Needing Dates
+                  View Calendar
                 </Button>
               </CardContent>
             </Card>
@@ -665,8 +651,8 @@ export default function SchedulePage() {
                       Send Back to Prioritize
                     </p>
                     <p className="text-xs text-gray-700 leading-relaxed">
-                      Changed your mind? Send tasks back to the Ticket Queue to re-evaluate priority, 
-                      execution type, or add to cart instead
+                      Changed your mind? Send tasks back to the Ticket Queue to re-evaluate priority,
+                      execution method, or to remove their scheduled date and execution method.
                     </p>
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-400">
@@ -675,7 +661,7 @@ export default function SchedulePage() {
                       Set/Change Date
                     </p>
                     <p className="text-xs text-gray-700 leading-relaxed">
-                      Assign calendar dates to tasks. Once dated, they'll appear in Execute on the scheduled day. 
+                      Assign calendar dates to tasks. Once dated, they'll appear in Execute on the scheduled day.
                       You can change dates anytime
                     </p>
                   </div>
@@ -685,7 +671,7 @@ export default function SchedulePage() {
                       Auto-Flows to Execute
                     </p>
                     <p className="text-xs text-gray-700 leading-relaxed">
-                      Tasks with dates automatically appear in <strong>Execute</strong> on the scheduled day. 
+                      Tasks with dates automatically appear in <strong>Execute</strong> on the scheduled day.
                       No "send" action needed - just set the date
                     </p>
                   </div>
@@ -693,7 +679,7 @@ export default function SchedulePage() {
 
                 <div className="mt-3 bg-white rounded-lg p-3 border-l-4 border-green-600">
                   <p className="text-xs text-gray-800 leading-relaxed">
-                    <strong>📚 Remember:</strong> Once tasks are completed in Execute, they automatically archive to 
+                    <strong>📚 Remember:</strong> Once tasks are completed in Execute, they automatically archive to
                     <strong> Track</strong> with all dates, costs, and outcomes logged. The ACT workflow ensures nothing falls through the cracks!
                   </p>
                 </div>
@@ -702,28 +688,27 @@ export default function SchedulePage() {
           </CardContent>
         </Card>
 
-        {/* Empty State - No Scheduled Tasks */}
-        {totalScheduled === 0 && (
+        {/* Empty State */}
+        {totalScheduling === 0 && (
           <Card className="mt-6 border-2 border-yellow-200 bg-white">
             <CardContent className="p-8 text-center">
               <Inbox className="w-16 h-16 mx-auto mb-4 text-yellow-300" />
               <h3 className="font-bold text-xl mb-2 text-yellow-900">
-                No Tasks in Schedule Yet
+                No Tasks Ready to Schedule
               </h3>
               <p className="text-gray-600 mb-6">
-                Tasks arrive here from Prioritize. Send tasks to Schedule from the Ticket Queue to start planning your timeline.
+                Tasks arrive here from Prioritize after you choose an execution method (DIY/Contractor/360° Operator).
               </p>
-              <div className="flex gap-3 justify-center">
-                <Button
-                  asChild
-                  className="bg-red-600 hover:bg-red-700 gap-2"
-                >
-                  <Link to={createPageUrl("Prioritize") + (selectedProperty !== 'all' ? `?property=${selectedProperty}` : '')}>
-                    <Eye className="w-4 h-4" />
-                    Go to Prioritize
-                  </Link>
-                </Button>
-              </div>
+              <Button
+                asChild
+                className="bg-red-600 hover:bg-red-700 gap-2"
+                style={{ minHeight: '48px' }}
+              >
+                <Link to={createPageUrl("Prioritize") + (selectedProperty !== 'all' ? `?property=${selectedProperty}` : '')}>
+                  <Eye className="w-4 h-4" />
+                  Go to Prioritize
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         )}
