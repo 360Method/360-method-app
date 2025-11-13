@@ -41,8 +41,15 @@ export default function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[50]" style={{ height: '64px' }}>
-      <div className="flex items-center justify-around h-full px-2">
+    <nav 
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl" 
+      style={{ 
+        height: '64px',
+        zIndex: 9999,
+        paddingBottom: 'env(safe-area-inset-bottom)'
+      }}
+    >
+      <div className="flex items-center justify-around h-full px-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.url || 
                           location.pathname.includes(item.label.toLowerCase());
@@ -52,21 +59,26 @@ export default function BottomNav() {
             <Link
               key={item.label}
               to={item.url}
-              className="flex flex-col items-center justify-center gap-1 flex-1"
-              style={{ minHeight: '44px', minWidth: '44px' }}
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg active:bg-gray-100 transition-colors"
+              style={{ 
+                minHeight: '56px', 
+                minWidth: '56px',
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
               <Icon 
-                className="w-6 h-6" 
+                className="w-6 h-6 flex-shrink-0" 
                 style={{ 
                   color: isActive ? '#FF6B35' : '#1B365D',
                   strokeWidth: isActive ? 2.5 : 2
                 }} 
               />
               <span 
-                className="text-xs font-medium"
+                className="font-semibold leading-tight text-center"
                 style={{ 
                   color: isActive ? '#FF6B35' : '#1B365D',
-                  fontSize: '12px'
+                  fontSize: '11px',
+                  lineHeight: '1.2'
                 }}
               >
                 {item.label}

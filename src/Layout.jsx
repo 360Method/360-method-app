@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -317,6 +318,13 @@ export default function Layout({ children }) {
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
+
+        /* CRITICAL: Ensure bottom nav is always visible on mobile */
+        @media (max-width: 767px) {
+          body {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+        }
       `}</style>
 
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
@@ -555,12 +563,12 @@ export default function Layout({ children }) {
           </header>
 
           {/* Content Area with mobile padding for both top header and bottom nav */}
-          <div className="flex-1 overflow-auto pt-[56px] pb-16 md:pt-0 md:pb-0">
+          <div className="flex-1 overflow-auto pt-[56px] pb-[80px] md:pt-0 md:pb-0">
             {children}
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Bottom Navigation - ALWAYS VISIBLE */}
         <BottomNav />
 
         {/* Floating Cart Drawer */}
