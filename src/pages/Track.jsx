@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import TimelineItem from "../components/track/TimelineItem";
 import CostSummary from "../components/track/CostSummary";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import { Progress } from "@/components/ui/progress";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 export default function Track() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -354,8 +356,13 @@ Be specific, practical, and data-driven. Reference actual numbers and system nam
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto p-4 md:p-8 space-y-6">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={3} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">

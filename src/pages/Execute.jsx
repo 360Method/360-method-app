@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format, addDays, subDays, startOfDay, isSameDay, parseISO } from "date-fns";
 import TaskExecutionCard from "../components/execute/TaskExecutionCard";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -215,6 +217,11 @@ export default function ExecutePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-20">
       <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">

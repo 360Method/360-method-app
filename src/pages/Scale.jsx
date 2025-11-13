@@ -24,9 +24,11 @@ import {
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 export default function Scale() {
   const [whyExpanded, setWhyExpanded] = React.useState(false);
+  const [selectedProperty, setSelectedProperty] = React.useState('all'); // Added for StepNavigation prop
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -71,8 +73,13 @@ export default function Scale() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={9} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">

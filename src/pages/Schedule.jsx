@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ import { createPageUrl } from "@/utils";
 import { format, parseISO, startOfDay, isSameDay, addDays } from "date-fns";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -209,6 +211,11 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 pb-20">
       <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={5} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">

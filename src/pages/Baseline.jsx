@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import ConfirmDialog from "../components/ui/confirm-dialog";
 import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -603,8 +605,13 @@ export default function Baseline() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">

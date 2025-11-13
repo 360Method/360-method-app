@@ -37,6 +37,7 @@ import InspectionComplete from "../components/inspect/InspectionComplete";
 import InspectionReport from "../components/inspect/InspectionReport";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -237,8 +238,13 @@ export default function Inspect() {
 
   // Main inspection dashboard view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={2} propertyId={selectedPropertyId !== '' ? selectedPropertyId : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">

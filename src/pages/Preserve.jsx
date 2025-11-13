@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ import SystemLifecycleCard from "../components/preserve/SystemLifecycleCard";
 import ExpenseForecast from "../components/preserve/ExpenseForecast";
 import { generatePreservationRecommendations, generateAIPreservationPlan } from "../components/shared/PreservationAnalyzer";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 export default function Preserve() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -162,8 +164,13 @@ Please provide a quote for these preservation services.`
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto p-4 md:p-8">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={7} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -620,7 +627,7 @@ Please provide a quote for these preservation services.`
                   <Button
                     onClick={() => {
                       // Preserve the selectedOpportunity before clearing it to pass to handleRequestService
-                      const currentOpportunity = selectedOpportunity; // Corrected variable name from currentSelectedOpportunity to currentOpportunity
+                      const currentOpportunity = selectedOpportunity;
                       setSelectedOpportunity(null); // Close the learn more dialog
                       setAiPlan(null);
                       handleRequestService(currentOpportunity); // Then open the service request dialog

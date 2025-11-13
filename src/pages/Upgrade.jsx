@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import UpgradeCard from "../components/upgrade/UpgradeCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 export default function Upgrade() {
   const location = useLocation();
@@ -149,8 +151,13 @@ export default function Upgrade() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={8} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">

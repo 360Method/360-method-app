@@ -33,6 +33,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
+import StepNavigation from "../components/navigation/StepNavigation";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -222,6 +223,11 @@ export default function PrioritizePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
       <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Step Navigation */}
+        <div className="mb-6">
+          <StepNavigation currentStep={4} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
