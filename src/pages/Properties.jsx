@@ -20,8 +20,9 @@ import {
   Shield,
   TrendingUp,
   Target,
-  Clock, // Added icon
-  Play // Added icon
+  Clock,
+  Play,
+  Settings // Added icon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -34,15 +35,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator, // Added import
 } from "@/components/ui/dropdown-menu";
 
 export default function Properties() {
   const [showWizard, setShowWizard] = React.useState(false);
-  const [editingProperty, setEditingProperty] = React.useState(null);
+  const [editingProperty, setEditingProperty] = React.useState(null); // For quick edit dialog
+  const [editingPropertyFull, setEditingPropertyFull] = React.useState(null); // For full wizard edit
+  const [showEditWarning, setShowEditWarning] = React.useState(false);
   const [deletingProperty, setDeletingProperty] = React.useState(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
-  const [resumingDraft, setResumingDraft] = React.useState(null); // New state for resuming drafts
+  const [resumingDraft, setResumingDraft] = React.useState(null);
   const queryClient = useQueryClient();
 
   // Fetch completed properties (not drafts)
@@ -50,7 +54,7 @@ export default function Properties() {
     queryKey: ['properties'],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-created_date');
-      return allProps.filter(p => !p.is_draft); // Filter out drafts
+      return allProps.filter(p => !p.is_draft);
     },
   });
 
@@ -59,7 +63,7 @@ export default function Properties() {
     queryKey: ['draft-properties'],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-updated_date');
-      return allProps.filter(p => p.is_draft === true); // Filter for drafts
+      return allProps.filter(p => p.is_draft === true);
     },
   });
 
@@ -75,18 +79,29 @@ export default function Properties() {
     mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
-      queryClient.invalidateQueries({ queryKey: ['draft-properties'] }); // Invalidate draft properties as well
+      queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
       setDeletingProperty(null);
     },
   });
 
   const handleWizardComplete = () => {
     setShowWizard(false);
-    setResumingDraft(null); // Reset resumingDraft on wizard completion
+    setResumingDraft(null);
+    setEditingPropertyFull(null); // Reset editingPropertyFull on wizard completion
   };
 
-  const handleEdit = (property) => {
+  const handleQuickEdit = (property) => {
     setEditingProperty(property);
+  };
+
+  const handleFullEdit = (property) => {
+    setEditingPropertyFull(property);
+    setShowEditWarning(true);
+  };
+
+  const confirmFullEdit = () => {
+    setShowEditWarning(false);
+    setShowWizard(true); // Open wizard with editingPropertyFull as the existing draft
   };
 
   const handleDelete = (property) => {
@@ -105,6 +120,7 @@ export default function Properties() {
     } else {
       setShowWizard(true);
       setResumingDraft(null); // Ensure no draft is being resumed when adding new
+      setEditingPropertyFull(null); // Ensure no property is being fully edited when adding new
     }
   };
 
@@ -112,6 +128,7 @@ export default function Properties() {
   const handleResumeDraft = (draft) => {
     setResumingDraft(draft);
     setShowWizard(true);
+    setEditingPropertyFull(null); // Ensure no property is being fully edited when resuming draft
   };
 
   if (showWizard) {
@@ -121,9 +138,10 @@ export default function Properties() {
           onComplete={handleWizardComplete}
           onCancel={() => {
             setShowWizard(false);
-            setResumingDraft(null); // Reset resumingDraft on wizard cancel
+            setResumingDraft(null);
+            setEditingPropertyFull(null); // Reset editingPropertyFull on wizard cancel
           }}
-          existingDraft={resumingDraft} // Pass existing draft to wizard
+          existingDraft={resumingDraft || editingPropertyFull} // Pass existing draft or property for full edit
         />
       </div>
     );
@@ -466,10 +484,15 @@ This action cannot be undone.`;
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white">
-                          <DropdownMenuItem onClick={() => handleEdit(property)}>
+                          <DropdownMenuItem onClick={() => handleQuickEdit(property)}>
                             <Edit className="w-4 h-4 mr-2" />
-                            Edit Property
+                            Quick Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleFullEdit(property)}>
+                            <Settings className="w-4 h-4 mr-2" />
+                            Full Setup Wizard
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => handleDelete(property)}
                             className="text-red-600 focus:text-red-600"
@@ -633,11 +656,40 @@ This action cannot be undone.`;
         )}
       </div>
 
-      {/* Edit Property Dialog */}
+      {/* Quick Edit Property Dialog */}
       {editingProperty && (
         <PropertyEditDialog
           property={editingProperty}
           onClose={() => setEditingProperty(null)}
+        />
+      )}
+
+      {/* Full Edit Warning Dialog */}
+      {showEditWarning && editingPropertyFull && (
+        <ConfirmDialog
+          open={showEditWarning}
+          onClose={() => {
+            setShowEditWarning(false);
+            setEditingPropertyFull(null);
+          }}
+          onConfirm={confirmFullEdit}
+          title="Edit Property Setup?"
+          message={`⚠️ You're about to modify core property details for:
+${editingPropertyFull.address}
+
+This may affect downstream data including:
+• System baselines and configurations
+• Seasonal maintenance tasks
+• Inspection checklists
+• Cost calculations and forecasts
+• Analytics and reports
+
+Changes will update across all connected features. Make sure your edits are accurate.
+
+Continue with full setup wizard?`}
+          confirmText="Yes, Open Setup Wizard"
+          cancelText="Cancel"
+          variant="warning"
         />
       )}
 
