@@ -65,9 +65,12 @@ export default function ExecutePage() {
 
   const today = startOfDay(new Date());
 
-  // NEW: Show ALL execution methods including 360_Operator
+  // Show tasks that are Scheduled or In Progress, have a date, and are due today or overdue
   const tasksForDisplay = allTasks.filter(task => {
+    // CRITICAL FIX: Must have valid status
     if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
+    
+    // Must have a scheduled date
     if (!task.scheduled_date) return false;
     
     try {
@@ -78,6 +81,7 @@ export default function ExecutePage() {
     }
   });
 
+  // FIXED: Calculate overdue count from the SAME filtered list
   const overdueCount = tasksForDisplay.filter(task => {
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
@@ -87,7 +91,7 @@ export default function ExecutePage() {
     }
   }).length;
 
-  // NEW: Simple sorted list (priority first, then quick tasks first for momentum)
+  // Sort tasks: priority first, then quick tasks first for momentum
   const sortedTasks = tasksForDisplay.sort((a, b) => {
     const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
     const priorityDiff = (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
@@ -99,7 +103,7 @@ export default function ExecutePage() {
     return aHours - bHours;
   });
 
-  // OPTIONAL: Group by execution method for visual distinction
+  // Group by execution method for visual distinction
   const operatorTasks = sortedTasks.filter(t => t.execution_method === '360_Operator');
   const diyTasks = sortedTasks.filter(t => t.execution_method === 'DIY');
   const contractorTasks = sortedTasks.filter(t => t.execution_method === 'Contractor');
