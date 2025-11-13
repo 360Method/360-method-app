@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,6 +46,7 @@ export default function PropertiesPage() {
   const [reconfigureProperty, setReconfigureProperty] = React.useState(null);
   const [reconfigureConfirmOpen, setReconfigureConfirmOpen] = React.useState(false);
   const [reconfigureCounts, setReconfigureCounts] = React.useState(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(true);
 
   const queryClient = useQueryClient();
 
@@ -187,12 +187,7 @@ export default function PropertiesPage() {
 
   const handleAddProperty = () => {
     if (!canAddProperty) {
-      // Assuming setShowUpgradePrompt is defined elsewhere or this line is meant to trigger a different UI.
-      // For now, I'll keep it as is, but if setShowUpgradePrompt is missing, it will cause an error.
-      // If it should open a generic upgrade prompt, a state for that needs to be added.
-      // Let's assume it's a placeholder for now or refers to a context variable.
-      // If no upgrade prompt is intended, remove this conditional.
-      alert("Property limit reached. Please upgrade your plan."); 
+      setShowUpgradePrompt(true);
     } else {
       setShowWizard(true);
     }
@@ -382,10 +377,10 @@ export default function PropertiesPage() {
         )}
 
         {/* Upgrade Notice for Free Tier */}
-        {userTier === 'free' && properties.length >= 1 && (
+        {userTier === 'free' && properties.length >= 1 && showUpgradePrompt && (
           <UpgradePrompt 
             context="property_limit"
-            onDismiss={() => {}}
+            onDismiss={() => setShowUpgradePrompt(false)}
           />
         )}
 
