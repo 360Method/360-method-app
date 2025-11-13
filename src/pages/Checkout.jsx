@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Sparkles, Crown, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, Sparkles, Crown, Shield, ArrowLeft, Loader2, Zap, TrendingUp, Brain } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -29,93 +30,86 @@ export default function Checkout() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list();
+      return allProps.filter(p => !p.is_draft);
+    },
   });
+
+  const totalDoors = calculateTotalDoors(properties);
 
   const upgradeMutation = useMutation({
     mutationFn: async (tier) => {
-      // In production, this would integrate with Stripe/payment processor
-      // For now, we'll simulate the upgrade
-      const updates = {
-        subscription_tier: tier,
-        subscription_status: 'active',
-        subscription_renewal_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      };
-
-      if (tier === 'pro') {
-        updates.property_limit = 3;
-      } else if (tier.includes('homecare') || tier.includes('propertycare')) {
-        updates.property_limit = 999;
-      }
-
-      return base44.auth.updateMe(updates);
+      // Simulate upgrade (in production, would integrate with Stripe)
+      return base44.auth.updateMe({ tier });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-user'] });
       navigate(createPageUrl('Dashboard'));
-      // Show success message
       setTimeout(() => {
-        alert('🎉 Upgrade successful! Welcome to your new plan.');
+        alert('🎉 Plan updated successfully!');
       }, 500);
     },
   });
 
   const plans = {
-    pro: {
+    good: {
       name: 'Pro',
-      price: 8,
+      displayName: 'Good (Pro)',
+      tier: 'good',
+      pricing: calculateGoodPricing(totalDoors),
       color: '#28A745',
-      icon: Sparkles,
+      icon: Zap,
       features: [
-        'Up to 3 properties',
-        'Full baseline documentation',
-        'Seasonal inspections',
-        'Maintenance tracking',
-        'Cascade risk alerts',
-        'Portfolio analytics',
-        'Priority email support',
-        'Export reports'
+        '🧠 AI cascade risk alerts',
+        '🧠 AI cost forecasting',
+        '🧠 AI spending insights',
+        'Up to 25 properties/doors',
+        'Portfolio analytics dashboard',
+        'Export reports (PDF)',
+        'Priority email support (48hr)',
+        'Mobile-optimized'
       ],
-      bestFor: 'Serious DIY homeowners and small landlords'
+      bestFor: 'Homeowners ready to prevent disasters with AI intelligence',
+      why: 'Pro gives you AI-powered vision that professionals use - seeing cascade risks before they cost thousands.'
     },
-    homecare_essential: {
-      name: 'HomeCare Essential',
-      price: 124,
-      color: '#1B365D',
+    better: {
+      name: 'Premium',
+      displayName: 'Better (Premium)',
+      tier: 'better',
+      pricing: calculateBetterPricing(totalDoors),
+      color: '#8B5CF6',
+      icon: TrendingUp,
+      features: [
+        '🧠 Everything in Pro, PLUS:',
+        '🧠 AI portfolio comparison',
+        '🧠 AI budget forecasting',
+        'Up to 100 properties/doors',
+        'Share access with team',
+        'White-label PDF reports',
+        'Priority support (24hr response)'
+      ],
+      bestFor: 'Growing portfolios and professional investors',
+      why: 'Premium scales AI intelligence across your entire portfolio - like having an analyst on staff.'
+    },
+    best: {
+      name: 'Enterprise',
+      displayName: 'Best (Enterprise)',
+      tier: 'best',
+      pricing: calculateBestPricing(),
+      color: '#F59E0B',
       icon: Crown,
       features: [
-        '4 seasonal diagnostic visits',
-        'Home Health Check™ ($499 value)',
-        '6 hours included labor/year',
-        '24/7 concierge system',
-        'Dashboard + documentation',
-        'Annual Home Health Report™',
-        'HomeOwner Essentials Pack™',
-        '5% contractor discount',
-        '90-Day Safer Home Guarantee',
-        'Full Pro software access'
+        '🧠 Everything in Premium, PLUS:',
+        '🧠 Custom AI reporting builder',
+        'Unlimited properties/doors',
+        'Multi-user accounts with roles',
+        'Dedicated account manager',
+        'Phone support (4hr response)',
+        'API access (coming soon)'
       ],
-      bestFor: 'Homeowners who want professional help',
-      annual: 1490
-    },
-    homecare_premium: {
-      name: 'HomeCare Premium',
-      price: 183,
-      color: '#FF6B35',
-      icon: Crown,
-      features: [
-        'Everything in Essential, PLUS:',
-        '12 hours included labor/year',
-        'Priority 24/7 concierge',
-        'Enhanced documentation',
-        'Quarterly + Annual reports',
-        '10% contractor discount',
-        'Priority scheduling',
-        'On-Time Promise'
-      ],
-      bestFor: 'Most homeowners - best value',
-      annual: 2190,
-      popular: true
+      bestFor: 'Property management companies and large portfolios',
+      why: 'Enterprise gives you enterprise-grade AI and support - manage 100+ doors like a Fortune 500 facility team.'
     }
   };
 
@@ -123,20 +117,20 @@ export default function Checkout() {
 
   if (!selectedPlan || !currentPlan) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white pb-20">
         <div className="mobile-container md:max-w-4xl md:mx-auto pt-8">
           <Card className="border-2 border-orange-300 bg-orange-50">
             <CardContent className="p-8 text-center">
               <Shield className="w-16 h-16 mx-auto mb-4 text-orange-600" />
               <h3 className="text-xl font-semibold mb-4">No Plan Selected</h3>
               <p className="text-gray-700 mb-6">
-                Please select a plan to continue with checkout.
+                Please select a plan to continue.
               </p>
               <Button
                 asChild
                 style={{ backgroundColor: '#1B365D', minHeight: '48px' }}
               >
-                <Link to={createPageUrl('Upgrade')}>
+                <Link to={createPageUrl('Pricing')}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   View Plans
                 </Link>
@@ -151,7 +145,7 @@ export default function Checkout() {
   const Icon = currentPlan.icon;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-20">
       <div className="mobile-container md:max-w-4xl md:mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -159,68 +153,74 @@ export default function Checkout() {
             asChild
             variant="ghost"
             className="mb-4"
+            style={{ minHeight: '44px' }}
           >
-            <Link to={createPageUrl('Upgrade')}>
+            <Link to={createPageUrl('Pricing')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Plans
             </Link>
           </Button>
           <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
-            Complete Your Upgrade
+            Confirm Plan Change
           </h1>
           <p className="text-gray-600">
-            You're one step away from unlocking premium features
+            You're upgrading to {currentPlan.displayName}
           </p>
         </div>
 
         <div className="grid md:grid-cols-5 gap-6">
-          {/* Order Summary - Left Column */}
+          {/* Order Summary */}
           <div className="md:col-span-3 space-y-6">
             {/* Selected Plan */}
-            <Card className="border-2" style={{ borderColor: currentPlan.color }}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Selected Plan</CardTitle>
-                  {currentPlan.popular && (
-                    <Badge style={{ backgroundColor: currentPlan.color }}>
-                      POPULAR
-                    </Badge>
+            <Card className="border-2 shadow-lg" style={{ borderColor: currentPlan.color }}>
+              <CardHeader style={{ backgroundColor: `${currentPlan.color}10` }}>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon className="w-6 h-6" style={{ color: currentPlan.color }} />
+                  {currentPlan.displayName}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-4xl font-bold" style={{ color: currentPlan.color }}>
+                      ${currentPlan.pricing.monthlyPrice}
+                    </span>
+                    <span className="text-gray-600">/month</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    ${currentPlan.pricing.annualPrice}/year
+                  </p>
+                  {currentPlan.pricing.additionalDoors > 0 && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">
+                        Your Pricing Breakdown:
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        ${currentPlan.pricing.breakdown.base} base + ${currentPlan.pricing.breakdown.additionalCost} for {currentPlan.pricing.additionalDoors} additional door{currentPlan.pricing.additionalDoors > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Based on your {totalDoors} total door{totalDoors !== 1 ? 's' : ''}
+                      </p>
+                    </div>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-4 mb-4">
-                  <div 
-                    className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: currentPlan.color }}
-                  >
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold mb-1" style={{ fontSize: '22px', color: currentPlan.color }}>
-                      {currentPlan.name}
-                    </h3>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold" style={{ color: currentPlan.color }}>
-                        ${currentPlan.price}
-                      </span>
-                      <span className="text-gray-600">/month</span>
-                    </div>
-                    {currentPlan.annual && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Billed annually at ${currentPlan.annual}/year
-                      </p>
-                    )}
-                  </div>
+
+                <div className="bg-blue-50 rounded-lg p-4 mb-4 border-2 border-blue-200">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                    🎯 Why This Makes You Better:
+                  </p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {currentPlan.why}
+                  </p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">PERFECT FOR:</p>
-                  <p className="text-sm font-medium">{currentPlan.bestFor}</p>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">PERFECT FOR:</p>
+                  <p className="text-sm font-medium text-gray-900">{currentPlan.bestFor}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="font-semibold mb-2">What's Included:</p>
+                  <p className="font-semibold mb-3">What You're Getting:</p>
                   {currentPlan.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: currentPlan.color }} />
@@ -250,28 +250,31 @@ export default function Checkout() {
                     <span className="text-gray-600">Properties:</span>
                     <span className="font-semibold">{properties.length}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Doors:</span>
+                    <span className="font-semibold">{totalDoors}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Payment Info Placeholder */}
+            {/* Payment Placeholder */}
             <Card className="border-2 border-blue-300 bg-blue-50">
               <CardContent className="p-6">
                 <h3 className="font-bold mb-3" style={{ color: '#1B365D' }}>
-                  💳 Payment Integration Coming Soon
+                  💳 Payment Integration (Demo Mode)
                 </h3>
                 <p className="text-sm text-gray-700 mb-3">
-                  In production, this would integrate with Stripe for secure payment processing.
+                  In production, this integrates with Stripe for secure payment processing.
                 </p>
                 <p className="text-sm text-gray-700">
-                  For demo purposes, clicking "Complete Upgrade" below will simulate a successful payment 
-                  and activate your new subscription.
+                  For now, clicking "Confirm Upgrade" will activate your new tier immediately (no payment required).
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Summary Sidebar - Right Column */}
+          {/* Summary Sidebar */}
           <div className="md:col-span-2">
             <Card className="border-2 border-gray-200 sticky top-4">
               <CardHeader>
@@ -281,41 +284,23 @@ export default function Checkout() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">{currentPlan.name}</span>
-                    <span className="font-semibold">${currentPlan.price}/mo</span>
+                    <span className="font-semibold">${currentPlan.pricing.monthlyPrice}/mo</span>
                   </div>
-                  {currentPlan.annual && (
-                    <>
-                      <div className="border-t pt-3">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-gray-600">Annual billing:</span>
-                          <span className="font-semibold">${currentPlan.annual}/yr</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-green-700">You save:</span>
-                          <span className="text-sm font-semibold text-green-700">
-                            ${(currentPlan.price * 12 - currentPlan.annual).toFixed(0)}/yr
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
                   <div className="border-t pt-3">
                     <div className="flex justify-between">
-                      <span className="font-bold">Total Today:</span>
+                      <span className="font-bold">Monthly Total:</span>
                       <span className="text-2xl font-bold" style={{ color: currentPlan.color }}>
-                        ${currentPlan.annual || currentPlan.price}
+                        ${currentPlan.pricing.monthlyPrice}
                       </span>
                     </div>
-                    {currentPlan.annual && (
-                      <p className="text-xs text-gray-500 text-right mt-1">
-                        (billed annually)
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-500 text-right mt-1">
+                      Annual: ${currentPlan.pricing.annualPrice}
+                    </p>
                   </div>
                 </div>
 
                 <Button
-                  onClick={() => upgradeMutation.mutate(selectedPlan)}
+                  onClick={() => upgradeMutation.mutate(currentPlan.tier)}
                   disabled={upgradeMutation.isPending}
                   className="w-full font-bold"
                   style={{ backgroundColor: currentPlan.color, minHeight: '56px' }}
@@ -323,19 +308,37 @@ export default function Checkout() {
                   {upgradeMutation.isPending ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Processing...
+                      Switching Plan...
                     </>
                   ) : (
                     <>
-                      Complete Upgrade →
+                      ✓ Confirm Upgrade
                     </>
                   )}
                 </Button>
 
                 <div className="mt-6 space-y-2 text-xs text-gray-600">
-                  <p>✓ Cancel anytime, no long-term contract</p>
-                  <p>✓ 30-day money-back guarantee</p>
-                  <p>✓ Secure checkout powered by Stripe</p>
+                  <p>✓ Cancel anytime, no penalties</p>
+                  <p>✓ Instant activation</p>
+                  <p>✓ All your data preserved</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Why You're Making the Right Choice */}
+            <Card className="border-2 border-green-300 bg-green-50 mt-6">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Brain className="w-6 h-6 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-green-900 mb-2">
+                      🏆 You're Investing in Knowledge
+                    </p>
+                    <p className="text-xs text-gray-800 leading-relaxed">
+                      Most homeowners spend $3,000-8,000/year on reactive repairs. You're choosing to spend ${currentPlan.pricing.monthlyPrice}/month on AI that <em>prevents</em> those disasters. 
+                      After one prevented cascade failure, this pays for itself 10-50x over.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

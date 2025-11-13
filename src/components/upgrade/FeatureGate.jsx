@@ -1,145 +1,98 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Lock, Brain, Sparkles, TrendingUp, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function FeatureGate({ 
-  feature, 
-  requiredTier = 'pro',
-  children,
-  showUpgradeCard = true 
+  requiredTier = 'good',
+  featureName = "This feature",
+  why = "Unlock advanced capabilities",
+  children 
 }) {
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
-  });
-
-  const currentTier = user?.subscription_tier || 'free';
-  
-  // Tier hierarchy: free < pro < service
-  const tierLevel = {
-    'free': 0,
-    'pro': 1,
-    'homecare_essential': 2,
-    'homecare_premium': 2,
-    'homecare_elite': 2,
-    'propertycare_essential': 2,
-    'propertycare_premium': 2,
-    'propertycare_elite': 2
-  };
-
-  const requiredLevel = tierLevel[requiredTier] || 1;
-  const currentLevel = tierLevel[currentTier] || 0;
-  const hasAccess = currentLevel >= requiredLevel;
-
-  if (hasAccess) {
-    return <>{children}</>;
-  }
-
-  if (!showUpgradeCard) {
-    return null;
-  }
-
-  const featureNames = {
-    cascade_alerts: {
-      name: 'Cascade Risk Alerts',
-      description: 'See which small issues could become expensive disasters',
-      benefit: 'Prevent $2,000-4,000 in unexpected repairs per year'
+  const tierInfo = {
+    good: {
+      name: 'Pro',
+      color: '#28A745',
+      icon: Sparkles,
+      example: 'AI cascade risk alerts that prevent $10K+ disasters'
     },
-    portfolio_analytics: {
-      name: 'Portfolio Analytics',
-      description: 'Track performance across multiple properties',
-      benefit: 'Understand your total investment health at a glance'
+    better: {
+      name: 'Premium',
+      color: '#8B5CF6',
+      icon: TrendingUp,
+      example: 'AI portfolio comparison across all your properties'
     },
-    contractor_marketplace: {
-      name: 'Contractor Marketplace',
-      description: 'Get quotes and compare trusted contractors',
-      benefit: 'Save 15-25% on contractor costs with competitive bidding'
-    },
-    advanced_reporting: {
-      name: 'Advanced Reporting',
-      description: 'Export detailed reports and documentation',
-      benefit: 'Perfect for taxes, insurance claims, and property sales'
-    },
-    priority_support: {
-      name: 'Priority Support',
-      description: 'Get faster responses and dedicated help',
-      benefit: 'Email support with 24hr response time guarantee'
+    best: {
+      name: 'Enterprise',
+      color: '#F59E0B',
+      icon: Crown,
+      example: 'Custom AI reports and multi-user team collaboration'
     }
   };
 
-  const featureInfo = featureNames[feature] || {
-    name: 'Premium Feature',
-    description: 'This feature requires a paid subscription',
-    benefit: 'Unlock advanced capabilities for your properties'
-  };
+  const tier = tierInfo[requiredTier];
+  const Icon = tier.icon;
 
   return (
-    <Card className="border-2 border-orange-300 bg-orange-50">
-      <CardContent className="p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-orange-600 flex items-center justify-center mx-auto mb-4">
-          <Lock className="w-8 h-8 text-white" />
-        </div>
-        
-        <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-          {featureInfo.name}
-        </h3>
-        
-        <p className="text-gray-700 mb-3">
-          {featureInfo.description}
-        </p>
-        
-        <div className="bg-white rounded-lg p-3 mb-4">
-          <p className="text-sm text-gray-600 mb-1">
-            <strong>Benefit:</strong>
-          </p>
-          <p className="text-sm text-gray-900">
-            {featureInfo.benefit}
-          </p>
-        </div>
+    <Card className="border-2 shadow-lg" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div 
+            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: tier.color }}
+          >
+            <Lock className="w-6 h-6 text-white" />
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-bold text-lg" style={{ color: '#1B365D' }}>
+                {featureName}
+              </h3>
+              <Badge className="text-white" style={{ backgroundColor: tier.color }}>
+                {tier.name}+
+              </Badge>
+            </div>
+            
+            <p className="text-sm text-gray-700 mb-3">
+              {why}
+            </p>
 
-        <div className="flex flex-col md:flex-row gap-3">
-          {requiredTier === 'pro' && (
-            <>
+            <div className="bg-white rounded-lg p-3 mb-4 border border-gray-200">
+              <p className="text-xs font-semibold text-gray-900 mb-1">
+                🎯 Why This Makes You Better:
+              </p>
+              <p className="text-xs text-gray-700 leading-relaxed">
+                {tier.example}. The 360° Method's AI doesn't just give you data - it teaches you to think like a property professional.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
               <Button
                 asChild
-                className="flex-1 font-bold"
-                style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                className="gap-2 font-semibold"
+                style={{ backgroundColor: tier.color, minHeight: '48px' }}
               >
-                <Link to={createPageUrl("Upgrade")}>
-                  Upgrade to Pro - $8/month
+                <Link to={createPageUrl("Pricing")}>
+                  <Icon className="w-4 h-4" />
+                  Upgrade to {tier.name}
                 </Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
-                className="flex-1"
+                className="gap-2"
                 style={{ minHeight: '48px' }}
               >
-                <Link to={createPageUrl("HomeCare")}>
-                  <Crown className="w-4 h-4 mr-2" />
-                  Or Get HomeCare
+                <Link to={createPageUrl("Pricing")}>
+                  Compare Plans
                 </Link>
               </Button>
-            </>
-          )}
-          
-          {requiredTier !== 'pro' && (
-            <Button
-              asChild
-              className="flex-1 font-bold"
-              style={{ backgroundColor: '#1B365D', minHeight: '48px' }}
-            >
-              <Link to={createPageUrl("HomeCare")}>
-                <Crown className="w-4 h-4 mr-2" />
-                Get HomeCare Service
-              </Link>
-            </Button>
-          )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
