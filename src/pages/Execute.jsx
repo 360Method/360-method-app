@@ -1,394 +1,601 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CheckCircle2,
-  Wrench,
-  Phone,
   Calendar,
-  AlertCircle,
-  Lightbulb,
-  Clock,
+  ChevronDown,
+  ChevronUp,
   AlertTriangle,
-  Home,
-  Filter,
-  ChevronRight,
-  ChevronDown
+  Plus,
+  Eye,
+  Building2,
+  ClipboardCheck,
+  ArrowRight,
+  ArrowLeft,
+  Wrench,
+  Clock,
+  ListChecks,
+  PlayCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { format, addDays, subDays, startOfDay, isSameDay, parseISO } from "date-fns";
 import TaskExecutionCard from "../components/execute/TaskExecutionCard";
-import ServiceRequestCard from "../components/execute/ServiceRequestCard";
 
-export default function Execute() {
-  const urlParams = new URLSearchParams(window.location.search);
+const Label = ({ children, className = "", ...props }) => (
+  <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
+    {children}
+  </label>
+);
+
+const SYSTEM_TYPES = [
+  "HVAC", "Plumbing", "Electrical", "Roof", "Foundation",
+  "Gutters", "Exterior", "Windows/Doors", "Appliances", "Landscaping", "General"
+];
+
+const SYSTEM_ICONS = {
+  HVAC: "❄️",
+  Plumbing: "🚰",
+  Electrical: "⚡",
+  Roof: "🏠",
+  Foundation: "🏗️",
+  Gutters: "🌧️",
+  Exterior: "🏘️",
+  "Windows/Doors": "🚪",
+  Appliances: "🔌",
+  Landscaping: "🌳",
+  General: "🔧"
+};
+
+export default function ExecutePage() {
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
-  
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [whyExpanded, setWhyExpanded] = React.useState(false);
 
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [showEducation, setShowEducation] = React.useState(false);
+  const [expandedSystems, setExpandedSystems] = React.useState({});
+
+  // Fetch properties
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list('-created_date');
+      return allProps.filter(p => !p.is_draft);
+    }
   });
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['maintenanceTasks', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
-  });
-
-  const { data: serviceRequests = [] } = useQuery({
-    queryKey: ['serviceRequests', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.ServiceRequest.filter({ property_id: selectedProperty })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
-  });
-
+  // Set initial selected property
   React.useEffect(() => {
-    if (selectedProperty === null && properties.length > 0) {
+    if (propertyIdFromUrl && properties.length > 0) {
+      const foundProperty = properties.find(p => p.id === propertyIdFromUrl);
+      if (foundProperty) {
+        setSelectedProperty(propertyIdFromUrl);
+      }
+    } else if (selectedProperty === 'all' && properties.length === 1) {
       setSelectedProperty(properties[0].id);
     }
-  }, [properties, selectedProperty]);
+  }, [propertyIdFromUrl, properties, selectedProperty]);
 
-  const scheduledTasks = tasks.filter(t => 
-    t.status === 'Scheduled' || t.status === 'In Progress'
-  );
-
-  const readyToExecute = scheduledTasks.filter(t => {
-    if (!t.scheduled_date) return false;
-    const taskDate = new Date(t.scheduled_date);
-    const today = new Date();
-    taskDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    return taskDate <= today;
+  // Fetch tasks based on selected property
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ['maintenanceTasks', selectedProperty],
+    queryFn: async () => {
+      if (selectedProperty === 'all') {
+        return await base44.entities.MaintenanceTask.list('-scheduled_date');
+      } else {
+        return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-scheduled_date');
+      }
+    },
+    enabled: properties.length > 0 && selectedProperty !== null
   });
 
-  const upcomingTasks = scheduledTasks.filter(t => {
-    if (!t.scheduled_date) return false;
-    const taskDate = new Date(t.scheduled_date);
-    const today = new Date();
-    taskDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    return taskDate > today;
+  // Mutation for completing tasks
+  const completeTaskMutation = useMutation({
+    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+    }
   });
 
-  const pendingRequests = serviceRequests.filter(r => 
-    r.status === 'Submitted' || r.status === 'Scheduled' || r.status === 'In Progress'
+  // Filter tasks for execution
+  // 1. Show tasks scheduled for selected date
+  // 2. Show overdue tasks (scheduled before selected date but not completed)
+  const selectedDateStart = startOfDay(selectedDate);
+  
+  const tasksForExecution = allTasks.filter(task => {
+    // Must be Scheduled or In Progress status
+    if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
+    
+    if (!task.scheduled_date) return false;
+    
+    try {
+      const taskDate = startOfDay(parseISO(task.scheduled_date));
+      
+      // Show tasks scheduled for selected date
+      if (isSameDay(taskDate, selectedDateStart)) return true;
+      
+      // Show overdue tasks (scheduled before selected date)
+      if (taskDate < selectedDateStart) return true;
+      
+      return false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Group tasks by system type
+  const tasksBySystem = tasksForExecution.reduce((acc, task) => {
+    const system = task.system_type || 'General';
+    if (!acc[system]) {
+      acc[system] = [];
+    }
+    acc[system].push(task);
+    return acc;
+  }, {});
+
+  // Sort systems by number of tasks (descending)
+  const sortedSystems = Object.keys(tasksBySystem).sort((a, b) => 
+    tasksBySystem[b].length - tasksBySystem[a].length
   );
+
+  // Calculate statistics
+  const totalTasks = tasksForExecution.length;
+  const tasksInProgress = tasksForExecution.filter(t => t.status === 'In Progress').length;
+  const overdueCount = tasksForExecution.filter(t => {
+    if (!t.scheduled_date) return false;
+    try {
+      const taskDate = startOfDay(parseISO(t.scheduled_date));
+      return taskDate < selectedDateStart;
+    } catch {
+      return false;
+    }
+  }).length;
+  const totalEstimatedHours = tasksForExecution.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+
+  const handleCompleteTask = (task) => {
+    completeTaskMutation.mutate({
+      taskId: task.id,
+      data: {
+        status: 'Completed',
+        completion_date: new Date().toISOString().split('T')[0]
+      }
+    });
+  };
+
+  const toggleSystemExpanded = (system) => {
+    setExpandedSystems(prev => ({
+      ...prev,
+      [system]: !prev[system]
+    }));
+  };
+
+  // No properties fallback
+  if (properties.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-2 border-green-300 bg-white">
+            <CardContent className="p-8 text-center">
+              <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-600" />
+              <h2 className="font-bold text-2xl mb-2" style={{ color: '#1B365D' }}>
+                Add Your First Property
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Start by adding a property to begin executing maintenance tasks.
+              </p>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link to={createPageUrl("Properties")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Property
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const currentProperty = selectedProperty !== 'all' 
+    ? properties.find(p => p.id === selectedProperty)
+    : null;
+
+  const isToday = isSameDay(selectedDate, new Date());
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
-        {/* Phase & Step Header */}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-20">
+      <div className="mobile-container md:max-w-7xl md:mx-auto">
+        {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
-              Phase II - ACT
-            </Badge>
-            <Badge variant="outline" className="text-sm px-3 py-1">
-              Step 6 of 9
-            </Badge>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
+              <PlayCircle className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+                Step 6: Execute - Daily Work Manual
+              </h1>
+              <p className="text-gray-600" style={{ fontSize: '16px' }}>
+                Your how-to guide for completing scheduled maintenance tasks
+              </p>
+            </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Execute
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Complete scheduled tasks and track service requests
-          </p>
+
+          {/* ACT Phase Workflow Indicator */}
+          <div className="bg-white rounded-lg p-3 border-2 border-green-300 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-green-600 text-white">ACT Phase - Step 3 of 3</Badge>
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <span className="text-gray-400">Prioritize (Red)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-gray-400">Schedule (Yellow)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="font-bold text-green-600">→ Execute (Green)</span>
+                <ArrowRight className="w-3 h-3" />
+                <span className="text-gray-400">Track (Archive)</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              <strong>Today's Workbench:</strong> View scheduled tasks with complete AI-generated how-to guides → 
+              Follow scope of work, use tool lists, watch tutorials → Mark complete to archive in Track
+            </p>
+          </div>
         </div>
 
-        {/* Why This Step Matters - Educational Card */}
-        <Card className="mb-6 border-2 border-orange-200 bg-orange-50 shadow-xl">
-          <CardHeader className="pb-3">
+        {/* Educational Card - Expandable */}
+        <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 mb-6">
+          <CardContent className="p-4">
             <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
+              onClick={() => setShowEducation(!showEducation)}
               className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
             >
-              <Lightbulb className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <Wrench className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-orange-900 mb-1">Why Execute Matters</h3>
-                <p className="text-sm text-orange-800">
-                  Execute completes the ACT phase by turning plans into results. This is where cascade prevention happens in real life - where you stop theoretical damage and create actual property protection.
+                <h3 className="font-bold text-green-900 mb-1">
+                  🛠️ Your Daily Work Manual
+                </h3>
+                <p className="text-sm text-green-800">
+                  Click to learn how Execute provides step-by-step guidance for each task
                 </p>
               </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-orange-600 flex-shrink-0" />
+              {showEducation ? (
+                <ChevronUp className="w-5 h-5 text-green-600 flex-shrink-0" />
               ) : (
-                <ChevronRight className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                <ChevronDown className="w-5 h-5 text-green-600 flex-shrink-0" />
               )}
             </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Execute is Step 6 and the final step of ACT. It's where you complete DIY tasks, coordinate professional services, document costs, and record outcomes. Every completion feeds back into Track (building your history) and informs Preserve (lifecycle planning).
+
+            {showEducation && (
+              <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-green-200 pt-4">
+                <p className="leading-relaxed">
+                  <strong>Execute is your how-to manual:</strong> Tasks scheduled in the previous step appear here 
+                  grouped by system area (just like inspections). Each task opens to reveal complete AI-generated 
+                  instructions - scope of work, time estimates, required tools, and video tutorials.
+                </p>
+                
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                    <ListChecks className="w-4 h-4" />
+                    What You'll See Per Task:
                   </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Execution Workflow:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>DIY completion:</strong> Mark done, record actual cost and notes</li>
-                    <li>• <strong>Request professional service:</strong> Connect with operators in your area</li>
-                    <li>• <strong>Track service requests:</strong> Monitor status from request to completion</li>
-                    <li>• <strong>Build execution history:</strong> Create data for future cost estimates</li>
+                  <ul className="space-y-1 text-xs">
+                    <li>• <strong>AI Scope of Work:</strong> Clear objectives, what will be done, expected outcome</li>
+                    <li>• <strong>Estimated Time:</strong> How long this typically takes</li>
+                    <li>• <strong>Tools Required:</strong> Everything you need before starting</li>
+                    <li>• <strong>Materials Needed:</strong> Consumables to purchase</li>
+                    <li>• <strong>Video Tutorials:</strong> Watch-along guides from YouTube</li>
+                    <li>• <strong>Cost Estimates:</strong> Current fix cost & what waiting costs</li>
                   </ul>
                 </div>
-                <div className="bg-orange-50 rounded p-3 border-l-4 border-orange-600">
-                  <p className="text-xs text-orange-900">
-                    <strong>Success Metric:</strong> Properties that execute 80%+ of scheduled tasks see 3x fewer emergency repairs than those with &lt;50% execution rates.
+
+                <div className="bg-green-100 rounded-lg p-3 border border-green-300">
+                  <p className="font-semibold text-green-900 mb-2">📅 Date Navigation:</p>
+                  <p className="text-xs">
+                    <strong>Default view is TODAY.</strong> Use arrows to move forward/backward. 
+                    Overdue tasks (scheduled before selected date) automatically show up so nothing slips through.
                   </p>
                 </div>
+
+                <p className="text-xs italic text-green-700 bg-green-100 border border-green-300 rounded p-2">
+                  💡 <strong>Pro Tip:</strong> Tasks are grouped by system area (HVAC, Plumbing, etc) to batch 
+                  similar work. Open each task to see the full how-to guide before starting. Mark complete when 
+                  done to archive to Track.
+                </p>
               </div>
-            </CardContent>
-          )}
+            )}
+          </CardContent>
         </Card>
 
         {/* Property Selector */}
-        {properties.length > 0 && (
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
-                  <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
-                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                      <SelectValue placeholder="Select a property" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {property.address}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        {properties.length > 1 && (
+          <Card className="mb-6 border-2 border-green-200 bg-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-green-600" />
+                  <Label className="text-base font-bold text-green-900">Filter by Property:</Label>
                 </div>
+                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        <span className="font-semibold">All Properties ({properties.length})</span>
+                      </div>
+                    </SelectItem>
+                    {properties.map(prop => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4" />
+                          <span>{prop.address || prop.street_address || 'Unnamed Property'}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Workflow Navigation */}
-        {selectedProperty && readyToExecute.length === 0 && scheduledTasks.length === 0 && (
-          <Card className="border-2 border-blue-300 bg-blue-50 shadow-xl">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="font-bold text-blue-900 mb-2">No Tasks Ready for Execution</h3>
-                  <p className="text-sm text-gray-700 mb-4">
-                    You need to prioritize and schedule tasks before you can execute them.
+        {/* Date Navigation */}
+        <Card className="mb-6 border-2 border-green-300 bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <Button
+                onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                style={{ minHeight: '44px' }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Previous Day
+              </Button>
+
+              <div className="flex-1 text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                  <h3 className="font-bold text-xl text-green-900">
+                    {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </h3>
+                </div>
+                {isToday ? (
+                  <Badge className="bg-green-600 text-white">Today's Tasks</Badge>
+                ) : selectedDate < new Date() ? (
+                  <Badge className="bg-orange-600 text-white">Past Date</Badge>
+                ) : (
+                  <Badge className="bg-blue-600 text-white">Future Date</Badge>
+                )}
+              </div>
+
+              <Button
+                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                style={{ minHeight: '44px' }}
+              >
+                Next Day
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {!isToday && (
+              <div className="mt-3 text-center">
+                <Button
+                  onClick={() => setSelectedDate(new Date())}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  Jump to Today
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Key Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <ListChecks className="w-5 h-5 text-green-600" />
+                <Badge className="bg-green-600 text-white text-xs">
+                  Today
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold text-green-700">
+                {totalTasks}
+              </p>
+              <p className="text-xs text-gray-600">Total Tasks</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <PlayCircle className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-700">
+                {tasksInProgress}
+              </p>
+              <p className="text-xs text-gray-600">In Progress</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-orange-50 to-orange-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
+                {overdueCount > 0 && (
+                  <Badge className="bg-orange-600 text-white text-xs">
+                    Overdue
+                  </Badge>
+                )}
+              </div>
+              <p className="text-2xl font-bold text-orange-700">
+                {overdueCount}
+              </p>
+              <p className="text-xs text-gray-600">Past Due</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-md bg-gradient-to-br from-purple-50 to-purple-100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Clock className="w-5 h-5 text-purple-600" />
+              </div>
+              <p className="text-2xl font-bold text-purple-700">
+                {totalEstimatedHours.toFixed(1)}h
+              </p>
+              <p className="text-xs text-gray-600">Estimated Time</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tasks Grouped by System */}
+        {sortedSystems.length > 0 ? (
+          <div className="space-y-4">
+            {sortedSystems.map(system => {
+              const systemTasks = tasksBySystem[system];
+              const isExpanded = expandedSystems[system] !== false; // Default to expanded
+
+              return (
+                <Card key={system} className="border-2 border-green-200 bg-white">
+                  <CardHeader 
+                    className="cursor-pointer hover:bg-green-50 transition-colors"
+                    onClick={() => toggleSystemExpanded(system)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <span className="text-2xl">{SYSTEM_ICONS[system] || '🔧'}</span>
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg text-green-900">
+                            {system}
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            {systemTasks.length} task{systemTasks.length !== 1 ? 's' : ''} • 
+                            {' '}{systemTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0).toFixed(1)}h estimated
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-600 text-white">
+                          {systemTasks.length}
+                        </Badge>
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-green-600" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  {isExpanded && (
+                    <CardContent className="space-y-3 pt-0">
+                      {systemTasks.map(task => (
+                        <TaskExecutionCard
+                          key={task.id}
+                          task={task}
+                          property={currentProperty || properties.find(p => p.id === task.property_id)}
+                          onComplete={handleCompleteTask}
+                          isOverdue={(() => {
+                            if (!task.scheduled_date) return false;
+                            try {
+                              const taskDate = startOfDay(parseISO(task.scheduled_date));
+                              return taskDate < selectedDateStart;
+                            } catch {
+                              return false;
+                            }
+                          })()}
+                        />
+                      ))}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="border-2 border-green-200 bg-white">
+            <CardContent className="p-8 text-center">
+              <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-300" />
+              <h3 className="font-bold text-xl mb-2 text-green-900">
+                No Tasks Scheduled for {format(selectedDate, 'MMMM d')}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {isToday 
+                  ? "You're all caught up! Schedule tasks from the Schedule tab to see them here."
+                  : "No tasks scheduled for this date. Use the arrows above to navigate to other days."}
+              </p>
+              <div className="flex gap-3 justify-center">
+                {isToday && selectedProperty !== 'all' && (
+                  <Button
+                    asChild
+                    className="bg-yellow-600 hover:bg-yellow-700 gap-2"
+                  >
+                    <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
+                      <Calendar className="w-4 h-4" />
+                      Go to Schedule
+                    </Link>
+                  </Button>
+                )}
+                {isToday && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-50 gap-2"
+                  >
+                    <Link to={createPageUrl("Prioritize")}>
+                      <Eye className="w-4 h-4" />
+                      View Ticket Queue
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Completion Reminder */}
+        <Card className="mt-6 border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-green-900 mb-2">After Completing Tasks:</h3>
+                <p className="text-sm text-gray-800 mb-3">
+                  Mark tasks complete as you finish them. Completed tasks automatically archive to <strong>Track</strong> where 
+                  all costs, dates, and outcomes are recorded for your property's historical record.
+                </p>
+                <div className="bg-white rounded-lg p-3 border border-green-300">
+                  <p className="text-xs text-gray-700 leading-relaxed">
+                    <strong>💡 Remember:</strong> Execute is where scheduled work gets done. All ACT phase work 
+                    (Prioritize → Schedule → Execute) flows into Track for permanent recordkeeping.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      asChild
-                      className="gap-2"
-                      style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
-                    >
-                      <Link to={createPageUrl("Prioritize") + `?property=${selectedProperty}`}>
-                        <Lightbulb className="w-4 h-4" />
-                        Go to Prioritize
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="gap-2 border-2 border-blue-400"
-                      style={{ minHeight: '48px' }}
-                    >
-                      <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
-                        <Calendar className="w-4 h-4" />
-                        Go to Schedule
-                      </Link>
-                    </Button>
-                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Stats Cards */}
-        {selectedProperty && scheduledTasks.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <Card className="border-2 border-green-300 bg-green-50 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  <CheckCircle2 className="w-8 h-8 text-green-600 mb-2" />
-                  <p className="text-2xl font-bold text-green-700">{readyToExecute.length}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-1">Due Now</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-blue-300 bg-blue-50 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  <Calendar className="w-8 h-8 text-blue-600 mb-2" />
-                  <p className="text-2xl font-bold text-blue-700">{upcomingTasks.length}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-1">Upcoming</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-purple-300 bg-purple-50 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  <Wrench className="w-8 h-8 text-purple-600 mb-2" />
-                  <p className="text-2xl font-bold text-purple-700">{scheduledTasks.filter(t => t.status === 'In Progress').length}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-1">In Progress</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-orange-300 bg-orange-50 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  <Phone className="w-8 h-8 text-orange-600 mb-2" />
-                  <p className="text-2xl font-bold text-orange-700">{pendingRequests.length}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-1">Service Requests</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Tabs */}
-        {selectedProperty && (
-          <Tabs defaultValue="tasks" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="tasks" className="gap-2">
-                <Wrench className="w-4 h-4" />
-                My Tasks ({scheduledTasks.length})
-              </TabsTrigger>
-              <TabsTrigger value="requests" className="gap-2">
-                <Phone className="w-4 h-4" />
-                Service Requests ({pendingRequests.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="tasks" className="mt-6">
-              <Card className="border-2 border-gray-300 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50">
-                  <CardTitle className="flex items-center gap-2">
-                    <Wrench className="w-5 h-5 text-green-600" />
-                    <span style={{ color: '#1B365D' }}>Scheduled Tasks</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 md:p-6">
-                  {scheduledTasks.length > 0 ? (
-                    <div className="space-y-4">
-                      {readyToExecute.length > 0 && (
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="h-px flex-1 bg-red-300" />
-                            <Badge className="bg-red-600 text-white">
-                              🔥 Due Now ({readyToExecute.length})
-                            </Badge>
-                            <div className="h-px flex-1 bg-red-300" />
-                          </div>
-                          {readyToExecute.map(task => (
-                            <TaskExecutionCard
-                              key={task.id}
-                              task={task}
-                              propertyId={selectedProperty}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {upcomingTasks.length > 0 && (
-                        <div>
-                          <div className="flex items-center gap-2 mb-3 mt-6">
-                            <div className="h-px flex-1 bg-blue-300" />
-                            <Badge className="bg-blue-600 text-white">
-                              📅 Upcoming ({upcomingTasks.length})
-                            </Badge>
-                            <div className="h-px flex-1 bg-blue-300" />
-                          </div>
-                          {upcomingTasks.map(task => (
-                            <TaskExecutionCard
-                              key={task.id}
-                              task={task}
-                              propertyId={selectedProperty}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                      <h3 className="text-xl font-semibold mb-2">No Scheduled Tasks</h3>
-                      <p className="mb-4">You're all caught up! Check the Schedule page to plan ahead.</p>
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="gap-2"
-                        style={{ minHeight: '48px' }}
-                      >
-                        <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
-                          <Calendar className="w-4 h-4" />
-                          Go to Schedule
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="requests" className="mt-6">
-              <Card className="border-2 border-gray-300 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50">
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-orange-600" />
-                    <span style={{ color: '#1B365D' }}>Professional Service Requests</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 md:p-6">
-                  {pendingRequests.length > 0 ? (
-                    <div className="space-y-4">
-                      {pendingRequests.map(request => (
-                        <ServiceRequestCard key={request.id} request={request} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <Phone className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                      <h3 className="text-xl font-semibold mb-2">No Active Service Requests</h3>
-                      <p>Need professional help? Request service from any task.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        )}
-        
-        {!selectedProperty && properties.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-xl font-semibold mb-2">No Properties Available</h3>
-            <p className="mb-4">Please add a property to get started with execution.</p>
-            <Button asChild style={{ minHeight: '48px' }}>
-              <Link to={createPageUrl("Properties")}>Add Property</Link>
-            </Button>
-          </div>
-        )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
