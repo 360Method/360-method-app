@@ -827,30 +827,33 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                   { value: 'partially_furnished', label: 'Partially Furnished', sub: 'Major furniture only, tenant brings housewares' },
                   { value: 'corporate_furnished', label: 'Corporate Furnished', sub: 'Premium furniture package for executives' }
                 ].map((option) => (
-                  <label
+                  <button
                     key={option.value}
-                    className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                    type="button"
+                    onClick={() => {
+                      updateRentalConfig('furnishing_level', option.value);
+                      updateRentalConfig('is_furnished', true);
+                    }}
+                    className={`w-full flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all text-left ${
                       formData.rental_config.furnishing_level === option.value
-                        ? 'border-orange-600 bg-white'
+                        ? 'border-orange-600 bg-white shadow-md'
                         : 'border-gray-300 hover:border-orange-400 bg-white'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="furnishing_level"
-                      value={option.value}
-                      checked={formData.rental_config.furnishing_level === option.value}
-                      onChange={(e) => {
-                        updateRentalConfig('furnishing_level', e.target.value);
-                        updateRentalConfig('is_furnished', true);
-                      }}
-                      className="mt-1"
-                    />
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      formData.rental_config.furnishing_level === option.value
+                        ? 'border-orange-600 bg-orange-600'
+                        : 'border-gray-400 bg-white'
+                    }`}>
+                      {formData.rental_config.furnishing_level === option.value && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
                     <div>
                       <p className="font-semibold text-gray-900">{option.label}</p>
                       <p className="text-sm text-gray-600">{option.sub}</p>
                     </div>
-                  </label>
+                  </button>
                 ))}
               </div>
 
