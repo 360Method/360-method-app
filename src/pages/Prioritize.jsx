@@ -29,18 +29,19 @@ import {
   BookOpen,
   CheckCircle2,
   Sparkles,
-  Grid3x3, // NEW IMPORT
-  List // NEW IMPORT
+  Grid3x3,
+  List
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PriorityTaskCard from "../components/prioritize/PriorityTaskCard";
-import TaskGroupCard from "../components/prioritize/TaskGroupCard"; // NEW IMPORT
-import BulkActionBar from "../components/prioritize/BulkActionBar"; // NEW IMPORT
+import TaskGroupCard from "../components/prioritize/TaskGroupCard";
+import BulkActionBar from "../components/prioritize/BulkActionBar";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import StepNavigation from "../components/navigation/StepNavigation";
-import TaskCreationIntentModal from "../components/prioritize/TaskCreationIntentModal"; // NEW IMPORT
-import EnhancedUnitSelectionModal from "../components/prioritize/EnhancedUnitSelectionModal"; // NEW IMPORT
+import TaskCreationIntentModal from "../components/prioritize/TaskCreationIntentModal";
+import EnhancedUnitSelectionModal from "../components/prioritize/EnhancedUnitSelectionModal";
+import DualUnitSelectionModal from "../components/prioritize/DualUnitSelectionModal";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -73,6 +74,23 @@ const generateBatchId = () => {
   return 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 };
 
+// NEW: Property flow type detector
+function getPropertyFlowType(property) {
+  if (!property) return null;
+  
+  const doorCount = property.door_count || 1;
+  
+  if (doorCount === 1) {
+    return 'single_family';
+  }
+  
+  if (doorCount === 2) {
+    return 'dual_unit';
+  }
+  
+  return 'multi_unit';
+}
+
 export default function PrioritizePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -85,13 +103,13 @@ export default function PrioritizePage() {
   const [sortBy, setSortBy] = React.useState('cascade_risk');
   const [showEducation, setShowEducation] = React.useState(false);
   const [addingTemplateId, setAddingTemplateId] = React.useState(null);
-  const [viewMode, setViewMode] = React.useState('grouped'); // 'grouped' or 'individual' // NEW STATE
-  const [selectedTasks, setSelectedTasks] = React.useState([]); // NEW STATE
-  const [unitFilter, setUnitFilter] = React.useState('all'); // NEW STATE
+  const [viewMode, setViewMode] = React.useState('grouped');
+  const [selectedTasks, setSelectedTasks] = React.useState([]);
+  const [unitFilter, setUnitFilter] = React.useState('all');
   
-  // New intent modal state
-  const [intentModal, setIntentModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
-  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null }); // Kept, but now for EnhancedUnitSelectionModal
+  const [intentModal, setIntentModal] = React.useState({ open: false, template: null, property: null });
+  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null });
+  const [dualUnitModal, setDualUnitModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -374,9 +392,7 @@ export default function PrioritizePage() {
         batch_id: batchId // NEW
       };
 
-      console.log('📝 Creating task:', taskData);
       const newTask = await base44.entities.MaintenanceTask.create(taskData);
-      console.log('✅ Task created:', newTask);
       return newTask;
     } catch (error) {
       console.error('❌ Error creating task:', error);
@@ -384,11 +400,8 @@ export default function PrioritizePage() {
     }
   };
 
-  // NEW: Template addition with intent modal awareness
+  // NEW: Simplified template addition with flow type detection
   const handleAddTemplate = async (template) => {
-    console.log('🎯 handleAddTemplate called for:', template.title);
-    
-    // Validate property selection
     if (selectedProperty === 'all' && properties.length > 1) {
       alert('Please select a specific property to add this task.');
       return;
@@ -401,20 +414,20 @@ export default function PrioritizePage() {
     }
     
     const currentProperty = properties.find(p => p.id === propertyId);
-    const isMultiUnit = currentProperty && (currentProperty.door_count > 1 || (currentProperty.units && currentProperty.units.length > 0));
-    
-    // Determine template scope, default to 'property_wide' for backward compatibility
+    const flowType = getPropertyFlowType(currentProperty);
     const appliesToScope = template.applies_to_scope || 'property_wide';
     
-    // If it's a single-unit property OR the template is property-wide, create directly
-    if (!isMultiUnit || appliesToScope === 'property_wide') {
-      console.log('🏠 Property-wide task or single-unit property - creating directly');
-      setAddingTemplateId(template.id); // Set loading state
+    // SINGLE FAMILY HOME: Direct creation, no modal
+    if (flowType === 'single_family') {
+      setAddingTemplateId(template.id);
       try {
-        // If multi-unit but template is property-wide, tag as 'Common Area'. Otherwise, no unit tag.
-        const unitTagForPropertyWide = isMultiUnit ? 'Common Area' : undefined;
-        const taskScope = appliesToScope === 'property_wide' ? 'building_wide' : 'per_unit'; // For single unit, it's technically 'per_unit' but no tag needed.
-        await createTaskFromTemplate(template, propertyId, unitTagForPropertyWide, taskScope);
+        await createTaskFromTemplate(
+          template, 
+          propertyId, 
+          undefined, // No unit tag for SFH
+          'property_wide', // Always property-wide for SFH
+          1 // Single unit count
+        );
         await refetchTasks();
       } catch (error) {
         alert(error.message);
@@ -424,9 +437,73 @@ export default function PrioritizePage() {
       return;
     }
     
-    // If multi-unit property AND per_unit template → Show intent modal
-    console.log('🏢 Per-unit template on multi-unit property - opening intent modal');
-    setIntentModal({ open: true, template, property: currentProperty });
+    // Property-wide template on any property (except SFH which is already handled): Direct creation
+    if (appliesToScope === 'property_wide') {
+      setAddingTemplateId(template.id);
+      try {
+        const unitTag = (flowType === 'dual_unit' || flowType === 'multi_unit') ? 'Common Area' : undefined;
+        await createTaskFromTemplate(template, propertyId, unitTag, 'building_wide');
+        await refetchTasks();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setAddingTemplateId(null);
+      }
+      return;
+    }
+    
+    // DUAL UNIT: Simple 3-option modal
+    if (flowType === 'dual_unit' && appliesToScope === 'per_unit') {
+      setDualUnitModal({ open: true, template, property: currentProperty });
+      return;
+    }
+    
+    // MULTI UNIT + per_unit: Full intent modal
+    if (flowType === 'multi_unit' && appliesToScope === 'per_unit') {
+      setIntentModal({ open: true, template, property: currentProperty });
+      return;
+    }
+  };
+
+  // NEW: Handle dual unit modal confirmation
+  const handleDualUnitConfirm = async (selection) => {
+    const template = dualUnitModal.template;
+    const property = dualUnitModal.property;
+    
+    if (!template || !property) {
+      console.error("No template or property found in dual unit modal state.");
+      setDualUnitModal({ open: false, template: null, property: null });
+      return;
+    }
+
+    setAddingTemplateId(template.id);
+    
+    try {
+      // Get all units from the property, fallback to door_count if 'units' array is missing
+      const units = property.units || [];
+      const unit1 = units[0] || { unit_id: 'Unit 1', nickname: 'Unit 1' }; 
+      const unit2 = units[1] || { unit_id: 'Unit 2', nickname: 'Unit 2' };
+
+      if (selection === 'unit1') {
+        await createTaskFromTemplate(template, property.id, unit1.unit_id || unit1.nickname, 'per_unit');
+      } else if (selection === 'unit2') {
+        await createTaskFromTemplate(template, property.id, unit2.unit_id || unit2.nickname, 'per_unit');
+      } else if (selection === 'both') {
+        const batchId = generateBatchId();
+        await Promise.all([
+          createTaskFromTemplate(template, property.id, unit1.unit_id || unit1.nickname, 'per_unit', undefined, batchId),
+          createTaskFromTemplate(template, property.id, unit2.unit_id || unit2.nickname, 'per_unit', undefined, batchId)
+        ]);
+      }
+      
+      await refetchTasks();
+      setDualUnitModal({ open: false, template: null, property: null });
+    } catch (error) {
+      console.error('❌ Error creating tasks:', error);
+      alert(error.message);
+    } finally {
+      setAddingTemplateId(null);
+    }
   };
 
   // NEW: Handle intent modal selections
@@ -508,7 +585,6 @@ export default function PrioritizePage() {
       return;
     }
     
-    console.log('🏢 Creating tasks for selected units:', selectedUnitTags);
     const batchId = generateBatchId(); // Generate a batch ID for these tasks
     setAddingTemplateId(template.id); // Set loading state for batch creation
     
@@ -519,8 +595,6 @@ export default function PrioritizePage() {
       );
       
       await Promise.all(createPromises);
-      console.log(`✅ Created ${selectedUnitTags.length} tasks`);
-      
       await refetchTasks(); // Refetch after all batch tasks are created
       setUnitSelectionModal({ open: false, template: null, property: null }); // Close modal
       
@@ -563,7 +637,8 @@ export default function PrioritizePage() {
     ? properties.find(p => p.id === selectedProperty)
     : null;
   
-  const isMultiUnitView = currentProperty && currentProperty.door_count > 1; // NEW: Check if property is multi-unit
+  const flowType = getPropertyFlowType(currentProperty); // NEW: Check property flow type
+  const isMultiUnitView = flowType === 'multi_unit' || flowType === 'dual_unit'; // NEW: Check if property is multi-unit (including dual)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
@@ -915,36 +990,38 @@ export default function PrioritizePage() {
                 </Button>
               </div>
 
-              {/* View Mode Toggle - NEW */}
-              <div className="flex items-center gap-2">
-                <Label className="font-semibold text-red-900">View:</Label>
-                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  <button
-                    onClick={() => setViewMode('grouped')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                      viewMode === 'grouped' 
-                        ? 'bg-white shadow-sm font-semibold' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    style={{ minHeight: '40px' }}
-                  >
-                    <Grid3x3 className="w-4 h-4" />
-                    <span className="text-sm">Grouped</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('individual')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                      viewMode === 'individual' 
-                        ? 'bg-white shadow-sm font-semibold' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    style={{ minHeight: '40px' }}
-                  >
-                    <List className="w-4 h-4" />
-                    <span className="text-sm">Individual</span>
-                  </button>
+              {/* View Mode Toggle - Only for multi-unit */}
+              {flowType === 'multi_unit' && (
+                <div className="flex items-center gap-2">
+                  <Label className="font-semibold text-red-900">View:</Label>
+                  <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => setViewMode('grouped')}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                        viewMode === 'grouped' 
+                          ? 'bg-white shadow-sm font-semibold' 
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      style={{ minHeight: '40px' }}
+                    >
+                      <Grid3x3 className="w-4 h-4" />
+                      <span className="text-sm">Grouped</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('individual')}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                        viewMode === 'individual' 
+                          ? 'bg-white shadow-sm font-semibold' 
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      style={{ minHeight: '40px' }}
+                    >
+                      <List className="w-4 h-4" />
+                      <span className="text-sm">Individual</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             {selectedProperty === 'all' && properties.length > 1 && (
               <p className="text-xs text-orange-600 mt-2">
@@ -970,7 +1047,10 @@ export default function PrioritizePage() {
               </Badge>
             </div>
             <p className="text-sm text-gray-700 mb-6">
-              Click "Add to Queue" to add these to your priority list
+              {flowType === 'single_family' 
+                ? 'Click "Add Task" to add these to your queue'
+                : 'Click "Add to Queue" to add these to your priority list'
+              }
             </p>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -987,12 +1067,14 @@ export default function PrioritizePage() {
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-bold text-gray-900">{template.title}</h3>
-                      <Badge 
-                        className={appliesToScope === 'per_unit' ? 'bg-purple-600' : 'bg-gray-600'}
-                        style={{ flexShrink: 0 }}
-                      >
-                        {appliesToScope === 'per_unit' ? '🏢 Per Unit' : '🏠 Building'}
-                      </Badge>
+                      {flowType !== 'single_family' && ( // Don't show badge for SFH
+                        <Badge 
+                          className={appliesToScope === 'per_unit' ? 'bg-purple-600' : 'bg-gray-600'}
+                          style={{ flexShrink: 0 }}
+                        >
+                          {appliesToScope === 'per_unit' ? '🏢 Per Unit' : '🏠 Building'}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-700 mb-3">{template.description}</p>
                     
@@ -1008,7 +1090,6 @@ export default function PrioritizePage() {
                     <button
                       type="button"
                       onClick={() => {
-                        console.log('🖱️ CLICKED:', template.title);
                         handleAddTemplate(template);
                       }}
                       disabled={!canAdd || isAdding}
@@ -1021,7 +1102,7 @@ export default function PrioritizePage() {
                         outline: 'none'
                       }}
                     >
-                      {isAdding ? '⏳ Adding...' : '➕ Add to Queue'}
+                      {isAdding ? '⏳ Adding...' : flowType === 'single_family' ? '➕ Add Task' : '➕ Add to Queue'}
                     </button>
 
                     {!canAdd && (
@@ -1039,7 +1120,7 @@ export default function PrioritizePage() {
         {/* Tasks Display - UPDATED with Grouped/Individual Views */}
         {sortedTasks.length > 0 ? (
           <div className="space-y-4">
-            {viewMode === 'grouped' ? (
+            {viewMode === 'grouped' && flowType === 'multi_unit' ? ( // Only show grouped view for multi_unit
               <>
                 {/* Grouped Tasks */}
                 {taskGroups.groups.map((group, idx) => (
@@ -1071,7 +1152,7 @@ export default function PrioritizePage() {
               </>
             ) : (
               <>
-                {/* Individual View - All tasks separately */}
+                {/* Individual View - All tasks separately (including for SFH and Dual-Unit) */}
                 {sortedTasks.map(task => (
                   <PriorityTaskCard
                     key={task.id}
@@ -1174,6 +1255,16 @@ export default function PrioritizePage() {
         onCreatePerUnit={handleIntentSelection.createPerUnit}
         onChooseUnits={handleIntentSelection.chooseUnits}
         isCreating={addingTemplateId === intentModal.template?.id}
+      />
+
+      {/* Dual Unit Selection Modal - NEW */}
+      <DualUnitSelectionModal
+        open={dualUnitModal.open}
+        onClose={() => setDualUnitModal({ open: false, template: null, property: null })}
+        template={dualUnitModal.template}
+        property={dualUnitModal.property}
+        onConfirm={handleDualUnitConfirm}
+        isCreating={addingTemplateId === dualUnitModal.template?.id}
       />
 
       {/* Enhanced Unit Selection Modal - Renamed/Updated */}

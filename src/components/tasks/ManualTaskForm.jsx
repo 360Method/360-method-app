@@ -215,6 +215,15 @@ const EXECUTION_TYPES = [
   { value: "Not Decided", label: "🤔 Not Decided - I'll decide later" }
 ];
 
+// Helper to determine property flow type
+function getPropertyFlowType(property) {
+  if (!property) return null;
+  const doorCount = property.door_count || 1;
+  if (doorCount === 1) return 'single_family';
+  if (doorCount === 2) return 'dual_unit';
+  return 'multi_unit';
+}
+
 export default function ManualTaskForm({ propertyId, property, onComplete, onCancel, open = true, prefilledDate = null, editingTask = null }) {
   const queryClient = useQueryClient();
   const [step, setStep] = React.useState(1);
@@ -239,10 +248,11 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const [showAiResults, setShowAiResults] = React.useState(false);
 
   const isEditing = !!editingTask?.id;
-  const isMultiUnit = property && (property.door_count > 1 || (property.units && property.units.length > 0));
-  const unitOptions = property?.units || [];
+  const flowType = getPropertyFlowType(property);
+  const isSingleFamily = flowType === 'single_family';
+  const isMultiUnit = flowType === 'multi_unit' || flowType === 'dual_unit';
   
-  // Fallback unit options if property.units is empty
+  const unitOptions = property?.units || [];
   const fallbackUnits = property?.door_count > 1 
     ? Array.from({ length: property.door_count }, (_, i) => ({
         unit_id: `Unit ${i + 1}`,
@@ -351,25 +361,39 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     let tasksToCreate = [];
 
     if (isEditing) {
-      // When editing, only one task is updated. Preserve its original unit_tag.
+      // When editing, only one task is updated. Preserve its original unit_tag, scope, and applies_to_unit_count.
       tasksToCreate.push({ 
         ...baseTaskData, 
-        unit_tag: editingTask.unit_tag || undefined // Preserve existing unit_tag
+        unit_tag: editingTask.unit_tag || undefined, // Preserve existing unit_tag
+        scope: editingTask.scope || (editingTask.unit_tag ? 'per_unit' : 'property_wide'), // Default based on unit_tag
+        applies_to_unit_count: editingTask.applies_to_unit_count || 1 // Default 1 if not specified
       });
-    } else if (isMultiUnit && selectedUnits.length > 0) {
-      // Creating multiple tasks for selected units
-      tasksToCreate = selectedUnits.map(unitTag => ({
-        ...baseTaskData,
-        unit_tag: unitTag
-      }));
-    } else {
-      // Creating a single task:
-      // - For a single-unit property, unit_tag is undefined.
-      // - For a multi-unit property where no specific units were selected, it's a common area task.
+    } else if (isSingleFamily) {
+      // Single family: no unit tag, scope is property_wide
       tasksToCreate.push({
         ...baseTaskData,
-        unit_tag: isMultiUnit ? "Common Area" : undefined // Explicitly "Common Area" if multi-unit but no units selected
+        unit_tag: undefined, // No unit_tag for single family
+        scope: 'property_wide',
+        applies_to_unit_count: 1 // Applies to the single property unit
       });
+    } else { // This branch is for multi-unit properties (dual_unit or multi_unit)
+      if (selectedUnits.length > 0) {
+        // Creating tasks for selected units (can include "Common Area")
+        tasksToCreate = selectedUnits.map(unitTag => ({
+          ...baseTaskData,
+          unit_tag: unitTag,
+          scope: (unitTag === "Common Area") ? 'building_wide' : 'per_unit',
+          applies_to_unit_count: (unitTag === "Common Area") ? (property?.door_count || 1) : 1
+        }));
+      } else {
+        // Multi-unit property, but no specific units selected, implicitly means a "Common Area" task
+        tasksToCreate.push({
+          ...baseTaskData,
+          unit_tag: "Common Area",
+          scope: 'building_wide',
+          applies_to_unit_count: property?.door_count || 1
+        });
+      }
     }
 
     createTaskMutation.mutate(tasksToCreate);
@@ -390,7 +414,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
 
   // Show AI Analysis Results
   if (showAiResults) {
-    const taskCount = isEditing ? 1 : (selectedUnits.length > 0 ? selectedUnits.length : 1);
+    const taskCount = isEditing ? 1 : (isSingleFamily ? 1 : (selectedUnits.length > 0 ? selectedUnits.length : 1));
     
     return (
       <Dialog open={true} onOpenChange={(isOpen) => {
@@ -721,7 +745,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
               </div>
 
               {/* EDIT MODE: Show current unit as read-only */}
-              {isMultiUnit && isEditing && (
+              {!isSingleFamily && isMultiUnit && isEditing && (
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-blue-900 mb-2 block flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -732,7 +756,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   </p>
                   <div className="bg-white border-2 border-blue-400 rounded-lg p-3">
                     <p className="text-base font-bold text-blue-900">
-                      {editingTask?.unit_tag || 'Not assigned to a specific unit'}
+                      {editingTask?.unit_tag || 'N/A'}
                     </p>
                   </div>
                   <p className="text-xs text-gray-600 mt-2 italic">
@@ -742,7 +766,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
               )}
 
               {/* CREATE MODE: Multi-Unit Checkbox Selection */}
-              {isMultiUnit && !isEditing && (
+              {!isSingleFamily && isMultiUnit && !isEditing && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -920,7 +944,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                     <span className="text-gray-600 font-medium">Execution:</span>
                     <span className="font-semibold text-gray-900">{formData.execution_type}</span>
                   </div>
-                  {isMultiUnit && (
+                  {!isSingleFamily && isMultiUnit && (
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">{isEditing || selectedUnits.length <= 1 ? 'Unit:' : 'Units:'}</span>
                       <span className="font-semibold text-purple-700">
@@ -1001,7 +1025,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             ) : (
               <Button
                 type="submit"
-                disabled={createTaskMutation.isPending || aiEnriching || !formData.title || !formData.description || (!isEditing && isMultiUnit && selectedUnits.length === 0)}
+                disabled={createTaskMutation.isPending || aiEnriching || !formData.title || !formData.description || (!isEditing && !isSingleFamily && isMultiUnit && selectedUnits.length === 0)}
                 className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
                 style={{ minHeight: '48px' }}
               >

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,7 +21,7 @@ import {
   Edit,
   CheckCircle2,
   TrendingUp,
-  Building2 // Added Building2 import
+  Building2
 } from "lucide-react";
 import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -60,6 +59,15 @@ function safeFormatDate(dateString) {
   }
 }
 
+// Helper to determine property flow type
+function getPropertyFlowType(property) {
+  if (!property) return null;
+  const doorCount = property.door_count || 1;
+  if (doorCount === 1) return 'single_family';
+  if (doorCount === 2) return 'dual_unit';
+  return 'multi_unit';
+}
+
 export default function PriorityTaskCard({ 
   task, 
   onSendToSchedule, 
@@ -86,7 +94,9 @@ export default function PriorityTaskCard({
   const currentCost = task.current_fix_cost || 0;
   const delayedCost = task.delayed_fix_cost || 0;
   const potentialSavings = delayedCost - currentCost;
-  const isMultiUnit = property && property.door_count > 1;
+  
+  const flowType = getPropertyFlowType(property);
+  const isSingleFamily = flowType === 'single_family';
 
   const handleExecutionTypeChange = (newType) => {
     updateTaskMutation.mutate({
@@ -109,7 +119,7 @@ export default function PriorityTaskCard({
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
-              {task.unit_tag && (
+              {!isSingleFamily && task.unit_tag && (
                 <Badge className="bg-purple-600 text-white shrink-0">
                   🚪 {task.unit_tag}
                 </Badge>
@@ -175,7 +185,7 @@ export default function PriorityTaskCard({
                     High Cascade Risk
                   </Badge>
                 )}
-                {task.scope === 'building_wide' && (
+                {!isSingleFamily && task.scope === 'building_wide' && (
                   <Badge className="bg-blue-600 text-white gap-1">
                     <Building2 className="w-3 h-3" />
                     Building Wide
@@ -199,13 +209,13 @@ export default function PriorityTaskCard({
                     Risk: {cascadeRiskScore}/10
                   </Badge>
                 )}
-                {isMultiUnit && task.unit_tag && (
+                {!isSingleFamily && task.unit_tag && (
                   <Badge className="bg-purple-600 text-white gap-1">
                     <Building2 className="w-3 h-3" />
                     {task.unit_tag}
                   </Badge>
                 )}
-                {task.applies_to_unit_count && (
+                {!isSingleFamily && task.applies_to_unit_count && (
                   <Badge variant="outline" className="text-xs">
                     Covers {task.applies_to_unit_count} units
                   </Badge>
@@ -245,6 +255,11 @@ export default function PriorityTaskCard({
                   <p className="text-xl font-bold text-green-700">
                     ${currentCost.toLocaleString()}
                   </p>
+                  {!isSingleFamily && task.applies_to_unit_count && task.applies_to_unit_count > 1 && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      (${Math.round(currentCost / task.applies_to_unit_count).toLocaleString()}/unit)
+                    </p>
+                  )}
                 </div>
               )}
               {delayedCost > 0 && (
@@ -256,6 +271,11 @@ export default function PriorityTaskCard({
                   <p className="text-xl font-bold text-red-700">
                     ${delayedCost.toLocaleString()}
                   </p>
+                  {!isSingleFamily && task.applies_to_unit_count && task.applies_to_unit_count > 1 && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      (${Math.round(delayedCost / task.applies_to_unit_count).toLocaleString()}/unit)
+                    </p>
+                  )}
                 </div>
               )}
             </div>
