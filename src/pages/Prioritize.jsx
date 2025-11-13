@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,9 +111,10 @@ export default function PrioritizePage() {
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
   // Fetch tasks based on selected property - only for user's properties
-  const { data: allTasks = [] } = useQuery({
+  const { data: allTasks = [], refetch: refetchTasks } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty, currentUser?.email],
     queryFn: async () => {
+      console.log('📋 Fetching tasks for property:', selectedProperty);
       if (selectedProperty === 'all') {
         // Get all tasks but only for the user's properties
         const propertyIds = properties.map(p => p.id);
@@ -174,8 +176,13 @@ export default function PrioritizePage() {
   // Create task from template mutation
   const createFromTemplateMutation = useMutation({
     mutationFn: async ({ template, propertyId }) => {
-      console.log('Creating task from template:', { template, propertyId });
-      const result = await base44.entities.MaintenanceTask.create({
+      console.log('🚀 Creating task from template:', { 
+        templateTitle: template.title, 
+        templateId: template.id,
+        propertyId 
+      });
+      
+      const taskData = {
         property_id: propertyId,
         title: template.title,
         description: template.description,
@@ -185,26 +192,28 @@ export default function PrioritizePage() {
         template_origin_id: template.id,
         recurring: true,
         recurrence_interval_days: template.suggested_interval_days || 365
-      });
-      console.log('Task created successfully:', result);
+      };
+      
+      console.log('📝 Task data being created:', taskData);
+      
+      const result = await base44.entities.MaintenanceTask.create(taskData);
+      console.log('✅ Task created successfully:', result);
       return result;
     },
-    onSuccess: (data, variables) => {
-      console.log('Invalidating queries after successful task creation');
-      // Invalidate all maintenanceTasks queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-      // Also invalidate the specific query for the current property
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', variables.propertyId] });
-      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', selectedProperty] });
-      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+    onSuccess: async (data, variables) => {
+      console.log('🎉 Task creation succeeded!');
+      console.log('New task data:', data);
       
-      // Wait a tiny bit for the queries to invalidate, then clear the loading state
-      setTimeout(() => {
-        setAddingTemplateId(null);
-      }, 100);
+      // Force refetch of tasks
+      await refetchTasks();
+      
+      // Clear loading state
+      setAddingTemplateId(null);
+      
+      console.log('✅ Cleared loading state and refetched tasks');
     },
     onError: (error) => {
-      console.error('Failed to add template:', error);
+      console.error('❌ Failed to add template:', error);
       alert(`Failed to add task: ${error.message || 'Unknown error'}`);
       setAddingTemplateId(null);
     }
@@ -323,36 +332,33 @@ export default function PrioritizePage() {
     }
   };
 
-  const handleAddTemplate = async (e, template) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('=== Add Template Button Clicked ===');
-    console.log('Template:', template.title);
-    console.log('Selected property:', selectedProperty);
-    console.log('All properties:', properties);
-    console.log('Current user:', currentUser?.email);
+  const handleAddTemplate = async (template) => {
+    console.log('🔵 Button clicked! Template:', template.title);
+    console.log('🔵 Selected property:', selectedProperty);
+    console.log('🔵 Properties available:', properties.length);
     
     if (selectedProperty === 'all' && properties.length > 1) {
+      console.warn('⚠️ Multiple properties selected, cannot add');
       alert('Please select a specific property to add this task.');
       return;
     }
     
     const propertyId = selectedProperty !== 'all' ? selectedProperty : properties[0]?.id;
     if (!propertyId) {
+      console.error('❌ No property ID available');
       alert('No property selected. Please select a property first.');
       return;
     }
     
-    console.log('Adding template to property ID:', propertyId);
-    console.log('Setting loading state for template ID:', template.id);
+    console.log('🔵 Using property ID:', propertyId);
+    console.log('🔵 Setting loading state for template:', template.id);
     setAddingTemplateId(template.id);
     
     try {
       await createFromTemplateMutation.mutateAsync({ template, propertyId });
-      console.log('✅ Task added successfully!');
+      console.log('✅ Template added successfully!');
     } catch (error) {
-      console.error('❌ Error adding task:', error);
+      console.error('❌ Error in handleAddTemplate:', error);
     }
   };
 
@@ -386,6 +392,14 @@ export default function PrioritizePage() {
   const currentProperty = selectedProperty !== 'all' 
     ? properties.find(p => p.id === selectedProperty)
     : null;
+
+  console.log('📊 Render stats:', {
+    selectedProperty,
+    propertiesCount: properties.length,
+    templatesCount: relevantTemplates.length,
+    tasksCount: allTasks.length,
+    addingTemplateId
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
@@ -537,7 +551,7 @@ export default function PrioritizePage() {
                   <ul className="space-y-1 text-xs">
                     <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, service heating system</li>
                     <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal, salt walkways</li>
-                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, power wash exterior, fertilize lawn</li>
+                    <li>• 🌸 <strong>Spring:</b> AC tune-up, power wash exterior, fertilize lawn</li>
                     <li>• ☀️ <strong>Summer:</strong> Replace HVAC filters, pest control, seal driveway</li>
                   </ul>
                   <p className="text-xs text-gray-600 mt-2 italic">
@@ -745,57 +759,64 @@ export default function PrioritizePage() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
-                {relevantTemplates.map(template => (
-                  <Card key={template.id} className="border border-blue-200 bg-white hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">{template.title}</h4>
-                          <p className="text-xs text-gray-600 mb-2">{template.description}</p>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            <Badge className="bg-gray-600 text-white text-xs">
-                              {template.priority || 'Routine'}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {template.system_type}
-                            </Badge>
-                            {template.estimated_time_minutes && (
-                              <Badge variant="outline" className="text-xs">
-                                ~{Math.round(template.estimated_time_minutes / 60)}h
+                {relevantTemplates.map(template => {
+                  const isAdding = addingTemplateId === template.id;
+                  const isDisabled = createFromTemplateMutation.isPending || isAdding || (selectedProperty === 'all' && properties.length > 1);
+                  
+                  return (
+                    <Card key={template.id} className="border border-blue-200 bg-white hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">{template.title}</h4>
+                            <p className="text-xs text-gray-600 mb-2">{template.description}</p>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <Badge className="bg-gray-600 text-white text-xs">
+                                {template.priority || 'Routine'}
                               </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {template.system_type}
+                              </Badge>
+                              {template.estimated_time_minutes && (
+                                <Badge variant="outline" className="text-xs">
+                                  ~{Math.round(template.estimated_time_minutes / 60)}h
+                                </Badge>
+                              )}
+                            </div>
+                            {template.why_important && (
+                              <p className="text-xs text-gray-700 italic mt-2">
+                                💡 {template.why_important}
+                              </p>
                             )}
                           </div>
-                          {template.why_important && (
-                            <p className="text-xs text-gray-700 italic mt-2">
-                              💡 {template.why_important}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                      <Button
-                        onClick={(e) => handleAddTemplate(e, template)}
-                        disabled={
-                          createFromTemplateMutation.isPending ||
-                          addingTemplateId === template.id ||
-                          (selectedProperty === 'all' && properties.length > 1)
-                        }
-                        size="sm"
-                        className="w-full bg-blue-600 hover:bg-blue-700 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ minHeight: '40px' }}
-                        type="button"
-                      >
-                        {addingTemplateId === template.id ? (
-                          <>Adding...</>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add to Queue
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <button
+                          onClick={() => {
+                            console.log('🖱️ Raw button click detected for:', template.title);
+                            handleAddTemplate(template);
+                          }}
+                          disabled={isDisabled}
+                          className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors mt-2 ${
+                            isDisabled 
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                              : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                          }`}
+                          style={{ minHeight: '40px' }}
+                          type="button"
+                        >
+                          {isAdding ? (
+                            <>Adding...</>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 inline mr-2" />
+                              Add to Queue
+                            </>
+                          )}
+                        </button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
