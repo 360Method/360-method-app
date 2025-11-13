@@ -9,10 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
-async function enrichTaskWithAI(taskId, taskData) {
+async function enrichTaskWithAI(taskId, taskData, photoUrls = []) {
   const { title, description, system_type, priority } = taskData;
   
   if (!title || !description || !system_type) {
@@ -21,6 +21,60 @@ async function enrichTaskWithAI(taskId, taskData) {
   }
 
   try {
+    // Build comprehensive prompt for AI analysis
+    const hasPhotos = photoUrls && photoUrls.length > 0;
+    
+    const cascadeAnalysisPrompt = `Analyze this maintenance issue and provide detailed risk assessment:
+
+Task: ${title}
+Description: ${description}
+System Type: ${system_type}
+Priority: ${priority}
+${hasPhotos ? `Photos: ${photoUrls.length} attached for analysis` : 'No photos provided'}
+
+Based on this information${hasPhotos ? ' and the attached photos' : ''}, provide:
+
+1. **Current Fix Cost**: Realistic estimate to fix this NOW (materials + labor). Consider typical market rates.
+
+2. **Cascade Risk Score** (1-10): How likely is this to trigger other failures if ignored?
+   - 1-3: Low risk, isolated issue
+   - 4-6: Medium risk, could affect nearby systems
+   - 7-8: High risk, likely to cascade
+   - 9-10: Critical, will definitely cause expensive failures
+
+3. **Cascade Risk Explanation**: Describe EXACTLY what will fail next and how. Be specific about the chain reaction.
+   Example: "Clogged gutters overflow → water pools at foundation → foundation cracks → basement flooding → mold growth"
+
+4. **Delayed Fix Cost**: Realistic estimate if this is ignored for 6-12 months. Include cascade damage costs.
+
+5. **Cost Impact Reason**: Explain WHY waiting makes it more expensive. What additional damage occurs?
+
+6. **Urgency Timeline**: How long before this becomes critical? (e.g., "30 days", "3 months", "immediate")
+
+Be realistic with costs - use actual contractor and material pricing. Be dire and specific about cascade risks to motivate action.`;
+
+    // Execute AI analysis with photos if available
+    const cascadeAnalysis = await base44.integrations.Core.InvokeLLM({
+      prompt: cascadeAnalysisPrompt,
+      file_urls: hasPhotos ? photoUrls : undefined,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          current_fix_cost: { type: "number" },
+          cascade_risk_score: { type: "number" },
+          cascade_risk_reason: { type: "string" },
+          delayed_fix_cost: { type: "number" },
+          cost_impact_reason: { type: "string" },
+          urgency_timeline: { type: "string" }
+        },
+        required: ["current_fix_cost", "cascade_risk_score", "cascade_risk_reason", "delayed_fix_cost", "cost_impact_reason", "urgency_timeline"]
+      }
+    }).catch(err => {
+      console.error('Cascade analysis failed:', err);
+      return null;
+    });
+
+    // Execute other AI calls in parallel
     const [timeEstimate, sowResult, toolsAndMaterials, videoResults] = await Promise.all([
       base44.integrations.Core.InvokeLLM({
         prompt: `Given the maintenance task:
@@ -104,6 +158,21 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
 
     const updateData = { ai_enrichment_completed: true };
 
+    // Add cascade analysis data if available
+    if (cascadeAnalysis) {
+      if (cascadeAnalysis.current_fix_cost) updateData.current_fix_cost = cascadeAnalysis.current_fix_cost;
+      if (cascadeAnalysis.cascade_risk_score) updateData.cascade_risk_score = cascadeAnalysis.cascade_risk_score;
+      if (cascadeAnalysis.cascade_risk_reason) updateData.cascade_risk_reason = cascadeAnalysis.cascade_risk_reason;
+      if (cascadeAnalysis.delayed_fix_cost) updateData.delayed_fix_cost = cascadeAnalysis.delayed_fix_cost;
+      if (cascadeAnalysis.cost_impact_reason) updateData.cost_impact_reason = cascadeAnalysis.cost_impact_reason;
+      if (cascadeAnalysis.urgency_timeline) updateData.urgency_timeline = cascadeAnalysis.urgency_timeline;
+      
+      // Update cascade alert flag if risk is high
+      if (cascadeAnalysis.cascade_risk_score >= 7) {
+        updateData.has_cascade_alert = true;
+      }
+    }
+
     if (timeEstimate?.hours && typeof timeEstimate.hours === 'number') {
       updateData.estimated_hours = timeEstimate.hours;
     }
@@ -120,11 +189,14 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
 
     await base44.entities.MaintenanceTask.update(taskId, updateData);
     console.log(`Task ${taskId} successfully enriched with AI insights`);
+    
+    return cascadeAnalysis; // Return cascade analysis for immediate display
   } catch (error) {
     console.error('Error enriching task with AI:', error);
     await base44.entities.MaintenanceTask.update(taskId, {
       ai_enrichment_completed: true
     }).catch(err => console.error('Failed to mark enrichment status:', err));
+    return null;
   }
 }
 
@@ -146,10 +218,10 @@ const EXECUTION_TYPES = [
   { value: "Not Decided", label: "🤔 Not Decided - I'll decide later" }
 ];
 
-export default function ManualTaskForm({ propertyId, onComplete, onCancel, open = true, prefilledDate = null }) {
+export default function ManualTaskForm({ propertyId, onComplete, onCancel, open = true, prefilledDate = null, editingTask = null }) {
   const queryClient = useQueryClient();
   const [step, setStep] = React.useState(1);
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = React.useState(editingTask || {
     title: "",
     description: "",
     system_type: "General",
@@ -160,30 +232,40 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
     current_fix_cost: "",
     urgency_timeline: ""
   });
-  const [photos, setPhotos] = React.useState([]);
+  const [photos, setPhotos] = React.useState(editingTask?.photo_urls || []);
   const [uploadingPhotos, setUploadingPhotos] = React.useState(false);
   const [aiEnriching, setAiEnriching] = React.useState(false);
+  const [aiAnalysis, setAiAnalysis] = React.useState(null);
+
+  const isEditing = !!editingTask?.id;
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      const task = await base44.entities.MaintenanceTask.create(taskData);
-      
-      setAiEnriching(true);
-      enrichTaskWithAI(task.id, taskData)
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-          setAiEnriching(false);
-        })
-        .catch(err => {
-          console.error('AI enrichment failed:', err);
-          setAiEnriching(false);
-        });
-      
-      return task;
+      if (isEditing) {
+        // Update existing task
+        return await base44.entities.MaintenanceTask.update(editingTask.id, taskData);
+      } else {
+        // Create new task
+        return await base44.entities.MaintenanceTask.create(taskData);
+      }
     },
-    onSuccess: () => {
+    onSuccess: async (savedTask) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+      
+      // Only run AI enrichment for new tasks or if user requested re-analysis
+      if (!isEditing || formData.reanalyze) {
+        setAiEnriching(true);
+        const cascadeResult = await enrichTaskWithAI(savedTask.id, savedTask, photos);
+        setAiEnriching(false);
+        
+        if (cascadeResult) {
+          setAiAnalysis(cascadeResult);
+          // Show AI results before closing
+          return;
+        }
+      }
+      
       onComplete();
     }
   });
@@ -237,16 +319,133 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
     return true;
   };
 
+  // Show AI Analysis Results
+  if (aiAnalysis && !aiEnriching) {
+    return (
+      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onComplete()}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              AI Cost & Risk Analysis
+            </DialogTitle>
+            <DialogDescription>
+              Here's what we found based on your description{photos.length > 0 ? ' and photos' : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Cost Analysis */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                  <h3 className="font-bold text-green-900">Fix Now</h3>
+                </div>
+                <p className="text-3xl font-bold text-green-700">
+                  ${aiAnalysis.current_fix_cost?.toLocaleString() || 'N/A'}
+                </p>
+                <p className="text-xs text-green-800 mt-1">Estimated cost today</p>
+              </div>
+
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <h3 className="font-bold text-red-900">If You Wait</h3>
+                </div>
+                <p className="text-3xl font-bold text-red-700">
+                  ${aiAnalysis.delayed_fix_cost?.toLocaleString() || 'N/A'}
+                </p>
+                <p className="text-xs text-red-800 mt-1">Estimated cost in 6-12 months</p>
+              </div>
+            </div>
+
+            {/* Cascade Risk */}
+            <div className={`border-2 rounded-lg p-4 ${
+              aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-50 border-red-400' :
+              aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-50 border-orange-400' :
+              'bg-blue-50 border-blue-400'
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg">Cascade Risk Assessment</h3>
+                <Badge className={
+                  aiAnalysis.cascade_risk_score >= 7 ? 'bg-red-600' :
+                  aiAnalysis.cascade_risk_score >= 4 ? 'bg-orange-600' :
+                  'bg-blue-600'
+                }>
+                  Risk Score: {aiAnalysis.cascade_risk_score}/10
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-800 mb-3 font-medium">
+                {aiAnalysis.cascade_risk_reason}
+              </p>
+              {aiAnalysis.cascade_risk_score >= 7 && (
+                <div className="bg-red-100 border border-red-300 rounded p-3 mt-2">
+                  <p className="text-xs text-red-900 font-bold">
+                    ⚠️ HIGH RISK: This issue will likely trigger expensive cascade failures if ignored!
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Why Waiting Costs More */}
+            {aiAnalysis.cost_impact_reason && (
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Why Waiting Costs More:
+                </h3>
+                <p className="text-sm text-gray-800">{aiAnalysis.cost_impact_reason}</p>
+              </div>
+            )}
+
+            {/* Urgency Timeline */}
+            {aiAnalysis.urgency_timeline && (
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <h3 className="font-bold text-purple-900 mb-2">Timeline to Critical:</h3>
+                <p className="text-lg font-bold text-purple-700">{aiAnalysis.urgency_timeline}</p>
+              </div>
+            )}
+
+            {/* Savings Potential */}
+            {aiAnalysis.delayed_fix_cost && aiAnalysis.current_fix_cost && (
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <h3 className="font-bold text-green-900 mb-2">💰 Potential Savings by Acting Now:</h3>
+                <p className="text-2xl font-bold text-green-700">
+                  ${(aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost).toLocaleString()}
+                </p>
+                <p className="text-xs text-green-800 mt-1">
+                  That's {Math.round(((aiAnalysis.delayed_fix_cost - aiAnalysis.current_fix_cost) / aiAnalysis.current_fix_cost) * 100)}% more expensive if you wait!
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              onClick={() => onComplete()}
+              className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
+              style={{ minHeight: '48px' }}
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Got It - Task Saved
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            ➕ Add New Maintenance Task
+            {isEditing ? '✏️ Edit' : '➕ Add'} Maintenance Task
             {aiEnriching && (
               <Badge className="gap-1 bg-purple-600 text-white">
                 <Sparkles className="w-3 h-3" />
-                AI Enriching...
+                AI Analyzing...
               </Badge>
             )}
           </DialogTitle>
@@ -263,12 +462,12 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Basic Info */}
+          {/* Step 1: Basic Info + Photos */}
           {step === 1 && (
             <div className="space-y-4">
               <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
                 <p className="text-sm text-blue-900 font-semibold mb-1">📝 What needs to be done?</p>
-                <p className="text-xs text-blue-800">Be specific - this helps AI provide better recommendations</p>
+                <p className="text-xs text-blue-800">Be specific and add photos - AI will analyze everything to estimate costs and risks</p>
               </div>
 
               <div>
@@ -278,10 +477,10 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                 <Input
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Replace HVAC air filter"
+                  placeholder="e.g., Replace HVAC air filter, Fix leaky faucet"
                   className="text-base"
                   style={{ minHeight: '48px' }}
-                  autoFocus
+                  autoFocus={!isEditing}
                 />
               </div>
 
@@ -292,15 +491,73 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what needs to be done, any symptoms you've noticed, or why this is needed..."
+                  placeholder="Describe the issue, symptoms you've noticed, location, severity..."
                   rows={5}
                   className="text-base"
                   style={{ minHeight: '120px' }}
                 />
-                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                  <Sparkles className="w-3 h-3 flex-shrink-0 mt-0.5 text-purple-600" />
-                  <span>The more detail you provide, the better AI can estimate time, tools, and materials needed.</span>
+              </div>
+
+              {/* Photo Upload - Prominent in Step 1 */}
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Camera className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-bold text-purple-900">Add Photos (Recommended)</h3>
+                </div>
+                <p className="text-sm text-purple-800 mb-3">
+                  Photos help AI provide more accurate cost estimates and identify cascade risks
                 </p>
+                
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    {photos.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Photo ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border-2 border-purple-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-purple-400 text-purple-700 hover:bg-purple-100"
+                  onClick={() => document.getElementById('photo-upload-task').click()}
+                  disabled={uploadingPhotos}
+                  style={{ minHeight: '48px' }}
+                >
+                  {uploadingPhotos ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {photos.length > 0 ? 'Add More Photos' : 'Add Photos'}
+                    </>
+                  )}
+                </Button>
+                <input
+                  id="photo-upload-task"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  capture="environment"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -400,101 +657,37 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                     />
                   </PopoverContent>
                 </Popover>
-                <p className="text-xs text-gray-500 mt-1">When do you plan to complete this?</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold text-gray-900 mb-2 block">
-                    Urgency Timeline (optional)
-                  </label>
-                  <Input
-                    value={formData.urgency_timeline}
-                    onChange={(e) => setFormData({ ...formData, urgency_timeline: e.target.value })}
-                    placeholder="e.g., 30 days, ASAP"
-                    style={{ minHeight: '48px' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-semibold text-gray-900 mb-2 block">
-                    Estimated Cost (optional)
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.current_fix_cost}
-                    onChange={(e) => setFormData({ ...formData, current_fix_cost: e.target.value })}
-                    placeholder="0.00"
-                    step="0.01"
-                    style={{ minHeight: '48px' }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Photos & Review */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
-                <p className="text-sm text-green-900 font-semibold mb-1">📸 Add photos (optional)</p>
-                <p className="text-xs text-green-800">Visual documentation helps track progress and get better quotes</p>
               </div>
 
               <div>
                 <label className="text-sm font-semibold text-gray-900 mb-2 block">
-                  Photos
+                  Current Status
                 </label>
-                <div className="space-y-3">
-                  {photos.length > 0 && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {photos.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url}
-                            alt={`Task photo ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg border-2 border-gray-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(index)}
-                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => document.getElementById('photo-upload-task').click()}
-                    disabled={uploadingPhotos}
-                    style={{ minHeight: '48px' }}
-                  >
-                    {uploadingPhotos ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        {photos.length > 0 ? 'Add More Photos' : 'Add Photos'}
-                      </>
-                    )}
-                  </Button>
-                  <input
-                    id="photo-upload-task"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-                </div>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Identified">Identified - Just discovered</SelectItem>
+                    <SelectItem value="Scheduled">Scheduled - Date set</SelectItem>
+                    <SelectItem value="In Progress">In Progress - Working on it</SelectItem>
+                    <SelectItem value="Completed">Completed - Done</SelectItem>
+                    <SelectItem value="Deferred">Deferred - Postponed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
+                <p className="text-sm text-green-900 font-semibold mb-1">✅ Review & Save</p>
+                <p className="text-xs text-green-800">AI will analyze your task and provide cost estimates and cascade risk analysis</p>
               </div>
 
               {/* Review Summary */}
@@ -542,12 +735,14 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
                   <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-purple-900 mb-1">
-                      🤖 AI Will Automatically Generate:
+                      🤖 AI Will Analyze & Generate:
                     </p>
                     <ul className="text-xs text-purple-800 leading-relaxed space-y-1">
-                      <li>• Time estimation for planning</li>
+                      <li>• <strong>Current fix cost estimate</strong></li>
+                      <li>• <strong>Cascade risk score (1-10)</strong> - What will fail next if ignored</li>
+                      <li>• <strong>Delayed fix cost</strong> - What it costs if you wait</li>
+                      <li>• Time estimation & tools needed</li>
                       <li>• Statement of Work (SOW)</li>
-                      <li>• Tools & materials checklist</li>
                       <li>• Video tutorial links</li>
                     </ul>
                   </div>
@@ -582,19 +777,19 @@ export default function ManualTaskForm({ propertyId, onComplete, onCancel, open 
             ) : (
               <Button
                 type="submit"
-                disabled={createTaskMutation.isPending || !formData.title || !formData.description}
+                disabled={createTaskMutation.isPending || aiEnriching || !formData.title || !formData.description}
                 className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
                 style={{ minHeight: '48px' }}
               >
-                {createTaskMutation.isPending ? (
+                {createTaskMutation.isPending || aiEnriching ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Task...
+                    {aiEnriching ? 'AI Analyzing...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Create Task
+                    {isEditing ? 'Update Task' : 'Create Task'}
                   </>
                 )}
               </Button>
