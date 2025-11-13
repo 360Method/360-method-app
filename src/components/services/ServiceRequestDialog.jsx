@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -12,15 +11,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 
-export default function ServiceRequestDialog({ open, onClose, prefilledData = {} }) {
+export default function ServiceRequestDialog({ open, onClose, prefilledData }) {
   const queryClient = useQueryClient();
   
+  // Ensure prefilledData is never null/undefined
+  const safePrefilledData = prefilledData || {};
+  
   const [formData, setFormData] = React.useState({
-    property_id: prefilledData.property_id || "",
-    task_id: prefilledData.task_id || null,
-    service_type: prefilledData.service_type || "",
-    description: prefilledData.description || "",
-    urgency: prefilledData.urgency || "Medium",
+    property_id: safePrefilledData.property_id || "",
+    task_id: safePrefilledData.task_id || null,
+    service_type: safePrefilledData.service_type || "",
+    description: safePrefilledData.description || "",
+    urgency: safePrefilledData.urgency || "Medium",
     preferred_contact_time: "",
     contact_method: "email",
     contact_value: "",
@@ -45,13 +47,14 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData = {}
   // Update form data when prefilledData changes and dialog is open
   React.useEffect(() => {
     if (open && prefilledData) {
+      const safe = prefilledData || {};
       setFormData(prev => ({
         ...prev,
-        property_id: prefilledData.property_id || prev.property_id || "",
-        task_id: prefilledData.task_id || null,
-        service_type: prefilledData.service_type || prev.service_type || "",
-        description: prefilledData.description || prev.description || "",
-        urgency: prefilledData.urgency || prev.urgency || "Medium"
+        property_id: safe.property_id || prev.property_id || "",
+        task_id: safe.task_id || null,
+        service_type: safe.service_type || prev.service_type || "",
+        description: safe.description || prev.description || "",
+        urgency: safe.urgency || prev.urgency || "Medium"
       }));
     }
   }, [open, prefilledData]);
@@ -70,7 +73,7 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData = {}
         description: data.description,
         urgency: data.urgency,
         preferred_contact_time: data.preferred_contact_time,
-        photo_urls: prefilledData.photo_urls || [],
+        photo_urls: safePrefilledData.photo_urls || [],
         status: 'Submitted'
       });
 
@@ -112,7 +115,7 @@ Availability: ${availabilityText || 'Not specified'}
 ADDITIONAL NOTES:
 ${data.additional_notes || 'None'}
 
-${prefilledData.photo_urls && prefilledData.photo_urls.length > 0 ? `\nPHOTOS:\n${prefilledData.photo_urls.join('\n')}` : ''}
+${safePrefilledData.photo_urls && safePrefilledData.photo_urls.length > 0 ? `\nPHOTOS:\n${safePrefilledData.photo_urls.join('\n')}` : ''}
 
 ---
 View in app: [Link to ServiceRequest #${serviceRequest.id}]
@@ -166,12 +169,13 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onValueChange={(value) => setFormData({ ...formData, service_type: value })}
               required
             >
-              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}>
+              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '48px' }}>
                 <SelectValue placeholder="Select service type..." />
               </SelectTrigger>
               <SelectContent className="bg-white" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
                 <SelectItem value="Professional Baseline Assessment">Complete Property Baseline Documentation</SelectItem>
                 <SelectItem value="Seasonal Inspection">Quarterly Property Inspection</SelectItem>
+                <SelectItem value="Professional Inspection">Professional Inspection</SelectItem>
                 <SelectItem value="Specific Task Repair">Complete This Specific Task</SelectItem>
                 <SelectItem value="Multiple Tasks">Multiple Tasks from Priority Queue</SelectItem>
                 <SelectItem value="Emergency Repair">Emergency Repair (Something Just Broke)</SelectItem>
@@ -188,7 +192,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onValueChange={(value) => setFormData({ ...formData, property_id: value })}
               required
             >
-              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}>
+              <SelectTrigger style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '48px' }}>
                 <SelectValue placeholder="Select property..." />
               </SelectTrigger>
               <SelectContent className="bg-white" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
@@ -202,18 +206,18 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
           </div>
 
           {/* Pre-filled task details if from Priority Queue */}
-          {prefilledData?.task_id && (
+          {safePrefilledData.task_id && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4" style={{ backgroundColor: '#EFF6FF', opacity: 1 }}>
               <h4 className="font-semibold text-blue-900 mb-2">Task Details (auto-filled)</h4>
               <p className="text-sm text-gray-800 mb-2">
-                <strong>System:</strong> {prefilledData.system_type || 'General'}
+                <strong>System:</strong> {safePrefilledData.system_type || 'General'}
               </p>
               <p className="text-sm text-gray-800 mb-2">
-                <strong>Issue:</strong> {prefilledData.title}
+                <strong>Issue:</strong> {safePrefilledData.title}
               </p>
-              {prefilledData.severity && (
+              {safePrefilledData.severity && (
                 <Badge className="bg-orange-100 text-orange-800">
-                  {prefilledData.severity}
+                  {safePrefilledData.severity}
                 </Badge>
               )}
             </div>
@@ -228,11 +232,11 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               placeholder="Provide details about the work needed..."
               rows={4}
               required
-              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '96px' }}
             />
-            {prefilledData?.notes && (
+            {safePrefilledData.notes && (
               <p className="text-xs text-gray-600 mt-1">
-                Your notes: "{prefilledData.notes}"
+                Your notes: "{safePrefilledData.notes}"
               </p>
             )}
           </div>
@@ -332,7 +336,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   onChange={(e) => setFormData({ ...formData, contact_value: e.target.value })}
                   placeholder="(360) 555-1234"
                   className="ml-6"
-                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '48px' }}
                 />
               )}
               <label className="flex items-center gap-2">
@@ -352,7 +356,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
                   onChange={(e) => setFormData({ ...formData, contact_value: e.target.value })}
                   placeholder="(360) 555-1234"
                   className="ml-6"
-                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '48px' }}
                 />
               )}
             </div>
@@ -403,7 +407,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
               placeholder="Gate codes, parking instructions, pet information, etc."
               rows={3}
-              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC' }}
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#CCCCCC', minHeight: '72px' }}
             />
           </div>
 
@@ -428,7 +432,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               variant="outline"
               onClick={onClose}
               className="flex-1"
-              style={{ backgroundColor: '#FFFFFF', borderColor: '#1B365D', color: '#1B365D' }}
+              style={{ backgroundColor: '#FFFFFF', borderColor: '#1B365D', color: '#1B365D', minHeight: '48px' }}
             >
               Cancel
             </Button>
@@ -436,7 +440,7 @@ View in app: [Link to ServiceRequest #${serviceRequest.id}]
               type="submit"
               disabled={createServiceRequestMutation.isPending || !formData.property_id}
               className="flex-1"
-              style={{ backgroundColor: '#28A745', color: '#FFFFFF' }}
+              style={{ backgroundColor: '#28A745', color: '#FFFFFF', minHeight: '48px' }}
             >
               {createServiceRequestMutation.isPending ? 'Submitting...' : 'Submit Service Request'}
             </Button>

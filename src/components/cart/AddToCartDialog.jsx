@@ -10,35 +10,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Upload, X, CheckCircle2 } from "lucide-react";
 
-export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
+export default function AddToCartDialog({ open, onClose, prefilledData }) {
   const queryClient = useQueryClient();
   
+  // Ensure prefilledData is never null/undefined
+  const safePrefilledData = prefilledData || {};
+  
   const [formData, setFormData] = React.useState({
-    title: prefilledData.title || "",
-    description: prefilledData.description || "",
-    system_type: prefilledData.system_type || "",
-    priority: prefilledData.priority || "Medium",
-    customer_notes: prefilledData.customer_notes || "",
-    preferred_timeline: prefilledData.preferred_timeline || "",
-    photo_urls: prefilledData.photo_urls || []
+    title: safePrefilledData.title || "",
+    description: safePrefilledData.description || "",
+    system_type: safePrefilledData.system_type || "",
+    priority: safePrefilledData.priority || "Medium",
+    customer_notes: safePrefilledData.customer_notes || "",
+    preferred_timeline: safePrefilledData.preferred_timeline || "",
+    photo_urls: safePrefilledData.photo_urls || []
   });
 
-  const [photos, setPhotos] = React.useState(prefilledData.photo_urls || []);
+  const [photos, setPhotos] = React.useState(safePrefilledData.photo_urls || []);
   const [uploading, setUploading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) {
+    if (open && prefilledData) {
+      const safe = prefilledData || {};
       setFormData({
-        title: prefilledData.title || "",
-        description: prefilledData.description || "",
-        system_type: prefilledData.system_type || "",
-        priority: prefilledData.priority || "Medium",
-        customer_notes: prefilledData.customer_notes || "",
-        preferred_timeline: prefilledData.preferred_timeline || "",
-        photo_urls: prefilledData.photo_urls || []
+        title: safe.title || "",
+        description: safe.description || "",
+        system_type: safe.system_type || "",
+        priority: safe.priority || "Medium",
+        customer_notes: safe.customer_notes || "",
+        preferred_timeline: safe.preferred_timeline || "",
+        photo_urls: safe.photo_urls || []
       });
-      setPhotos(prefilledData.photo_urls || []);
+      setPhotos(safe.photo_urls || []);
       setSuccess(false);
     }
   }, [open, prefilledData]);
@@ -92,23 +96,23 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
     e.preventDefault();
     
     // Validate that property_id exists before submitting
-    if (!prefilledData?.property_id) {
+    if (!safePrefilledData.property_id) {
       console.error('Cannot add to cart: property_id is required');
       return;
     }
     
     const cartItem = {
-      property_id: prefilledData.property_id,
-      source_type: prefilledData.source_type || 'custom',
-      source_id: prefilledData.source_id || null,
+      property_id: safePrefilledData.property_id,
+      source_type: safePrefilledData.source_type || 'custom',
+      source_id: safePrefilledData.source_id || null,
       title: formData.title,
       description: formData.description,
       system_type: formData.system_type,
       priority: formData.priority,
       photo_urls: formData.photo_urls,
-      estimated_hours: prefilledData.estimated_hours,
-      estimated_cost_min: prefilledData.estimated_cost_min,
-      estimated_cost_max: prefilledData.estimated_cost_max,
+      estimated_hours: safePrefilledData.estimated_hours,
+      estimated_cost_min: safePrefilledData.estimated_cost_min,
+      estimated_cost_max: safePrefilledData.estimated_cost_max,
       customer_notes: formData.customer_notes,
       preferred_timeline: formData.preferred_timeline,
       status: 'in_cart'
@@ -145,30 +149,30 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
 
         <form onSubmit={handleSubmit} className="space-y-6" style={{ backgroundColor: '#FFFFFF', opacity: 1 }}>
           {/* Pre-filled Info Badge */}
-          {prefilledData.source_type && (
+          {safePrefilledData.source_type && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-blue-600 text-white">
-                  {prefilledData.source_type === 'task' ? '📋 From Priority Queue' :
-                   prefilledData.source_type === 'ai_suggestion' ? '🤖 AI Suggestion' :
-                   prefilledData.source_type === 'upgrade' ? '⬆️ Upgrade Project' :
-                   prefilledData.source_type === 'inspection_issue' ? '🔍 Inspection Issue' :
+                  {safePrefilledData.source_type === 'task' ? '📋 From Priority Queue' :
+                   safePrefilledData.source_type === 'ai_suggestion' ? '🤖 AI Suggestion' :
+                   safePrefilledData.source_type === 'upgrade' ? '⬆️ Upgrade Project' :
+                   safePrefilledData.source_type === 'inspection_issue' ? '🔍 Inspection Issue' :
                    '✏️ Custom Request'}
                 </Badge>
-                {prefilledData.priority && (
+                {safePrefilledData.priority && (
                   <Badge className={
-                    prefilledData.priority === 'Emergency' || prefilledData.priority === 'High' 
+                    safePrefilledData.priority === 'Emergency' || safePrefilledData.priority === 'High' 
                       ? 'bg-red-600 text-white' 
-                      : prefilledData.priority === 'Medium'
+                      : safePrefilledData.priority === 'Medium'
                       ? 'bg-orange-600 text-white'
                       : 'bg-blue-600 text-white'
                   }>
-                    {prefilledData.priority} Priority
+                    {safePrefilledData.priority} Priority
                   </Badge>
                 )}
-                {prefilledData.system_type && (
+                {safePrefilledData.system_type && (
                   <Badge variant="outline">
-                    {prefilledData.system_type}
+                    {safePrefilledData.system_type}
                   </Badge>
                 )}
               </div>
@@ -336,15 +340,15 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
           </div>
 
           {/* Cost Estimate Preview (if available) */}
-          {(prefilledData.estimated_cost_min || prefilledData.estimated_cost_max) && (
+          {(safePrefilledData.estimated_cost_min || safePrefilledData.estimated_cost_max) && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="font-semibold text-green-900 mb-2">💰 Estimated Cost Range</h4>
               <p className="text-2xl font-bold text-green-700">
-                ${prefilledData.estimated_cost_min?.toLocaleString() || '?'} - ${prefilledData.estimated_cost_max?.toLocaleString() || '?'}
+                ${safePrefilledData.estimated_cost_min?.toLocaleString() || '?'} - ${safePrefilledData.estimated_cost_max?.toLocaleString() || '?'}
               </p>
-              {prefilledData.estimated_hours && (
+              {safePrefilledData.estimated_hours && (
                 <p className="text-sm text-gray-700 mt-1">
-                  ⏱️ Estimated Time: {prefilledData.estimated_hours.toFixed(1)} hours
+                  ⏱️ Estimated Time: {safePrefilledData.estimated_hours.toFixed(1)} hours
                 </p>
               )}
               <p className="text-xs text-gray-600 mt-2">
@@ -366,7 +370,7 @@ export default function AddToCartDialog({ open, onClose, prefilledData = {} }) {
             </Button>
             <Button
               type="submit"
-              disabled={addToCartMutation.isPending || !formData.title || !formData.description || !prefilledData?.property_id}
+              disabled={addToCartMutation.isPending || !formData.title || !formData.description || !safePrefilledData.property_id}
               className="flex-1 gap-2"
               style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF', minHeight: '48px' }}
             >
