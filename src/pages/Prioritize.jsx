@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +26,8 @@ import {
   Building2,
   Inbox,
   Archive,
-  BookOpen
+  BookOpen,
+  CheckCircle2 // Added CheckCircle2 import
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -137,6 +139,7 @@ export default function PrioritizePage() {
     if (priorityFilter === 'all') return true;
     if (priorityFilter === 'high_cascade') return (task.cascade_risk_score || 0) >= 7;
     if (priorityFilter === 'high_priority') return task.priority === 'High';
+    if (priorityFilter === 'routine') return task.priority === 'Routine'; // Added 'routine' filter
     return task.priority === priorityFilter;
   });
 
@@ -156,6 +159,7 @@ export default function PrioritizePage() {
   // Calculate statistics
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
   const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
+  const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length; // Added routineCount calculation
   const totalCurrentCost = ticketQueueTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const totalDelayedCost = ticketQueueTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
   const potentialSavings = totalDelayedCost - totalCurrentCost;
@@ -312,8 +316,9 @@ export default function PrioritizePage() {
               <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-red-200 pt-4">
                 <p className="leading-relaxed">
                   <strong>This is Step 1 of ACT:</strong> Every task - whether discovered during inspections, flagged 
-                  by Preserve analysis, planned upgrades, or manually entered - arrives in this Ticket Queue. Here you 
-                  make the critical decisions that route work through the 3-step ACT workflow.
+                  by Preserve analysis, planned upgrades, generated from seasonal maintenance templates, or manually 
+                  entered - arrives in this Ticket Queue. Here you make the critical decisions that route work through 
+                  the 3-step ACT workflow.
                 </p>
                 
                 <div className="grid md:grid-cols-2 gap-3">
@@ -323,10 +328,11 @@ export default function PrioritizePage() {
                       Ticket Sources
                     </p>
                     <ul className="space-y-1 text-xs">
-                      <li>• Seasonal Inspections (issues found)</li>
-                      <li>• Preserve Analysis (lifecycle planning)</li>
-                      <li>• Upgrade Projects (improvement ideas)</li>
-                      <li>• Manual Entry (ad-hoc discoveries)</li>
+                      <li>• <strong>Seasonal Inspections</strong> - Issues discovered during quarterly walkthroughs</li>
+                      <li>• <strong>Climate-Based Seasonal Maintenance</strong> - Routine tasks specific to your region (e.g., winterization, HVAC filter changes)</li>
+                      <li>• <strong>Preserve Analysis</strong> - Lifecycle planning based on system age</li>
+                      <li>• <strong>Upgrade Projects</strong> - Value-add improvement ideas</li>
+                      <li>• <strong>Manual Entry</strong> - Ad-hoc discoveries you add yourself</li>
                     </ul>
                   </div>
 
@@ -337,12 +343,31 @@ export default function PrioritizePage() {
                     </p>
                     <ul className="space-y-1 text-xs">
                       <li>• Review AI cost & cascade analysis</li>
-                      <li>• Set priority level (High/Medium/Low)</li>
+                      <li>• Set priority level (High/Medium/Low/Routine)</li>
                       <li>• Choose DIY or Professional service</li>
                       <li>• Tag by unit (for multi-unit properties)</li>
                       <li>• Add to cart OR send to Schedule</li>
                     </ul>
                   </div>
+                </div>
+
+                {/* New: Routine Seasonal Maintenance Card */}
+                <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300">
+                  <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Routine Seasonal Maintenance
+                  </p>
+                  <p className="text-xs text-gray-700 leading-relaxed mb-2">
+                    <strong>Climate-specific tasks</strong> are automatically suggested based on your property's region 
+                    (set during property setup). These routine maintenance items appear here as <Badge className="bg-gray-600 text-white text-xs">Routine</Badge> priority 
+                    tickets. Examples:
+                  </p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, check heating system (cold climates)</li>
+                    <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal prep, inspect insulation</li>
+                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, roof inspection, exterior paint check</li>
+                    <li>• ☀️ <strong>Summer:</strong> HVAC filter changes, pest control, deck maintenance</li>
+                  </ul>
                 </div>
 
                 <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
@@ -441,22 +466,29 @@ export default function PrioritizePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-md bg-gradient-to-br from-yellow-50 to-yellow-100">
+          {/* Updated Card for Seasonal Routine */}
+          <Card className="border-none shadow-md bg-gradient-to-br from-gray-50 to-gray-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <DollarSign className="w-5 h-5 text-yellow-600" />
+                <Calendar className="w-5 h-5 text-gray-600" />
+                {routineCount > 0 && (
+                  <Badge className="bg-gray-600 text-white text-xs">
+                    Routine
+                  </Badge>
+                )}
               </div>
-              <p className="text-2xl font-bold text-yellow-700">
-                ${(totalCurrentCost / 1000).toFixed(0)}k
+              <p className="text-2xl font-bold text-gray-700">
+                {routineCount}
               </p>
-              <p className="text-xs text-gray-600">Fix Now Cost</p>
+              <p className="text-xs text-gray-600">Seasonal Routine</p>
             </CardContent>
           </Card>
 
+          {/* Updated Card for Potential Savings */}
           <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <AlertTriangle className="w-5 h-5 text-green-600" />
+                <DollarSign className="w-5 h-5 text-green-600" />
               </div>
               <p className="text-2xl font-bold text-green-700">
                 ${(potentialSavings / 1000).toFixed(0)}k
@@ -486,6 +518,7 @@ export default function PrioritizePage() {
                     <SelectItem value="High">Priority: High</SelectItem>
                     <SelectItem value="Medium">Priority: Medium</SelectItem>
                     <SelectItem value="Low">Priority: Low</SelectItem>
+                    <SelectItem value="routine">Priority: Routine</SelectItem> {/* Added 'routine' option */}
                   </SelectContent>
                 </Select>
 
@@ -545,10 +578,10 @@ export default function PrioritizePage() {
               </h3>
               <p className="text-gray-600 mb-6">
                 {ticketQueueTasks.length === 0 
-                  ? 'Add your first maintenance task or run an inspection to discover issues.'
+                  ? 'Add your first maintenance task, run an inspection, or check Schedule tab for seasonal maintenance suggestions.' // Updated text
                   : 'Try adjusting your filters to see more tasks.'}
               </p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-3 justify-center flex-wrap"> {/* Added flex-wrap for better mobile layout */}
                 <Button
                   onClick={() => setShowTaskForm(true)}
                   disabled={selectedProperty === 'all' && properties.length > 1}
@@ -558,16 +591,29 @@ export default function PrioritizePage() {
                   Add Ticket
                 </Button>
                 {selectedProperty !== 'all' && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-red-600 text-red-600 hover:bg-red-50"
-                  >
-                    <Link to={createPageUrl("Inspect") + `?property=${selectedProperty}`}>
-                      <Eye className="w-4 h-4 mr-2" />
-                      Run Inspection
-                    </Link>
-                  </Button>
+                  <>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="border-red-600 text-red-600 hover:bg-red-50"
+                    >
+                      <Link to={createPageUrl("Inspect") + `?property=${selectedProperty}`}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Run Inspection
+                      </Link>
+                    </Button>
+                    {/* New: View Seasonal Tasks Button */}
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Link to={createPageUrl("Schedule") + `?property=${selectedProperty}`}>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        View Seasonal Tasks
+                      </Link>
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>
@@ -603,7 +649,7 @@ export default function PrioritizePage() {
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
                     <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-4 h-4" /> {/* Ensured CheckCircle2 icon is used */}
                       Mark Complete
                     </p>
                     <p className="text-xs text-gray-700 leading-relaxed">
