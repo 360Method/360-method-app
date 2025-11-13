@@ -319,7 +319,13 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   // Show AI Analysis Results - User must click to close
   if (showAiResults) {
     return (
-      <Dialog open={open} onOpenChange={() => {}}>
+      <Dialog open={true} onOpenChange={(isOpen) => {
+        console.log('🔵 Dialog onOpenChange called:', isOpen);
+        if (!isOpen) {
+          console.log('🔵 Calling onComplete to close');
+          onComplete();
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
@@ -447,14 +453,18 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           </div>
 
           <div className="flex gap-3 pt-4 border-t">
-            <Button
-              onClick={() => onComplete()}
-              className="flex-1 bg-green-600 hover:bg-green-700 font-bold"
-              style={{ minHeight: '48px' }}
+            <button
+              type="button"
+              onClick={() => {
+                console.log('🖱️ Close button clicked!');
+                onComplete();
+              }}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-md transition-colors"
+              style={{ minHeight: '48px', cursor: 'pointer' }}
             >
-              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <CheckCircle2 className="w-4 h-4 inline mr-2" />
               {aiAnalysis ? 'Got It - Close' : 'Close'}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
@@ -648,7 +658,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                       <SelectValue placeholder="Select unit (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={null}>All Units / Common Area</SelectItem> {/* Changed null to empty string for consistency with controlled component */}
+                      <SelectItem value={""}>All Units / Common Area</SelectItem> {/* Changed null to empty string for consistency with controlled component */}
                       {unitOptions.length > 0 ? (
                         unitOptions.map((unit, idx) => (
                           <SelectItem key={unit.unit_id || idx} value={unit.unit_id || unit.nickname || `Unit ${idx + 1}`}>
