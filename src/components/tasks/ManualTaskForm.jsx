@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox"; // Added Checkbox import
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar as CalendarIcon, Upload, X, Loader2, Sparkles, CheckCircle2, AlertCircle, Camera, DollarSign, AlertTriangle, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -720,7 +720,28 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 </div>
               </div>
 
-              {/* Multi-Unit Checkbox Selection */}
+              {/* EDIT MODE: Show current unit as read-only */}
+              {isMultiUnit && isEditing && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                  <label className="text-sm font-semibold text-blue-900 mb-2 block flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Tag by Unit (Multi-Unit Property)
+                  </label>
+                  <p className="text-xs text-blue-800 mb-2">
+                    This task is currently assigned to:
+                  </p>
+                  <div className="bg-white border-2 border-blue-400 rounded-lg p-3">
+                    <p className="text-base font-bold text-blue-900">
+                      {editingTask?.unit_tag || 'Not assigned to a specific unit'}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2 italic">
+                    💡 To change unit assignment, create a new task for the other unit instead
+                  </p>
+                </div>
+              )}
+
+              {/* CREATE MODE: Multi-Unit Checkbox Selection */}
               {isMultiUnit && !isEditing && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
                   <label className="text-sm font-semibold text-purple-900 mb-2 block flex items-center gap-2">
