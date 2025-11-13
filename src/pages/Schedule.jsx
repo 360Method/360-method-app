@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Calendar as CalendarIcon,
   Building2,
@@ -18,7 +20,8 @@ import {
   AlertTriangle,
   Plus,
   Eye,
-  CheckSquare
+  CheckSquare,
+  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -27,7 +30,9 @@ import CalendarView from "../components/schedule/CalendarView";
 import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
+import SeasonalReminderCard from "../components/schedule/SeasonalReminderCard";
 import StepNavigation from "../components/navigation/StepNavigation";
+import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/schedule/seasonalHelpers";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -73,11 +78,23 @@ export default function SchedulePage() {
     enabled: properties.length > 0 && selectedProperty !== null
   });
 
+  // NEW: Query for seasonal reminders
+  const { data: seasonalReminders = [] } = useQuery({
+    queryKey: ['seasonal-reminders', selectedProperty],
+    queryFn: async () => {
+      // Filter the existing allTasks data based on the seasonal helper
+      return allTasks.filter(shouldShowSeasonalReminder);
+    },
+    enabled: allTasks.length > 0
+  });
+
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
@@ -90,7 +107,7 @@ export default function SchedulePage() {
   const tasksWithDates = tasksReadyForScheduling.filter(t => t.scheduled_date);
   const tasksWithoutDates = tasksReadyForScheduling.filter(t => !t.scheduled_date);
 
-  // NEW: Simple flat sort by priority
+  // Simple flat sort by priority
   const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
   const sortedUnscheduledTasks = tasksWithoutDates.sort((a, b) => {
     return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
@@ -99,7 +116,6 @@ export default function SchedulePage() {
   const totalScheduling = tasksReadyForScheduling.length;
   const tasksReadyForExecution = tasksWithDates.length;
   const awaitingDates = tasksWithoutDates.length;
-  const totalEstimatedHours = tasksReadyForScheduling.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
 
   const today = startOfDay(new Date());
   const next7Days = tasksReadyForScheduling.filter(t => {
@@ -113,7 +129,6 @@ export default function SchedulePage() {
     }
   }).length;
 
-  // NEW: Workload calculation
   const getWorkloadByDay = (tasks) => {
     const workloadMap = {};
     tasks.forEach(task => {
@@ -135,7 +150,8 @@ export default function SchedulePage() {
       taskId: task.id,
       data: { 
         scheduled_date: format(date, 'yyyy-MM-dd'),
-        status: 'Scheduled'
+        status: 'Scheduled',
+        last_reminded_date: new Date().toISOString() // Update last_reminded_date here too if scheduled by drag/drop
       }
     });
   };
@@ -145,7 +161,8 @@ export default function SchedulePage() {
       taskId: task.id,
       data: { 
         scheduled_date: format(date, 'yyyy-MM-dd'),
-        status: 'Scheduled'
+        status: 'Scheduled',
+        last_reminded_date: new Date().toISOString()
       }
     });
   };
@@ -156,13 +173,13 @@ export default function SchedulePage() {
       data: { 
         status: 'Identified',
         scheduled_date: null,
-        execution_method: null
+        execution_method: null,
+        last_reminded_date: new Date().toISOString() // Snooze by updating this.
       }
     });
   };
 
   const handleTaskClick = (task, event) => {
-    // Cmd/Ctrl+Click for batch selection
     if (event.metaKey || event.ctrlKey) {
       if (selectedTasks.includes(task.id)) {
         setSelectedTasks(selectedTasks.filter(id => id !== task.id));
@@ -170,7 +187,6 @@ export default function SchedulePage() {
         setSelectedTasks([...selectedTasks, task.id]);
       }
     } else {
-      // Regular click opens quick date picker
       setSelectedTaskForPicker(task);
       setShowQuickDatePicker(true);
     }
@@ -182,7 +198,8 @@ export default function SchedulePage() {
         taskId,
         data: {
           scheduled_date: dateStr,
-          status: 'Scheduled'
+          status: 'Scheduled',
+          last_reminded_date: new Date().toISOString()
         }
       });
     });
@@ -287,6 +304,54 @@ export default function SchedulePage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* SEASONAL REMINDERS PANEL */}
+        {seasonalReminders.length > 0 && (
+          <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <h3 className="font-bold text-lg text-orange-900">
+                      {getSeasonalEmoji()} Seasonal Reminders
+                    </h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      These tasks are recommended for {format(new Date(), 'MMMM yyyy')}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="border-orange-500 text-orange-700 font-semibold">
+                  {seasonalReminders.length} task{seasonalReminders.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-3 mb-4">
+                {seasonalReminders.map(task => (
+                  <SeasonalReminderCard
+                    key={task.id}
+                    task={task}
+                    properties={properties}
+                    onSchedule={(task) => {
+                      setSelectedTaskForPicker(task);
+                      setShowQuickDatePicker(true);
+                    }}
+                    onSnooze={handleSendBackToPrioritize} // Re-using handleSendBackToPrioritize for snooze functionality
+                  />
+                ))}
+              </div>
+              
+              <div className="p-3 bg-white rounded-lg border-2 border-orange-300">
+                <p className="text-xs text-gray-700 leading-relaxed">
+                  💡 <strong>Tip:</strong> These are existing tasks from your maintenance plan. 
+                  Schedule them now or snooze to be reminded later. No duplicates will be created!
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -478,7 +543,7 @@ export default function SchedulePage() {
                   setSelectedTaskForPicker(task);
                   setShowQuickDatePicker(true);
                 }}
-                onDateClick={(date) => {/* Could add task selector modal here */}}
+                onDateClick={() => {}}
                 onTaskDrop={handleTaskDrop}
               />
               
@@ -564,7 +629,7 @@ export default function SchedulePage() {
           )
         )}
 
-        {/* Seasonal Maintenance Suggestions */}
+        {/* Seasonal Maintenance Suggestions (old component) */}
         {currentProperty && (
           <div className="mt-6">
             <SeasonalTaskSuggestions
@@ -611,6 +676,7 @@ export default function SchedulePage() {
               setShowQuickDatePicker(false);
               setSelectedTaskForPicker(null);
             }}
+            onSnooze={handleSendBackToPrioritize} // Add snooze option to quick date picker
           />
         )}
 
