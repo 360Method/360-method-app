@@ -314,7 +314,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                         <Label className="font-semibold text-sm">Monthly Rent (optional)</Label>
                         <Input
                           type="number"
-                          value={unit.monthly_rent}
+                          value={unit.monthly_rent || ""}
                           onChange={(e) => updateUnit(index, 'monthly_rent', e.target.value)}
                           placeholder="1800"
                           className="mt-2"
@@ -327,20 +327,20 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                         <div className="space-y-3 p-3 bg-white rounded border">
                           <p className="text-sm font-semibold text-gray-700">Tenant Information (optional)</p>
                           <Input
-                            value={unit.tenant_name}
+                            value={unit.tenant_name || ""}
                             onChange={(e) => updateUnit(index, 'tenant_name', e.target.value)}
                             placeholder="Tenant Name"
                             style={{ minHeight: '48px' }}
                           />
                           <Input
-                            value={unit.tenant_email}
+                            value={unit.tenant_email || ""}
                             onChange={(e) => updateUnit(index, 'tenant_email', e.target.value)}
                             placeholder="tenant@email.com"
                             type="email"
                             style={{ minHeight: '48px' }}
                           />
                           <Input
-                            value={unit.tenant_phone}
+                            value={unit.tenant_phone || ""}
                             onChange={(e) => updateUnit(index, 'tenant_phone', e.target.value)}
                             placeholder="(360) 555-1234"
                             type="tel"
@@ -366,7 +366,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <div>
                   <Label className="font-semibold">Typical rental duration</Label>
                   <Select
-                    value={formData.rental_config.rental_duration}
+                    value={formData.rental_config.rental_duration || ""}
                     onValueChange={(value) => updateRentalConfig('rental_duration', value)}
                   >
                     <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -391,7 +391,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                     </div>
                   </Label>
                   <Select
-                    value={String(formData.rental_config.annual_turnovers)}
+                    value={String(formData.rental_config.annual_turnovers || "")}
                     onValueChange={(value) => updateRentalConfig('annual_turnovers', parseInt(value))}
                   >
                     <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -409,7 +409,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <div>
                   <Label className="font-semibold">Property management</Label>
                   <Select
-                    value={formData.rental_config.management_type}
+                    value={formData.rental_config.management_type || ""}
                     onValueChange={(value) => updateRentalConfig('management_type', value)}
                   >
                     <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -474,7 +474,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
 
               {formData.rental_config.rental_type === 'other' && (
                 <Input
-                  value={formData.rental_config.rental_type_other}
+                  value={formData.rental_config.rental_type_other || ""}
                   onChange={(e) => updateRentalConfig('rental_type_other', e.target.value)}
                   placeholder="Describe what you're renting..."
                   className="mt-3"
@@ -494,7 +494,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <div>
                   <Label className="font-semibold">How many rental units/rooms?</Label>
                   <Select
-                    value={String(formData.rental_config.number_of_rental_units)}
+                    value={String(formData.rental_config.number_of_rental_units || "")}
                     onValueChange={(value) => updateRentalConfig('number_of_rental_units', parseInt(value))}
                   >
                     <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -512,7 +512,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                   <Label className="font-semibold">Rental square footage</Label>
                   <Input
                     type="number"
-                    value={formData.rental_config.rental_square_footage}
+                    value={formData.rental_config.rental_square_footage || ""}
                     onChange={(e) => updateRentalConfig('rental_square_footage', parseInt(e.target.value))}
                     placeholder="400"
                     className="mt-2"
@@ -596,7 +596,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Rental duration type</Label>
                 <Select
-                  value={formData.rental_config.rental_duration}
+                  value={formData.rental_config.rental_duration || ""}
                   onValueChange={(value) => updateRentalConfig('rental_duration', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -621,7 +621,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                   </div>
                 </Label>
                 <Select
-                  value={String(formData.rental_config.annual_turnovers)}
+                  value={String(formData.rental_config.annual_turnovers || "")}
                   onValueChange={(value) => updateRentalConfig('annual_turnovers', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -748,7 +748,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Rental Type</Label>
                 <Select
-                  value={formData.rental_config.rental_duration}
+                  value={formData.rental_config.rental_duration || ""}
                   onValueChange={(value) => updateRentalConfig('rental_duration', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -764,7 +764,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Estimated turnovers per year</Label>
                 <Select
-                  value={String(formData.rental_config.annual_turnovers)}
+                  value={String(formData.rental_config.annual_turnovers || "")}
                   onValueChange={(value) => updateRentalConfig('annual_turnovers', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -782,7 +782,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <Label className="font-semibold">Monthly Rent (optional)</Label>
                 <Input
                   type="number"
-                  value={formData.rental_config.monthly_rent}
+                  value={formData.rental_config.monthly_rent || ""}
                   onChange={(e) => updateRentalConfig('monthly_rent', parseFloat(e.target.value))}
                   placeholder="2500"
                   className="mt-2"
@@ -893,7 +893,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Rental Duration Type</Label>
                 <Select
-                  value={formData.rental_config.rental_duration}
+                  value={formData.rental_config.rental_duration || ""}
                   onValueChange={(value) => updateRentalConfig('rental_duration', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -910,7 +910,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Estimated turnovers per year</Label>
                 <Select
-                  value={String(formData.rental_config.annual_turnovers)}
+                  value={String(formData.rental_config.annual_turnovers || "")}
                   onValueChange={(value) => updateRentalConfig('annual_turnovers', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -929,7 +929,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Current Status</Label>
                 <Select
-                  value={formData.rental_config.current_status}
+                  value={formData.rental_config.current_status || ""}
                   onValueChange={(value) => updateRentalConfig('current_status', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -947,7 +947,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <Label className="font-semibold">Monthly Rent (optional)</Label>
                 <Input
                   type="number"
-                  value={formData.rental_config.monthly_rent}
+                  value={formData.rental_config.monthly_rent || ""}
                   onChange={(e) => updateRentalConfig('monthly_rent', parseFloat(e.target.value))}
                   placeholder="3500"
                   className="mt-2"
@@ -1058,7 +1058,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Average length of stay</Label>
                 <Select
-                  value={formData.rental_config.average_stay_length}
+                  value={formData.rental_config.average_stay_length || ""}
                   onValueChange={(value) => updateRentalConfig('average_stay_length', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -1076,7 +1076,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Estimated bookings per year</Label>
                 <Select
-                  value={String(formData.rental_config.bookings_per_year)}
+                  value={String(formData.rental_config.bookings_per_year || "")}
                   onValueChange={(value) => updateRentalConfig('bookings_per_year', parseInt(value))}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -1094,7 +1094,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
               <div className="mb-4">
                 <Label className="font-semibold">Who manages turnovers?</Label>
                 <Select
-                  value={formData.rental_config.management_type}
+                  value={formData.rental_config.management_type || ""}
                   onValueChange={(value) => updateRentalConfig('management_type', value)}
                 >
                   <SelectTrigger className="mt-2" style={{ minHeight: '48px' }}>
@@ -1112,7 +1112,7 @@ export default function RentalConfigStep({ data, propertyUseType, onChange, onNe
                 <Label className="font-semibold">Average nightly rate (optional)</Label>
                 <Input
                   type="number"
-                  value={formData.rental_config.nightly_rate}
+                  value={formData.rental_config.nightly_rate || ""}
                   onChange={(e) => updateRentalConfig('nightly_rate', parseFloat(e.target.value))}
                   placeholder="150"
                   className="mt-2"

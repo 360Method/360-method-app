@@ -32,6 +32,46 @@ export default function PropertyWizard({ onComplete, onCancel }) {
       const mainAddress = data.address || data.formatted_address || 
                          `${data.street_address}${data.unit_number ? ` #${data.unit_number}` : ''}, ${data.city}, ${data.state} ${data.zip_code}`;
       
+      // Clean up rental_config to ensure all numeric fields are numbers
+      const cleanRentalConfig = data.rental_config ? {
+        ...data.rental_config,
+        number_of_rental_units: data.rental_config.number_of_rental_units ? parseInt(data.rental_config.number_of_rental_units) : undefined,
+        rental_square_footage: data.rental_config.rental_square_footage ? parseInt(data.rental_config.rental_square_footage) : undefined,
+        annual_turnovers: data.rental_config.annual_turnovers ? parseInt(data.rental_config.annual_turnovers) : undefined,
+        bookings_per_year: data.rental_config.bookings_per_year ? parseInt(data.rental_config.bookings_per_year) : undefined,
+        monthly_rent: data.rental_config.monthly_rent ? parseFloat(data.rental_config.monthly_rent) : undefined,
+        nightly_rate: data.rental_config.nightly_rate ? parseFloat(data.rental_config.nightly_rate) : undefined,
+      } : undefined;
+
+      // Remove undefined values from rental_config
+      if (cleanRentalConfig) {
+        Object.keys(cleanRentalConfig).forEach(key => {
+          if (cleanRentalConfig[key] === undefined || cleanRentalConfig[key] === "" || cleanRentalConfig[key] === null) {
+            delete cleanRentalConfig[key];
+          }
+        });
+      }
+
+      // Clean up units array to ensure numeric fields are numbers
+      const cleanUnits = data.units ? data.units.map(unit => {
+        const cleanUnit = {
+          ...unit,
+          square_footage: unit.square_footage ? parseInt(unit.square_footage) : undefined,
+          bedrooms: unit.bedrooms ? parseInt(unit.bedrooms) : undefined,
+          bathrooms: unit.bathrooms ? parseFloat(unit.bathrooms) : undefined,
+          monthly_rent: unit.monthly_rent ? parseFloat(unit.monthly_rent) : undefined,
+        };
+        
+        // Remove undefined values
+        Object.keys(cleanUnit).forEach(key => {
+          if (cleanUnit[key] === undefined || cleanUnit[key] === "" || cleanUnit[key] === null) {
+            delete cleanUnit[key];
+          }
+        });
+        
+        return cleanUnit;
+      }) : undefined;
+
       // Clean up the data before sending
       const cleanData = {
         ...data,
@@ -42,6 +82,8 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         bathrooms: data.bathrooms ? parseFloat(data.bathrooms) : undefined,
         purchase_price: data.purchase_price ? parseFloat(data.purchase_price) : undefined,
         current_value: data.current_value ? parseFloat(data.current_value) : undefined,
+        rental_config: cleanRentalConfig,
+        units: cleanUnits,
         setup_completed: true,
         baseline_completion: 0,
         health_score: 0,
