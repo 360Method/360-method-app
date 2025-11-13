@@ -216,7 +216,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-white pb-20">
-      <div className="w-full px-4 md:px-6 max-w-6xl mx-auto">
+      <div className="w-full px-3 sm:px-4 md:px-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8 text-center pt-4 md:pt-0">
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
@@ -385,7 +385,7 @@ export default function Pricing() {
 
         {/* Main Pricing Cards */}
         <div ref={pricingCardsRef} className="scroll-mt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-8 md:mb-12">
             {/* Scout Tier (Free) */}
             <Card className={`border-2 ${currentTier === 'free' ? 'border-gray-400 shadow-lg' : 'border-gray-200'}`}>
               <CardContent className="p-4 md:p-6">
