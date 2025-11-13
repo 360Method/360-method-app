@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,9 @@ import {
   Building2,
   Shield,
   TrendingUp,
-  Target
+  Target,
+  Clock, // Added icon
+  Play // Added icon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -39,11 +42,25 @@ export default function Properties() {
   const [deletingProperty, setDeletingProperty] = React.useState(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
+  const [resumingDraft, setResumingDraft] = React.useState(null); // New state for resuming drafts
   const queryClient = useQueryClient();
 
+  // Fetch completed properties (not drafts)
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list('-created_date');
+      return allProps.filter(p => !p.is_draft); // Filter out drafts
+    },
+  });
+
+  // Fetch draft properties
+  const { data: draftProperties = [] } = useQuery({
+    queryKey: ['draft-properties'],
+    queryFn: async () => {
+      const allProps = await base44.entities.Property.list('-updated_date');
+      return allProps.filter(p => p.is_draft === true); // Filter for drafts
+    },
   });
 
   const { data: user } = useQuery({
@@ -58,12 +75,14 @@ export default function Properties() {
     mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      queryClient.invalidateQueries({ queryKey: ['draft-properties'] }); // Invalidate draft properties as well
       setDeletingProperty(null);
     },
   });
 
   const handleWizardComplete = () => {
     setShowWizard(false);
+    setResumingDraft(null); // Reset resumingDraft on wizard completion
   };
 
   const handleEdit = (property) => {
@@ -85,7 +104,14 @@ export default function Properties() {
       setShowUpgradePrompt(true);
     } else {
       setShowWizard(true);
+      setResumingDraft(null); // Ensure no draft is being resumed when adding new
     }
+  };
+
+  // New function to resume a draft
+  const handleResumeDraft = (draft) => {
+    setResumingDraft(draft);
+    setShowWizard(true);
   };
 
   if (showWizard) {
@@ -93,7 +119,11 @@ export default function Properties() {
       <div className="min-h-screen bg-white p-4">
         <PropertyWizard
           onComplete={handleWizardComplete}
-          onCancel={() => setShowWizard(false)}
+          onCancel={() => {
+            setShowWizard(false);
+            setResumingDraft(null); // Reset resumingDraft on wizard cancel
+          }}
+          existingDraft={resumingDraft} // Pass existing draft to wizard
         />
       </div>
     );
@@ -102,7 +132,7 @@ export default function Properties() {
   const getDeleteMessage = () => {
     if (!deletingProperty) return '';
     
-    return `Are you sure you want to delete ${deletingProperty.address}?
+    return `Are you sure you want to delete ${deletingProperty.address || deletingProperty.street_address || 'this property'}?
 
 ⚠️ This will permanently delete:
 • All property information
@@ -179,6 +209,70 @@ This action cannot be undone.`;
             </CardContent>
           )}
         </Card>
+
+        {/* Draft Properties Section */}
+        {draftProperties.length > 0 && (
+          <Card className="mb-6 border-2 border-orange-300 bg-orange-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-xl" style={{ color: '#1B365D' }}>
+                <Clock className="w-6 h-6 text-orange-600" />
+                Unfinished Properties
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-700 mb-4">
+                You have {draftProperties.length} incomplete {draftProperties.length === 1 ? 'property' : 'properties'}. 
+                These won't affect your dashboard or analytics until completed.
+              </p>
+              <div className="space-y-3">
+                {draftProperties.map((draft) => (
+                  <div
+                    key={draft.id}
+                    className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-orange-200"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">
+                        {draft.formatted_address || draft.street_address || 'Unnamed Property'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Last updated: {new Date(draft.updated_date).toLocaleDateString()}
+                        {draft.draft_step !== undefined && draft.draft_step >= 0 && (
+                          <> • Step {draft.draft_step + 1} of 5</>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleResumeDraft(draft)}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Resume
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white">
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(draft)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Draft
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
@@ -307,7 +401,7 @@ This action cannot be undone.`;
           </CardContent>
         </Card>
 
-        {properties.length === 0 ? (
+        {properties.length === 0 && draftProperties.length === 0 ? (
           <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
             <CardContent className="p-12 text-center">
               <Home className="w-20 h-20 mx-auto mb-4 text-gray-400" />

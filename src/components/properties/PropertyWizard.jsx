@@ -11,13 +11,60 @@ import PropertyWizardStep4 from "./PropertyWizardStep4";
 import PropertyConfirmation from "./PropertyConfirmation";
 import PropertyWizardComplete from "./PropertyWizardComplete";
 
-export default function PropertyWizard({ onComplete, onCancel }) {
-  const [currentStep, setCurrentStep] = React.useState(-1); // Start at -1 for user type selector
-  const [userType, setUserType] = React.useState(null); // 'homeowner' or 'investor'
-  const [propertyData, setPropertyData] = React.useState({});
+export default function PropertyWizard({ onComplete, onCancel, existingDraft = null }) {
+  const [currentStep, setCurrentStep] = React.useState(existingDraft?.draft_step ?? -1);
+  const [userType, setUserType] = React.useState(null);
+  const [propertyData, setPropertyData] = React.useState(existingDraft || {});
   const [createdProperty, setCreatedProperty] = React.useState(null);
   const [isCreating, setIsCreating] = React.useState(false);
+  const [draftId, setDraftId] = React.useState(existingDraft?.id || null);
   const queryClient = useQueryClient();
+
+  // Save as draft mutation
+  const saveDraftMutation = useMutation({
+    mutationFn: async ({ data, step }) => {
+      const draftData = {
+        ...data,
+        is_draft: true,
+        draft_step: step,
+        setup_completed: false
+      };
+
+      // Clean data for draft (minimal validation)
+      const cleanDraftData = {
+        address: data.formatted_address || data.street_address || "Draft Property",
+        ...draftData
+      };
+
+      // Remove completely undefined values
+      Object.keys(cleanDraftData).forEach(key => {
+        if (cleanDraftData[key] === undefined) {
+          delete cleanDraftData[key];
+        }
+      });
+
+      if (draftId) {
+        // Update existing draft
+        return await base44.entities.Property.update(draftId, cleanDraftData);
+      } else {
+        // Create new draft
+        const result = await base44.entities.Property.create(cleanDraftData);
+        setDraftId(result.id);
+        return result;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
+    }
+  });
+
+  // Auto-save draft when stepping through wizard
+  const saveDraft = React.useCallback((step) => {
+    if (propertyData.street_address || propertyData.formatted_address) {
+      saveDraftMutation.mutate({ data: propertyData, step });
+    }
+  }, [propertyData, saveDraftMutation]);
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data) => {
@@ -75,7 +122,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
       // Clean up the data before sending
       const cleanData = {
         ...data,
-        address: mainAddress, // Ensure address field is set
+        address: mainAddress,
         year_built: data.year_built ? parseInt(data.year_built) : undefined,
         square_footage: data.square_footage ? parseInt(data.square_footage) : undefined,
         bedrooms: data.bedrooms !== undefined && data.bedrooms !== "" ? parseInt(data.bedrooms) : undefined,
@@ -85,6 +132,8 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         rental_config: cleanRentalConfig,
         units: cleanUnits,
         setup_completed: true,
+        is_draft: false,
+        draft_step: null,
         baseline_completion: 0,
         health_score: 0,
         total_maintenance_spent: 0,
@@ -99,14 +148,21 @@ export default function PropertyWizard({ onComplete, onCancel }) {
       });
 
       console.log('Cleaned data:', cleanData);
-      return await base44.entities.Property.create(cleanData);
+      
+      // Update existing draft or create new property
+      if (draftId) {
+        return await base44.entities.Property.update(draftId, cleanData);
+      } else {
+        return await base44.entities.Property.create(cleanData);
+      }
     },
     onSuccess: (property) => {
       console.log('Property created successfully:', property);
       setCreatedProperty(property);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
       setIsCreating(false);
-      setCurrentStep(6); // Go to complete screen
+      setCurrentStep(6);
     },
     onError: (error) => {
       console.error('Property creation failed:', error);
@@ -119,24 +175,38 @@ export default function PropertyWizard({ onComplete, onCancel }) {
   const handleUserTypeSelect = (type) => {
     setUserType(type);
     setCurrentStep(0);
+    saveDraft(-1);
   };
 
   const handlePropertyTypeSelect = (type) => {
     handleDataChange({ property_use_type: type });
     setCurrentStep(1);
+    saveDraft(0);
   };
 
-  const handleStep1Next = () => setCurrentStep(2);
+  const handleStep1Next = () => {
+    saveDraft(1);
+    setCurrentStep(2);
+  };
+  
   const handleStep2Next = () => {
-    // If property type is primary, skip rental config
+    saveDraft(2);
     if (propertyData.property_use_type === 'primary') {
-      setCurrentStep(4); // Skip to financial details (step 4)
+      setCurrentStep(4);
     } else {
-      setCurrentStep(3); // Go to rental config
+      setCurrentStep(3);
     }
   };
-  const handleStep3Next = () => setCurrentStep(4); // Rental config to financial
-  const handleStep4Next = () => setCurrentStep(5); // Financial to confirmation
+  
+  const handleStep3Next = () => {
+    saveDraft(3);
+    setCurrentStep(4);
+  };
+  
+  const handleStep4Next = () => {
+    saveDraft(4);
+    setCurrentStep(5);
+  };
   
   const handleConfirmation = () => {
     console.log('Confirmation clicked, propertyData:', propertyData);
@@ -152,12 +222,20 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     });
   };
 
-  // Step -1: User Type Selection (Homeowner vs Investor)
+  const handleCancel = () => {
+    // Save draft before canceling
+    if (currentStep >= 1 && (propertyData.street_address || propertyData.formatted_address)) {
+      saveDraft(currentStep);
+    }
+    onCancel();
+  };
+
+  // Step -1: User Type Selection
   if (currentStep === -1) {
     return (
       <UserTypeSelector
         onSelect={handleUserTypeSelect}
-        onCancel={onCancel}
+        onCancel={handleCancel}
       />
     );
   }
@@ -169,7 +247,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         userType={userType}
         onSelect={handlePropertyTypeSelect}
         onBack={() => setCurrentStep(-1)}
-        onCancel={onCancel}
+        onCancel={handleCancel}
       />
     );
   }
@@ -181,7 +259,10 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         data={propertyData}
         onChange={handleDataChange}
         onNext={handleStep1Next}
-        onCancel={() => setCurrentStep(0)}
+        onCancel={() => {
+          saveDraft(1);
+          setCurrentStep(0);
+        }}
       />
     );
   }
@@ -198,7 +279,7 @@ export default function PropertyWizard({ onComplete, onCancel }) {
     );
   }
 
-  // Step 3: Rental Configuration (conditional)
+  // Step 3: Rental Configuration
   if (currentStep === 3) {
     return (
       <RentalConfigStep
@@ -219,7 +300,6 @@ export default function PropertyWizard({ onComplete, onCancel }) {
         onChange={handleDataChange}
         onNext={handleStep4Next}
         onBack={() => {
-          // Go back to rental config if not primary, otherwise go to property details
           if (propertyData.property_use_type === 'primary') {
             setCurrentStep(2);
           } else {
