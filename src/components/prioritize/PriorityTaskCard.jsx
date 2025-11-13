@@ -4,7 +4,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertTriangle,
   DollarSign,
@@ -21,7 +23,11 @@ import {
   Edit,
   CheckCircle2,
   TrendingUp,
-  Building2
+  Building2,
+  HardHat,
+  Star,
+  BookOpen,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -59,13 +65,25 @@ function safeFormatDate(dateString) {
   }
 }
 
-// Helper to determine property flow type
 function getPropertyFlowType(property) {
   if (!property) return null;
   const doorCount = property.door_count || 1;
   if (doorCount === 1) return 'single_family';
   if (doorCount === 2) return 'dual_unit';
   return 'multi_unit';
+}
+
+function checkOperatorAvailability(property) {
+  if (!property?.zip_code) return false;
+  
+  const CLARK_COUNTY_ZIPS = [
+    '98604', '98606', '98607', '98629', '98642',
+    '98660', '98661', '98662', '98663', '98664',
+    '98665', '98666', '98671', '98674', '98675',
+    '98682', '98683', '98684', '98685', '98686'
+  ];
+  
+  return CLARK_COUNTY_ZIPS.includes(property.zip_code);
 }
 
 export default function PriorityTaskCard({ 
@@ -80,6 +98,17 @@ export default function PriorityTaskCard({
   const [expanded, setExpanded] = React.useState(false);
   const [showAddToCart, setShowAddToCart] = React.useState(false);
   const [showEditForm, setShowEditForm] = React.useState(false);
+  const [showDIYModal, setShowDIYModal] = React.useState(false);
+  const [showContractorModal, setShowContractorModal] = React.useState(false);
+  const [showOperatorModal, setShowOperatorModal] = React.useState(false);
+  const [showWaitlistModal, setShowWaitlistModal] = React.useState(false);
+  const [contractorForm, setContractorForm] = React.useState({
+    name: '',
+    phone: '',
+    email: '',
+    cost: '',
+    date: ''
+  });
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
@@ -112,7 +141,70 @@ export default function PriorityTaskCard({
     });
   };
 
-  // Compact mode for grouped view
+  const handleExecutionMethod = (method) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { execution_method: method }
+    });
+
+    if (method === 'DIY') {
+      setShowDIYModal(true);
+    } else if (method === 'Contractor') {
+      setShowContractorModal(true);
+    } else if (method === '360_Operator') {
+      const operatorAvailable = checkOperatorAvailability(property);
+      if (operatorAvailable) {
+        setShowOperatorModal(true);
+      } else {
+        setShowWaitlistModal(true);
+      }
+    }
+  };
+
+  const handleDIYSchedule = () => {
+    const date = prompt('When will you do this? (YYYY-MM-DD)');
+    if (date) {
+      updateTaskMutation.mutate({
+        taskId: task.id,
+        data: {
+          status: 'Scheduled',
+          scheduled_date: date,
+          execution_method: 'DIY'
+        }
+      });
+      setShowDIYModal(false);
+    }
+  };
+
+  const handleContractorSubmit = (e) => {
+    e.preventDefault();
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: {
+        contractor_name: contractorForm.name,
+        contractor_phone: contractorForm.phone,
+        contractor_email: contractorForm.email,
+        current_fix_cost: contractorForm.cost ? parseFloat(contractorForm.cost) : task.contractor_cost,
+        scheduled_date: contractorForm.date,
+        status: 'Scheduled',
+        execution_method: 'Contractor'
+      }
+    });
+    setShowContractorModal(false);
+    setContractorForm({ name: '', phone: '', email: '', cost: '', date: '' });
+  };
+
+  const handleOperatorRequest = () => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: {
+        status: 'Scheduled',
+        execution_method: '360_Operator'
+      }
+    });
+    setShowOperatorModal(false);
+  };
+
   if (compact) {
     return (
       <Card className="border border-gray-300 bg-white">
@@ -164,7 +256,6 @@ export default function PriorityTaskCard({
     );
   }
 
-  // Full card view
   return (
     <>
       <Card className={`border-2 transition-all hover:shadow-lg ${
@@ -416,63 +507,413 @@ export default function PriorityTaskCard({
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-4 border-t border-red-200">
-            <Button
-              onClick={() => setShowAddToCart(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2 border-red-600 text-red-600 hover:bg-red-50"
-              style={{ minHeight: '44px' }}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Add to Cart
-            </Button>
+          {/* NEW: Intent-Based Action Buttons */}
+          <div className="pt-4 border-t border-red-200">
+            <div className="text-sm font-semibold text-gray-700 mb-3">
+              How will you handle this?
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+              <button
+                onClick={() => handleExecutionMethod('DIY')}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-green-300 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 hover:border-green-400 transition-all"
+                style={{ minHeight: '80px' }}
+              >
+                <Wrench className="w-5 h-5" />
+                <span className="text-sm font-semibold">I'll DIY</span>
+                {task.diy_cost && (
+                  <span className="text-xs text-green-600 font-semibold">~${task.diy_cost}</span>
+                )}
+              </button>
+              
+              <button
+                onClick={() => handleExecutionMethod('Contractor')}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-gray-300 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all"
+                style={{ minHeight: '80px' }}
+              >
+                <HardHat className="w-5 h-5" />
+                <span className="text-sm font-semibold">Hire Pro</span>
+                {task.contractor_cost && (
+                  <span className="text-xs text-gray-600 font-semibold">~${task.contractor_cost}</span>
+                )}
+              </button>
+              
+              <button
+                onClick={() => handleExecutionMethod('360_Operator')}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-blue-300 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 hover:border-blue-400 transition-all"
+                style={{ minHeight: '80px' }}
+              >
+                <Star className="w-5 h-5" />
+                <span className="text-sm font-semibold">Get Quote</span>
+                {task.operator_cost && (
+                  <span className="text-xs text-blue-600 font-semibold">~${task.operator_cost}</span>
+                )}
+              </button>
+            </div>
 
-            <Button
-              onClick={() => onSendToSchedule(task)}
-              className="gap-2 bg-yellow-600 hover:bg-yellow-700"
-              size="sm"
-              style={{ minHeight: '44px' }}
-            >
-              <Send className="w-4 h-4" />
-              Send to Schedule
-            </Button>
+            <div className="pt-3 border-t border-gray-100">
+              <div className="text-xs text-gray-600 mb-2">
+                Or bundle with other tasks:
+              </div>
+              
+              <button
+                onClick={() => setShowAddToCart(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-orange-300 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition-all"
+                style={{ minHeight: '48px' }}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span className="text-sm font-semibold">Add to Cart</span>
+                <span className="text-xs text-orange-600">(Get bundled quote)</span>
+              </button>
+            </div>
 
-            <Button
-              onClick={() => setShowEditForm(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              style={{ minHeight: '44px' }}
-            >
-              <Edit className="w-4 h-4" />
-              Edit Details
-            </Button>
-
-            <Button
-              onClick={() => onMarkComplete(task)}
-              variant="outline"
-              size="sm"
-              className="gap-2 border-green-600 text-green-600 hover:bg-green-50"
-              style={{ minHeight: '44px' }}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              Mark Complete
-            </Button>
-
-            <Button
-              onClick={() => onDelete(task)}
-              variant="outline"
-              size="sm"
-              className="gap-2 border-gray-600 text-gray-600 hover:bg-gray-50"
-              style={{ minHeight: '44px' }}
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </Button>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => updateTaskMutation.mutate({ taskId: task.id, data: { status: 'Deferred' }})}
+                className="text-sm text-gray-500 hover:text-gray-700 transition"
+              >
+                Skip for now
+              </button>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowEditForm(true)}
+                  className="text-sm text-gray-500 hover:text-gray-700 transition"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onDelete(task)}
+                  className="text-sm text-red-500 hover:text-red-700 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* DIY Modal */}
+      {showDIYModal && (
+        <Dialog open={showDIYModal} onOpenChange={setShowDIYModal}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Wrench className="w-6 h-6 text-green-600" />
+                DIY Guide: {task.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
+                  <div className="text-xs text-green-700 mb-1">Cost</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    ${task.diy_cost || 'N/A'}
+                  </div>
+                </div>
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
+                  <div className="text-xs text-green-700 mb-1">Time</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {task.diy_time_hours || task.estimated_hours || '?'}h
+                  </div>
+                </div>
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
+                  <div className="text-xs text-green-700 mb-1">Level</div>
+                  <div className="text-lg font-bold text-green-700">
+                    {task.diy_difficulty || 'Med'}
+                  </div>
+                </div>
+              </div>
+
+              {task.ai_sow && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    Steps:
+                  </h4>
+                  <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                    {task.ai_sow}
+                  </div>
+                </div>
+              )}
+
+              {task.ai_tools_needed && task.ai_tools_needed.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Tools Needed:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {task.ai_tools_needed.map((tool, idx) => (
+                      <span key={idx} className="text-xs bg-gray-100 border border-gray-200 px-2 py-1 rounded">
+                        {tool}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {task.ai_materials_needed && task.ai_materials_needed.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Materials Needed:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {task.ai_materials_needed.map((mat, idx) => (
+                      <span key={idx} className="text-xs bg-gray-100 border border-gray-200 px-2 py-1 rounded">
+                        {mat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {task.ai_video_tutorials && task.ai_video_tutorials.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">📺 Video Tutorials:</h4>
+                  <div className="space-y-2">
+                    {task.ai_video_tutorials.map((video, idx) => (
+                      <a 
+                        key={idx}
+                        href={video.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        → {video.title}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setShowDIYModal(false)}
+                className="flex-1"
+                style={{ minHeight: '48px' }}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={handleDIYSchedule}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                style={{ minHeight: '48px' }}
+              >
+                Schedule This
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Contractor Modal */}
+      {showContractorModal && (
+        <Dialog open={showContractorModal} onOpenChange={setShowContractorModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <HardHat className="w-6 h-6 text-gray-600" />
+                Track Contractor: {task.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleContractorSubmit} className="space-y-4 py-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Contractor Name *
+                </label>
+                <Input
+                  value={contractorForm.name}
+                  onChange={(e) => setContractorForm({...contractorForm, name: e.target.value})}
+                  required
+                  placeholder="John's Handyman Service"
+                  style={{ minHeight: '48px' }}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">
+                    Phone
+                  </label>
+                  <Input
+                    type="tel"
+                    value={contractorForm.phone}
+                    onChange={(e) => setContractorForm({...contractorForm, phone: e.target.value})}
+                    placeholder="(555) 123-4567"
+                    style={{ minHeight: '48px' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">
+                    Estimated Cost
+                  </label>
+                  <Input
+                    type="number"
+                    value={contractorForm.cost}
+                    onChange={(e) => setContractorForm({...contractorForm, cost: e.target.value})}
+                    placeholder={task.contractor_cost || "150"}
+                    style={{ minHeight: '48px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  value={contractorForm.email}
+                  onChange={(e) => setContractorForm({...contractorForm, email: e.target.value})}
+                  placeholder="contractor@example.com"
+                  style={{ minHeight: '48px' }}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Scheduled Date *
+                </label>
+                <Input
+                  type="date"
+                  value={contractorForm.date}
+                  onChange={(e) => setContractorForm({...contractorForm, date: e.target.value})}
+                  required
+                  style={{ minHeight: '48px' }}
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowContractorModal(false)}
+                  className="flex-1"
+                  style={{ minHeight: '48px' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-gray-700 hover:bg-gray-800"
+                  style={{ minHeight: '48px' }}
+                >
+                  Save & Schedule
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 360° Operator Modal */}
+      {showOperatorModal && (
+        <Dialog open={showOperatorModal} onOpenChange={setShowOperatorModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Star className="w-6 h-6 text-blue-600" />
+                Request 360° Operator
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <p className="text-sm text-blue-900 mb-1">
+                  <strong>Task:</strong> {task.title}
+                </p>
+                <p className="text-sm text-blue-900 mb-2">
+                  <strong>Est. Cost:</strong> ${task.operator_cost || task.contractor_cost || 'TBD'}
+                </p>
+                <div className="text-xs text-blue-800">
+                  ✓ No service call fee<br/>
+                  ✓ Included in HomeCare membership
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                <p className="text-sm text-yellow-900">
+                  A 360° Method operator will contact you within 24 hours to schedule this service.
+                </p>
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOperatorModal(false)}
+                  className="flex-1"
+                  style={{ minHeight: '48px' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleOperatorRequest}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  style={{ minHeight: '48px' }}
+                >
+                  Submit Request
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Waitlist Modal */}
+      {showWaitlistModal && (
+        <Dialog open={showWaitlistModal} onOpenChange={setShowWaitlistModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Not Available Yet</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <p className="text-gray-700">
+                360° Operators aren't serving your area yet, but we're expanding soon!
+              </p>
+              
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <p className="text-sm text-blue-900">
+                  <strong>Current Service:</strong> Clark County, WA<br/>
+                  <strong>Coming 2026:</strong> Portland, Seattle/Tacoma
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>In the meantime:</strong>
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Use "Hire Pro" to track your own contractor</li>
+                  <li>• Or "Add to Cart" for bundled service quotes</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWaitlistModal(false)}
+                  className="flex-1"
+                  style={{ minHeight: '48px' }}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowWaitlistModal(false);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  style={{ minHeight: '48px' }}
+                >
+                  Join Waitlist
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {showAddToCart && (
         <AddToCartDialog
