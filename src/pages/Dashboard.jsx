@@ -43,6 +43,7 @@ import UpgradePrompt from "../components/upgrade/UpgradePrompt";
 import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import MiniCalendar from "../components/dashboard/MiniCalendar";
+import ManualTaskForm from "../components/tasks/ManualTaskForm";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
+  const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
@@ -262,7 +264,7 @@ export default function Dashboard() {
       const timer = setTimeout(() => setShowUpgradePrompt(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [isFreeTier, properties.length, avgBaselineCompletion]);
+  }, [isFreeTier, properties.length, avgBaselineCompletion, showUpgradePrompt]);
 
   const handleRestartOnboarding = async () => {
     try {
@@ -1083,6 +1085,67 @@ export default function Dashboard() {
 
         {/* Main Content Grid - Compact & Mobile-First */}
         <div className="space-y-4 mb-6">
+          {/* Quick Action Buttons - NEW */}
+          <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
+                <Zap className="w-4 h-4" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <Button
+                  onClick={() => setShowAddTaskDialog(true)}
+                  disabled={isShowingAllProperties && properties.length > 1}
+                  className="gap-2 bg-blue-600 hover:bg-blue-700"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Task
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Inspect") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
+                    <ClipboardCheck className="w-4 h-4" />
+                    Inspect
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Resources")}>
+                    <BookOpen className="w-4 h-4" />
+                    Resources
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="gap-2"
+                  style={{ minHeight: '48px' }}
+                >
+                  <Link to={createPageUrl("Services")}>
+                    <Wrench className="w-4 h-4" />
+                    Get Help
+                  </Link>
+                </Button>
+              </div>
+              {isShowingAllProperties && properties.length > 1 && (
+                <p className="text-xs text-orange-600 mt-2 text-center">
+                  Select a specific property above to add tasks.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Upcoming Tasks - Compact */}
           {upcomingTasks.length > 0 &&
           <Card className="border-none shadow-md">
@@ -1164,39 +1227,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
-                  <Sparkles className="w-4 h-4" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2">
-
-                  <Link to={createPageUrl("Inspect") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-                    <ClipboardCheck className="w-4 h-4" />
-                    Start Inspection
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2">
-
-                  <Link to={createPageUrl("Services")}>
-                    <Wrench className="w-4 h-4" />
-                    Request Service
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            {/* QUICK ACTIONS CARD REMOVED FROM HERE */}
           </div>
 
           {/* Recent Activity - Compact */}
@@ -1359,6 +1390,16 @@ export default function Dashboard() {
           </Card>
         }
       </div>
+
+      {/* Add Task Dialog */}
+      {showAddTaskDialog && (
+        <ManualTaskForm
+          propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null)}
+          onComplete={() => setShowAddTaskDialog(false)}
+          onCancel={() => setShowAddTaskDialog(false)}
+          open={showAddTaskDialog}
+        />
+      )}
     </div>);
 
 }
