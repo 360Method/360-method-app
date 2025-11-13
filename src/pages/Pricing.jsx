@@ -216,7 +216,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-white pb-20">
-      <div className="w-full px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="w-full px-4 md:px-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8 text-center pt-4 md:pt-0">
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-3 md:mb-4">
