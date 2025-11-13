@@ -52,13 +52,20 @@ export default function PrioritizePage() {
   const [sortBy, setSortBy] = React.useState('cascade_risk');
   const [showEducation, setShowEducation] = React.useState(false);
 
-  // Fetch properties
+  // Fetch current user
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  // Fetch properties - only for current user
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', currentUser?.email],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-created_date');
-      return allProps.filter(p => !p.is_draft);
-    }
+      return allProps.filter(p => !p.is_draft && p.created_by === currentUser?.email);
+    },
+    enabled: !!currentUser?.email
   });
 
   // Set initial selected property
@@ -73,43 +80,66 @@ export default function PrioritizePage() {
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
-  // Fetch tasks based on selected property
+  // Fetch tasks based on selected property - only for user's properties
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['maintenanceTasks', selectedProperty],
+    queryKey: ['maintenanceTasks', selectedProperty, currentUser?.email],
     queryFn: async () => {
       if (selectedProperty === 'all') {
-        return await base44.entities.MaintenanceTask.list('-created_date');
+        // Get all tasks but only for the user's properties
+        const propertyIds = properties.map(p => p.id);
+        if (propertyIds.length === 0) return [];
+        
+        const allTasks = await base44.entities.MaintenanceTask.list('-created_date');
+        return allTasks.filter(task => propertyIds.includes(task.property_id));
       } else {
+        // Verify the selected property belongs to the user
+        const propertyBelongsToUser = properties.some(p => p.id === selectedProperty);
+        if (!propertyBelongsToUser) return [];
+        
         return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null
+    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
-  // Fetch system baselines for context
+  // Fetch system baselines for context - only for user's properties
   const { data: systemBaselines = [] } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty],
+    queryKey: ['systemBaselines', selectedProperty, currentUser?.email],
     queryFn: async () => {
       if (selectedProperty === 'all') {
-        return await base44.entities.SystemBaseline.list();
+        const propertyIds = properties.map(p => p.id);
+        if (propertyIds.length === 0) return [];
+        
+        const allBaselines = await base44.entities.SystemBaseline.list();
+        return allBaselines.filter(baseline => propertyIds.includes(baseline.property_id));
       } else {
+        const propertyBelongsToUser = properties.some(p => p.id === selectedProperty);
+        if (!propertyBelongsToUser) return [];
+        
         return await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null
+    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
-  // Fetch inspections for context
+  // Fetch inspections for context - only for user's properties
   const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', selectedProperty],
+    queryKey: ['inspections', selectedProperty, currentUser?.email],
     queryFn: async () => {
       if (selectedProperty === 'all') {
-        return await base44.entities.Inspection.list('-created_date');
+        const propertyIds = properties.map(p => p.id);
+        if (propertyIds.length === 0) return [];
+        
+        const allInspections = await base44.entities.Inspection.list('-created_date');
+        return allInspections.filter(inspection => propertyIds.includes(inspection.property_id));
       } else {
+        const propertyBelongsToUser = properties.some(p => p.id === selectedProperty);
+        if (!propertyBelongsToUser) return [];
+        
         return await base44.entities.Inspection.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null
+    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
   });
 
   // Mutations for task management
