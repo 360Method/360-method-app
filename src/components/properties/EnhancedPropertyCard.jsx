@@ -11,8 +11,7 @@ import {
   ArrowRight,
   MoreVertical,
   DollarSign,
-  Activity,
-  HelpCircle
+  Activity
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from "@/utils";
@@ -64,10 +63,10 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
   };
 
   return (
-    <Card className="border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg">
+    <Card className="border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg overflow-hidden">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
               isPrimary ? 'bg-blue-100' : 'bg-green-100'
             }`}>
@@ -78,8 +77,10 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 truncate">{property.address}</p>
-              <p className="text-xs text-gray-600">{property.city}, {property.state}</p>
+              <p className="font-bold text-gray-900 text-sm leading-tight break-words">
+                {property.address}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">{property.city}, {property.state}</p>
               <div className="flex gap-2 mt-2 flex-wrap">
                 <Badge variant="outline" className="text-xs">{property.property_type}</Badge>
                 {property.year_built && (
@@ -94,7 +95,7 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="flex-shrink-0">
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
