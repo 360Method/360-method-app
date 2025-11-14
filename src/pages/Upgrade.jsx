@@ -27,7 +27,7 @@ import UpgradeCard from "../components/upgrade/UpgradeCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
-import { shouldShowMemberBenefits } from "@/lib/serviceAreas";
+import { shouldShowMemberBenefits } from "@/components/shared/serviceAreas";
 
 export default function Upgrade() {
   const location = useLocation();
