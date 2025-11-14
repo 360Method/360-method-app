@@ -1,171 +1,101 @@
-
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Shield,
+  Calendar,
+  TrendingUp,
   AlertTriangle,
   Clock,
   DollarSign,
-  TrendingUp,
-  Home,
-  Calendar,
-  Lightbulb,
   CheckCircle2,
-  Sparkles,
+  XCircle,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Download,
+  Calculator,
+  Trophy,
+  Lightbulb,
+  Zap
 } from "lucide-react";
-import SystemLifecycleCard from "../components/preserve/SystemLifecycleCard";
-import ExpenseForecast from "../components/preserve/ExpenseForecast";
-import { generatePreservationRecommendations, generateAIPreservationPlan } from "../components/shared/PreservationAnalyzer";
-import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
+import ReplacementForecastTimeline from "../components/preserve/ReplacementForecastTimeline";
+import PreservationRecommendationCard from "../components/preserve/PreservationRecommendationCard";
+import DecisionCalculator from "../components/preserve/DecisionCalculator";
+import InvestmentMatrix from "../components/preserve/InvestmentMatrix";
+import PreservationROIChart from "../components/preserve/PreservationROIChart";
 
 export default function Preserve() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const propertyIdFromUrl = urlParams.get('property');
-  
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
-  const [systemFilter, setSystemFilter] = React.useState("all");
-  const [whyExpanded, setWhyExpanded] = React.useState(false);
-  const [preservationData, setPreservationData] = React.useState(null);
-  const [loadingPreservation, setLoadingPreservation] = React.useState(false);
-  const [selectedOpportunity, setSelectedOpportunity] = React.useState(null); // Changed from useRef to useState as per outline
-  const [aiPlan, setAiPlan] = React.useState(null);
-  const [loadingAiPlan, setLoadingAiPlan] = React.useState(false);
-  const [showServiceDialog, setShowServiceDialog] = React.useState(false);
-  const [serviceRequestData, setServiceRequestData] = React.useState(null);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [activeTab, setActiveTab] = useState('forecast');
+  const [whyExpanded, setWhyExpanded] = useState(false);
+  const queryClient = useQueryClient();
 
+  // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: () => base44.entities.Property.list()
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => base44.auth.me()
   });
 
   const { data: systems = [] } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty }, '-created_date')
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
+    queryKey: ['systems', selectedProperty],
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedProperty }),
+    enabled: !!selectedProperty
   });
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['maintenanceTasks', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date')
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
+  const { data: recommendations = [] } = useQuery({
+    queryKey: ['preservation-recommendations', selectedProperty],
+    queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: selectedProperty }),
+    enabled: !!selectedProperty
   });
 
+  const { data: impacts = [] } = useQuery({
+    queryKey: ['preservation-impacts', selectedProperty],
+    queryFn: () => base44.entities.PreservationImpact.filter({ property_id: selectedProperty }),
+    enabled: !!selectedProperty
+  });
+
+  // Auto-select first property
   React.useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
     }
   }, [properties, selectedProperty]);
 
-  // Generate preservation recommendations when systems change
-  React.useEffect(() => {
-    const generatePreservation = async () => {
-      if (systems.length === 0) {
-        setPreservationData(null);
-        return;
-      }
-      
-      setLoadingPreservation(true);
-      try {
-        const data = await generatePreservationRecommendations(systems);
-        setPreservationData(data);
-      } catch (error) {
-        console.error('Failed to generate preservation data:', error);
-      } finally {
-        setLoadingPreservation(false);
-      }
-    };
+  // Filter recommendations by priority
+  const urgentRecommendations = recommendations.filter(r => r.priority === 'URGENT' && r.status === 'PENDING');
+  const recommendedItems = recommendations.filter(r => r.priority === 'RECOMMENDED' && r.status === 'PENDING');
+  const optionalItems = recommendations.filter(r => r.priority === 'OPTIONAL' && r.status === 'PENDING');
 
-    generatePreservation();
-  }, [systems]);
+  // Calculate ROI metrics
+  const totalInvested = impacts.reduce((sum, i) => sum + (i.intervention_cost || 0), 0);
+  const totalValueCreated = impacts.reduce((sum, i) => sum + (i.replacement_cost_avoided || 0), 0);
+  const overallROI = totalInvested > 0 ? (totalValueCreated / totalInvested).toFixed(1) : 0;
+  const totalYearsExtended = impacts.reduce((sum, i) => sum + (i.years_extended || 0), 0);
 
-  const currentProperty = properties.find(p => p.id === selectedProperty);
-
-  // Calculate existing metrics
-  const systemsNeedingAttention = systems.filter(system => {
-    if (!system.installation_year || !system.estimated_lifespan_years) return false;
-    const age = new Date().getFullYear() - system.installation_year;
-    return age >= system.estimated_lifespan_years * 0.8;
+  // Calculate systems needing attention
+  const systemsNeedingAttention = systems.filter(s => {
+    if (!s.installation_year || !s.estimated_lifespan_years) return false;
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - s.installation_year;
+    const agePercentage = age / s.estimated_lifespan_years;
+    return agePercentage >= 0.75 && s.condition !== 'Excellent';
   });
-
-  const systemsAtRisk = systems.filter(system => {
-    if (!system.installation_year || !system.estimated_lifespan_years) return false;
-    const age = new Date().getFullYear() - system.installation_year;
-    return age >= system.estimated_lifespan_years;
-  });
-
-  const next12MonthsCost = systemsNeedingAttention
-    .filter(s => {
-      const age = new Date().getFullYear() - s.installation_year;
-      return age >= s.estimated_lifespan_years * 0.9;
-    })
-    .reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
-
-  const next24MonthsCost = systemsNeedingAttention
-    .reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
-
-  const totalSpent = currentProperty?.total_maintenance_spent || 0;
-  const totalPrevented = currentProperty?.estimated_disasters_prevented || 0;
-  const roi = totalSpent > 0 ? ((totalPrevented - totalSpent) / totalSpent * 100).toFixed(0) : 0;
-
-  // Calculate preservation score
-  const preservationScore = preservationData ? Math.min(10, 10 - (preservationData.opportunities.length * 1.5)).toFixed(1) : 0;
-
-  const handleViewDetails = async (opportunity) => {
-    setSelectedOpportunity(opportunity);
-    setLoadingAiPlan(true);
-    
-    try {
-      const plan = await generateAIPreservationPlan(opportunity.system, opportunity);
-      setAiPlan(plan);
-    } catch (error) {
-      console.error('Failed to load AI plan:', error);
-    } finally {
-      setLoadingAiPlan(false);
-    }
-  };
-
-  const handleRequestService = (opportunity) => {
-    // Safety check for selectedProperty
-    if (!selectedProperty) {
-      console.error('No property selected');
-      return;
-    }
-
-    const strategiesText = opportunity.strategies.map(s => `- ${s.name} ($${s.cost})`).join('\n');
-    
-    setServiceRequestData({
-      property_id: selectedProperty,
-      service_type: `Preservation Service - ${opportunity.system.system_type}`,
-      description: `I would like to preserve my ${opportunity.system.nickname || opportunity.system.system_type} (${opportunity.age} years old).
-
-Recommended preservation strategies:
-${strategiesText}
-
-Total Investment: $${opportunity.investment}
-Expected Extension: ${opportunity.extensionYears} years
-
-Please provide a quote for these preservation services.`
-    });
-    setShowServiceDialog(true);
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+        
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={7} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
@@ -185,28 +115,28 @@ Please provide a quote for these preservation services.`
             Preserve
           </h1>
           <p className="text-gray-600 text-lg">
-            Protect your investment with proactive lifecycle management
+            Strategic preservation intelligence to extend system life and protect your investment
           </p>
         </div>
 
-        {/* Why This Step Matters - Educational Card */}
-        <Card className="mb-6 border-2 border-green-200 bg-green-50">
+        {/* Why This Step Matters */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
           <CardHeader className="pb-3">
             <button
               onClick={() => setWhyExpanded(!whyExpanded)}
               className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
             >
-              <Lightbulb className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-green-900 mb-1">Why Preserve Matters</h3>
-                <p className="text-sm text-green-800">
-                  Preserve launches the ADVANCE phase by shifting you from reactive to proactive. It uses your historical data to predict future needs, preventing surprise expenses and maximizing system lifespans.
+                <h3 className="font-semibold text-blue-900 mb-1">Why Preserve Matters</h3>
+                <p className="text-sm text-blue-800">
+                  Preserve analyzes your system data to identify opportunities for life extension, preventing costly emergency replacements and protecting your investment.
                 </p>
               </div>
               {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
               ) : (
-                <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
               )}
             </button>
           </CardHeader>
@@ -216,21 +146,21 @@ Please provide a quote for these preservation services.`
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    Preserve is Step 7 and begins ADVANCE. It leverages your complete AWARE and ACT data to forecast system replacements, estimate future costs, and plan capital reserves. This transforms you from "putting out fires" to "planning for the future."
+                    Preserve is Step 7 in ADVANCE. It uses your baseline data from AWARE to forecast replacement timelines, identify life-extension opportunities, and calculate strategic intervention ROI.
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Lifecycle Intelligence:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-                    <li><strong>Replacement forecasting:</strong> See when major systems will need replacement (2-15 years out)</li>
-                    <li><strong>Budget planning:</strong> Understand capital expense needs by year</li>
-                    <li><strong>Lifespan optimization:</strong> Proper maintenance extends system life 30-50%</li>
-                    <li><strong>Total Cost of Ownership:</strong> Calculate true costs including maintenance + replacement</li>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Key Benefits:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>Avoid Emergency Replacements:</strong> Plan proactively instead of reacting to failures</li>
+                    <li>• <strong>Extend System Life:</strong> Strategic interventions add 3-7 years on average</li>
+                    <li>• <strong>ROI Focus:</strong> Typical preservation ROI is 3-5x the investment</li>
+                    <li>• <strong>Budget Planning:</strong> Forecast expenses 2-15 years out</li>
                   </ul>
                 </div>
-                <div className="bg-green-50 rounded p-3 border-l-4 border-green-600">
-                  <p className="text-xs text-green-900">
-                    <strong>Key Insight:</strong> Properties using Preserve avoid 70% of "surprise" major expenses by planning 3-5 years ahead and setting aside appropriate reserves.
+                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
+                  <p className="text-xs text-blue-900">
+                    <strong>Smart Strategy:</strong> Spending $2,000 today to extend a system 5 years beats a $10,000 emergency replacement tomorrow.
                   </p>
                 </div>
               </div>
@@ -238,15 +168,16 @@ Please provide a quote for these preservation services.`
           )}
         </Card>
 
+        {/* Property Selector */}
         {properties.length > 0 && (
-          <Card className="border-none shadow-lg mb-6"> {/* Added mb-6 as per outline */}
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <Card className="border-none shadow-lg mb-6">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
-                  <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                    <SelectTrigger className="w-full md:w-96">
-                      <SelectValue />
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
+                  <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
+                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
                     <SelectContent>
                       {properties.map((property) => (
@@ -262,386 +193,222 @@ Please provide a quote for these preservation services.`
           </Card>
         )}
 
-        {/* Preservation Score Banner */}
-        {preservationData && (
-          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-full bg-purple-600 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-white">{preservationScore}</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-1">YOUR PRESERVATION SCORE</h2>
-                    <p className="text-gray-700">
-                      {preservationScore >= 8 ? "Excellent! You're maximizing system lifespans." :
-                       preservationScore >= 6 ? "Good! A few systems need attention." :
-                       preservationScore >= 4 ? "Attention needed! Multiple preservation opportunities." :
-                       "Critical! Act now to avoid expensive replacements."}
-                    </p>
-                  </div>
+        {/* Quick Stats */}
+        {selectedProperty && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                  <p className="text-xs text-gray-600">Systems at Risk</p>
                 </div>
-                <Shield className="w-16 h-16 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-2xl font-bold text-gray-900">{systemsNeedingAttention.length}</p>
+                <p className="text-xs text-gray-500">Approaching end of life</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-blue-600" />
+                  <p className="text-xs text-gray-600">Opportunities</p>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{recommendations.filter(r => r.status === 'PENDING').length}</p>
+                <p className="text-xs text-gray-500">Life-extension options</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-600">Value Created</p>
+                </div>
+                <p className="text-2xl font-bold text-green-700">${totalValueCreated.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Lifetime savings</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                  <p className="text-xs text-gray-600">Overall ROI</p>
+                </div>
+                <p className="text-2xl font-bold text-purple-700">{overallROI}x</p>
+                <p className="text-xs text-gray-500">Return on investment</p>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
-        {/* ROI Summary */}
-        <div className="grid md:grid-cols-4 gap-4 mt-6">
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-blue-600" />
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+            <TabsTrigger 
+              value="forecast" 
+              className="flex items-center gap-2 py-3"
+              style={{ minHeight: '56px' }}
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="hidden md:inline">Forecast</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="opportunities" 
+              className="flex items-center gap-2 py-3"
+              style={{ minHeight: '56px' }}
+            >
+              <Lightbulb className="w-5 h-5" />
+              <span className="hidden md:inline">Opportunities</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="calculator" 
+              className="flex items-center gap-2 py-3"
+              style={{ minHeight: '56px' }}
+            >
+              <Calculator className="w-5 h-5" />
+              <span className="hidden md:inline">Calculator</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="priorities" 
+              className="flex items-center gap-2 py-3"
+              style={{ minHeight: '56px' }}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span className="hidden md:inline">Priorities</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="roi" 
+              className="flex items-center gap-2 py-3"
+              style={{ minHeight: '56px' }}
+            >
+              <Trophy className="w-5 h-5" />
+              <span className="hidden md:inline">ROI</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Replacement Forecast */}
+          <TabsContent value="forecast" className="mt-6 space-y-6">
+            <ReplacementForecastTimeline 
+              systems={systems}
+              property={properties.find(p => p.id === selectedProperty)}
+            />
+          </TabsContent>
+
+          {/* Tab 2: Life-Extension Opportunities */}
+          <TabsContent value="opportunities" className="mt-6 space-y-6">
+            
+            {/* Urgent Section */}
+            {urgentRecommendations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <h2 className="font-bold text-xl text-gray-900">
+                    🔥 URGENT - Do Within 6 Months ({urgentRecommendations.length})
+                  </h2>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Spent</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalSpent.toLocaleString()}</p>
+                <div className="space-y-4">
+                  {urgentRecommendations.map(rec => (
+                    <PreservationRecommendationCard
+                      key={rec.id}
+                      recommendation={rec}
+                      systems={systems}
+                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
+                    />
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
 
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-green-600" />
+            {/* Recommended Section */}
+            {recommendedItems.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-6 h-6 text-orange-600" />
+                  <h2 className="font-bold text-xl text-gray-900">
+                    ⚡ RECOMMENDED - Plan Within 12 Months ({recommendedItems.length})
+                  </h2>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Prevented</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalPrevented.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">ROI</p>
-                  <p className="text-2xl font-bold text-gray-900">{roi}%</p>
+                <div className="space-y-4">
+                  {recommendedItems.map(rec => (
+                    <PreservationRecommendationCard
+                      key={rec.id}
+                      recommendation={rec}
+                      systems={systems}
+                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
+                    />
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
 
-          <Card className="border-none shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+            {/* Optional Section */}
+            {optionalItems.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                  <h2 className="font-bold text-xl text-gray-900">
+                    💰 OPTIONAL - Consider for Optimization ({optionalItems.length})
+                  </h2>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">At Risk</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemsAtRisk.length}</p>
+                <div className="space-y-4">
+                  {optionalItems.map(rec => (
+                    <PreservationRecommendationCard
+                      key={rec.id}
+                      recommendation={rec}
+                      systems={systems}
+                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
+                    />
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
 
-        {/* Preservation Opportunities */}
-        {loadingPreservation ? (
-          <Card className="border-2 border-purple-300 bg-purple-50 mt-6">
-            <CardContent className="p-12 text-center">
-              <div className="animate-spin text-4xl mb-4">⚙️</div>
-              <p className="text-lg font-medium text-purple-900">AI analyzing your systems for preservation opportunities...</p>
-            </CardContent>
-          </Card>
-        ) : preservationData && preservationData.opportunities.length > 0 ? (
-          <Card className="border-2 border-green-300 shadow-lg mt-6">
-            <CardHeader className="bg-green-50">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-6 h-6 text-green-700" />
-                  <span>🛡️ SYSTEMS READY FOR PRESERVATION</span>
-                </div>
-                <Badge className="bg-green-600 text-white">
-                  {preservationData.opportunities.length} Opportunities
-                </Badge>
-              </CardTitle>
-              <p className="text-sm text-gray-700 mt-2">
-                Extend system lifespans and avoid ${preservationData.totalSavings.toLocaleString()} in replacements
-              </p>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {preservationData.opportunities.map((opp, idx) => (
-                <Card key={idx} className={`border-2 ${
-                  opp.priority === 'HIGH' ? 'border-red-300 bg-red-50' :
-                  opp.priority === 'MEDIUM' ? 'border-orange-300 bg-orange-50' :
-                  'border-blue-300 bg-blue-50'
-                }`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">
-                            🛡️ {opp.system.nickname || opp.system.system_type}
-                          </h3>
-                          <Badge className={
-                            opp.priority === 'HIGH' ? 'bg-red-600' :
-                            opp.priority === 'MEDIUM' ? 'bg-orange-600' :
-                            'bg-blue-600'
-                          }>
-                            {opp.priority} PRIORITY
-                          </Badge>
-                        </div>
-                        <p className="text-gray-700">
-                          Age: {opp.age} years ({opp.percentLifespan}% of {opp.lifespan}-year lifespan)
-                        </p>
-                        <p className="text-gray-700">
-                          Condition: {opp.system.condition || 'Unknown'}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Next Failure Risk: <span className="font-bold text-red-700">{opp.failureRisk}%</span> in next 2 years
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <h4 className="font-semibold mb-3 text-gray-900">Preservation Plan:</h4>
-                      <div className="space-y-2">
-                        {opp.strategies.map((strategy, sidx) => (
-                          <div key={sidx} className="flex items-start gap-2 bg-white p-3 rounded border">
-                            <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900">{strategy.name} - ${strategy.cost}</p>
-                              <p className="text-sm text-gray-600">{strategy.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div className="bg-white p-3 rounded border">
-                        <p className="text-xs text-gray-600">Total Investment</p>
-                        <p className="text-xl font-bold text-green-700">${opp.investment}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border">
-                        <p className="text-xs text-gray-600">Extends Life</p>
-                        <p className="text-xl font-bold text-green-700">{opp.extensionYears} years</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border">
-                        <p className="text-xs text-gray-600">Replacement Avoided</p>
-                        <p className="text-xl font-bold text-green-700">${opp.replacementCost.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded border">
-                        <p className="text-xs text-gray-600">Annual Savings</p>
-                        <p className="text-xl font-bold text-green-700">${Math.round(opp.annualSavings).toLocaleString()}/yr</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-50 border border-blue-300 rounded mb-4">
-                      <p className="text-sm font-bold text-blue-900 mb-1">
-                        💰 Your ROI: {opp.roi.toFixed(1)}:1
-                      </p>
-                      <p className="text-xs text-gray-700">
-                        Invest ${opp.investment} now to avoid ${opp.replacementCost.toLocaleString()} replacement for {opp.extensionYears} more years
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={() => handleRequestService(opp)}
-                        className="flex-1"
-                        style={{ backgroundColor: '#28A745' }}
-                      >
-                        Request Service
-                      </Button>
-                      <Button
-                        onClick={() => handleViewDetails(opp)}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <Lightbulb className="w-4 h-4 mr-2" />
-                        Learn More
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Total Summary */}
-              <Card className="border-2 border-purple-300 bg-purple-50">
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-4 text-center text-purple-900 flex items-center justify-center gap-2">
-                    <Sparkles className="w-6 h-6" />
-                    TOTAL PRESERVATION OPPORTUNITY
-                  </h3>
-                  <div className="grid grid-cols-3 gap-6 text-center">
-                    <div>
-                      <p className="text-gray-700 mb-2">Invest This Year</p>
-                      <p className="text-3xl font-bold text-purple-900">${preservationData.totalInvestment.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 mb-2">Avoid Replacements</p>
-                      <p className="text-3xl font-bold text-purple-900">${preservationData.totalSavings.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 mb-2">Your ROI</p>
-                      <p className="text-3xl font-bold text-purple-900">{preservationData.totalROI.toFixed(1)}:1</p>
-                    </div>
-                  </div>
-                  <p className="text-center text-sm text-gray-700 mt-4">
-                    Preserve all systems now and save ${(preservationData.totalSavings - preservationData.totalInvestment).toLocaleString()} over the next 2-4 years
+            {/* Empty State */}
+            {recommendations.filter(r => r.status === 'PENDING').length === 0 && (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">All Systems Looking Good!</h3>
+                  <p className="text-gray-600 mb-4">
+                    No preservation recommendations at this time. Check back as systems age.
                   </p>
                 </CardContent>
               </Card>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-2 border-green-300 bg-green-50 mt-6">
-            <CardContent className="p-12 text-center">
-              <Shield className="w-16 h-16 mx-auto mb-4 text-green-600" />
-              <h3 className="text-2xl font-bold mb-2 text-green-900">
-                🎉 No Preservation Needed Right Now!
-              </h3>
-              <p className="text-gray-700">
-                Your systems are either too new or already well-maintained. 
-                Check back when systems reach 50-90% of their expected lifespan.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Expense Forecast */}
-        <ExpenseForecast
-          next12Months={next12MonthsCost}
-          next24Months={next24MonthsCost}
-          next36Months={next24MonthsCost * 1.5}
-        />
-
-        {/* System Lifecycle Tracking */}
-        <Card className="border-none shadow-lg mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              All Systems Lifecycle Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {systems.length > 0 ? (
-              <div className="space-y-4">
-                {systems
-                  .sort((a, b) => {
-                    const ageA = a.installation_year ? new Date().getFullYear() - a.installation_year : 0;
-                    const lifespanA = a.estimated_lifespan_years || 999;
-                    const ageB = b.installation_year ? new Date().getFullYear() - b.installation_year : 0;
-                    const lifespanB = b.estimated_lifespan_years || 999;
-                    return (ageB / lifespanB) - (ageA / lifespanA);
-                  })
-                  .map(system => (
-                    <SystemLifecycleCard key={system.id} system={system} />
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <Shield className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl font-semibold mb-2">No Systems Documented</h3>
-                <p>Complete your baseline to start tracking system lifecycles and preservation opportunities</p>
-              </div>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Service Request Dialog */}
-        <ServiceRequestDialog
-          open={showServiceDialog}
-          onClose={() => {
-            setShowServiceDialog(false);
-            setServiceRequestData(null);
-          }}
-          prefilledData={serviceRequestData || null}
-        />
+          </TabsContent>
 
-        {/* AI Plan Detail Dialog */}
-        {selectedOpportunity && (
-          <Dialog open={!!selectedOpportunity} onOpenChange={(open) => {
-            if (!open) { // Close dialog
-              setSelectedOpportunity(null);
-              setAiPlan(null);
-            }
-          }}>
-            <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Lightbulb className="w-6 h-6 text-blue-600" />
-                  Preservation Plan Details
-                </DialogTitle>
-              </DialogHeader>
-              
-              {loadingAiPlan ? (
-                <div className="p-12 text-center">
-                  <div className="animate-spin text-4xl mb-4">⚙️</div>
-                  <p className="text-gray-700">AI generating detailed plan...</p>
-                </div>
-              ) : aiPlan && (
-                <div className="space-y-4 py-4">
-                  <Card className="border-2 border-blue-300 bg-blue-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold mb-2 text-blue-900">Why Preserve Now:</h3>
-                      <p className="text-gray-800">{aiPlan.why_now}</p>
-                    </CardContent>
-                  </Card>
+          {/* Tab 3: Decision Calculator */}
+          <TabsContent value="calculator" className="mt-6">
+            <DecisionCalculator 
+              systems={systems}
+              recommendations={recommendations}
+              property={properties.find(p => p.id === selectedProperty)}
+            />
+          </TabsContent>
 
-                  <Card className="border-2 border-red-300 bg-red-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold mb-2 text-red-900 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5" />
-                        Consequences of Skipping:
-                      </h3>
-                      <p className="text-gray-800">{aiPlan.consequences_of_skipping}</p>
-                    </CardContent>
-                  </Card>
+          {/* Tab 4: Investment Priorities */}
+          <TabsContent value="priorities" className="mt-6">
+            <InvestmentMatrix 
+              recommendations={recommendations.filter(r => r.status === 'PENDING')}
+              systems={systems}
+            />
+          </TabsContent>
 
-                  <Card className="border-2 border-green-300 bg-green-50">
-                    <CardContent className="p-4">
-                      <h3 className="font-bold mb-2 text-green-900">Best Timing:</h3>
-                      <p className="text-gray-800">{aiPlan.best_timing}</p>
-                    </CardContent>
-                  </Card>
+          {/* Tab 5: Preservation ROI */}
+          <TabsContent value="roi" className="mt-6 space-y-6">
+            <PreservationROIChart 
+              impacts={impacts}
+              totalInvested={totalInvested}
+              totalValueCreated={totalValueCreated}
+              overallROI={overallROI}
+              totalYearsExtended={totalYearsExtended}
+            />
+          </TabsContent>
 
-                  {aiPlan.preventive_tips?.length > 0 && (
-                    <Card className="border-2 border-purple-300 bg-purple-50">
-                      <CardContent className="p-4">
-                        <h3 className="font-bold mb-3 text-purple-900">Preventive Tips to Maximize Lifespan:</h3>
-                        <ul className="space-y-2">
-                          {aiPlan.preventive_tips.map((tip, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-purple-700 mt-0.5 flex-shrink-0" />
-                              <span className="text-gray-800">{tip}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
+        </Tabs>
 
-                  <Button
-                    onClick={() => {
-                      // Preserve the selectedOpportunity before clearing it to pass to handleRequestService
-                      const currentOpportunity = selectedOpportunity;
-                      setSelectedOpportunity(null); // Close the learn more dialog
-                      setAiPlan(null);
-                      handleRequestService(currentOpportunity); // Then open the service request dialog
-                    }}
-                    className="w-full"
-                    style={{ backgroundColor: '#28A745' }}
-                  >
-                    Request This Service
-                  </Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
     </div>
   );
