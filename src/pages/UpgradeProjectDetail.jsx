@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { 
-  TrendingUp, DollarSign, Edit, Trash2, Lightbulb, ArrowLeft, Trophy, Zap
+  TrendingUp, DollarSign, Trash2, Lightbulb, ArrowLeft, Trophy, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,13 +17,14 @@ import BudgetTrackingView from '../components/upgrade/BudgetTrackingView';
 import AIGuidanceView from '../components/upgrade/AIGuidanceView';
 import EditProjectButton from '../components/upgrade/EditProjectButton';
 import UpgradeDialog from '../components/upgrade/UpgradeDialog';
+import NextStepsCard from '../components/upgrade/NextStepsCard';
 
 export default function UpgradeProjectDetail() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const projectId = searchParams.get('id');
-  const [activeTab, setActiveTab] = useState('milestones');
+  const [activeTab, setActiveTab] = useState('overview');
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const queryClient = useQueryClient();
@@ -42,14 +43,7 @@ export default function UpgradeProjectDetail() {
     queryFn: () => base44.entities.Property.list(),
   });
 
-  const { data: property } = useQuery({
-    queryKey: ['property', project?.property_id],
-    queryFn: async () => {
-      if (!project?.property_id) return null;
-      return properties.find(p => p.id === project.property_id);
-    },
-    enabled: !!project?.property_id && properties.length > 0,
-  });
+  const property = properties.find(p => p.id === project?.property_id);
 
   const deleteMutation = useMutation({
     mutationFn: () => base44.entities.Upgrade.delete(projectId),
@@ -281,6 +275,13 @@ export default function UpgradeProjectDetail() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-6 h-auto">
               <TabsTrigger 
+                value="overview" 
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
                 value="milestones" 
                 className="text-xs sm:text-sm py-2.5 sm:py-3"
                 style={{ minHeight: '44px' }}
@@ -302,15 +303,86 @@ export default function UpgradeProjectDetail() {
               >
                 Files
               </TabsTrigger>
-              <TabsTrigger 
-                value="ai-guide" 
-                className="text-xs sm:text-sm py-2.5 sm:py-3"
-                style={{ minHeight: '44px' }}
-              >
-                <span className="hidden sm:inline">AI Guide</span>
-                <span className="sm:hidden">AI</span>
-              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="overview">
+              <div className="space-y-6">
+                {/* Next Steps Card - Prominent at top */}
+                <NextStepsCard
+                  project={project}
+                  property={property}
+                  onNavigateToMilestones={() => setActiveTab('milestones')}
+                />
+
+                {/* Project Description */}
+                {project.description && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Description</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-wrap">{project.description}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Before & After States */}
+                {(project.current_state || project.upgraded_state) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Before & After</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {project.current_state && (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-1">Current State:</p>
+                          <p className="text-sm text-gray-600">{project.current_state}</p>
+                        </div>
+                      )}
+                      {project.upgraded_state && (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-1">Target State:</p>
+                          <p className="text-sm text-gray-600">{project.upgraded_state}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Additional Notes */}
+                {project.notes && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Additional Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-wrap">{project.notes}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* AI Guide Preview */}
+                <Card className="border-2 border-purple-200 bg-purple-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-5 h-5 text-purple-600" />
+                      <h4 className="font-semibold text-purple-900">Need Expert Guidance?</h4>
+                    </div>
+                    <p className="text-sm text-purple-800 mb-3">
+                      Get AI-powered project planning, risk analysis, and step-by-step recommendations.
+                    </p>
+                    <Button
+                      onClick={() => setActiveTab('ai-guide')}
+                      variant="outline"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                      style={{ minHeight: '44px' }}
+                    >
+                      View AI Guide
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
             <TabsContent value="milestones">
               <MilestonesTab project={project} onUpdate={handleRefresh} />
