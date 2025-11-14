@@ -1,415 +1,581 @@
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Link, useLocation } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import {
+  Sparkles, TrendingUp, DollarSign, Clock, Zap,
+  ArrowLeft, Search, Filter, ChevronDown, Home,
+  Trophy, Leaf, Shield, Heart, Building2
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { calculateMemberDiscount, getAllTierDiscounts } from '@/components/shared/MemberDiscountCalculator';
 
-import React from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Award, TrendingUp, DollarSign, Clock, Home, ChevronRight, Zap, Users, Shield, Sparkles } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+const CATEGORY_ICONS = {
+  'High ROI Renovations': Trophy,
+  'Energy Efficiency': Leaf,
+  'Rental Income Boosters': Building2,
+  'Preventive Replacements': Shield,
+  'Curb Appeal': Home,
+  'Interior Updates': Heart
+};
 
-export default function ExploreTemplates() {
+const CATEGORY_COLORS = {
+  'High ROI Renovations': 'bg-green-100 text-green-800 border-green-300',
+  'Energy Efficiency': 'bg-blue-100 text-blue-800 border-blue-300',
+  'Rental Income Boosters': 'bg-purple-100 text-purple-800 border-purple-300',
+  'Preventive Replacements': 'bg-red-100 text-red-800 border-red-300',
+  'Curb Appeal': 'bg-orange-100 text-orange-800 border-orange-300',
+  'Interior Updates': 'bg-pink-100 text-pink-800 border-pink-300'
+};
+
+export default function ExploreTemplatesPage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialCategory = searchParams.get('category') || 'all';
-  const showFeatured = searchParams.get('featured') === 'true';
+  
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
+  const [costFilter, setCostFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('roi');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [selectedCategory, setSelectedCategory] = React.useState(initialCategory);
-  const [sortBy, setSortBy] = React.useState('roi'); // roi, cost, popularity
-
-  const { data: templates = [] } = useQuery({
-    queryKey: ['upgrade-templates'],
-    queryFn: () => base44.entities.UpgradeTemplate.list('sort_order'),
-    initialData: [],
-  });
-
+  // Fetch user for member tier
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => base44.auth.me()
   });
 
-  const currentTier = user?.subscription_tier || 'free';
-  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
-  const memberDiscount = currentTier.includes('essential') ? 0.05 
-    : currentTier.includes('premium') ? 0.10 
-    : currentTier.includes('elite') ? 0.15 
-    : 0;
+  // Fetch upgrade templates
+  const { data: templates = [], isLoading } = useQuery({
+    queryKey: ['upgradeTemplates'],
+    queryFn: () => base44.entities.UpgradeTemplate.list()
+  });
 
-  const categories = [
-    { value: 'all', label: 'All Templates', icon: Sparkles },
-    { value: 'High ROI Renovations', label: 'High ROI', icon: Award },
-    { value: 'Energy Efficiency', label: 'Energy Efficiency', icon: Zap },
-    { value: 'Rental Income Boosters', label: 'Rental Income', icon: DollarSign },
-    { value: 'Preventive Replacements', label: 'Preventive', icon: Shield },
-    { value: 'Curb Appeal', label: 'Curb Appeal', icon: Home },
-  ];
+  const memberTier = user?.subscription_tier || 'free';
+  const isServiceMember = memberTier.includes('homecare') || memberTier.includes('propertycare');
 
-  let filteredTemplates = templates;
-  
-  if (showFeatured) {
-    filteredTemplates = templates.filter(t => t.featured);
-  } else if (selectedCategory !== 'all') {
-    filteredTemplates = templates.filter(t => t.category === selectedCategory);
+  // Filter and sort templates
+  const filteredTemplates = useMemo(() => {
+    let filtered = [...templates];
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === categoryFilter);
+    }
+
+    // Cost filter
+    if (costFilter === 'under_10k') {
+      filtered = filtered.filter(t => t.average_cost_max < 10000);
+    } else if (costFilter === '10k_to_30k') {
+      filtered = filtered.filter(t => t.average_cost_min >= 10000 && t.average_cost_max <= 30000);
+    } else if (costFilter === 'over_30k') {
+      filtered = filtered.filter(t => t.average_cost_min > 30000);
+    }
+
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.title?.toLowerCase().includes(query) ||
+        t.why_it_works?.some(w => w.toLowerCase().includes(query)) ||
+        t.best_for?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort
+    if (sortBy === 'roi') {
+      filtered.sort((a, b) => (b.average_roi_percent || 0) - (a.average_roi_percent || 0));
+    } else if (sortBy === 'cost_low') {
+      filtered.sort((a, b) => (a.average_cost_min || 0) - (b.average_cost_min || 0));
+    } else if (sortBy === 'cost_high') {
+      filtered.sort((a, b) => (b.average_cost_max || 0) - (a.average_cost_max || 0));
+    } else if (sortBy === 'value') {
+      filtered.sort((a, b) => (b.typical_value_added || 0) - (a.typical_value_added || 0));
+    }
+
+    return filtered;
+  }, [templates, categoryFilter, costFilter, searchQuery, sortBy]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading upgrade ideas...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Sort templates
-  filteredTemplates = [...filteredTemplates].sort((a, b) => {
-    if (sortBy === 'roi') {
-      return (b.average_roi_percent || 0) - (a.average_roi_percent || 0);
-    } else if (sortBy === 'cost') {
-      return (a.average_cost_min || 0) - (b.average_cost_min || 0);
-    }
-    return 0;
-  });
-
-  const categoryIcon = categories.find(c => c.value === selectedCategory)?.icon || Sparkles;
-  const CategoryIcon = categoryIcon;
-
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mobile-container md:max-w-7xl md:mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6">
+        
         {/* Header */}
         <div className="mb-6">
-          <h1 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '28px' }}>
-            💡 Popular Upgrade Ideas
-          </h1>
-          <p className="text-gray-700" style={{ fontSize: '16px' }}>
-            High-ROI projects that transform your property
-          </p>
-          <p className="text-sm text-gray-600">
-            {templates.length} inspiring templates with real numbers and success stories
-          </p>
+          <Link to={createPageUrl('Upgrade')}>
+            <Button variant="ghost" className="mb-4" style={{ minHeight: '44px' }}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Upgrade
+            </Button>
+          </Link>
+
+          <div className="flex items-center gap-3 mb-3">
+            <Sparkles className="w-8 h-8 text-green-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Upgrade Ideas
+              </h1>
+              <p className="text-gray-600">
+                Strategic improvements that pay for themselves
+              </p>
+            </div>
+          </div>
+
+          {isServiceMember && (
+            <div className="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
+              <Badge className="bg-purple-600 text-white mb-2">
+                ⭐ MEMBER BENEFIT
+              </Badge>
+              <p className="text-sm text-purple-900 font-semibold">
+                All prices shown include your {memberTier.includes('essential') ? 'Essential' : memberTier.includes('premium') ? 'Premium' : 'Elite'} member discount!
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Member Savings Banner */}
-        {isServiceMember && memberDiscount > 0 && (
-          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge style={{ backgroundColor: '#8B5CF6' }}>MEMBER BENEFIT</Badge>
-                <p className="text-sm font-semibold text-purple-900">
-                  🌟 All projects coordinated through your vetted contractor network with {memberDiscount * 100}% negotiated savings
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Non-Member Upsell */}
-        {!isServiceMember && (
-          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">
-                    💰 Members save 5-15% on ALL upgrades through our contractor network
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    Plus: free project coordination, quality guarantee, and no bidding hassle
-                  </p>
-                </div>
-                <Button
-                  asChild
-                  size="sm"
-                  style={{ backgroundColor: '#3B82F6', minHeight: '40px' }}
-                >
-                  <Link to={createPageUrl("Pricing")}>
-                    Learn More
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Filters */}
-        <Card className="border-none shadow-sm mb-6">
+        <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col gap-4">
-              {/* Category Filter */}
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: '#1B365D' }}>
-                  Filter by Category:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => {
-                    const Icon = cat.icon;
-                    return (
-                      <Button
-                        key={cat.value}
-                        onClick={() => setSelectedCategory(cat.value)}
-                        variant={selectedCategory === cat.value ? "default" : "outline"}
-                        style={{
-                          backgroundColor: selectedCategory === cat.value ? '#3B82F6' : 'white',
-                          minHeight: '40px'
-                        }}
-                        size="sm"
-                      >
-                        <Icon className="w-4 h-4 mr-2" />
-                        {cat.label}
-                      </Button>
-                    );
-                  })}
-                </div>
+            <div className="space-y-3">
+              
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search upgrades..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  style={{ minHeight: '48px' }}
+                />
               </div>
 
-              {/* Sort */}
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold" style={{ color: '#1B365D' }}>
-                  Sort by:
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setSortBy('roi')}
-                    variant={sortBy === 'roi' ? "default" : "outline"}
-                    size="sm"
-                    style={{ minHeight: '40px' }}
-                  >
-                    Highest ROI
-                  </Button>
-                  <Button
-                    onClick={() => setSortBy('cost')}
-                    variant={sortBy === 'cost' ? "outline" : "outline"}
-                    size="sm"
-                    style={{ minHeight: '40px' }}
-                  >
-                    Lowest Cost
-                  </Button>
-                </div>
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="High ROI Renovations">🏆 High ROI</SelectItem>
+                    <SelectItem value="Energy Efficiency">🍃 Energy Efficiency</SelectItem>
+                    <SelectItem value="Rental Income Boosters">🏢 Rental Boosters</SelectItem>
+                    <SelectItem value="Preventive Replacements">🛡️ Preventive</SelectItem>
+                    <SelectItem value="Curb Appeal">🏠 Curb Appeal</SelectItem>
+                    <SelectItem value="Interior Updates">💖 Interior</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={costFilter} onValueChange={setCostFilter}>
+                  <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Any Cost" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Cost</SelectItem>
+                    <SelectItem value="under_10k">Under $10K</SelectItem>
+                    <SelectItem value="10k_to_30k">$10K - $30K</SelectItem>
+                    <SelectItem value="over_30k">Over $30K</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Sort by..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roi">Highest ROI</SelectItem>
+                    <SelectItem value="cost_low">Lowest Cost</SelectItem>
+                    <SelectItem value="cost_high">Highest Cost</SelectItem>
+                    <SelectItem value="value">Biggest Value Add</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Templates Grid */}
-        {filteredTemplates.length === 0 ? (
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-12 text-center">
-              <CategoryIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold mb-2">No Templates Yet</h3>
-              <p className="text-gray-600 mb-6">
-                Check back soon for inspiring upgrade ideas in this category
+        {/* Results Count */}
+        <div className="mb-4 text-sm text-gray-600">
+          Showing {filteredTemplates.length} of {templates.length} upgrades
+        </div>
+
+        {/* Template Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTemplates.map(template => {
+            const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
+            const CategoryIcon = CATEGORY_ICONS[template.category] || Sparkles;
+            const memberDiscount = isServiceMember ? calculateMemberDiscount(avgCost, memberTier) : null;
+
+            return (
+              <Card 
+                key={template.id}
+                className="cursor-pointer hover:shadow-xl transition-all border-2 border-gray-200 hover:border-green-400 overflow-hidden"
+                onClick={() => setSelectedTemplate(template)}
+              >
+                {/* Hero Image */}
+                {template.hero_image_url && (
+                  <div className="w-full h-48 bg-gray-100 overflow-hidden">
+                    <img
+                      src={template.hero_image_url}
+                      alt={template.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                <CardContent className="p-4">
+                  
+                  {/* Title and Category */}
+                  <div className="mb-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {template.title}
+                      </h3>
+                      <CategoryIcon className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                    </div>
+                    <Badge className={CATEGORY_COLORS[template.category]}>
+                      {template.category}
+                    </Badge>
+                  </div>
+
+                  {/* Why It Matters (Truncated) */}
+                  {template.why_it_works && template.why_it_works.length > 0 && (
+                    <p className="text-sm text-gray-700 mb-4 line-clamp-2">
+                      {template.why_it_works[0]}
+                    </p>
+                  )}
+
+                  <div className="space-y-3">
+                    
+                    {/* Cost Range */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <span className="text-xs font-semibold text-gray-600">TYPICAL COST</span>
+                      <span className="font-bold text-gray-900">
+                        ${template.average_cost_min?.toLocaleString()} - ${template.average_cost_max?.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {/* ROI */}
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded border border-green-200">
+                      <span className="text-xs font-semibold text-green-700">ROI</span>
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        <span className="font-bold text-green-700 text-xl">
+                          {template.average_roi_percent}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Member Price */}
+                    {memberDiscount && (
+                      <div className="p-3 bg-purple-50 border-2 border-purple-300 rounded">
+                        <p className="text-xs font-semibold text-purple-600 mb-1">⭐ YOUR MEMBER PRICE</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-purple-700">
+                            ${(avgCost - memberDiscount.actualSavings).toLocaleString()}
+                          </span>
+                          <Badge className="bg-green-600 text-white">
+                            Save ${memberDiscount.actualSavings.toLocaleString()}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button 
+                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
+                    style={{ minHeight: '48px' }}
+                    onClick={() => setSelectedTemplate(template)}
+                  >
+                    Learn More
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Empty State */}
+        {filteredTemplates.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No upgrades match your filters
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Try adjusting your search or filters
               </p>
               <Button
-                onClick={() => setSelectedCategory('all')}
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setCostFilter('all');
+                  setSearchQuery('');
+                }}
                 variant="outline"
+                style={{ minHeight: '48px' }}
               >
-                View All Templates
+                Clear All Filters
               </Button>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-6">
-            {/* Featured Section */}
-            {selectedCategory === 'all' && !showFeatured && (
-              <div>
-                <h2 className="font-bold mb-4" style={{ color: '#1B365D', fontSize: '22px' }}>
-                  🏆 Featured: Highest ROI Upgrades
-                </h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {templates.filter(t => t.featured).slice(0, 3).map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      memberDiscount={memberDiscount}
-                      isServiceMember={isServiceMember}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Category Header */}
-            {selectedCategory !== 'all' && (
-              <div className="flex items-center gap-3 mb-4">
-                <CategoryIcon className="w-6 h-6" style={{ color: '#3B82F6' }} />
-                <h2 className="font-bold" style={{ color: '#1B365D', fontSize: '22px' }}>
-                  {categories.find(c => c.value === selectedCategory)?.label}
-                </h2>
-              </div>
-            )}
-
-            {/* All Templates */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTemplates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  memberDiscount={memberDiscount}
-                  isServiceMember={isServiceMember}
-                />
-              ))}
-            </div>
-          </div>
         )}
 
-        {/* Educational CTA */}
-        <Card className="border-2 border-blue-200 bg-blue-50 mt-8">
-          <CardContent className="p-6">
-            <h3 className="font-bold mb-3" style={{ color: '#1B365D', fontSize: '20px' }}>
-              💡 How to Choose the Right Upgrade
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Planning to sell soon?</p>
-                <p className="text-sm text-gray-700">
-                  Focus on <strong>High ROI</strong> projects like garage doors, stone veneer, and minor kitchen remodels
-                </p>
+        {/* Template Detail Modal */}
+        {selectedTemplate && (
+          <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl pr-6">
+                  {selectedTemplate.title}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                
+                {/* Hero Image */}
+                {selectedTemplate.hero_image_url && (
+                  <div className="w-full h-64 rounded-lg overflow-hidden">
+                    <img
+                      src={selectedTemplate.hero_image_url}
+                      alt={selectedTemplate.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Category Badge */}
+                <Badge className={CATEGORY_COLORS[selectedTemplate.category]}>
+                  {selectedTemplate.category}
+                </Badge>
+
+                {/* Why This Matters */}
+                <Card className="border-2 border-blue-200 bg-blue-50">
+                  <CardContent className="p-6">
+                    <h3 className="font-bold text-lg mb-3 text-blue-900">
+                      💡 Why This Matters
+                    </h3>
+                    {selectedTemplate.why_it_works?.map((reason, idx) => (
+                      <p key={idx} className="text-sm text-gray-800 mb-2">
+                        • {reason}
+                      </p>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Financial Breakdown */}
+                <Card className="border-2 border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">📊 Financial Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Typical Investment</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          ${selectedTemplate.average_cost_min?.toLocaleString()} - ${selectedTemplate.average_cost_max?.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Value Added</p>
+                        <p className="text-xl font-bold text-green-700">
+                          ${selectedTemplate.typical_value_added?.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">ROI</p>
+                        <p className="text-2xl font-bold text-green-700">
+                          {selectedTemplate.average_roi_percent}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Payback</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {selectedTemplate.payback_timeline || 'At Sale'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Net Gain */}
+                    <div className="p-4 bg-white rounded border border-green-300">
+                      <p className="text-sm text-gray-600 mb-1">Estimated Net Gain</p>
+                      <p className="text-3xl font-bold text-green-700">
+                        +${((selectedTemplate.typical_value_added || 0) - ((selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2)).toLocaleString()}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Member Pricing */}
+                {isServiceMember && (
+                  <Card className="border-2 border-purple-300 bg-purple-50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-purple-600" />
+                        ⭐ Your Member Pricing
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(() => {
+                        const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
+                        const discount = calculateMemberDiscount(avgCost, memberTier);
+                        
+                        return (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-purple-600 mb-1">Standard Price</p>
+                                <p className="text-xl font-bold text-gray-900 line-through">
+                                  ${avgCost.toLocaleString()}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-purple-600 mb-1">Your Price</p>
+                                <p className="text-2xl font-bold text-purple-700">
+                                  ${(avgCost - discount.actualSavings).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-3 bg-white rounded border border-purple-200">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">
+                                You Save: ${discount.actualSavings.toLocaleString()} ({discount.percent}% discount)
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {discount.isCapped ? `Maximum ${memberTier.includes('essential') ? 'Essential' : memberTier.includes('premium') ? 'Premium' : 'Elite'} tier savings reached` : `${discount.percent}% member discount applied`}
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* What's Included */}
+                {selectedTemplate.whats_included?.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">🎯 What's Included</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {selectedTemplate.whats_included.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                            <span className="text-green-600 font-bold mt-0.5">✓</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Timeline */}
+                {selectedTemplate.project_duration && (
+                  <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                    <div>
+                      <p className="text-xs text-gray-600">Project Duration</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedTemplate.project_duration}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* DIY Difficulty */}
+                {selectedTemplate.diy_difficulty && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">
+                      🔧 DIY Difficulty: {selectedTemplate.diy_difficulty}
+                    </p>
+                    {selectedTemplate.diy_cost_min && (
+                      <p className="text-xs text-gray-700">
+                        DIY materials only: ${selectedTemplate.diy_cost_min?.toLocaleString()} - ${selectedTemplate.diy_cost_max?.toLocaleString()}
+                        {selectedTemplate.diy_time_estimate && ` • ${selectedTemplate.diy_time_estimate}`}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Investor Benefits */}
+                {selectedTemplate.rental_income_boost && (
+                  <Card className="border-2 border-purple-200 bg-purple-50">
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold text-purple-900 mb-2">🏢 For Investors</h4>
+                      <p className="text-sm text-gray-800 mb-2">
+                        <strong>Rental Income Boost:</strong> +${selectedTemplate.rental_income_boost}/month
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Annual: +${(selectedTemplate.rental_income_boost * 12).toLocaleString()} • 10-Year: +${(selectedTemplate.rental_income_boost * 120).toLocaleString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Best For */}
+                {selectedTemplate.best_for && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs font-semibold text-blue-900 mb-1">
+                      👥 Best For:
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      {selectedTemplate.best_for}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 pt-4 border-t">
+                  <Button
+                    asChild
+                    className="bg-green-600 hover:bg-green-700"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Start This Project
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Link to={createPageUrl('Services')}>
+                      Request Free Quote
+                    </Link>
+                  </Button>
+                </div>
+
               </div>
-              <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Long-term ownership?</p>
-                <p className="text-sm text-gray-700">
-                  Prioritize <strong>Energy Efficiency</strong> upgrades that pay for themselves over time
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Rental properties?</p>
-                <p className="text-sm text-gray-700">
-                  Invest in <strong>Rental Income Boosters</strong> to increase monthly cash flow immediately
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold mb-2" style={{ color: '#1B365D' }}>Aging systems?</p>
-                <p className="text-sm text-gray-700">
-                  Consider <strong>Preventive Replacements</strong> before failures cause expensive damage
-                </p>
-              </div>
-            </div>
-            <Button
-              asChild
-              variant="outline"
-              style={{ minHeight: '48px' }}
-            >
-              <Link to={createPageUrl("Upgrade")}>
-                ← Back to My Projects
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+            </DialogContent>
+          </Dialog>
+        )}
+
       </div>
     </div>
-  );
-}
-
-// Template Card Component
-function TemplateCard({ template, memberDiscount, isServiceMember }) {
-  const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-  const savingsAmount = avgCost * memberDiscount;
-
-  return (
-    <Card className="border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer">
-      <CardContent className="p-0">
-        <Link to={createPageUrl("TemplateDetail") + `?id=${template.id}`}>
-          {/* Image placeholder */}
-          <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-green-100 flex items-center justify-center">
-            {template.hero_image_url ? (
-              <img 
-                src={template.hero_image_url} 
-                alt={template.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Home className="w-16 h-16 text-gray-400" />
-            )}
-          </div>
-
-          <div className="p-4">
-            {/* Category badge */}
-            <Badge className="mb-2 text-xs" style={{ backgroundColor: '#3B82F6' }}>
-              {template.category}
-            </Badge>
-
-            {/* Title */}
-            <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '18px' }}>
-              {template.title}
-            </h3>
-
-            {/* Key metrics */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <p className="text-xs text-gray-600">Investment Range</p>
-                <p className="font-bold text-sm" style={{ color: '#1B365D' }}>
-                  ${template.average_cost_min.toLocaleString()}-{template.average_cost_max.toLocaleString()}
-                </p>
-                {isServiceMember && savingsAmount > 100 && (
-                  <p className="text-xs text-purple-700">
-                    💎 Save ~${Math.round(savingsAmount).toLocaleString()}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Average ROI</p>
-                <p className="font-bold text-2xl" style={{ color: template.average_roi_percent >= 80 ? '#28A745' : '#FF6B35' }}>
-                  {template.average_roi_percent}%
-                </p>
-              </div>
-            </div>
-
-            {/* Value added */}
-            {template.typical_value_added && (
-              <div className="mb-3 p-2 bg-green-50 rounded">
-                <p className="text-xs text-gray-600">Typical Value Added</p>
-                <p className="font-semibold text-green-700">
-                  ${template.typical_value_added.toLocaleString()}
-                </p>
-              </div>
-            )}
-
-            {/* Why it works */}
-            {template.why_it_works && template.why_it_works.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs font-semibold mb-1" style={{ color: '#1B365D' }}>
-                  Why This Works:
-                </p>
-                <ul className="text-xs text-gray-700 space-y-1">
-                  {template.why_it_works.slice(0, 2).map((reason, idx) => (
-                    <li key={idx} className="flex items-start gap-1">
-                      <span className="text-green-600">✓</span>
-                      <span>{reason}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Special indicators */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {template.rental_income_boost > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  +${template.rental_income_boost}/mo rent
-                </Badge>
-              )}
-              {template.annual_savings > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  ${template.annual_savings}/yr savings
-                </Badge>
-              )}
-              {template.payback_timeline && (
-                <Badge variant="outline" className="text-xs">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {template.payback_timeline}
-                </Badge>
-              )}
-            </div>
-
-            {/* CTA */}
-            <div className="flex gap-2">
-              <Button
-                asChild
-                className="flex-1 font-semibold"
-                style={{ backgroundColor: '#3B82F6', minHeight: '44px' }}
-              >
-                <Link to={createPageUrl("TemplateDetail") + `?id=${template.id}`}>
-                  View Details
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </Link>
-      </CardContent>
-    </Card>
   );
 }
