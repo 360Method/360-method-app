@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, startOfDay, getMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, addDays, subDays, startOfDay, getMonth } from "date-fns";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,6 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     
-    // Find task from sidebar drag or calendar drag
     let taskToMove = draggedTask;
     if (!taskToMove && taskId) {
       taskToMove = tasks.find(t => t.id === taskId);
@@ -100,7 +99,9 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
   };
 
   const handlePrev = () => {
-    if (viewMode === 'month' || viewMode === 'season' || viewMode === 'day') {
+    if (viewMode === 'day') {
+      setCurrentMonth(subDays(currentMonth, 1));
+    } else if (viewMode === 'month' || viewMode === 'season') {
       setCurrentMonth(subMonths(currentMonth, viewMode === 'season' ? 3 : 1));
     } else {
       setCurrentWeek(subWeeks(currentWeek, 1));
@@ -108,7 +109,9 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
   };
 
   const handleNext = () => {
-    if (viewMode === 'month' || viewMode === 'season' || viewMode === 'day') {
+    if (viewMode === 'day') {
+      setCurrentMonth(addDays(currentMonth, 1));
+    } else if (viewMode === 'month' || viewMode === 'season') {
       setCurrentMonth(addMonths(currentMonth, viewMode === 'season' ? 3 : 1));
     } else {
       setCurrentWeek(addWeeks(currentWeek, 1));
@@ -119,7 +122,6 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
     const dayToShow = startOfDay(currentMonth);
     const tasksOnDay = getTasksForDate(tasks, dayToShow);
     
-    // Group by time range
     const timeRanges = [
       { label: 'Morning', emoji: '🌅', hours: '6am - 12pm', tasks: tasksOnDay.filter(t => !t.time_range || t.time_range === 'morning') },
       { label: 'Afternoon', emoji: '☀️', hours: '12pm - 6pm', tasks: tasksOnDay.filter(t => t.time_range === 'afternoon') },
