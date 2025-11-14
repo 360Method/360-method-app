@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, MapPin, Home, Save, Lightbulb } from "lucide-react";
+import { ArrowRight, ArrowLeft, MapPin, Home, Save, Lightbulb, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 
@@ -26,12 +26,18 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
     address_verified: false,
     property_type: '',
     year_built: null,
+    bedrooms: null,
+    bathrooms: null,
+    square_footage: null,
     property_use_type: 'primary',
     door_count: 1,
     climate_zone: 'Zone 4: Temperate/Coastal (Pacific NW)'
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [isLoadingPropertyData, setIsLoadingPropertyData] = useState(false);
+  const [autoFillMessage, setAutoFillMessage] = useState('');
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -50,6 +56,137 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
       onComplete(savedProperty);
     }
   });
+
+  const handleAddressSelect = async (addressData) => {
+    console.log('Address selected:', addressData);
+    
+    setFormData(prev => ({
+      ...prev,
+      address: addressData.formatted_address || '',
+      street_address: addressData.street_address || '',
+      city: addressData.city || '',
+      state: addressData.state || '',
+      zip_code: addressData.zip_code || '',
+      county: addressData.county || '',
+      formatted_address: addressData.formatted_address || '',
+      place_id: addressData.place_id || '',
+      coordinates: addressData.coordinates || null,
+      address_verified: false, // Reset until user confirms
+      verification_source: addressData.verification_source || 'google_maps'
+    }));
+    
+    setShowMap(true);
+    setAutoFillMessage('');
+    
+    // Fetch property data from public records
+    await fetchPropertyDataViaWebSearch(addressData);
+  };
+
+  const fetchPropertyDataViaWebSearch = async (address) => {
+    setIsLoadingPropertyData(true);
+    
+    try {
+      console.log('Searching for property data:', address.formatted_address);
+      
+      // Search public listing sites
+      const searchQuery = `${address.formatted_address} property details year built bedrooms bathrooms square feet`;
+      
+      const searchResults = await base44.integrations.Core.InvokeLLM({
+        prompt: `Find property details for this address: ${address.formatted_address}
+
+Please search for publicly available information about this property including:
+- Year built
+- Number of bedrooms
+- Number of bathrooms  
+- Square footage
+- Property type
+
+Return the information in this JSON format:
+{
+  "year_built": number or null,
+  "bedrooms": number or null,
+  "bathrooms": number or null,
+  "square_footage": number or null,
+  "property_type": string or null,
+  "confidence": "high" | "medium" | "low" | "none",
+  "source": "description of source"
+}
+
+If you cannot find specific information, return null for those fields and set confidence to "none".`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            year_built: { type: ["number", "null"] },
+            bedrooms: { type: ["number", "null"] },
+            bathrooms: { type: ["number", "null"] },
+            square_footage: { type: ["number", "null"] },
+            property_type: { type: ["string", "null"] },
+            confidence: { type: "string" },
+            source: { type: "string" }
+          }
+        }
+      });
+      
+      console.log('Property data received:', searchResults);
+      
+      // Auto-fill form data if property details found
+      if (searchResults && (searchResults.year_built || searchResults.bedrooms || searchResults.square_footage)) {
+        const fieldsFound = [];
+        const updates = {};
+        
+        if (searchResults.year_built) {
+          updates.year_built = searchResults.year_built;
+          fieldsFound.push('year built');
+        }
+        if (searchResults.bedrooms) {
+          updates.bedrooms = searchResults.bedrooms;
+          fieldsFound.push('bedrooms');
+        }
+        if (searchResults.bathrooms) {
+          updates.bathrooms = searchResults.bathrooms;
+          fieldsFound.push('bathrooms');
+        }
+        if (searchResults.square_footage) {
+          updates.square_footage = searchResults.square_footage;
+          fieldsFound.push('square footage');
+        }
+        if (searchResults.property_type) {
+          updates.property_type = searchResults.property_type;
+          fieldsFound.push('property type');
+        }
+        
+        setFormData(prev => ({ ...prev, ...updates }));
+        
+        // Show success message
+        if (fieldsFound.length > 0) {
+          setAutoFillMessage(`✓ Found ${fieldsFound.join(', ')} from public records (${searchResults.confidence} confidence)`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error fetching property data:', error);
+    } finally {
+      setIsLoadingPropertyData(false);
+    }
+  };
+
+  const handleConfirmAddress = () => {
+    setFormData(prev => ({
+      ...prev,
+      address_verified: true
+    }));
+  };
+
+  const handleReenterAddress = () => {
+    setShowMap(false);
+    setAutoFillMessage('');
+    setFormData(prev => ({
+      ...prev,
+      address_verified: false,
+      coordinates: null
+    }));
+  };
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -150,34 +287,95 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                   </label>
                   <AddressAutocomplete
                     initialValue={formData.address}
-                    onAddressSelect={(addressData) => {
-                      // AddressAutocomplete returns a single addressData object
-                      setFormData({
-                        ...formData,
-                        address: addressData.formatted_address || '',
-                        street_address: addressData.street_address || '',
-                        city: addressData.city || '',
-                        state: addressData.state || '',
-                        zip_code: addressData.zip_code || '',
-                        county: addressData.county || '',
-                        formatted_address: addressData.formatted_address || '',
-                        place_id: addressData.place_id || '',
-                        coordinates: addressData.coordinates || null,
-                        address_verified: addressData.address_verified || true,
-                        verification_source: addressData.verification_source || 'google_maps'
-                      });
-                    }}
+                    onAddressSelect={handleAddressSelect}
                   />
                 </div>
 
-                {formData.address && formData.coordinates && (
-                  <AddressVerificationMap
-                    address={formData.address}
-                    coordinates={formData.coordinates}
-                    onConfirm={() => {
-                      setFormData({ ...formData, address_verified: true });
-                    }}
-                  />
+                {/* Loading state while fetching property data */}
+                {isLoadingPropertyData && (
+                  <Card className="border-2 border-blue-300 bg-blue-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        <p className="text-sm text-gray-700">Searching public records for property details...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Auto-fill success message */}
+                {autoFillMessage && (
+                  <Card className="border-2 border-green-300 bg-green-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Sparkles className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-green-900 mb-1">
+                            {autoFillMessage}
+                          </p>
+                          <p className="text-xs text-gray-700">
+                            You can verify and edit these details in the next step
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Map - STAYS VISIBLE until confirmed */}
+                {showMap && formData.coordinates && (
+                  <div className="space-y-4">
+                    <AddressVerificationMap
+                      address={formData.formatted_address}
+                      coordinates={formData.coordinates}
+                    />
+
+                    {/* Confirmation UI - REQUIRED to proceed */}
+                    {!formData.address_verified ? (
+                      <Card className="border-2 border-blue-300 bg-blue-50">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">
+                                Is this the correct location?
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                {formData.formatted_address}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={handleConfirmAddress}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                style={{ minHeight: '48px' }}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Yes, this is correct
+                              </Button>
+                              <Button
+                                onClick={handleReenterAddress}
+                                variant="outline"
+                                style={{ minHeight: '48px' }}
+                              >
+                                ← No, let me re-enter
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Card className="border-2 border-green-300 bg-green-50">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <p className="text-sm font-semibold text-green-900">
+                              Address verified!
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 )}
 
                 {/* Why We Ask */}
@@ -187,7 +385,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                     <div>
                       <p className="text-xs font-semibold text-blue-900">Why We Ask This</p>
                       <p className="text-xs text-blue-800">
-                        Your location determines climate-specific maintenance needs. Pacific NW homes need different care than Arizona homes.
+                        Your location determines climate-specific maintenance needs. We'll also search public records to help fill in property details.
                       </p>
                     </div>
                   </div>
@@ -198,12 +396,37 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
             {/* STEP 2: PROPERTY BASICS */}
             {currentStep === 2 && (
               <div className="space-y-4">
+                {/* Show banner if any data was auto-filled */}
+                {(formData.year_built || formData.bedrooms || formData.bathrooms || formData.square_footage) && autoFillMessage && (
+                  <Card className="border-2 border-blue-300 bg-blue-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-blue-900 mb-1">
+                            Property details pre-filled from public records
+                          </p>
+                          <p className="text-xs text-gray-700">
+                            We found some information about your property. Please verify these details are correct and update any that aren't.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Property Type
+                    {formData.property_type && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Auto-filled
+                      </Badge>
+                    )}
                   </label>
                   <Select value={formData.property_type} onValueChange={(value) => setFormData({ ...formData, property_type: value })}>
-                    <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectTrigger style={{ minHeight: '48px' }} className={formData.property_type ? 'border-green-300 bg-green-50/30' : ''}>
                       <SelectValue placeholder="Select property type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -219,14 +442,20 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Year Built (approximate is fine)
+                    {formData.year_built && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Auto-filled
+                      </Badge>
+                    )}
                   </label>
                   <Select 
                     value={formData.year_built?.toString()} 
                     onValueChange={(value) => setFormData({ ...formData, year_built: parseInt(value) })}
                   >
-                    <SelectTrigger style={{ minHeight: '48px' }}>
+                    <SelectTrigger style={{ minHeight: '48px' }} className={formData.year_built ? 'border-green-300 bg-green-50/30' : ''}>
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -235,6 +464,80 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                       ))}
                     </SelectContent>
                   </Select>
+                  {formData.year_built && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Property is approximately {CURRENT_YEAR - formData.year_built} years old
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    Bedrooms (optional)
+                    {formData.bedrooms && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Auto-filled
+                      </Badge>
+                    )}
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.bedrooms || ''}
+                    onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || null })}
+                    placeholder="e.g., 3"
+                    min="0"
+                    max="20"
+                    style={{ minHeight: '48px' }}
+                    className={formData.bedrooms ? 'border-green-300 bg-green-50/30' : ''}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    Bathrooms (optional)
+                    {formData.bathrooms && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Auto-filled
+                      </Badge>
+                    )}
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={formData.bathrooms || ''}
+                    onChange={(e) => setFormData({ ...formData, bathrooms: parseFloat(e.target.value) || null })}
+                    placeholder="e.g., 2.5"
+                    min="0"
+                    max="20"
+                    style={{ minHeight: '48px' }}
+                    className={formData.bathrooms ? 'border-green-300 bg-green-50/30' : ''}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use .5 for half baths (e.g., 2.5 = 2 full + 1 half bath)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    Square Footage (optional)
+                    {formData.square_footage && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Auto-filled
+                      </Badge>
+                    )}
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.square_footage || ''}
+                    onChange={(e) => setFormData({ ...formData, square_footage: parseInt(e.target.value) || null })}
+                    placeholder="e.g., 2000"
+                    min="0"
+                    style={{ minHeight: '48px' }}
+                    className={formData.square_footage ? 'border-green-300 bg-green-50/30' : ''}
+                  />
                 </div>
 
                 {/* Why We Ask */}
@@ -244,7 +547,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                     <div>
                       <p className="text-xs font-semibold text-blue-900">Why We Ask This</p>
                       <p className="text-xs text-blue-800">
-                        Year built helps us estimate system ages and predict when major replacements are needed. Property type determines which systems to track.
+                        Property age and size help us provide accurate maintenance schedules. Older properties need more frequent inspections, and larger homes have more systems to track.
                       </p>
                     </div>
                   </div>

@@ -1,162 +1,157 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MapPin, Maximize2, CheckCircle } from "lucide-react";
+import React, { useEffect, useRef, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 
-export default function AddressVerificationMap({ coordinates, address, onConfirm }) {
-  const [mapLoaded, setMapLoaded] = React.useState(false);
-  const [showFullscreen, setShowFullscreen] = React.useState(false);
-  const [confirmed, setConfirmed] = React.useState(false);
-  const mapRef = React.useRef(null);
-  const fullscreenMapRef = React.useRef(null);
+export default function AddressVerificationMap({ 
+  address, 
+  coordinates, 
+  zoom = 17,
+  height = '350px',
+  onMapLoad 
+}) {
+  const mapRef = useRef(null);
+  const [map, setMap] = useState(null);
+  const [marker, setMarker] = useState(null);
 
-  // Debug: Check if onConfirm is provided
-  React.useEffect(() => {
-    if (onConfirm && typeof onConfirm !== 'function') {
-      console.error('AddressVerificationMap: onConfirm is not a function', typeof onConfirm);
-    }
-  }, [onConfirm]);
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (!coordinates || !window.google) return;
 
-    const map = new window.google.maps.Map(mapRef.current, {
-      center: { lat: coordinates.lat, lng: coordinates.lng },
-      zoom: 17,
+    // Initialize map with better styling
+    const newMap = new window.google.maps.Map(mapRef.current, {
+      center: coordinates,
+      zoom: zoom,
       mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: window.google.maps.ControlPosition.TOP_RIGHT,
+        mapTypeIds: ['roadmap', 'satellite']
+      },
       streetViewControl: true,
-      fullscreenControl: false
-    });
-
-    new window.google.maps.Marker({
-      position: { lat: coordinates.lat, lng: coordinates.lng },
-      map: map,
-      title: address,
-      animation: window.google.maps.Animation.DROP
-    });
-
-    setMapLoaded(true);
-  }, [coordinates, address]);
-
-  React.useEffect(() => {
-    if (!showFullscreen || !coordinates || !window.google) return;
-
-    const map = new window.google.maps.Map(fullscreenMapRef.current, {
-      center: { lat: coordinates.lat, lng: coordinates.lng },
-      zoom: 17,
-      mapTypeControl: true,
-      streetViewControl: true,
+      streetViewControlOptions: {
+        position: window.google.maps.ControlPosition.RIGHT_TOP
+      },
       fullscreenControl: true,
-      mapTypeId: 'roadmap'
+      fullscreenControlOptions: {
+        position: window.google.maps.ControlPosition.RIGHT_TOP
+      },
+      zoomControl: true,
+      zoomControlOptions: {
+        position: window.google.maps.ControlPosition.RIGHT_CENTER
+      },
+      gestureHandling: 'cooperative', // Better mobile experience
     });
 
-    new window.google.maps.Marker({
-      position: { lat: coordinates.lat, lng: coordinates.lng },
-      map: map,
+    // Add animated marker
+    const newMarker = new window.google.maps.Marker({
+      position: coordinates,
+      map: newMap,
       title: address,
       animation: window.google.maps.Animation.DROP,
-      draggable: false
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: '#3B82F6',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 3
+      }
     });
-  }, [showFullscreen, coordinates, address]);
 
-  const handleConfirm = () => {
-    setConfirmed(true);
-    // Only call onConfirm if it's provided and is a function
-    if (onConfirm && typeof onConfirm === 'function') {
-      onConfirm();
-    }
-  };
-
-  if (!coordinates) return null;
-
-  return (
-    <>
-      <Card className={`border-2 ${confirmed ? 'border-green-500 bg-green-50' : 'border-blue-300'}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold flex items-center gap-2" style={{ color: '#1B365D' }}>
-              {confirmed ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  Location Confirmed
-                </>
-              ) : (
-                <>
-                  <MapPin className="w-5 h-5 text-blue-600" />
-                  Verify Location
-                </>
-              )}
-            </h4>
-            <Button
-              onClick={() => setShowFullscreen(true)}
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:text-blue-700"
-            >
-              <Maximize2 className="w-4 h-4 mr-1" />
-              Expand
-            </Button>
+    // Add info window with rich content
+    const infoWindow = new window.google.maps.InfoWindow({
+      content: `
+        <div style="padding: 8px; max-width: 250px;">
+          <div style="font-weight: 600; color: #1F2937; margin-bottom: 8px;">
+            📍 Property Location
           </div>
-
-          <div
-            ref={mapRef}
-            className="w-full h-48 rounded-lg border-2 border-gray-200 mb-3"
-            style={{ backgroundColor: '#e5e7eb' }}
-          />
-
-          {!confirmed ? (
-            <>
-              <p className="text-sm text-gray-700 mb-3">
-                Is this the correct location for your property?
-              </p>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleConfirm}
-                  className="flex-1"
-                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                >
-                  ✓ Yes, This is Correct
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="bg-green-100 border-2 border-green-400 rounded-lg p-3">
-              <p className="text-sm font-semibold text-green-900 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Location verified! Click "Next" below to continue.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Fullscreen Map Modal */}
-      {showFullscreen && (
-        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg" style={{ color: '#1B365D' }}>
-                  Property Location
-                </h3>
-                <p className="text-sm text-gray-600">{address}</p>
-              </div>
-              <Button
-                onClick={() => setShowFullscreen(false)}
-                variant="outline"
-              >
-                Close
-              </Button>
-            </div>
-            <div
-              ref={fullscreenMapRef}
-              className="flex-1"
-              style={{ backgroundColor: '#e5e7eb' }}
-            />
+          <div style="font-size: 13px; color: #4B5563; margin-bottom: 8px;">
+            ${address}
+          </div>
+          <div>
+            <a 
+              href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="display: inline-flex; align-items: center; gap: 4px; color: #3B82F6; text-decoration: none; font-size: 12px;"
+            >
+              Open in Google Maps
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </a>
           </div>
         </div>
-      )}
-    </>
+      `
+    });
+
+    // Open info window on marker click
+    newMarker.addListener('click', () => {
+      infoWindow.open(newMap, newMarker);
+    });
+
+    // Auto-open info window after a brief delay
+    setTimeout(() => {
+      infoWindow.open(newMap, newMarker);
+    }, 500);
+
+    // Add property boundary circle (rough estimate)
+    const propertyCircle = new window.google.maps.Circle({
+      strokeColor: '#3B82F6',
+      strokeOpacity: 0.6,
+      strokeWeight: 2,
+      fillColor: '#3B82F6',
+      fillOpacity: 0.1,
+      map: newMap,
+      center: coordinates,
+      radius: 30 // ~30 meters radius (typical residential lot)
+    });
+
+    setMap(newMap);
+    setMarker(newMarker);
+
+    if (onMapLoad) {
+      onMapLoad(newMap, newMarker);
+    }
+
+    // Cleanup
+    return () => {
+      if (newMarker) newMarker.setMap(null);
+      if (propertyCircle) propertyCircle.setMap(null);
+    };
+  }, [coordinates, address, zoom]);
+
+  return (
+    <div className="relative">
+      {/* Map container */}
+      <div 
+        ref={mapRef} 
+        style={{ height, width: '100%' }} 
+        className="rounded-lg border-2 border-gray-300 shadow-md"
+      />
+      
+      {/* Coordinates display (bottom left) */}
+      <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded text-xs text-gray-600 shadow-sm">
+        <span className="font-mono">
+          {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+        </span>
+      </div>
+
+      {/* Open in Google Maps link (top right overlay) */}
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-gray-200 hover:bg-white transition-colors flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600"
+      >
+        <ExternalLink className="w-4 h-4" />
+        Open in Google Maps
+      </a>
+
+      {/* Map type hint */}
+      <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded text-xs text-gray-600 shadow-sm">
+        💡 Switch to satellite view to see the property
+      </div>
+    </div>
   );
 }
