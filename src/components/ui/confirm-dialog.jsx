@@ -2,15 +2,15 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, AlertCircle, Info } from "lucide-react";
 
-export default function ConfirmDialog({
-  open,
+export function ConfirmDialog({
+  isOpen,
   onClose,
   onConfirm,
   title,
-  message,
+  description,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "default" // 'default', 'destructive', 'warning'
+  confirmVariant = "default" // 'default', 'destructive', 'warning'
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -29,10 +29,10 @@ export default function ConfirmDialog({
     }
   };
 
-  if (!open) return null;
+  if (!isOpen) return null;
 
   const getVariantStyles = () => {
-    switch (variant) {
+    switch (confirmVariant) {
       case 'destructive':
         return {
           bg: 'bg-red-50',
@@ -78,7 +78,7 @@ export default function ConfirmDialog({
               {title}
             </h3>
             <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-              {message}
+              {description}
             </p>
           </div>
         </div>
@@ -105,3 +105,5 @@ export default function ConfirmDialog({
     </div>
   );
 }
+
+export default ConfirmDialog;
