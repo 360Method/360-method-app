@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, startOfDay } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,24 +17,43 @@ function getTasksForDate(tasks, date) {
   return tasks.filter(task => {
     if (!task.scheduled_date) return false;
     try {
-      const taskDate = new Date(task.scheduled_date);
-      return isSameDay(taskDate, date);
+      const taskDate = startOfDay(new Date(task.scheduled_date));
+      const compareDate = startOfDay(date);
+      return isSameDay(taskDate, compareDate);
     } catch {
       return false;
     }
   });
 }
 
-export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onTaskDrop }) {
+export default function CalendarView({ tasks = [], viewMode = 'month', onTaskClick, onDateClick, onTaskDrop }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentWeek, setCurrentWeek] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState(null);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
-  
-  const daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  let daysInCalendar = [];
+  let headerText = '';
+
+  if (viewMode === 'month') {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calendarStart = startOfWeek(monthStart);
+    const calendarEnd = endOfWeek(monthEnd);
+    daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    headerText = format(currentMonth, 'MMMM yyyy');
+  } else if (viewMode === 'week') {
+    const weekStart = startOfWeek(currentWeek);
+    const weekEnd = endOfWeek(currentWeek);
+    daysInCalendar = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    headerText = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+  } else if (viewMode === 'season') {
+    const seasonStart = startOfMonth(currentMonth);
+    const seasonEnd = endOfMonth(addMonths(currentMonth, 2));
+    const calendarStart = startOfWeek(seasonStart);
+    const calendarEnd = endOfWeek(seasonEnd);
+    daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    headerText = `${format(seasonStart, 'MMMM')} - ${format(seasonEnd, 'MMMM yyyy')}`;
+  }
 
   const handleDragStart = (e, task) => {
     setDraggedTask(task);
@@ -55,15 +74,31 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
     setDraggedTask(null);
   };
 
+  const handlePrev = () => {
+    if (viewMode === 'month' || viewMode === 'season') {
+      setCurrentMonth(subMonths(currentMonth, viewMode === 'season' ? 3 : 1));
+    } else {
+      setCurrentWeek(subWeeks(currentWeek, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'month' || viewMode === 'season') {
+      setCurrentMonth(addMonths(currentMonth, viewMode === 'season' ? 3 : 1));
+    } else {
+      setCurrentWeek(addWeeks(currentWeek, 1));
+    }
+  };
+
   return (
     <div className="calendar-container bg-white rounded-lg border-2 border-gray-200 p-3 md:p-4">
       
-      {/* HEADER: Month navigation */}
+      {/* HEADER: Navigation */}
       <div className="flex items-center justify-between mb-4 gap-2">
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          onClick={handlePrev}
           className="flex items-center gap-1"
           style={{ minHeight: '44px', minWidth: '44px' }}
         >
@@ -72,13 +107,13 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
         </Button>
         
         <h2 className="text-lg md:text-2xl font-bold text-gray-900">
-          {format(currentMonth, 'MMMM yyyy')}
+          {headerText}
         </h2>
         
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          onClick={handleNext}
           className="flex items-center gap-1"
           style={{ minHeight: '44px', minWidth: '44px' }}
         >
@@ -102,9 +137,8 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
         {daysInCalendar.map((day, idx) => {
           const tasksOnDay = getTasksForDate(tasks, day);
           const isToday = isSameDay(day, new Date());
-          const isCurrentMonth = isSameMonth(day, currentMonth);
+          const isCurrentMonth = viewMode === 'week' || isSameMonth(day, currentMonth);
           
-          // NEW: Calculate workload for this day
           const totalHours = tasksOnDay.reduce((sum, t) => sum + (t.estimated_hours || t.diy_time_hours || 0), 0);
           const availableHours = 8 - totalHours;
           
@@ -158,7 +192,6 @@ export default function CalendarView({ tasks = [], onTaskClick, onDateClick, onT
                 )}
               </div>
               
-              {/* NEW: Available Hours Indicator */}
               {isCurrentMonth && totalHours > 0 && (
                 <div className="text-xs mt-1 font-semibold">
                   {availableHours > 0 ? (

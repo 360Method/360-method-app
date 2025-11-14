@@ -42,6 +42,7 @@ export default function SchedulePage() {
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
   const [viewMode, setViewMode] = React.useState('unscheduled');
+  const [calendarViewMode, setCalendarViewMode] = React.useState('month'); // NEW
   const [showQuickDatePicker, setShowQuickDatePicker] = React.useState(false);
   const [selectedTaskForPicker, setSelectedTaskForPicker] = React.useState(null);
   const [selectedTasks, setSelectedTasks] = React.useState([]);
@@ -78,7 +79,6 @@ export default function SchedulePage() {
     enabled: properties.length > 0 && selectedProperty !== null
   });
 
-  // NEW: Query for seasonal reminders
   const { data: seasonalReminders = [] } = useQuery({
     queryKey: ['seasonal-reminders', selectedProperty],
     queryFn: async () => {
@@ -98,14 +98,11 @@ export default function SchedulePage() {
     }
   });
 
-  // Filter tasks that have execution_method set
-  const tasksReadyForScheduling = allTasks.filter(task => 
-    task.execution_method && 
-    (task.status === 'Identified' || task.status === 'Scheduled')
-  );
+  // Filter tasks that are in "Scheduled" status (came from Prioritize)
+  const scheduledTasks = allTasks.filter(task => task.status === 'Scheduled');
 
-  const tasksWithDates = tasksReadyForScheduling.filter(t => t.scheduled_date);
-  const tasksWithoutDates = tasksReadyForScheduling.filter(t => !t.scheduled_date);
+  const tasksWithDates = scheduledTasks.filter(t => t.scheduled_date);
+  const tasksWithoutDates = scheduledTasks.filter(t => !t.scheduled_date);
 
   // Simple flat sort by priority
   const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
@@ -113,15 +110,15 @@ export default function SchedulePage() {
     return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
   });
 
-  const totalScheduling = tasksReadyForScheduling.length;
+  const totalScheduling = scheduledTasks.length;
   const tasksReadyForExecution = tasksWithDates.length;
   const awaitingDates = tasksWithoutDates.length;
 
   const today = startOfDay(new Date());
-  const next7Days = tasksReadyForScheduling.filter(t => {
+  const next7Days = scheduledTasks.filter(t => {
     if (!t.scheduled_date) return false;
     try {
-      const taskDate = startOfDay(parseISO(t.scheduled_date));
+      const taskDate = startOfDay(new Date(t.scheduled_date));
       const daysDiff = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
       return daysDiff >= 0 && daysDiff <= 7;
     } catch {
@@ -133,7 +130,7 @@ export default function SchedulePage() {
     const workloadMap = {};
     tasks.forEach(task => {
       if (task.scheduled_date && (task.estimated_hours || task.diy_time_hours)) {
-        const dateKey = format(parseISO(task.scheduled_date), 'yyyy-MM-dd');
+        const dateKey = format(new Date(task.scheduled_date), 'yyyy-MM-dd');
         workloadMap[dateKey] = (workloadMap[dateKey] || 0) + (task.estimated_hours || task.diy_time_hours);
       }
     });
@@ -146,21 +143,23 @@ export default function SchedulePage() {
     .sort((a, b) => new Date(a[0]) - new Date(b[0]));
 
   const handleTaskDrop = (task, date) => {
+    const formattedDate = format(date, 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
-        scheduled_date: format(date, 'yyyy-MM-dd'),
+        scheduled_date: formattedDate,
         status: 'Scheduled',
-        last_reminded_date: new Date().toISOString() // Update last_reminded_date here too if scheduled by drag/drop
+        last_reminded_date: new Date().toISOString()
       }
     });
   };
 
   const handleSetDate = (task, date) => {
+    const formattedDate = format(date, 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
-        scheduled_date: format(date, 'yyyy-MM-dd'),
+        scheduled_date: formattedDate,
         status: 'Scheduled',
         last_reminded_date: new Date().toISOString()
       }
@@ -174,13 +173,13 @@ export default function SchedulePage() {
         status: 'Identified',
         scheduled_date: null,
         execution_method: null,
-        last_reminded_date: new Date().toISOString() // Snooze by updating this.
+        last_reminded_date: new Date().toISOString()
       }
     });
   };
 
   const handleTaskClick = (task, event) => {
-    if (event.metaKey || event.ctrlKey) {
+    if (event?.metaKey || event?.ctrlKey) {
       if (selectedTasks.includes(task.id)) {
         setSelectedTasks(selectedTasks.filter(id => id !== task.id));
       } else {
@@ -309,7 +308,6 @@ export default function SchedulePage() {
           </Card>
         )}
 
-        {/* SEASONAL REMINDERS PANEL */}
         {seasonalReminders.length > 0 && (
           <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
             <CardHeader>
@@ -342,7 +340,7 @@ export default function SchedulePage() {
                       setSelectedTaskForPicker(task);
                       setShowQuickDatePicker(true);
                     }}
-                    onSnooze={handleSendBackToPrioritize} // Re-using handleSendBackToPrioritize for snooze functionality
+                    onSnooze={handleSendBackToPrioritize}
                   />
                 ))}
               </div>
@@ -407,31 +405,49 @@ export default function SchedulePage() {
           </Card>
         </div>
 
-        {/* View Mode Selector */}
+        {/* View Mode Selector - UPDATED with calendar view modes */}
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="font-bold text-yellow-900">View Mode:</label>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  onClick={() => setViewMode('unscheduled')}
-                  variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
-                  size="sm"
-                  className={viewMode === 'unscheduled' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
-                  style={{ minHeight: '44px' }}
-                >
-                  📝 Tasks Needing Dates ({awaitingDates})
-                </Button>
-                <Button
-                  onClick={() => setViewMode('calendar')}
-                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                  size="sm"
-                  className={viewMode === 'calendar' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
-                  style={{ minHeight: '44px' }}
-                >
-                  📅 Calendar View ({tasksReadyForExecution})
-                </Button>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="font-bold text-yellow-900">View:</label>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    onClick={() => setViewMode('unscheduled')}
+                    variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
+                    size="sm"
+                    className={viewMode === 'unscheduled' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                    style={{ minHeight: '44px' }}
+                  >
+                    📝 Needs Dates ({awaitingDates})
+                  </Button>
+                  <Button
+                    onClick={() => setViewMode('calendar')}
+                    variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                    size="sm"
+                    className={viewMode === 'calendar' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                    style={{ minHeight: '44px' }}
+                  >
+                    📅 Calendar ({tasksReadyForExecution})
+                  </Button>
+                </div>
               </div>
+
+              {viewMode === 'calendar' && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Calendar View:</label>
+                  <Select value={calendarViewMode} onValueChange={setCalendarViewMode}>
+                    <SelectTrigger className="w-32" style={{ minHeight: '44px' }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Month</SelectItem>
+                      <SelectItem value="week">Week</SelectItem>
+                      <SelectItem value="season">Season</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -539,6 +555,7 @@ export default function SchedulePage() {
             <div className="lg:col-span-3 order-1 lg:order-2">
               <CalendarView 
                 tasks={tasksWithDates}
+                viewMode={calendarViewMode}
                 onTaskClick={(task) => {
                   setSelectedTaskForPicker(task);
                   setShowQuickDatePicker(true);
@@ -559,7 +576,7 @@ export default function SchedulePage() {
                       <div className="text-sm text-orange-800 space-y-1">
                         {overloadedDays.map(([date, hours]) => (
                           <div key={date}>
-                            <strong>{format(parseISO(date), 'MMM d, yyyy')}</strong>: {hours.toFixed(1)} hours scheduled
+                            <strong>{format(new Date(date), 'MMM d, yyyy')}</strong>: {hours.toFixed(1)} hours scheduled
                           </div>
                         ))}
                       </div>
@@ -669,6 +686,7 @@ export default function SchedulePage() {
         {showQuickDatePicker && selectedTaskForPicker && (
           <QuickDatePicker
             task={selectedTaskForPicker}
+            property={currentProperty || properties.find(p => p.id === selectedTaskForPicker.property_id)}
             onSchedule={(task, date) => {
               handleSetDate(task, date);
             }}
@@ -676,7 +694,7 @@ export default function SchedulePage() {
               setShowQuickDatePicker(false);
               setSelectedTaskForPicker(null);
             }}
-            onSnooze={handleSendBackToPrioritize} // Add snooze option to quick date picker
+            onSnooze={handleSendBackToPrioritize}
           />
         )}
 
