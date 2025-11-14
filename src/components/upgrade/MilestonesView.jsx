@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle2, Circle, Clock, Camera, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Camera, MessageSquare, ChevronDown, ChevronRight, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
