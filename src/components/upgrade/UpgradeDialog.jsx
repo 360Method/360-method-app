@@ -8,21 +8,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Sparkles } from "lucide-react";
+import { initializeMilestones } from './upgradeMilestones';
 
-const CATEGORIES = ["Energy Efficiency", "Safety", "Comfort", "Property Value", "Rental Appeal"];
+const CATEGORIES = ["High ROI Renovations", "Energy Efficiency", "Rental Income Boosters", "Preventive Replacements", "Curb Appeal", "Interior Updates", "Safety", "Comfort", "Property Value", "Rental Appeal"];
 
 export default function UpgradeDialog({ properties, project, templateId, memberDiscount, onComplete, onCancel }) {
   const [selectedProperty, setSelectedProperty] = React.useState(project?.property_id || '');
   const [formData, setFormData] = React.useState({
     title: "",
-    category: "Energy Efficiency",
+    category: "High ROI Renovations",
     description: "",
     current_state: "",
     upgraded_state: "",
     investment_required: "",
     annual_savings: "",
     property_value_impact: "",
-    status: "Identified"
+    status: "Identified",
+    project_manager: "DIY"
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showSuccess, setShowSuccess] = React.useState(false);
@@ -45,14 +47,15 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
       // Editing existing project
       setFormData({
         title: project.title || "",
-        category: project.category || "Energy Efficiency",
+        category: project.category || "High ROI Renovations",
         description: project.description || "",
         current_state: project.current_state || "",
         upgraded_state: project.upgraded_state || "",
         investment_required: project.investment_required || "",
         annual_savings: project.annual_savings || "",
         property_value_impact: project.property_value_impact || "",
-        status: project.status || "Identified"
+        status: project.status || "Identified",
+        project_manager: project.project_manager || "DIY"
       });
       setSelectedProperty(project.property_id);
     } else if (template) {
@@ -60,14 +63,15 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
       const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
       setFormData({
         title: template.title || "",
-        category: template.category || "Energy Efficiency",
+        category: template.category || "High ROI Renovations",
         description: template.why_it_works?.join(' ') || "",
         current_state: "",
         upgraded_state: "",
         investment_required: avgCost.toString(),
         annual_savings: template.annual_savings?.toString() || "",
         property_value_impact: template.typical_value_added?.toString() || "",
-        status: "Planned"
+        status: "Planned",
+        project_manager: "DIY"
       });
     }
   }, [project, template]);
@@ -96,6 +100,17 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
         );
       }
 
+      // Initialize milestones for new projects from template
+      if (!project?.id && template) {
+        const milestones = initializeMilestones(template, submitData.title);
+        submitData.milestones = milestones;
+        submitData.progress_percentage = 0;
+        submitData.current_milestone = milestones[0]?.title || 'Not Started';
+        submitData.template_id = template.id;
+        
+        console.log('✨ Initialized', milestones.length, 'milestones for project');
+      }
+
       console.log('💾 Saving upgrade project:', submitData);
 
       if (project?.id) {
@@ -120,6 +135,7 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
     onError: (error) => {
       console.error('❌ Error saving upgrade project:', error);
       alert('Failed to save project. Please try again.');
+      setIsSubmitting(false);
     }
   });
 
@@ -147,6 +163,8 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
             <p className="text-gray-600 mb-4">
               {project 
                 ? 'Your changes have been saved.'
+                : template 
+                ? `Your "${formData.title}" project is ready with ${template ? 'guided milestones' : 'tracking'}.`
                 : 'Your upgrade project is now in your portfolio.'}
             </p>
             <Button 
@@ -180,11 +198,11 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
               <p className="text-sm font-semibold text-blue-900 mb-1">
                 📋 Creating from Template
               </p>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-blue-800 mb-2">
                 {template.title} • Expected ROI: {template.average_roi_percent}%
               </p>
-              <p className="text-xs text-gray-600 mt-1">
-                You can customize all fields below
+              <p className="text-xs text-gray-600">
+                This template includes step-by-step milestones with AI guidance at each stage.
               </p>
             </div>
           )}
@@ -252,6 +270,23 @@ export default function UpgradeDialog({ properties, project, templateId, memberD
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <Label>Project Manager</Label>
+            <Select
+              value={formData.project_manager}
+              onValueChange={(value) => setFormData({ ...formData, project_manager: value })}
+            >
+              <SelectTrigger style={{ minHeight: '48px' }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="DIY">🔨 DIY (Self-Managed)</SelectItem>
+                <SelectItem value="Operator">🏢 360° Operator</SelectItem>
+                <SelectItem value="Contractor">👷 General Contractor</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

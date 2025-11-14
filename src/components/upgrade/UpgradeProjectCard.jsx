@@ -1,9 +1,11 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target, FileText } from "lucide-react";
+import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target, FileText, ExternalLink } from "lucide-react";
 import { calculateMemberDiscount } from "../shared/MemberDiscountCalculator";
 
 export default function UpgradeProjectCard({ project, properties, memberDiscount, onEdit }) {
@@ -18,7 +20,12 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
   };
 
   const categoryColors = {
-    'Energy Efficiency': 'bg-green-100 text-green-800',
+    'High ROI Renovations': 'bg-green-100 text-green-800',
+    'Energy Efficiency': 'bg-blue-100 text-blue-800',
+    'Rental Income Boosters': 'bg-purple-100 text-purple-800',
+    'Preventive Replacements': 'bg-red-100 text-red-800',
+    'Curb Appeal': 'bg-orange-100 text-orange-800',
+    'Interior Updates': 'bg-pink-100 text-pink-800',
     'Safety': 'bg-red-100 text-red-800',
     'Comfort': 'bg-blue-100 text-blue-800',
     'Property Value': 'bg-purple-100 text-purple-800',
@@ -42,6 +49,7 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
   const paybackMonths = project.roi_timeline_months || 0;
 
   const documentCount = project.quote_documents?.length || 0;
+  const progressPercent = project.progress_percentage || 0;
 
   return (
     <Card className="border-2 border-gray-200 mobile-card hover:shadow-lg transition-shadow">
@@ -66,10 +74,16 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
                   {property.address}
                 </Badge>
               )}
+              {project.project_manager && (
+                <Badge variant="outline" className="text-xs">
+                  {project.project_manager === 'Operator' ? '🏢 Operator' : 
+                   project.project_manager === 'Contractor' ? '👷 Contractor' : '🔨 DIY'}
+                </Badge>
+              )}
             </div>
 
             {project.description && (
-              <p className="text-gray-700 text-sm mb-3">
+              <p className="text-gray-700 text-sm mb-3 line-clamp-2">
                 {project.description}
               </p>
             )}
@@ -86,13 +100,18 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
         </div>
 
         {/* Progress Bar for In Progress projects */}
-        {project.status === 'In Progress' && project.completion_percentage > 0 && (
+        {(project.status === 'In Progress' || project.status === 'Planned') && progressPercent > 0 && (
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-semibold">Progress:</span>
-              <span className="font-bold">{project.completion_percentage}%</span>
+              <span className="font-bold">{progressPercent}%</span>
             </div>
-            <Progress value={project.completion_percentage} className="h-3" />
+            <Progress value={progressPercent} className="h-3" />
+            {project.current_milestone && (
+              <p className="text-xs text-gray-600 mt-1">
+                Current: {project.current_milestone}
+              </p>
+            )}
           </div>
         )}
 
@@ -130,7 +149,7 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Target className="w-4 h-4 text-purple-600" />
-              <p className="text-xs text-gray-600">Net Cost</p>
+              <p className="text-xs text-gray-600">Net Impact</p>
             </div>
             <p className="font-bold" style={{ color: netCost > 0 ? '#1B365D' : '#28A745' }}>
               ${Math.abs(netCost).toLocaleString()}
@@ -202,49 +221,56 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
         )}
 
         {/* Documents & Photos */}
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            {documentCount > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1">
-                <FileText className="w-3 h-3" />
-                {documentCount} Document{documentCount !== 1 ? 's' : ''}
-              </Badge>
-            )}
-            {project.before_photo_urls?.length > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
-              </Badge>
-            )}
-            {project.after_photo_urls?.length > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
-              </Badge>
-            )}
+        {(documentCount > 0 || project.before_photo_urls?.length > 0 || project.after_photo_urls?.length > 0 || project.milestones?.length > 0) && (
+          <div className="mb-4">
+            <div className="flex flex-wrap gap-2">
+              {project.milestones && project.milestones.length > 0 && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {project.milestones.filter(m => m.status === 'Completed').length}/{project.milestones.length} Milestones
+                </Badge>
+              )}
+              {documentCount > 0 && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  <FileText className="w-3 h-3" />
+                  {documentCount} Document{documentCount !== 1 ? 's' : ''}
+                </Badge>
+              )}
+              {project.before_photo_urls?.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+              {project.after_photo_urls?.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
-          {project.status !== 'Completed' && (
-            <Button
-              onClick={onEdit}
-              variant="outline"
-              style={{ minHeight: '48px' }}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Project
-            </Button>
-          )}
+          <Button
+            asChild
+            className="bg-blue-600 hover:bg-blue-700"
+            style={{ minHeight: '48px' }}
+          >
+            <Link to={createPageUrl('UpgradeProjectDetail') + `?id=${project.id}`}>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View Full Details
+            </Link>
+          </Button>
           
-          {project.status === 'Completed' && (
-            <Button
-              onClick={onEdit}
-              variant="outline"
-              style={{ minHeight: '48px' }}
-            >
-              View Details
-            </Button>
-          )}
+          <Button
+            onClick={onEdit}
+            variant="outline"
+            style={{ minHeight: '48px' }}
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Quick Edit
+          </Button>
         </div>
       </CardContent>
     </Card>
