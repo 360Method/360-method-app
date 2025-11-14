@@ -12,11 +12,14 @@ import {
   ChevronRight, 
   Lightbulb,
   Zap,
-  Upload
+  Upload,
+  ArrowRight,
+  HelpCircle,
+  X,
+  ArrowDown
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import StepNavigation from "../components/navigation/StepNavigation";
 import PropertyWizardWelcome from "../components/properties/PropertyWizardWelcome";
 import PropertyWizardSimplified from "../components/properties/PropertyWizardSimplified";
 import PropertySuccessScreen from "../components/properties/PropertySuccessScreen";
@@ -48,6 +51,7 @@ export default function Properties() {
   const [whyExpanded, setWhyExpanded] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState(null);
+  const [showMethodInfo, setShowMethodInfo] = useState(false);
 
   // Fetch data
   const { data: properties = [], isLoading } = useQuery({
@@ -202,24 +206,50 @@ export default function Properties() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         
-        {/* Step Navigation */}
-        <div className="mb-4 md:mb-6">
-          <StepNavigation currentStep={1} />
+        {/* Foundation Layer Header (Replaces StepNavigation) */}
+        <div className="mb-6 mt-4">
+          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                {/* Left: Foundation Layer Badge + Flow */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-gray-700 text-white text-sm px-3 py-1.5">
+                      🏗️ Foundation Layer
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-700 flex-wrap">
+                    <span>Properties flow through:</span>
+                    <span className="inline-flex items-center gap-1 font-semibold">
+                      <span className="text-blue-600">AWARE</span>
+                      <ArrowRight className="w-3 h-3" />
+                      <span className="text-orange-600">ACT</span>
+                      <ArrowRight className="w-3 h-3" />
+                      <span className="text-green-600">ADVANCE</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Help Button */}
+                <button
+                  type="button"
+                  className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white transition-colors"
+                  onClick={() => setShowMethodInfo(true)}
+                  style={{ minHeight: '40px' }}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  About the 360° Method
+                </button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Page Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between gap-4 mb-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
-                  Phase I - AWARE
-                </Badge>
-                <Badge variant="outline" className="text-sm px-3 py-1">
-                  Step 1: Foundation
-                </Badge>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold" style={{ color: '#1B365D' }}>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
                 Your Properties
               </h1>
               <p className="text-gray-600 text-lg">
@@ -290,13 +320,13 @@ export default function Properties() {
                   <strong>What happens after you add a property:</strong>
                 </p>
                 <ul className="ml-4 space-y-1">
-                  <li>• <strong>AWARE Phase:</strong> Document your major systems (HVAC, roof, etc.)</li>
-                  <li>• <strong>ACT Phase:</strong> Get maintenance tasks and schedules</li>
-                  <li>• <strong>ADVANCE Phase:</strong> Preserve value and plan strategic upgrades</li>
-                  <li>• <strong>SCALE Phase:</strong> Track equity and get wealth projections</li>
+                  <li>• <strong>Phase I - AWARE:</strong> Baseline → Inspect → Track your major systems</li>
+                  <li>• <strong>Phase II - ACT:</strong> Prioritize → Schedule → Execute maintenance</li>
+                  <li>• <strong>Phase III - ADVANCE:</strong> Preserve → Upgrade → SCALE (Portfolio CFO)</li>
                 </ul>
-                <p className="text-xs">
-                  ⚡ Quick setup takes just 5 minutes and starts protecting your investment immediately.
+                <p className="text-xs mt-2 p-2 bg-blue-100 rounded">
+                  ⚡ <strong>3 Phases × 3 Steps = 9 Total Steps</strong>
+                  <br />Properties are the foundation that flows through this 3×3 system.
                 </p>
               </div>
             )}
@@ -382,6 +412,132 @@ export default function Properties() {
           confirmText="Delete Property"
           confirmVariant="destructive"
         />
+
+        {/* Method Info Modal */}
+        {showMethodInfo && (
+          <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-4" onClick={() => setShowMethodInfo(false)}>
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ color: '#1B365D' }}>
+                    The 360° Method
+                  </h2>
+                  <p className="text-sm text-gray-600">A 3×3 system for property management</p>
+                </div>
+                <button
+                  onClick={() => setShowMethodInfo(false)}
+                  className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
+                  style={{ minHeight: '40px', minWidth: '40px' }}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Foundation Layer */}
+                <div className="p-4 bg-gray-100 rounded-lg border-2 border-gray-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center">
+                      <span className="text-white text-lg">🏗️</span>
+                    </div>
+                    <h3 className="font-bold text-gray-900">Foundation: Properties</h3>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Your properties are the foundation. Each property flows through the 3×3 method below.
+                  </p>
+                </div>
+
+                {/* Arrow Down */}
+                <div className="flex justify-center">
+                  <ArrowDown className="w-8 h-8 text-gray-400" />
+                </div>
+
+                {/* The 3x3 Method */}
+                <div className="space-y-4">
+                  {/* Phase 1: AWARE */}
+                  <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                        1
+                      </div>
+                      <h3 className="font-bold text-blue-900 text-lg">AWARE</h3>
+                    </div>
+                    <div className="space-y-2 ml-10">
+                      <p className="text-sm text-blue-800">
+                        <strong>1. Baseline:</strong> Document all major systems
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        <strong>2. Inspect:</strong> Regular condition check-ins
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        <strong>3. Track:</strong> Monitor health over time
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Phase 2: ACT */}
+                  <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-300">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold">
+                        2
+                      </div>
+                      <h3 className="font-bold text-orange-900 text-lg">ACT</h3>
+                    </div>
+                    <div className="space-y-2 ml-10">
+                      <p className="text-sm text-orange-800">
+                        <strong>1. Prioritize:</strong> Rank tasks by urgency
+                      </p>
+                      <p className="text-sm text-orange-800">
+                        <strong>2. Schedule:</strong> Plan maintenance timeline
+                      </p>
+                      <p className="text-sm text-orange-800">
+                        <strong>3. Execute:</strong> Complete and verify work
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Phase 3: ADVANCE */}
+                  <div className="p-4 bg-green-50 rounded-lg border-2 border-green-300">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                        3
+                      </div>
+                      <h3 className="font-bold text-green-900 text-lg">ADVANCE</h3>
+                    </div>
+                    <div className="space-y-2 ml-10">
+                      <p className="text-sm text-green-800">
+                        <strong>1. Preserve:</strong> Extend system lifespan
+                      </p>
+                      <p className="text-sm text-green-800">
+                        <strong>2. Upgrade:</strong> Strategic improvements
+                      </p>
+                      <p className="text-sm text-green-800">
+                        <strong>3. SCALE:</strong> Portfolio CFO intelligence
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 text-center">
+                  <p className="font-bold text-purple-900 mb-1">
+                    3 Phases × 3 Steps = 9 Total Steps
+                  </p>
+                  <p className="text-sm text-purple-800">
+                    Each property in your portfolio progresses through this systematic approach
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowMethodInfo(false)}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                  style={{ minHeight: '48px' }}
+                >
+                  Got It
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
