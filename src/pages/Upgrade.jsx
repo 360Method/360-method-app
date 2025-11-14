@@ -1,7 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import UpgradeCard from "../components/upgrade/UpgradeCard";
+import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
@@ -31,6 +31,7 @@ import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/compo
 
 export default function Upgrade() {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const showNewForm = searchParams.get('new') === 'true';
   const templateIdFromUrl = searchParams.get('template');
@@ -109,10 +110,16 @@ export default function Upgrade() {
     : 0;
 
   const handleFormComplete = () => {
+    console.log('✅ Form completed, switching to projects tab');
     setShowNewProjectForm(false);
     setEditingProject(null);
     setTemplateId(null);
+    
+    // Clear URL params
     window.history.replaceState({}, '', createPageUrl("Upgrade"));
+    
+    // Switch to "Your Projects" tab
+    setActiveTab('projects');
   };
 
   if (showNewProjectForm || editingProject) {
@@ -414,7 +421,7 @@ export default function Upgrade() {
                 </h2>
                 <div className="space-y-4">
                   {activeProjects.map((project) => (
-                    <UpgradeCard
+                    <UpgradeProjectCard
                       key={project.id}
                       project={project}
                       properties={properties}
@@ -435,7 +442,7 @@ export default function Upgrade() {
                 </h2>
                 <div className="space-y-4">
                   {completedProjects.map((project) => (
-                    <UpgradeCard
+                    <UpgradeProjectCard
                       key={project.id}
                       project={project}
                       properties={properties}
@@ -461,13 +468,11 @@ export default function Upgrade() {
                   </p>
                   <div className="flex flex-col md:flex-row gap-3 justify-center">
                     <Button
-                      asChild
+                      onClick={() => setActiveTab('browse')}
                       style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
                     >
-                      <Link to={createPageUrl("ExploreTemplates") + `?property=${selectedProperty || ''}`}>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Explore Upgrade Ideas
-                      </Link>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Explore Upgrade Ideas
                     </Button>
                     <Button
                       onClick={() => setShowNewProjectForm(true)}
