@@ -26,6 +26,8 @@ import { createPageUrl } from "@/utils";
 import UpgradeCard from "../components/upgrade/UpgradeCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
+import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
+import { shouldShowMemberBenefits } from "@/lib/serviceAreas";
 
 export default function Upgrade() {
   const location = useLocation();
@@ -94,8 +96,8 @@ export default function Upgrade() {
   const netEquityGrowth = totalEquityGained - totalInvestment;
 
   const currentTier = user?.subscription_tier || 'free';
-  const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
-  const memberDiscountTier = isServiceMember ? currentTier : 0;
+  const showMemberPricing = shouldShowMemberBenefits(user);
+  const memberDiscountTier = showMemberPricing ? currentTier : 0;
   const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05
     : currentTier.includes('premium') ? 0.10
     : currentTier.includes('elite') ? 0.15
@@ -151,6 +153,9 @@ export default function Upgrade() {
             Strategic improvements that pay for themselves
           </p>
         </div>
+
+        {/* Service Availability Banner */}
+        <ServiceAvailabilityBanner user={user} className="mb-6" />
 
         {/* Why This Step Matters */}
         <Card className="mb-6 border-2 border-green-200 bg-green-50">
@@ -246,8 +251,8 @@ export default function Upgrade() {
           {/* TAB 1: BROWSE IDEAS */}
           <TabsContent value="browse" className="mt-6 space-y-6">
             
-            {/* Member Discount Banner */}
-            {isServiceMember && (
+            {/* Member Discount Banner - ONLY if service available */}
+            {showMemberPricing && (
               <Card className="border-2 border-purple-300 bg-purple-50">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
@@ -284,7 +289,7 @@ export default function Upgrade() {
                       💡 Get Inspired by Proven Upgrades
                     </h3>
                     <p className="text-gray-700 mb-4">
-                      Browse 40+ high-ROI improvements with real numbers, beautiful examples, and automatic member savings calculations
+                      Browse 15+ high-ROI improvements with real numbers, beautiful examples, and {showMemberPricing ? 'automatic member savings calculations' : 'detailed cost breakdowns'}
                     </p>
                     <div className="grid md:grid-cols-3 gap-3">
                       <Button
@@ -335,7 +340,7 @@ export default function Upgrade() {
                       Start a Custom Project
                     </h3>
                     <p className="text-gray-700 mb-4">
-                      Track your own renovation idea with automatic ROI calculation and member discount pricing
+                      Track your own renovation idea with automatic ROI calculation {showMemberPricing ? 'and member discount pricing' : ''}
                     </p>
                     <Button
                       onClick={() => setShowNewProjectForm(true)}

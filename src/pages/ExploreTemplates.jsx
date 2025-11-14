@@ -6,7 +6,7 @@ import { createPageUrl } from '@/utils';
 import {
   Sparkles, TrendingUp, DollarSign, Clock, Zap,
   ArrowLeft, Search, Filter, ChevronDown, Home,
-  Trophy, Leaf, Shield, Heart, Building2
+  Trophy, Leaf, Shield, Heart, Building2, MapPin
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { calculateMemberDiscount, getAllTierDiscounts } from '@/components/shared/MemberDiscountCalculator';
+import AICostDisclaimer from '@/components/shared/AICostDisclaimer';
+import { isServiceAvailable, shouldShowMemberBenefits } from '@/lib/serviceAreas';
 
 const CATEGORY_ICONS = {
   'High ROI Renovations': Trophy,
@@ -57,7 +59,8 @@ export default function ExploreTemplatesPage() {
   });
 
   const memberTier = user?.subscription_tier || 'free';
-  const isServiceMember = memberTier !== 'free' && (memberTier.includes('homecare') || memberTier.includes('propertycare'));
+  const serviceCheck = isServiceAvailable(user?.zip_code);
+  const showMemberBenefits = shouldShowMemberBenefits(user);
   
   // Get tier name for display
   const tierDisplayName = memberTier.includes('essential') ? 'Essential' 
@@ -69,12 +72,10 @@ export default function ExploreTemplatesPage() {
   const filteredTemplates = useMemo(() => {
     let filtered = [...templates];
 
-    // Category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(t => t.category === categoryFilter);
     }
 
-    // Cost filter
     if (costFilter === 'under_10k') {
       filtered = filtered.filter(t => t.average_cost_max < 10000);
     } else if (costFilter === '10k_to_30k') {
@@ -83,7 +84,6 @@ export default function ExploreTemplatesPage() {
       filtered = filtered.filter(t => t.average_cost_min > 30000);
     }
 
-    // Search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(t =>
@@ -93,7 +93,6 @@ export default function ExploreTemplatesPage() {
       );
     }
 
-    // Sort
     if (sortBy === 'roi') {
       filtered.sort((a, b) => (b.average_roi_percent || 0) - (a.average_roi_percent || 0));
     } else if (sortBy === 'cost_low') {
@@ -143,14 +142,42 @@ export default function ExploreTemplatesPage() {
             </div>
           </div>
 
-          {isServiceMember && (
+          {/* Service Availability Banner */}
+          {serviceCheck.available && showMemberBenefits && (
             <div className="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
               <Badge className="bg-purple-600 text-white mb-2">
                 ⭐ MEMBER BENEFIT
               </Badge>
               <p className="text-sm text-purple-900 font-semibold">
-                All prices shown include your {tierDisplayName} member discount!
+                All prices shown include your {tierDisplayName} member discount! {serviceCheck.operator} serves your area.
               </p>
+            </div>
+          )}
+
+          {!serviceCheck.available && (
+            <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-amber-900 mb-1">
+                    Professional Service Not Yet Available
+                  </p>
+                  <p className="text-sm text-amber-800 mb-3">
+                    360° Operator service isn't in your area yet. You can still use upgrade ideas for DIY planning or to find local contractors.
+                  </p>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-amber-600 hover:bg-amber-700"
+                    style={{ minHeight: '40px' }}
+                  >
+                    <Link to={createPageUrl('Waitlist')}>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Join Waitlist for Your Area
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -227,7 +254,7 @@ export default function ExploreTemplatesPage() {
           {filteredTemplates.map(template => {
             const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
             const CategoryIcon = CATEGORY_ICONS[template.category] || Sparkles;
-            const memberDiscount = isServiceMember ? calculateMemberDiscount(avgCost, memberTier) : null;
+            const memberDiscount = showMemberBenefits ? calculateMemberDiscount(avgCost, memberTier) : null;
             const allDiscounts = getAllTierDiscounts(avgCost);
 
             return (
@@ -279,6 +306,9 @@ export default function ExploreTemplatesPage() {
                       </span>
                     </div>
 
+                    {/* AI Disclaimer - Compact */}
+                    <AICostDisclaimer variant="compact" />
+
                     {/* ROI */}
                     <div className="flex items-center justify-between p-3 bg-green-50 rounded border border-green-200">
                       <span className="text-xs font-semibold text-green-700">ROI</span>
@@ -290,8 +320,8 @@ export default function ExploreTemplatesPage() {
                       </div>
                     </div>
 
-                    {/* Member Price (for members) */}
-                    {memberDiscount && memberDiscount.actualSavings > 0 && (
+                    {/* Member Price (ONLY if service available + member) */}
+                    {showMemberBenefits && memberDiscount && memberDiscount.actualSavings > 0 && (
                       <div className="p-3 bg-purple-50 border-2 border-purple-300 rounded">
                         <p className="text-xs font-semibold text-purple-600 mb-1">⭐ YOUR {tierDisplayName.toUpperCase()} PRICE</p>
                         <div className="flex items-center justify-between">
@@ -305,8 +335,8 @@ export default function ExploreTemplatesPage() {
                       </div>
                     )}
 
-                    {/* Free User Upsell */}
-                    {!isServiceMember && (
+                    {/* Service Available - Non-Member Upsell */}
+                    {serviceCheck.available && !showMemberBenefits && (
                       <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded">
                         <p className="text-xs font-semibold text-blue-900 mb-2">
                           💰 Members Save 5-15%
@@ -333,6 +363,29 @@ export default function ExploreTemplatesPage() {
                         >
                           <Link to={createPageUrl('Pricing')}>
                             Become a Member →
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Service NOT Available - Waitlist */}
+                    {!serviceCheck.available && (
+                      <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded">
+                        <p className="text-xs font-semibold text-amber-900 mb-2">
+                          Service Coming Soon
+                        </p>
+                        <p className="text-xs text-amber-800 mb-2">
+                          Professional service not yet available in your area.
+                        </p>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="w-full bg-amber-600 hover:bg-amber-700 text-xs"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Link to={createPageUrl('Waitlist')}>
+                            <MapPin className="w-3 h-3 mr-1" />
+                            Join Waitlist
                           </Link>
                         </Button>
                       </div>
@@ -420,10 +473,13 @@ export default function ExploreTemplatesPage() {
                   </CardContent>
                 </Card>
 
+                {/* AI Cost Disclaimer - Prominent in Detail View */}
+                <AICostDisclaimer variant="default" />
+
                 {/* Financial Breakdown */}
                 <Card className="border-2 border-green-200 bg-green-50">
                   <CardHeader>
-                    <CardTitle className="text-lg">📊 Financial Breakdown</CardTitle>
+                    <CardTitle className="text-lg">📊 Estimated Financial Breakdown</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     
@@ -435,7 +491,7 @@ export default function ExploreTemplatesPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600 mb-1">Value Added</p>
+                        <p className="text-xs text-gray-600 mb-1">Est. Value Added</p>
                         <p className="text-xl font-bold text-green-700">
                           ${selectedTemplate.typical_value_added?.toLocaleString()}
                         </p>
@@ -444,7 +500,7 @@ export default function ExploreTemplatesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-600 mb-1">ROI</p>
+                        <p className="text-xs text-gray-600 mb-1">Projected ROI</p>
                         <p className="text-2xl font-bold text-green-700">
                           {selectedTemplate.average_roi_percent}%
                         </p>
@@ -467,8 +523,8 @@ export default function ExploreTemplatesPage() {
                   </CardContent>
                 </Card>
 
-                {/* Member Pricing (for members) */}
-                {isServiceMember && (() => {
+                {/* Member Pricing - ONLY if service available + member */}
+                {showMemberBenefits && (() => {
                   const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
                   const discount = calculateMemberDiscount(avgCost, memberTier);
                   const allTiers = getAllTierDiscounts(avgCost);
@@ -479,7 +535,7 @@ export default function ExploreTemplatesPage() {
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Shield className="w-5 h-5 text-purple-600" />
-                          ⭐ Your Member Pricing
+                          ⭐ Your Member Pricing ({serviceCheck.operator})
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -535,8 +591,8 @@ export default function ExploreTemplatesPage() {
                   );
                 })()}
 
-                {/* Free User Pricing Comparison */}
-                {!isServiceMember && (() => {
+                {/* Service Available - Free User Pricing Comparison */}
+                {serviceCheck.available && !showMemberBenefits && (() => {
                   const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
                   const allTiers = getAllTierDiscounts(avgCost);
                   
@@ -544,18 +600,18 @@ export default function ExploreTemplatesPage() {
                     <Card className="border-2 border-blue-300 bg-blue-50">
                       <CardHeader>
                         <CardTitle className="text-lg">
-                          💰 Member Pricing (Save 5-15%)
+                          💰 Member Pricing Available
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="p-3 bg-white rounded">
                           <p className="text-sm font-semibold text-gray-900 mb-3">
-                            Standard Contractor Price: ${avgCost.toLocaleString()}
+                            Standard Price: ${avgCost.toLocaleString()}
                           </p>
                           
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <span className="font-medium">Essential Member:</span>
+                              <span className="font-medium">Essential:</span>
                               <div className="text-right">
                                 <div className="font-bold text-green-700">${(avgCost - allTiers.essential.actualSavings).toLocaleString()}</div>
                                 <div className="text-xs text-gray-600">Save ${allTiers.essential.actualSavings.toLocaleString()}</div>
@@ -563,7 +619,7 @@ export default function ExploreTemplatesPage() {
                             </div>
 
                             <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <span className="font-medium">Premium Member:</span>
+                              <span className="font-medium">Premium:</span>
                               <div className="text-right">
                                 <div className="font-bold text-green-700">${(avgCost - allTiers.premium.actualSavings).toLocaleString()}</div>
                                 <div className="text-xs text-gray-600">Save ${allTiers.premium.actualSavings.toLocaleString()}</div>
@@ -571,7 +627,7 @@ export default function ExploreTemplatesPage() {
                             </div>
 
                             <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-300">
-                              <span className="font-bold">Elite Member:</span>
+                              <span className="font-bold">Elite:</span>
                               <div className="text-right">
                                 <div className="font-bold text-green-700 text-lg">${(avgCost - allTiers.elite.actualSavings).toLocaleString()}</div>
                                 <div className="text-xs text-green-700 font-semibold">Save ${allTiers.elite.actualSavings.toLocaleString()}</div>
@@ -599,7 +655,7 @@ export default function ExploreTemplatesPage() {
                 {selectedTemplate.whats_included?.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">🎯 What's Included</CardTitle>
+                      <CardTitle className="text-lg">🎯 What's Typically Included</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
@@ -619,7 +675,7 @@ export default function ExploreTemplatesPage() {
                   <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded">
                     <Clock className="w-5 h-5 text-orange-600" />
                     <div>
-                      <p className="text-xs text-gray-600">Project Duration</p>
+                      <p className="text-xs text-gray-600">Typical Project Duration</p>
                       <p className="font-semibold text-gray-900">
                         {selectedTemplate.project_duration}
                       </p>
@@ -648,7 +704,7 @@ export default function ExploreTemplatesPage() {
                     <CardContent className="p-4">
                       <h4 className="font-semibold text-purple-900 mb-2">🏢 For Investors</h4>
                       <p className="text-sm text-gray-800 mb-2">
-                        <strong>Rental Income Boost:</strong> +${selectedTemplate.rental_income_boost}/month
+                        <strong>Potential Rental Income Boost:</strong> +${selectedTemplate.rental_income_boost}/month
                       </p>
                       <p className="text-xs text-gray-600">
                         Annual: +${(selectedTemplate.rental_income_boost * 12).toLocaleString()} • 10-Year: +${(selectedTemplate.rental_income_boost * 120).toLocaleString()}
@@ -669,27 +725,65 @@ export default function ExploreTemplatesPage() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Conditional based on service availability */}
                 <div className="flex flex-col gap-3 pt-4 border-t">
-                  <Button
-                    asChild
-                    className="bg-green-600 hover:bg-green-700"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
-                      <Sparkles className="w-5 h-5 mr-2" />
-                      Start This Project
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <Link to={createPageUrl('Services')}>
-                      Request Free Quote
-                    </Link>
-                  </Button>
+                  {serviceCheck.available ? (
+                    <>
+                      <Button
+                        asChild
+                        className="bg-green-600 hover:bg-green-700"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
+                          <Sparkles className="w-5 h-5 mr-2" />
+                          Start This Project
+                        </Link>
+                      </Button>
+                      <Button
+                        asChild
+                        variant="outline"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <Link to={createPageUrl('Services')}>
+                          Request Free Quote from {serviceCheck.operator}
+                        </Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 text-center">
+                        <h4 className="font-semibold text-amber-900 mb-2">
+                          Professional Service Coming Soon
+                        </h4>
+                        <p className="text-sm text-amber-800 mb-3">
+                          360° Operator service isn't available in your area yet. Join our waitlist to be notified when we expand.
+                        </p>
+                        <Button
+                          asChild
+                          className="bg-amber-600 hover:bg-amber-700"
+                          style={{ minHeight: '48px' }}
+                        >
+                          <Link to={createPageUrl('Waitlist')}>
+                            <MapPin className="w-5 h-5 mr-2" />
+                            Join Waitlist
+                          </Link>
+                        </Button>
+                        <p className="text-xs text-amber-700 mt-3">
+                          You can still track this project DIY-style or hire local contractors on your own.
+                        </p>
+                      </div>
+                      
+                      <Button
+                        asChild
+                        variant="outline"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
+                          Track as DIY Project
+                        </Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
 
               </div>
