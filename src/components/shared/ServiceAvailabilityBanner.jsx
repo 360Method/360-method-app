@@ -3,7 +3,7 @@ import { CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { isServiceAvailable, getServiceMessage } from '@/lib/serviceAreas';
+import { isServiceAvailable, getServiceMessage } from '@/components/shared/serviceAreas';
 
 export default function ServiceAvailabilityBanner({ user, className = '' }) {
   if (!user || !user.zip_code) return null;

@@ -1,0 +1,125 @@
+/**
+ * Current service areas for 360° Operators
+ * Update this list as operators expand to new markets
+ */
+export const SERVICE_AREAS = {
+  clark_county_wa: {
+    name: "Clark County, Washington",
+    zip_codes: [
+      "98601", "98604", "98606", "98607", "98629", 
+      "98642", "98660", "98661", "98662", "98663", 
+      "98664", "98665", "98671", "98682", "98683", "98686"
+    ],
+    operator_name: "Handy Pioneers",
+    operator_phone: "(360) 123-4567",
+    operator_email: "service@handypioneers.com"
+  }
+  // Add new service areas as operators expand
+  // example_new_area: {
+  //   name: "New Market",
+  //   zip_codes: ["12345", "12346"],
+  //   operator_name: "Local Operator",
+  //   operator_phone: "(555) 123-4567",
+  //   operator_email: "contact@localoperator.com"
+  // }
+};
+
+/**
+ * Check if a zip code has 360° Operator service available
+ * @param {string} zipCode - User's zip code
+ * @returns {object} - { available: boolean, area: string|null, operator: string|null, phone: string|null, email: string|null }
+ */
+export function isServiceAvailable(zipCode) {
+  if (!zipCode) {
+    return {
+      available: false,
+      area: null,
+      operator: null,
+      phone: null,
+      email: null
+    };
+  }
+  
+  // Normalize zip code (remove spaces, dashes)
+  const normalizedZip = zipCode.trim().replace(/[\s-]/g, '');
+  
+  for (const area of Object.values(SERVICE_AREAS)) {
+    if (area.zip_codes.includes(normalizedZip)) {
+      return {
+        available: true,
+        area: area.name,
+        operator: area.operator_name,
+        phone: area.operator_phone,
+        email: area.operator_email
+      };
+    }
+  }
+  
+  return {
+    available: false,
+    area: null,
+    operator: null,
+    phone: null,
+    email: null
+  };
+}
+
+/**
+ * Get appropriate messaging for users based on service availability
+ * @param {string} zipCode - User's zip code
+ * @returns {object} - Message configuration
+ */
+export function getServiceMessage(zipCode) {
+  const check = isServiceAvailable(zipCode);
+  
+  if (check.available) {
+    return {
+      type: "available",
+      title: "Professional Service Available",
+      message: `${check.operator} serves your area in ${check.area}.`,
+      cta: "Request Quote",
+      ctaLink: "Services",
+      showMemberPricing: true,
+      operator: check.operator,
+      phone: check.phone,
+      email: check.email
+    };
+  }
+  
+  return {
+    type: "unavailable",
+    title: "Service Coming Soon",
+    message: "Professional 360° Operator service isn't available in your area yet. Join the waitlist to be notified when we expand to your market.",
+    cta: "Join Waitlist",
+    ctaLink: "Waitlist",
+    showMemberPricing: false,
+    operator: null,
+    phone: null,
+    email: null
+  };
+}
+
+/**
+ * Get all service areas (for admin/info displays)
+ * @returns {array} - Array of service area objects
+ */
+export function getAllServiceAreas() {
+  return Object.values(SERVICE_AREAS);
+}
+
+/**
+ * Check if user should see member benefits (has membership + service available)
+ * @param {object} user - User object with subscription_tier and zip_code
+ * @returns {boolean}
+ */
+export function shouldShowMemberBenefits(user) {
+  if (!user) return false;
+  
+  const hasMembership = user.subscription_tier && 
+    user.subscription_tier !== 'free' && 
+    (user.subscription_tier.includes('homecare') || user.subscription_tier.includes('propertycare'));
+  
+  const hasService = isServiceAvailable(user.zip_code).available;
+  
+  return hasMembership && hasService;
+}

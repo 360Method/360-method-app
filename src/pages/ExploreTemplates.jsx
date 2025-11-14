@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { calculateMemberDiscount, getAllTierDiscounts } from '@/components/shared/MemberDiscountCalculator';
 import AICostDisclaimer from '@/components/shared/AICostDisclaimer';
-import { isServiceAvailable, shouldShowMemberBenefits } from '@/lib/serviceAreas';
+import { isServiceAvailable, shouldShowMemberBenefits } from '@/components/shared/serviceAreas';
 
 const CATEGORY_ICONS = {
   'High ROI Renovations': Trophy,
