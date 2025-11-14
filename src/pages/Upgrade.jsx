@@ -64,6 +64,12 @@ export default function Upgrade() {
     queryFn: () => base44.auth.me(),
   });
 
+  // FETCH TEMPLATES FOR COUNT
+  const { data: templates = [] } = useQuery({
+    queryKey: ['upgradeTemplates'],
+    queryFn: () => base44.entities.UpgradeTemplate.list()
+  });
+
   const { data: allUpgrades = [], refetch: refetchUpgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['upgrades', selectedProperty],
     queryFn: async () => {
@@ -130,6 +136,7 @@ export default function Upgrade() {
   console.log('Deferred projects:', deferredProjects.length);
   console.log('Total visible:', visibleProjectCount);
   console.log('Total all:', allUpgrades.length);
+  console.log('Template count:', templates.length);
   console.log('==========================');
 
   const totalInvestment = completedProjects.reduce((sum, p) =>
@@ -369,7 +376,7 @@ export default function Upgrade() {
                       💡 Get Inspired by Proven Upgrades
                     </h3>
                     <p className="text-gray-700 mb-4">
-                      Browse 15+ high-ROI improvements with real numbers, beautiful examples, and {showMemberPricing ? 'automatic member savings calculations' : 'detailed cost breakdowns'}
+                      Browse {templates.length > 0 ? templates.length : '50+'} high-ROI improvements with real numbers, beautiful examples, and {showMemberPricing ? 'automatic member savings calculations' : 'detailed cost breakdowns'}
                     </p>
                     <div className="grid md:grid-cols-3 gap-3">
                       <Button
