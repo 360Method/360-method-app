@@ -14,6 +14,12 @@ export default function PropertyQuickAdd({ isOpen, onClose, onSuccess }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     address: '',
+    street_address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    formatted_address: '',
+    address_verified: false,
     property_type: '',
     year_built: null,
     property_use_type: 'primary',
@@ -34,6 +40,12 @@ export default function PropertyQuickAdd({ isOpen, onClose, onSuccess }) {
       queryClient.invalidateQueries(['properties']);
       setFormData({
         address: '',
+        street_address: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        formatted_address: '',
+        address_verified: false,
         property_type: '',
         year_built: null,
         property_use_type: 'primary',
@@ -44,7 +56,7 @@ export default function PropertyQuickAdd({ isOpen, onClose, onSuccess }) {
     }
   });
 
-  const canSubmit = formData.address && formData.property_type && formData.year_built && formData.property_use_type;
+  const canSubmit = formData.address_verified && formData.property_type && formData.year_built && formData.property_use_type;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -61,17 +73,17 @@ export default function PropertyQuickAdd({ isOpen, onClose, onSuccess }) {
           <div>
             <label className="text-sm font-medium text-gray-700 mb-2 block">Address</label>
             <AddressAutocomplete
-              value={formData.address}
-              onAddressSelect={(address, details) => {
+              initialValue={formData.address}
+              onAddressSelect={(addressData) => {
                 setFormData({
                   ...formData,
-                  address: address,
-                  street_address: details.street_address || '',
-                  city: details.city || '',
-                  state: details.state || '',
-                  zip_code: details.zip_code || '',
-                  formatted_address: address,
-                  address_verified: true
+                  address: addressData.formatted_address || '',
+                  street_address: addressData.street_address || '',
+                  city: addressData.city || '',
+                  state: addressData.state || '',
+                  zip_code: addressData.zip_code || '',
+                  formatted_address: addressData.formatted_address || '',
+                  address_verified: addressData.address_verified || true
                 });
               }}
             />

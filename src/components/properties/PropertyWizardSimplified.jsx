@@ -149,21 +149,22 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                     Property Address
                   </label>
                   <AddressAutocomplete
-                    value={formData.address}
-                    onAddressSelect={(address, details) => {
+                    initialValue={formData.address}
+                    onAddressSelect={(addressData) => {
+                      // AddressAutocomplete returns a single addressData object
                       setFormData({
                         ...formData,
-                        address: address,
-                        street_address: details.street_address || '',
-                        city: details.city || '',
-                        state: details.state || '',
-                        zip_code: details.zip_code || '',
-                        county: details.county || '',
-                        formatted_address: address,
-                        place_id: details.place_id || '',
-                        coordinates: details.coordinates || null,
-                        address_verified: true,
-                        verification_source: 'google_maps'
+                        address: addressData.formatted_address || '',
+                        street_address: addressData.street_address || '',
+                        city: addressData.city || '',
+                        state: addressData.state || '',
+                        zip_code: addressData.zip_code || '',
+                        county: addressData.county || '',
+                        formatted_address: addressData.formatted_address || '',
+                        place_id: addressData.place_id || '',
+                        coordinates: addressData.coordinates || null,
+                        address_verified: addressData.address_verified || true,
+                        verification_source: addressData.verification_source || 'google_maps'
                       });
                     }}
                   />
