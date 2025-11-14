@@ -625,8 +625,19 @@ If you cannot find specific information, return null for those fields and set co
                     <Input
                       type="number"
                       min="1"
-                      value={formData.door_count || 1}
-                      onChange={(e) => setFormData({ ...formData, door_count: parseInt(e.target.value) || 1 })}
+                      value={formData.door_count === '' ? '' : formData.door_count}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          door_count: val === '' ? '' : parseInt(val) || 1 
+                        });
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                          setFormData({ ...formData, door_count: 1 });
+                        }
+                      }}
                       style={{ minHeight: '48px' }}
                     />
                     <p className="text-xs text-gray-500 mt-1">
