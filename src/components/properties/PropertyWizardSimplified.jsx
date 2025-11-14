@@ -262,47 +262,50 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {/* My Home - Primary Residence */}
                     <button
+                      type="button"
                       onClick={() => setFormData({ ...formData, property_use_type: 'primary', door_count: 1 })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
+                      className={`p-4 rounded-lg border-2 transition-all text-center ${
                         formData.property_use_type === 'primary'
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-300 hover:border-blue-400'
                       }`}
-                      style={{ minHeight: '100px' }}
+                      style={{ minHeight: '120px' }}
                     >
                       <Home className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                      <p className="font-semibold text-gray-900">My Home</p>
-                      <p className="text-xs text-gray-600 mt-1">Primary residence</p>
+                      <p className="font-semibold text-base text-gray-900 mb-1">My Home</p>
+                      <p className="text-xs text-gray-600">Primary residence</p>
                     </button>
 
-                    {/* Rental - Investment Property (FIXED: only matches rental, not primary_with_rental) */}
+                    {/* Rental - Investment Property */}
                     <button
+                      type="button"
                       onClick={() => setFormData({ ...formData, property_use_type: 'rental_unfurnished', door_count: formData.property_type?.includes('Duplex') ? 2 : formData.property_type?.includes('Triplex') ? 3 : formData.property_type?.includes('Fourplex') ? 4 : 1 })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
+                      className={`p-4 rounded-lg border-2 transition-all text-center ${
                         formData.property_use_type === 'rental_unfurnished' || formData.property_use_type === 'rental_furnished' || formData.property_use_type === 'vacation_rental'
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-300 hover:border-blue-400'
                       }`}
-                      style={{ minHeight: '100px' }}
+                      style={{ minHeight: '120px' }}
                     >
                       <Home className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                      <p className="font-semibold text-gray-900">Rental</p>
-                      <p className="text-xs text-gray-600 mt-1">Investment property</p>
+                      <p className="font-semibold text-base text-gray-900 mb-1">Rental</p>
+                      <p className="text-xs text-gray-600">Investment property</p>
                     </button>
 
                     {/* Both - Live + Rent Part */}
                     <button
+                      type="button"
                       onClick={() => setFormData({ ...formData, property_use_type: 'primary_with_rental', door_count: 2 })}
-                      className={`p-4 rounded-lg border-2 transition-all ${
+                      className={`p-4 rounded-lg border-2 transition-all text-center ${
                         formData.property_use_type === 'primary_with_rental'
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-300 hover:border-blue-400'
                       }`}
-                      style={{ minHeight: '100px' }}
+                      style={{ minHeight: '120px' }}
                     >
                       <Home className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                      <p className="font-semibold text-gray-900">Both</p>
-                      <p className="text-xs text-gray-600 mt-1">Live + rent part</p>
+                      <p className="font-semibold text-base text-gray-900 mb-1">Both</p>
+                      <p className="text-xs text-gray-600">Live + rent part</p>
                     </button>
                   </div>
                 </div>
