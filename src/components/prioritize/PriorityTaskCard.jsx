@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +28,8 @@ import {
   HardHat,
   Star,
   BookOpen,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
@@ -161,7 +163,7 @@ export default function PriorityTaskCard({
     }
   };
 
-  const handleDIYSchedule = () => {
+  const handleDIYScheduleNow = () => {
     const date = prompt('When will you do this? (YYYY-MM-DD)');
     if (date) {
       updateTaskMutation.mutate({
@@ -174,6 +176,18 @@ export default function PriorityTaskCard({
       });
       setShowDIYModal(false);
     }
+  };
+
+  const handleDIYSendToSchedule = () => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: {
+        status: 'Scheduled', // Assuming 'Scheduled' means it's acknowledged and will be scheduled later
+        execution_method: 'DIY'
+      }
+    });
+    setShowDIYModal(false);
+    // Optionally navigate to schedule tab or trigger a refresh there
   };
 
   const handleContractorSubmit = (e) => {
@@ -594,7 +608,7 @@ export default function PriorityTaskCard({
         </CardContent>
       </Card>
 
-      {/* DIY Modal */}
+      {/* UPDATED DIY Modal with AI estimates and dual button options */}
       {showDIYModal && (
         <Dialog open={showDIYModal} onOpenChange={setShowDIYModal}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -603,26 +617,37 @@ export default function PriorityTaskCard({
                 <Wrench className="w-6 h-6 text-green-600" />
                 DIY Guide: {task.title}
               </DialogTitle>
+              <DialogDescription>
+                High-level AI estimated materials cost, time, and skill level.
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
-                  <div className="text-xs text-green-700 mb-1">Cost</div>
-                  <div className="text-2xl font-bold text-green-700">
-                    ${task.diy_cost || 'N/A'}
-                  </div>
+              {/* AI Estimated Summary - UPDATED with actual estimates */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-5 h-5 text-green-600" />
+                  <h3 className="font-bold text-green-900">AI Estimated Overview</h3>
                 </div>
-                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
-                  <div className="text-xs text-green-700 mb-1">Time</div>
-                  <div className="text-2xl font-bold text-green-700">
-                    {task.diy_time_hours || task.estimated_hours || '?'}h
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                    <div className="text-xs text-gray-600 mb-1">💰 Materials Cost</div>
+                    <div className="text-2xl font-bold text-green-700">
+                      ${task.diy_cost || task.current_fix_cost || 'N/A'}
+                    </div>
                   </div>
-                </div>
-                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 text-center">
-                  <div className="text-xs text-green-700 mb-1">Level</div>
-                  <div className="text-lg font-bold text-green-700">
-                    {task.diy_difficulty || 'Med'}
+                  <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                    <div className="text-xs text-gray-600 mb-1">⏱️ Time Required</div>
+                    <div className="text-2xl font-bold text-green-700">
+                      {task.diy_time_hours || task.estimated_hours || '?'}h
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                    <div className="text-xs text-gray-600 mb-1">🎯 Skill Level</div>
+                    <div className="text-lg font-bold text-green-700">
+                      {task.diy_difficulty || 'Medium'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -685,6 +710,7 @@ export default function PriorityTaskCard({
               )}
             </div>
 
+            {/* UPDATED: Dual button options - Schedule Now vs Send to Schedule Tab */}
             <div className="flex gap-3 pt-4 border-t">
               <Button
                 variant="outline"
@@ -695,11 +721,21 @@ export default function PriorityTaskCard({
                 Close
               </Button>
               <Button
-                onClick={handleDIYSchedule}
+                onClick={handleDIYSendToSchedule}
+                variant="outline"
+                className="flex-1 border-yellow-600 text-yellow-700 hover:bg-yellow-50"
+                style={{ minHeight: '48px' }}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Send to Schedule Tab
+              </Button>
+              <Button
+                onClick={handleDIYScheduleNow}
                 className="flex-1 bg-green-600 hover:bg-green-700"
                 style={{ minHeight: '48px' }}
               >
-                Schedule This
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Now
               </Button>
             </div>
           </DialogContent>
