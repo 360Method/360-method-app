@@ -27,7 +27,7 @@ import UpgradeCard from "../components/upgrade/UpgradeCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
-import { shouldShowMemberBenefits } from "@/components/shared/serviceAreas";
+import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/components/shared/serviceAreas";
 
 export default function Upgrade() {
   const location = useLocation();
@@ -74,6 +74,9 @@ export default function Upgrade() {
     }
   }, [properties, selectedProperty]);
 
+  // Get current property object
+  const currentProperty = properties.find(p => p.id === selectedProperty);
+
   const activeProjects = allUpgrades.filter(u =>
     u.status === 'Planned' || u.status === 'In Progress'
   );
@@ -96,7 +99,9 @@ export default function Upgrade() {
   const netEquityGrowth = totalEquityGained - totalInvestment;
 
   const currentTier = user?.subscription_tier || 'free';
-  const showMemberPricing = shouldShowMemberBenefits(user);
+  
+  // CRITICAL FIX: Check service availability for CURRENT PROPERTY, not user
+  const showMemberPricing = shouldShowMemberBenefits(user, currentProperty);
   const memberDiscountTier = showMemberPricing ? currentTier : 0;
   const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05
     : currentTier.includes('premium') ? 0.10
@@ -154,8 +159,8 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Service Availability Banner */}
-        <ServiceAvailabilityBanner user={user} className="mb-6" />
+        {/* Service Availability Banner - Pass current property */}
+        <ServiceAvailabilityBanner user={user} property={currentProperty} className="mb-6" />
 
         {/* Why This Step Matters */}
         <Card className="mb-6 border-2 border-green-200 bg-green-50">
@@ -297,7 +302,7 @@ export default function Upgrade() {
                         className="font-bold"
                         style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
                       >
-                        <Link to={createPageUrl("ExploreTemplates")}>
+                        <Link to={createPageUrl("ExploreTemplates") + `?property=${selectedProperty || ''}`}>
                           <Trophy className="w-5 h-5 mr-2" />
                           Browse All Ideas
                         </Link>
@@ -307,7 +312,7 @@ export default function Upgrade() {
                         variant="outline"
                         style={{ minHeight: '48px' }}
                       >
-                        <Link to={createPageUrl("ExploreTemplates") + "?category=High ROI Renovations"}>
+                        <Link to={createPageUrl("ExploreTemplates") + `?category=High ROI Renovations&property=${selectedProperty || ''}`}>
                           <TrendingUp className="w-5 h-5 mr-2" />
                           Highest ROI
                         </Link>
@@ -317,7 +322,7 @@ export default function Upgrade() {
                         variant="outline"
                         style={{ minHeight: '48px' }}
                       >
-                        <Link to={createPageUrl("ExploreTemplates") + "?category=Energy Efficiency"}>
+                        <Link to={createPageUrl("ExploreTemplates") + `?category=Energy Efficiency&property=${selectedProperty || ''}`}>
                           <Zap className="w-5 h-5 mr-2" />
                           Energy Savings
                         </Link>
@@ -459,7 +464,7 @@ export default function Upgrade() {
                       asChild
                       style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
                     >
-                      <Link to={createPageUrl("ExploreTemplates")}>
+                      <Link to={createPageUrl("ExploreTemplates") + `?property=${selectedProperty || ''}`}>
                         <Sparkles className="w-5 h-5 mr-2" />
                         Explore Upgrade Ideas
                       </Link>

@@ -3,13 +3,26 @@ import { CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { isServiceAvailable, getServiceMessage } from '@/components/shared/serviceAreas';
+import { isServiceAvailable, getServiceMessage, getPropertyZipCode } from '@/components/shared/serviceAreas';
 
-export default function ServiceAvailabilityBanner({ user, className = '' }) {
-  if (!user || !user.zip_code) return null;
+export default function ServiceAvailabilityBanner({ user, property, className = '' }) {
+  // CRITICAL FIX: Use property zip code, not user zip code
+  const propertyZip = getPropertyZipCode(property);
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🏠 ServiceAvailabilityBanner:');
+    console.log('  Property:', property?.address);
+    console.log('  Extracted Zip:', propertyZip);
+  }, [property, propertyZip]);
+  
+  if (!propertyZip) {
+    console.log('⚠️ No property zip available for service check');
+    return null;
+  }
 
-  const serviceCheck = isServiceAvailable(user.zip_code);
-  const message = getServiceMessage(user.zip_code);
+  const serviceCheck = isServiceAvailable(propertyZip);
+  const message = getServiceMessage(propertyZip);
 
   if (serviceCheck.available) {
     return (
@@ -40,7 +53,7 @@ export default function ServiceAvailabilityBanner({ user, className = '' }) {
           <p className="text-sm text-amber-800 mb-3">
             {message.message}
           </p>
-          {user.waitlist_status !== 'on_waitlist' && (
+          {user?.waitlist_status !== 'on_waitlist' && (
             <Button
               asChild
               size="sm"
@@ -53,7 +66,7 @@ export default function ServiceAvailabilityBanner({ user, className = '' }) {
               </Link>
             </Button>
           )}
-          {user.waitlist_status === 'on_waitlist' && (
+          {user?.waitlist_status === 'on_waitlist' && (
             <p className="text-sm text-green-700 font-semibold">
               ✓ You're on the waitlist! We'll notify you when service becomes available.
             </p>

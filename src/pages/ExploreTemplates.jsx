@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { calculateMemberDiscount, getAllTierDiscounts } from '@/components/shared/MemberDiscountCalculator';
 import AICostDisclaimer from '@/components/shared/AICostDisclaimer';
-import { isServiceAvailable, shouldShowMemberBenefits } from '@/components/shared/serviceAreas';
+import { isServiceAvailable, shouldShowMemberBenefits, getPropertyZipCode } from '@/components/shared/serviceAreas';
 
 const CATEGORY_ICONS = {
   'High ROI Renovations': Trophy,
@@ -46,11 +46,19 @@ export default function ExploreTemplatesPage() {
   const [costFilter, setCostFilter] = useState('all');
   const [sortBy, setSortBy] = useState('roi');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const propertyIdFromUrl = searchParams.get('property');
 
   // Fetch user for member tier
   const { data: user } = useQuery({
     queryKey: ['current-user'],
     queryFn: () => base44.auth.me()
+  });
+
+  // Fetch properties to get current property
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list()
   });
 
   // Fetch upgrade templates
@@ -59,9 +67,28 @@ export default function ExploreTemplatesPage() {
     queryFn: () => base44.entities.UpgradeTemplate.list()
   });
 
+  // Get current property
+  const currentProperty = propertyIdFromUrl 
+    ? properties.find(p => p.id === propertyIdFromUrl)
+    : properties[0];
+
   const memberTier = user?.subscription_tier || 'free';
-  const serviceCheck = isServiceAvailable(user?.zip_code);
-  const showMemberBenefits = shouldShowMemberBenefits(user);
+  
+  // CRITICAL FIX: Check service for CURRENT PROPERTY
+  const propertyZip = getPropertyZipCode(currentProperty);
+  const serviceCheck = isServiceAvailable(propertyZip);
+  const showMemberBenefits = shouldShowMemberBenefits(user, currentProperty);
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('=== EXPLORE TEMPLATES SERVICE CHECK ===');
+    console.log('Current Property:', currentProperty?.address);
+    console.log('Property Zip:', propertyZip);
+    console.log('Service Available:', serviceCheck.available);
+    console.log('User Tier:', user?.subscription_tier);
+    console.log('Show Member Benefits:', showMemberBenefits);
+    console.log('======================================');
+  }, [currentProperty, propertyZip, serviceCheck, user, showMemberBenefits]);
   
   // Get tier name for display
   const tierDisplayName = memberTier.includes('essential') ? 'Essential' 
@@ -124,7 +151,7 @@ export default function ExploreTemplatesPage() {
         
         {/* Header */}
         <div className="mb-6">
-          <Link to={createPageUrl('Upgrade')}>
+          <Link to={createPageUrl('Upgrade') + `?property=${propertyIdFromUrl || ''}`}>
             <Button variant="ghost" className="mb-4" style={{ minHeight: '44px' }}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Upgrade
@@ -142,6 +169,15 @@ export default function ExploreTemplatesPage() {
               </p>
             </div>
           </div>
+
+          {/* Current Property Display */}
+          {currentProperty && (
+            <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-600 mb-1">Viewing upgrades for:</p>
+              <p className="font-semibold text-gray-900">{currentProperty.address}</p>
+              <p className="text-xs text-gray-500 mt-1">Zip: {propertyZip || 'Not available'}</p>
+            </div>
+          )}
 
           {/* Service Availability Banner */}
           {serviceCheck.available && showMemberBenefits && (
@@ -735,7 +771,7 @@ export default function ExploreTemplatesPage() {
                         className="bg-green-600 hover:bg-green-700"
                         style={{ minHeight: '48px' }}
                       >
-                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
+                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}&property=${propertyIdFromUrl || ''}`}>
                           <Sparkles className="w-5 h-5 mr-2" />
                           Start This Project
                         </Link>
@@ -779,7 +815,7 @@ export default function ExploreTemplatesPage() {
                         variant="outline"
                         style={{ minHeight: '48px' }}
                       >
-                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}`}>
+                        <Link to={`${createPageUrl('Upgrade')}?new=true&template=${selectedTemplate.id}&property=${propertyIdFromUrl || ''}`}>
                           Track as DIY Project
                         </Link>
                       </Button>
