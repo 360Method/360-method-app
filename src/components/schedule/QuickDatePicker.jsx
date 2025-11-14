@@ -4,10 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, CheckCircle2, Sparkles, ArrowLeft, DollarSign, AlertTriangle, Building2, BookOpen, Wrench } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, CheckCircle2, ArrowLeft, DollarSign, AlertTriangle, Building2, BookOpen } from "lucide-react";
 
 export default function QuickDatePicker({ task, property, onSchedule, onClose, onSnooze }) {
   const [selectedDate, setSelectedDate] = useState(null);
+  const [timeRange, setTimeRange] = useState('morning');
   const [showDetails, setShowDetails] = useState(false);
   
   const today = startOfDay(new Date());
@@ -42,7 +44,8 @@ export default function QuickDatePicker({ task, property, onSchedule, onClose, o
   
   const handleSchedule = () => {
     if (selectedDate) {
-      onSchedule(task, selectedDate);
+      // Pass both date and time range
+      onSchedule(task, selectedDate, timeRange);
       onClose();
     }
   };
@@ -58,7 +61,7 @@ export default function QuickDatePicker({ task, property, onSchedule, onClose, o
             Schedule Task
           </DialogTitle>
           <DialogDescription>
-            Pick a date for this task or view full details
+            Pick a date and time for this task
           </DialogDescription>
         </DialogHeader>
         
@@ -195,6 +198,23 @@ export default function QuickDatePicker({ task, property, onSchedule, onClose, o
               style={{ minHeight: '48px' }}
             />
           </div>
+
+          {/* TIME RANGE SELECTION */}
+          {selectedDate && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Time of Day:</h4>
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger style={{ minHeight: '48px' }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="morning">🌅 Morning (6am - 12pm)</SelectItem>
+                  <SelectItem value="afternoon">☀️ Afternoon (12pm - 6pm)</SelectItem>
+                  <SelectItem value="evening">🌙 Evening (6pm - 12am)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           {/* ACTION BUTTONS */}
           <div className="flex gap-3 pt-4 border-t">
