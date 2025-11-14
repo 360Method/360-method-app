@@ -20,11 +20,13 @@ import {
   Plus,
   Eye,
   CheckSquare,
-  Sparkles
+  Sparkles,
+  Filter,
+  X
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, parseISO, startOfDay } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import CalendarView from "../components/schedule/CalendarView";
 import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
@@ -52,6 +54,18 @@ export default function SchedulePage() {
   const [tasksForSelectedDate, setTasksForSelectedDate] = React.useState([]);
   const [showTaskDetail, setShowTaskDetail] = React.useState(false);
   const [taskForDetail, setTaskForDetail] = React.useState(null);
+  
+  // Advanced Filters
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [filters, setFilters] = React.useState({
+    priority: 'all',
+    executionMethod: 'all',
+    system: 'all',
+    unit: 'all',
+    timeRange: 'all',
+    riskLevel: 'all',
+    sortBy: 'priority'
+  });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -104,13 +118,38 @@ export default function SchedulePage() {
 
   const scheduledTasks = allTasks.filter(task => task.status === 'Scheduled');
 
-  const tasksWithDates = scheduledTasks.filter(t => t.scheduled_date);
-  const tasksWithoutDates = scheduledTasks.filter(t => !t.scheduled_date);
-
-  const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
-  const sortedUnscheduledTasks = tasksWithoutDates.sort((a, b) => {
-    return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
+  // Apply filters
+  const filteredTasks = scheduledTasks.filter(task => {
+    if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
+    if (filters.executionMethod !== 'all' && task.execution_method !== filters.executionMethod) return false;
+    if (filters.system !== 'all' && task.system_type !== filters.system) return false;
+    if (filters.unit !== 'all' && task.unit_tag !== filters.unit) return false;
+    if (filters.timeRange !== 'all' && task.time_range !== filters.timeRange) return false;
+    if (filters.riskLevel === 'high' && (!task.cascade_risk_score || task.cascade_risk_score < 7)) return false;
+    return true;
   });
+
+  // Sort tasks
+  const sortedFilteredTasks = [...filteredTasks].sort((a, b) => {
+    switch (filters.sortBy) {
+      case 'priority':
+        const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
+        return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
+      case 'time':
+        return (a.estimated_hours || a.diy_time_hours || 0) - (b.estimated_hours || b.diy_time_hours || 0);
+      case 'cost':
+        return (a.current_fix_cost || 0) - (b.current_fix_cost || 0);
+      case 'risk':
+        return (b.cascade_risk_score || 0) - (a.cascade_risk_score || 0);
+      case 'unit':
+        return (a.unit_tag || '').localeCompare(b.unit_tag || '');
+      default:
+        return 0;
+    }
+  });
+
+  const tasksWithDates = sortedFilteredTasks.filter(t => t.scheduled_date);
+  const tasksWithoutDates = sortedFilteredTasks.filter(t => !t.scheduled_date);
 
   const totalScheduling = scheduledTasks.length;
   const tasksReadyForExecution = tasksWithDates.length;
@@ -128,21 +167,10 @@ export default function SchedulePage() {
     }
   }).length;
 
-  const getWorkloadByDay = (tasks) => {
-    const workloadMap = {};
-    tasks.forEach(task => {
-      if (task.scheduled_date && (task.estimated_hours || task.diy_time_hours)) {
-        const dateKey = format(startOfDay(new Date(task.scheduled_date)), 'yyyy-MM-dd');
-        workloadMap[dateKey] = (workloadMap[dateKey] || 0) + (task.estimated_hours || task.diy_time_hours);
-      }
-    });
-    return workloadMap;
-  };
-
-  const workloadByDay = getWorkloadByDay(tasksWithDates);
-  const overloadedDays = Object.entries(workloadByDay)
-    .filter(([date, hours]) => hours > 6)
-    .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  // Get unique values for filters
+  const uniqueSystems = [...new Set(scheduledTasks.map(t => t.system_type).filter(Boolean))];
+  const uniqueUnits = [...new Set(scheduledTasks.map(t => t.unit_tag).filter(Boolean))];
+  const activeFiltersCount = Object.values(filters).filter(v => v !== 'all' && v !== 'priority').length;
 
   const handleTaskDrop = (task, date) => {
     const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
@@ -151,6 +179,16 @@ export default function SchedulePage() {
       data: { 
         scheduled_date: formattedDate,
         status: 'Scheduled',
+        last_reminded_date: new Date().toISOString()
+      }
+    });
+  };
+
+  const handleTimeRangeChange = (task, timeRange) => {
+    updateTaskMutation.mutate({
+      taskId: task.id,
+      data: { 
+        time_range: timeRange,
         last_reminded_date: new Date().toISOString()
       }
     });
@@ -214,6 +252,18 @@ export default function SchedulePage() {
     });
     setSelectedTasks([]);
     setShowBatchScheduler(false);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      priority: 'all',
+      executionMethod: 'all',
+      system: 'all',
+      unit: 'all',
+      timeRange: 'all',
+      riskLevel: 'all',
+      sortBy: 'priority'
+    });
   };
 
   if (properties.length === 0) {
@@ -285,8 +335,7 @@ export default function SchedulePage() {
               </div>
 
               <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Click tasks for quick scheduling or drag to calendar → 
-                Click dates to see daily breakdown with time ranges
+                <strong>Your Job:</strong> Drag tasks to calendar dates, then drag between time ranges in daily view
               </p>
             </CardContent>
           </Card>
@@ -317,6 +366,131 @@ export default function SchedulePage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Advanced Filters */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-blue-900">Filters & Sorting</h3>
+                {activeFiltersCount > 0 && (
+                  <Badge className="bg-blue-600">{activeFiltersCount} active</Badge>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {activeFiltersCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="gap-1"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  {showFilters ? 'Hide' : 'Show'} Filters
+                </Button>
+              </div>
+            </div>
+
+            {showFilters && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-blue-200">
+                <Select value={filters.priority} onValueChange={(val) => setFilters({...filters, priority: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Routine">Routine</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.executionMethod} onValueChange={(val) => setFilters({...filters, executionMethod: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="Method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Methods</SelectItem>
+                    <SelectItem value="DIY">DIY</SelectItem>
+                    <SelectItem value="Contractor">Contractor</SelectItem>
+                    <SelectItem value="360_Operator">360° Operator</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.system} onValueChange={(val) => setFilters({...filters, system: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="System" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Systems</SelectItem>
+                    {uniqueSystems.map(sys => (
+                      <SelectItem key={sys} value={sys}>{sys}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {uniqueUnits.length > 0 && (
+                  <Select value={filters.unit} onValueChange={(val) => setFilters({...filters, unit: val})}>
+                    <SelectTrigger style={{ minHeight: '44px' }}>
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Units</SelectItem>
+                      {uniqueUnits.map(unit => (
+                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <Select value={filters.timeRange} onValueChange={(val) => setFilters({...filters, timeRange: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Times</SelectItem>
+                    <SelectItem value="morning">🌅 Morning</SelectItem>
+                    <SelectItem value="afternoon">☀️ Afternoon</SelectItem>
+                    <SelectItem value="evening">🌙 Evening</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.riskLevel} onValueChange={(val) => setFilters({...filters, riskLevel: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="Risk" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Risk Levels</SelectItem>
+                    <SelectItem value="high">⚠️ High Risk Only</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.sortBy} onValueChange={(val) => setFilters({...filters, sortBy: val})}>
+                  <SelectTrigger style={{ minHeight: '44px' }}>
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="priority">Priority</SelectItem>
+                    <SelectItem value="time">Time Required</SelectItem>
+                    <SelectItem value="cost">Cost</SelectItem>
+                    <SelectItem value="risk">Risk Level</SelectItem>
+                    <SelectItem value="unit">Unit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {seasonalReminders.length > 0 && (
           <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
@@ -358,7 +532,7 @@ export default function SchedulePage() {
               <div className="p-3 bg-white rounded-lg border-2 border-orange-300">
                 <p className="text-xs text-gray-700 leading-relaxed">
                   💡 <strong>Tip:</strong> These are existing tasks from your maintenance plan. 
-                  Schedule them now or snooze to be reminded later. No duplicates will be created!
+                  Schedule them now or snooze to be reminded later.
                 </p>
               </div>
             </CardContent>
@@ -472,7 +646,7 @@ export default function SchedulePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {sortedUnscheduledTasks.length > 0 && (
+                  {tasksWithoutDates.length > 0 && (
                     <div className="mb-3 p-3 bg-white rounded-lg border-2 border-orange-400">
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-sm text-gray-700">
@@ -508,8 +682,8 @@ export default function SchedulePage() {
                     </div>
                   )}
                   
-                  {sortedUnscheduledTasks.length > 0 ? (
-                    sortedUnscheduledTasks.map(task => (
+                  {tasksWithoutDates.length > 0 ? (
+                    tasksWithoutDates.map(task => (
                       <div
                         key={task.id}
                         draggable
@@ -538,6 +712,11 @@ export default function SchedulePage() {
                               } style={{ fontSize: '10px', padding: '2px 6px' }}>
                                 {task.priority}
                               </Badge>
+                              {task.unit_tag && (
+                                <Badge className="bg-purple-600" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                  {task.unit_tag}
+                                </Badge>
+                              )}
                               <span>
                                 {task.execution_method === 'DIY' && '🔧 DIY'}
                                 {task.execution_method === 'Contractor' && '👷 Contractor'}
@@ -570,34 +749,12 @@ export default function SchedulePage() {
                 }}
                 onDateClick={handleDateClick}
                 onTaskDrop={handleTaskDrop}
+                onTimeRangeChange={handleTimeRangeChange}
               />
-              
-              {overloadedDays.length > 0 && (
-                <div className="mt-4 bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-orange-900 mb-1">
-                        ⚠️ Heavy Workload Days
-                      </h4>
-                      <div className="text-sm text-orange-800 space-y-1">
-                        {overloadedDays.map(([date, hours]) => (
-                          <div key={date}>
-                            <strong>{format(new Date(date), 'MMM d, yyyy')}</strong>: {hours.toFixed(1)} hours scheduled
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-sm text-orange-700 mt-2">
-                        Consider spreading tasks across multiple days for better balance.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         ) : (
-          sortedUnscheduledTasks.length > 0 ? (
+          tasksWithoutDates.length > 0 ? (
             <div className="space-y-4">
               <Card className="border-2 border-orange-300 bg-orange-50">
                 <CardContent className="p-4">
@@ -615,7 +772,7 @@ export default function SchedulePage() {
                 </CardContent>
               </Card>
 
-              {sortedUnscheduledTasks.map(task => (
+              {tasksWithoutDates.map(task => (
                 <ScheduleTaskCard
                   key={task.id}
                   task={task}

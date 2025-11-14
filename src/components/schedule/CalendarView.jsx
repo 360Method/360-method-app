@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, addDays, subDays, startOfDay, getMonth } from "date-fns";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -35,7 +35,7 @@ function getCurrentSeason(date) {
   return { name: 'Winter', emoji: '❄️', months: 'December - February' };
 }
 
-export default function CalendarView({ tasks = [], viewMode = 'month', onTaskClick, onDateClick, onTaskDrop }) {
+export default function CalendarView({ tasks = [], viewMode = 'month', onTaskClick, onDateClick, onTaskDrop, onTimeRangeChange }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState(null);
@@ -98,6 +98,22 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
     setDraggedTask(null);
   };
 
+  const handleTimeRangeDrop = (e, timeRange) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const taskId = e.dataTransfer.getData('taskId');
+    
+    let taskToMove = draggedTask;
+    if (!taskToMove && taskId) {
+      taskToMove = tasks.find(t => t.id === taskId);
+    }
+    
+    if (taskToMove && onTimeRangeChange) {
+      onTimeRangeChange(taskToMove, timeRange);
+    }
+    setDraggedTask(null);
+  };
+
   const handlePrev = () => {
     if (viewMode === 'day') {
       setCurrentMonth(subDays(currentMonth, 1));
@@ -123,9 +139,9 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
     const tasksOnDay = getTasksForDate(tasks, dayToShow);
     
     const timeRanges = [
-      { label: 'Morning', emoji: '🌅', hours: '6am - 12pm', tasks: tasksOnDay.filter(t => !t.time_range || t.time_range === 'morning') },
-      { label: 'Afternoon', emoji: '☀️', hours: '12pm - 6pm', tasks: tasksOnDay.filter(t => t.time_range === 'afternoon') },
-      { label: 'Evening', emoji: '🌙', hours: '6pm - 12am', tasks: tasksOnDay.filter(t => t.time_range === 'evening') }
+      { value: 'morning', label: 'Morning', emoji: '🌅', hours: '6am - 12pm', tasks: tasksOnDay.filter(t => !t.time_range || t.time_range === 'morning') },
+      { value: 'afternoon', label: 'Afternoon', emoji: '☀️', hours: '12pm - 6pm', tasks: tasksOnDay.filter(t => t.time_range === 'afternoon') },
+      { value: 'evening', label: 'Evening', emoji: '🌙', hours: '6pm - 12am', tasks: tasksOnDay.filter(t => t.time_range === 'evening') }
     ];
 
     return (
@@ -165,11 +181,17 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
 
         <div className="space-y-4">
           {timeRanges.map(range => (
-            <div key={range.label} className="border-2 border-gray-200 rounded-lg p-4">
+            <div 
+              key={range.value}
+              onDrop={(e) => handleTimeRangeDrop(e, range.value)}
+              onDragOver={handleDragOver}
+              className="border-2 border-gray-200 rounded-lg p-4 transition-colors hover:border-yellow-400"
+            >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
                   <span>{range.emoji}</span>
                   {range.label}
+                  <Badge variant="outline" className="ml-2">{range.tasks.length}</Badge>
                 </h3>
                 <span className="text-sm text-gray-600">{range.hours}</span>
               </div>
@@ -182,10 +204,13 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
                       draggable
                       onDragStart={(e) => handleDragStart(e, task)}
                       onClick={() => onTaskClick && onTaskClick(task)}
-                      className={`p-3 rounded-lg cursor-pointer ${getTaskColor(task.execution_method)} hover:opacity-80 transition-all`}
+                      className={`p-3 rounded-lg cursor-move ${getTaskColor(task.execution_method)} hover:opacity-80 transition-all`}
                     >
                       <div className="font-semibold mb-1">{task.title}</div>
                       <div className="flex items-center gap-2 flex-wrap text-xs">
+                        {task.unit_tag && (
+                          <Badge className="bg-purple-600 text-white">{task.unit_tag}</Badge>
+                        )}
                         {task.estimated_hours && (
                           <span>⏱️ {task.estimated_hours}h</span>
                         )}
@@ -193,14 +218,22 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
                           <span>💰 ${task.current_fix_cost}</span>
                         )}
                         {task.priority && (
-                          <Badge className="text-xs">{task.priority}</Badge>
+                          <Badge className={
+                            task.priority === 'High' ? 'bg-red-600' :
+                            task.priority === 'Medium' ? 'bg-yellow-600' : 'bg-blue-600'
+                          }>{task.priority}</Badge>
+                        )}
+                        {task.cascade_risk_score >= 7 && (
+                          <Badge className="bg-red-600">⚠️ High Risk</Badge>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No tasks scheduled for {range.label.toLowerCase()}</p>
+                <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  Drag tasks here to schedule for {range.label.toLowerCase()}
+                </div>
               )}
             </div>
           ))}
