@@ -10,14 +10,14 @@ import {
   Calendar,
   TrendingUp,
   AlertTriangle,
-  Clock,
   DollarSign,
   ChevronRight,
   ChevronDown,
   Calculator,
   Trophy,
   Lightbulb,
-  Zap
+  Zap,
+  AlertCircle
 } from "lucide-react";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ReplacementForecastTimeline from "../components/preserve/ReplacementForecastTimeline";
@@ -25,6 +25,15 @@ import PreservationRecommendationCard from "../components/preserve/PreservationR
 import DecisionCalculator from "../components/preserve/DecisionCalculator";
 import InvestmentMatrix from "../components/preserve/InvestmentMatrix";
 import PreservationROIChart from "../components/preserve/PreservationROIChart";
+
+// The Big 7 system categories
+const BIG_7_CATEGORIES = [
+  'HVAC', 'Water Heater', 'Water Softener', 'Sump Pump',
+  'Roof', 'Foundation', 'Drainage',
+  'Deck', 'Driveway', 'Patio',
+  'Siding', 'Windows', 'Exterior Doors', 'Garage Door',
+  'Refrigerator', 'Dishwasher', 'Washer', 'Dryer', 'Range/Oven'
+];
 
 export default function Preserve() {
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -42,10 +51,18 @@ export default function Preserve() {
     queryFn: () => base44.auth.me()
   });
 
-  const { data: systems = [] } = useQuery({
+  const { data: allSystems = [] } = useQuery({
     queryKey: ['systems', selectedProperty],
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedProperty }),
     enabled: !!selectedProperty
+  });
+
+  // Filter to Big 7 systems only with min replacement cost
+  const systems = allSystems.filter(s => {
+    const systemCategory = s.system_type?.split(' - ')[0] || s.system_type;
+    const isBig7 = BIG_7_CATEGORIES.some(cat => systemCategory?.includes(cat));
+    const meetsMinCost = (s.replacement_cost_estimate || 0) >= 1500;
+    return isBig7 && meetsMinCost;
   });
 
   const { data: recommendations = [] } = useQuery({
@@ -78,14 +95,26 @@ export default function Preserve() {
   const overallROI = totalInvested > 0 ? (totalValueCreated / totalInvested).toFixed(1) : 0;
   const totalYearsExtended = impacts.reduce((sum, i) => sum + (i.years_extended || 0), 0);
 
-  // Calculate systems needing attention
-  const systemsNeedingAttention = systems.filter(s => {
-    if (!s.installation_year || !s.estimated_lifespan_years) return false;
-    const currentYear = new Date().getFullYear();
+  // Calculate systems at different risk levels
+  const currentYear = new Date().getFullYear();
+  const systemsByUrgency = systems.reduce((acc, s) => {
+    if (!s.installation_year || !s.estimated_lifespan_years) return acc;
     const age = currentYear - s.installation_year;
-    const agePercentage = age / s.estimated_lifespan_years;
-    return agePercentage >= 0.75 && s.condition !== 'Excellent';
-  });
+    const totalLifespan = s.estimated_lifespan_years + (s.lifespan_extension_total_years || 0);
+    const yearsRemaining = totalLifespan - age;
+    
+    if (yearsRemaining <= 2 || s.condition === 'Poor') {
+      acc.urgent++;
+    } else if (yearsRemaining <= 5) {
+      acc.planAhead++;
+    } else {
+      acc.healthy++;
+    }
+    return acc;
+  }, { urgent: 0, planAhead: 0, healthy: 0 });
+
+  // Calculate total capital at risk
+  const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
@@ -110,7 +139,7 @@ export default function Preserve() {
             Preserve
           </h1>
           <p className="text-gray-600 text-lg">
-            Strategic preservation intelligence to extend system life and protect your investment
+            Strategic intelligence for your Big 7 capital systems - extend life, avoid emergencies, protect investment
           </p>
         </div>
 
@@ -125,7 +154,7 @@ export default function Preserve() {
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-900 mb-1">Why Preserve Matters</h3>
                 <p className="text-sm text-blue-800">
-                  Preserve analyzes your system data to identify opportunities for life extension, preventing costly emergency replacements and protecting your investment.
+                  70-80% of your home's capital is tied up in just 7 major systems. PRESERVE finds strategic interventions (ROI 3x+) that extend system life 3-15 years, avoiding emergency replacements.
                 </p>
               </div>
               {whyExpanded ? (
@@ -139,23 +168,26 @@ export default function Preserve() {
             <CardContent className="pt-0">
               <div className="bg-white rounded-lg p-4 space-y-3">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Preserve is Step 7 in ADVANCE. It uses your baseline data from AWARE to forecast replacement timelines, identify life-extension opportunities, and calculate strategic intervention ROI.
-                  </p>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 The Big 7 Systems:</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• <strong>HVAC & Water Systems:</strong> Heating, cooling, hot water, drainage</li>
+                    <li>• <strong>Structural:</strong> Roof, foundation, major structures (deck, driveway)</li>
+                    <li>• <strong>Envelope:</strong> Siding, windows, doors, garage</li>
+                    <li>• <strong>Major Appliances:</strong> Fridge, washer, dryer, range, dishwasher</li>
+                  </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Key Benefits:</h4>
+                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Strategic Focus:</h4>
                   <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Avoid Emergency Replacements:</strong> Plan proactively instead of reacting to failures</li>
-                    <li>• <strong>Extend System Life:</strong> Strategic interventions add 3-7 years on average</li>
-                    <li>• <strong>ROI Focus:</strong> Typical preservation ROI is 3-5x the investment</li>
-                    <li>• <strong>Budget Planning:</strong> Forecast expenses 2-15 years out</li>
+                    <li>• <strong>Not routine maintenance</strong> (that's ACT) - filters, batteries, etc.</li>
+                    <li>• <strong>Not full replacements</strong> (that's UPGRADE) - new systems</li>
+                    <li>• <strong>Strategic interventions only:</strong> $500-5,000 investments that extend life 3-15 years</li>
+                    <li>• <strong>ROI threshold:</strong> Must return 3x+ to recommend</li>
                   </ul>
                 </div>
                 <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
                   <p className="text-xs text-blue-900">
-                    <strong>Smart Strategy:</strong> Spending $2,000 today to extend a system 5 years beats a $10,000 emergency replacement tomorrow.
+                    <strong>Example:</strong> Spend $800 on HVAC deep service to extend life 4 years, avoiding $8,500 replacement = 10.6x ROI
                   </p>
                 </div>
               </div>
@@ -188,53 +220,60 @@ export default function Preserve() {
           </Card>
         )}
 
-        {/* Quick Stats */}
-        {selectedProperty && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600" />
-                  <p className="text-xs text-gray-600">Systems at Risk</p>
+        {/* Portfolio Overview Summary */}
+        {selectedProperty && systems.length > 0 && (
+          <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-6 h-6 text-indigo-600" />
+                Portfolio Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Systems Tracked: <strong>{systems.length} major systems</strong></p>
+                  <div className="flex flex-wrap gap-2">
+                    {systemsByUrgency.urgent > 0 && (
+                      <Badge className="bg-red-600 text-white">
+                        🔴 URGENT: {systemsByUrgency.urgent} system{systemsByUrgency.urgent !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {systemsByUrgency.planAhead > 0 && (
+                      <Badge className="bg-yellow-600 text-white">
+                        🟡 PLAN AHEAD: {systemsByUrgency.planAhead} system{systemsByUrgency.planAhead !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {systemsByUrgency.healthy > 0 && (
+                      <Badge className="bg-green-600 text-white">
+                        🟢 HEALTHY: {systemsByUrgency.healthy} system{systemsByUrgency.healthy !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{systemsNeedingAttention.length}</p>
-                <p className="text-xs text-gray-500">Approaching end of life</p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-blue-600" />
-                  <p className="text-xs text-gray-600">Opportunities</p>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{recommendations.filter(r => r.status === 'PENDING').length}</p>
-                <p className="text-xs text-gray-500">Life-extension options</p>
-              </CardContent>
-            </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-white rounded-lg border-2 border-red-200">
+                    <p className="text-sm text-gray-600 mb-1">💰 Total Capital at Risk</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      ${totalCapitalAtRisk.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">If all systems replaced today</p>
+                  </div>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <p className="text-xs text-gray-600">Value Created</p>
+                  {totalValueCreated > 0 && (
+                    <div className="p-4 bg-white rounded-lg border-2 border-green-200">
+                      <p className="text-sm text-gray-600 mb-1">🛡️ Preservation Value Created</p>
+                      <p className="text-2xl font-bold text-green-700">
+                        ${totalValueCreated.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Lifetime avoided costs</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-2xl font-bold text-green-700">${totalValueCreated.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Lifetime savings</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-purple-600" />
-                  <p className="text-xs text-gray-600">Overall ROI</p>
-                </div>
-                <p className="text-2xl font-bold text-purple-700">{overallROI}x</p>
-                <p className="text-xs text-gray-500">Return on investment</p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Main Tabs */}
@@ -293,6 +332,21 @@ export default function Preserve() {
           {/* Tab 2: Life-Extension Opportunities */}
           <TabsContent value="opportunities" className="mt-6 space-y-6">
             
+            {/* Info Banner */}
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900 text-sm mb-1">Strategic Interventions Only</p>
+                    <p className="text-sm text-blue-800">
+                      Showing Big 7 systems with ROI 3x+ and intervention costs $500-5,000. Routine maintenance tasks are in the ACT module.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Urgent Section */}
             {urgentRecommendations.length > 0 && (
               <div>
@@ -308,6 +362,7 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
+                      property={properties.find(p => p.id === selectedProperty)}
                     />
                   ))}
                 </div>
@@ -329,6 +384,7 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
+                      property={properties.find(p => p.id === selectedProperty)}
                     />
                   ))}
                 </div>
@@ -339,7 +395,7 @@ export default function Preserve() {
             {optionalItems.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-6 h-6 text-blue-600" />
+                  <DollarSign className="w-6 h-6 text-blue-600" />
                   <h2 className="font-bold text-xl text-gray-900">
                     💰 OPTIONAL - Consider for Optimization ({optionalItems.length})
                   </h2>
@@ -350,6 +406,7 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
+                      property={properties.find(p => p.id === selectedProperty)}
                     />
                   ))}
                 </div>
@@ -363,7 +420,16 @@ export default function Preserve() {
                   <Shield className="w-16 h-16 text-green-600 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">All Systems Looking Good!</h3>
                   <p className="text-gray-600 mb-4">
-                    No preservation recommendations at this time. Check back as systems age.
+                    No strategic preservation recommendations at this time. Your Big 7 systems are either:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1 text-left max-w-md mx-auto">
+                    <li>• Too new (less than 75% of lifespan)</li>
+                    <li>• Too old (better to replace than intervene)</li>
+                    <li>• In excellent condition</li>
+                    <li>• Not cost-effective to intervene (ROI below 3x)</li>
+                  </ul>
+                  <p className="text-sm text-gray-500 mt-4">
+                    Check back as systems age. PRESERVE monitors your Big 7 daily.
                   </p>
                 </CardContent>
               </Card>
@@ -400,6 +466,22 @@ export default function Preserve() {
           </TabsContent>
 
         </Tabs>
+
+        {/* Empty State - No Big 7 Systems */}
+        {selectedProperty && systems.length === 0 && (
+          <Card className="border-2 border-gray-200">
+            <CardContent className="p-12 text-center">
+              <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No Big 7 Systems Found</h3>
+              <p className="text-gray-600 mb-4">
+                PRESERVE tracks major capital systems with replacement costs $1,500+. Complete your system baseline in the AWARE phase to see preservation forecasts.
+              </p>
+              <p className="text-sm text-gray-500">
+                The Big 7: HVAC, Water Heater, Roof, Foundation, Major Appliances, Exterior Envelope, Major Structures
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
       </div>
     </div>
