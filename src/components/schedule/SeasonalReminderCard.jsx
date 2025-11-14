@@ -1,28 +1,11 @@
 import React from 'react';
-import { addWeeks } from 'date-fns';
-import { AlertCircle, Calendar, Clock, DollarSign, Home, Building2 } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, DollarSign, Home, Building2, Send, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export default function SeasonalReminderCard({ task, onSchedule, properties = [] }) {
-  const queryClient = useQueryClient();
-  
+export default function SeasonalReminderCard({ task, onSchedule, onSnooze, properties = [] }) {
   const property = properties.find(p => p.id === task.property_id);
-  
-  const snoozeMutation = useMutation({
-    mutationFn: async (weeks) => {
-      return await base44.entities.MaintenanceTask.update(task.id, {
-        reminder_snoozed_until: addWeeks(new Date(), weeks).toISOString()
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    }
-  });
   
   return (
     <Card className="border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 p-4">
@@ -140,17 +123,17 @@ export default function SeasonalReminderCard({ task, onSchedule, properties = []
           className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
           style={{ minHeight: '48px' }}
         >
+          <Calendar className="w-4 h-4 mr-2" />
           Schedule Now
         </Button>
         
         <Button
-          onClick={() => snoozeMutation.mutate(2)}
-          disabled={snoozeMutation.isPending}
+          onClick={() => onSnooze(task)}
           variant="outline"
           className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50"
           style={{ minHeight: '48px' }}
         >
-          {snoozeMutation.isPending ? 'Snoozing...' : 'Snooze 2wk'}
+          <ArrowLeft className="w-4 h-4" />
         </Button>
       </div>
       
