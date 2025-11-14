@@ -1,112 +1,154 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, DollarSign, Calendar, Clock, Edit, CheckCircle2, AlertCircle, Target, FileText, ExternalLink } from "lucide-react";
-import { calculateMemberDiscount } from "../shared/MemberDiscountCalculator";
+import React from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { 
+  DollarSign, TrendingUp, Calendar, FileText, 
+  Image as ImageIcon, ArrowRight, Hammer, 
+  Building2, HardHat, CircleHelp, CheckCircle2,
+  Edit, Zap
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { calculateMemberDiscount } from '../shared/MemberDiscountCalculator';
 
-export default function UpgradeProjectCard({ project, properties, memberDiscount, onEdit }) {
-  const property = properties.find(p => p.id === project.property_id);
+export default function UpgradeProjectCard({ 
+  project, 
+  properties, 
+  memberDiscount, 
+  onEdit 
+}) {
+  const property = properties?.find(p => p.id === project.property_id);
   
   const statusColors = {
-    'Identified': 'bg-gray-100 text-gray-800',
-    'Planned': 'bg-blue-100 text-blue-800',
+    'Identified': 'bg-blue-100 text-blue-800',
+    'Planned': 'bg-purple-100 text-purple-800',
     'In Progress': 'bg-orange-100 text-orange-800',
     'Completed': 'bg-green-100 text-green-800',
-    'Deferred': 'bg-gray-100 text-gray-600'
+    'Deferred': 'bg-gray-100 text-gray-800'
   };
 
   const categoryColors = {
-    'High ROI Renovations': 'bg-green-100 text-green-800',
-    'Energy Efficiency': 'bg-blue-100 text-blue-800',
+    'High ROI Renovations': 'bg-yellow-100 text-yellow-800',
+    'Energy Efficiency': 'bg-green-100 text-green-800',
     'Rental Income Boosters': 'bg-purple-100 text-purple-800',
-    'Preventive Replacements': 'bg-red-100 text-red-800',
-    'Curb Appeal': 'bg-orange-100 text-orange-800',
-    'Interior Updates': 'bg-pink-100 text-pink-800',
+    'Preventive Replacements': 'bg-blue-100 text-blue-800',
+    'Curb Appeal': 'bg-pink-100 text-pink-800',
+    'Interior Updates': 'bg-indigo-100 text-indigo-800',
     'Safety': 'bg-red-100 text-red-800',
-    'Comfort': 'bg-blue-100 text-blue-800',
-    'Property Value': 'bg-purple-100 text-purple-800',
-    'Rental Appeal': 'bg-orange-100 text-orange-800'
+    'Comfort': 'bg-teal-100 text-teal-800',
+    'Property Value': 'bg-emerald-100 text-emerald-800',
+    'Rental Appeal': 'bg-fuchsia-100 text-fuchsia-800'
   };
 
-  const estimatedCost = project.actual_cost || project.investment_required || 0;
+  const managerIcons = {
+    'DIY': Hammer,
+    'Operator': Building2,
+    'Contractor': HardHat,
+    'TBD': CircleHelp
+  };
   
-  // Use new discount calculation if memberDiscount is passed as string (tier name)
-  const discountInfo = typeof memberDiscount === 'string' 
-    ? calculateMemberDiscount(estimatedCost, memberDiscount)
+  const ManagerIcon = managerIcons[project.project_manager] || CircleHelp;
+
+  // Calculate investment (use actual if completed, else estimated)
+  const investment = project.status === 'Completed' && project.final_investment
+    ? project.final_investment
+    : project.investment_required || 0;
+
+  // Calculate value added (use final if completed, else estimated)
+  const valueAdded = project.status === 'Completed' && project.final_value_added
+    ? project.final_value_added
+    : project.property_value_impact || 0;
+
+  // Net impact
+  const netImpact = valueAdded - investment;
+
+  // Timeline
+  const roiMonths = project.roi_timeline_months || 0;
+
+  // Member discount if applicable
+  const discount = memberDiscount 
+    ? calculateMemberDiscount(investment, memberDiscount)
     : null;
-  const actualSavings = discountInfo?.actualSavings || (typeof memberDiscount === 'number' ? estimatedCost * memberDiscount : 0);
-  const costWithDiscount = estimatedCost - actualSavings;
-  
-  const equityGain = project.property_value_impact || 0;
-  const netCost = estimatedCost - equityGain;
-  const roiPercent = estimatedCost > 0 ? ((equityGain / estimatedCost) * 100) : 0;
 
-  const annualSavings = project.annual_savings || 0;
-  const paybackMonths = project.roi_timeline_months || 0;
+  // Milestone progress
+  const completedMilestones = project.milestones?.filter(m => 
+    m.status === 'Completed'
+  ).length || 0;
+  const totalMilestones = project.milestones?.length || 0;
 
+  // Photo counts
+  const photoCount = (project.before_photo_urls?.length || 0) + 
+                     (project.after_photo_urls?.length || 0) +
+                     (project.photo_timeline?.reduce((sum, entry) => 
+                       sum + (entry.photos?.length || 0), 0) || 0);
+
+  // Document count
   const documentCount = project.quote_documents?.length || 0;
-  const progressPercent = project.progress_percentage || 0;
 
   return (
-    <Card className="border-2 border-gray-200 mobile-card hover:shadow-lg transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
+    <Card className="border-2 hover:border-blue-300 transition-all">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-bold" style={{ color: '#1B365D', fontSize: '20px' }}>
+              <h3 className="text-xl font-bold" style={{ color: '#1B365D' }}>
                 {project.title}
               </h3>
+              <ManagerIcon className="w-4 h-4 text-gray-500" title={project.project_manager} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Badge className={statusColors[project.status]}>
                 {project.status}
               </Badge>
-            </div>
-            
-            <div className="flex flex-wrap gap-2 mb-3">
-              <Badge className={categoryColors[project.category]}>
+              <Badge className={categoryColors[project.category]} variant="outline">
                 {project.category}
               </Badge>
               {property && (
-                <Badge variant="outline" className="text-xs">
-                  {property.address}
-                </Badge>
-              )}
-              {project.project_manager && (
-                <Badge variant="outline" className="text-xs">
-                  {project.project_manager === 'Operator' ? '🏢 Operator' : 
-                   project.project_manager === 'Contractor' ? '👷 Contractor' : '🔨 DIY'}
-                </Badge>
+                <span className="text-xs text-gray-600">
+                  📍 {property.address}
+                </span>
               )}
             </div>
-
             {project.description && (
-              <p className="text-gray-700 text-sm mb-3 line-clamp-2">
+              <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                 {project.description}
               </p>
             )}
           </div>
-
+          
+          {/* Quick Edit Button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={onEdit}
-            style={{ minHeight: '44px', minWidth: '44px' }}
+            title="Edit project"
+            style={{ minHeight: '40px', minWidth: '40px' }}
           >
-            <Edit className="w-5 h-5 text-gray-500" />
+            <Edit className="w-4 h-4" />
           </Button>
         </div>
+      </CardHeader>
 
-        {/* Progress Bar for In Progress projects */}
-        {(project.status === 'In Progress' || project.status === 'Planned') && progressPercent > 0 && (
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-semibold">Progress:</span>
-              <span className="font-bold">{progressPercent}%</span>
+      <CardContent className="space-y-4">
+        
+        {/* Milestone Progress */}
+        {totalMilestones > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 font-medium">
+                Progress: {completedMilestones} / {totalMilestones} milestones
+              </span>
+              <span className="text-sm font-semibold text-blue-600">
+                {project.progress_percentage || 0}%
+              </span>
             </div>
-            <Progress value={progressPercent} className="h-3" />
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${project.progress_percentage || 0}%` }}
+              />
+            </div>
             {project.current_milestone && (
               <p className="text-xs text-gray-600 mt-1">
                 Current: {project.current_milestone}
@@ -116,160 +158,90 @@ export default function UpgradeProjectCard({ project, properties, memberDiscount
         )}
 
         {/* Financial Summary */}
-        <div className="grid md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-              <p className="text-xs text-gray-600">Investment</p>
-            </div>
-            <p className="font-bold" style={{ color: '#1B365D' }}>
-              ${estimatedCost.toLocaleString()}
+            <p className="text-xs text-gray-600 mb-1">Investment</p>
+            <p className="text-lg font-bold text-blue-700">
+              ${investment.toLocaleString()}
             </p>
-            {actualSavings > 0 && project.status !== 'Completed' && (
-              <p className="text-xs text-green-700">
-                Save ${actualSavings.toLocaleString()}
-                {discountInfo && ` (${discountInfo.percent}%)`}
+            {discount && discount.savingsAmount > 0 && (
+              <p className="text-xs text-purple-600 font-semibold">
+                Save ${discount.savingsAmount.toLocaleString()}
               </p>
             )}
           </div>
-
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-              <p className="text-xs text-gray-600">Equity Gain</p>
-            </div>
-            <p className="font-bold text-green-700">
-              ${equityGain.toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-600">
-              {roiPercent.toFixed(0)}% ROI
+            <p className="text-xs text-gray-600 mb-1">Value Added</p>
+            <p className="text-lg font-bold text-green-700">
+              +${valueAdded.toLocaleString()}
             </p>
           </div>
-
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-purple-600" />
-              <p className="text-xs text-gray-600">Net Impact</p>
-            </div>
-            <p className="font-bold" style={{ color: netCost > 0 ? '#1B365D' : '#28A745' }}>
-              ${Math.abs(netCost).toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-600">
-              {netCost > 0 ? 'True cost' : 'Net gain'}
+            <p className="text-xs text-gray-600 mb-1">Net Equity</p>
+            <p className={`text-lg font-bold ${
+              netImpact >= 0 ? 'text-green-700' : 'text-red-700'
+            }`}>
+              {netImpact >= 0 ? '+' : ''}${netImpact.toLocaleString()}
             </p>
           </div>
-
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-orange-600" />
-              <p className="text-xs text-gray-600">
-                {project.status === 'Completed' ? 'Completed' : 'Timeline'}
-              </p>
-            </div>
-            {project.status === 'Completed' && project.completion_date ? (
-              <p className="font-bold" style={{ color: '#1B365D' }}>
-                {new Date(project.completion_date).toLocaleDateString()}
-              </p>
-            ) : project.planned_date ? (
-              <p className="font-bold" style={{ color: '#1B365D' }}>
-                {new Date(project.planned_date).toLocaleDateString()}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500">Not scheduled</p>
-            )}
+            <p className="text-xs text-gray-600 mb-1">Timeline</p>
+            <p className="text-lg font-bold text-gray-900">
+              {roiMonths > 0 ? `${Math.round(roiMonths / 12)}y` : 'N/A'}
+            </p>
           </div>
         </div>
 
-        {/* Energy Efficiency Specific Info */}
-        {project.category === 'Energy Efficiency' && annualSavings > 0 && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-300 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <p className="font-semibold text-green-900">Energy Savings</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+        {/* Energy Savings (if applicable) */}
+        {project.annual_savings > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-green-600" />
               <div>
-                <p className="text-gray-600">Annual Savings</p>
-                <p className="font-bold text-green-700">${annualSavings.toLocaleString()}/year</p>
-              </div>
-              {paybackMonths > 0 && (
-                <div>
-                  <p className="text-gray-600">Payback Period</p>
-                  <p className="font-bold text-green-700">
-                    {paybackMonths < 12 ? `${paybackMonths} months` : `${(paybackMonths / 12).toFixed(1)} years`}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Current vs Upgraded State */}
-        {project.current_state && project.upgraded_state && (
-          <div className="mb-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs font-semibold text-gray-600 mb-1">Current State:</p>
-                <p className="text-sm text-gray-800">{project.current_state}</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-xs font-semibold text-blue-600 mb-1">After Upgrade:</p>
-                <p className="text-sm text-blue-900">{project.upgraded_state}</p>
+                <p className="text-sm font-semibold text-green-900">
+                  ${project.annual_savings.toLocaleString()}/year savings
+                </p>
+                <p className="text-xs text-green-700">
+                  Energy efficiency or maintenance reduction
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Documents & Photos */}
-        {(documentCount > 0 || project.before_photo_urls?.length > 0 || project.after_photo_urls?.length > 0 || project.milestones?.length > 0) && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {project.milestones && project.milestones.length > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {project.milestones.filter(m => m.status === 'Completed').length}/{project.milestones.length} Milestones
-                </Badge>
-              )}
-              {documentCount > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <FileText className="w-3 h-3" />
-                  {documentCount} Document{documentCount !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {project.before_photo_urls?.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {project.before_photo_urls.length} Before Photo{project.before_photo_urls.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {project.after_photo_urls?.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {project.after_photo_urls.length} After Photo{project.after_photo_urls.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
+        {/* Metadata */}
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          {documentCount > 0 && (
+            <div className="flex items-center gap-1">
+              <FileText className="w-4 h-4" />
+              <span>{documentCount} doc{documentCount !== 1 ? 's' : ''}</span>
             </div>
-          </div>
-        )}
+          )}
+          {photoCount > 0 && (
+            <div className="flex items-center gap-1">
+              <ImageIcon className="w-4 h-4" />
+              <span>{photoCount} photo{photoCount !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+          {totalMilestones > 0 && (
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{totalMilestones} milestone{totalMilestones !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-3 pt-2 border-t">
           <Button
             asChild
-            className="bg-blue-600 hover:bg-blue-700"
-            style={{ minHeight: '48px' }}
+            className="flex-1"
+            style={{ minHeight: '44px' }}
           >
-            <Link to={createPageUrl('UpgradeProjectDetail') + `?id=${project.id}`}>
-              <ExternalLink className="w-4 h-4 mr-2" />
+            <Link to={createPageUrl("UpgradeProjectDetail") + `?id=${project.id}`}>
               View Full Details
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
-          </Button>
-          
-          <Button
-            onClick={onEdit}
-            variant="outline"
-            style={{ minHeight: '48px' }}
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Quick Edit
           </Button>
         </div>
       </CardContent>

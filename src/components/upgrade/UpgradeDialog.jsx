@@ -12,7 +12,7 @@ import {
   AlertCircle, Info, DollarSign, TrendingUp,
   Home, Hammer, Building2, HardHat, CheckCircle2
 } from 'lucide-react';
-import { initializeMilestones } from './upgradeMilestones';
+import { getMilestonesForUpgrade } from './upgradeMilestones';
 import AICostDisclaimer from '../shared/AICostDisclaimer';
 import AICostEstimator from './AICostEstimator';
 
@@ -165,14 +165,25 @@ export default function UpgradeDialog({
         );
       }
 
-      // Initialize milestones for new projects from template
-      if (!project?.id && template) {
-        const milestones = initializeMilestones(template, submitData.title);
+      // CRITICAL: Auto-generate milestones for ALL new projects (not just templates)
+      if (!project?.id) {
+        console.log('✨ Auto-generating milestones for new project');
+        
+        const milestones = getMilestonesForUpgrade(
+          submitData.title,
+          submitData.category
+        );
+        
+        console.log(`📋 Generated ${milestones.length} milestones:`, milestones.map(m => m.title));
+        
         submitData.milestones = milestones;
         submitData.progress_percentage = 0;
         submitData.current_milestone = milestones[0]?.title || 'Not Started';
-        submitData.template_id = template.id;
-        console.log('✨ Initialized', milestones.length, 'milestones for project');
+        
+        // Store template_id if created from template
+        if (template) {
+          submitData.template_id = template.id;
+        }
       }
 
       console.log('💾 Calling base44.entities.Upgrade.' + (project?.id ? 'update' : 'create'));
@@ -186,6 +197,7 @@ export default function UpgradeDialog({
         result = await base44.entities.Upgrade.create(submitData);
         console.log('✅ Project created:', result);
         console.log('New project ID:', result.id);
+        console.log('Milestones count:', result.milestones?.length || 0);
       }
 
       return result;
@@ -255,9 +267,7 @@ export default function UpgradeDialog({
             <p className="text-gray-600 mb-4">
               {project 
                 ? 'Your changes have been saved.'
-                : template 
-                ? `Your "${formData.title}" project is ready with guided milestones.`
-                : 'Your upgrade project is now in your portfolio.'}
+                : `Your "${formData.title}" project is ready with guided milestones.`}
             </p>
             <Button 
               onClick={onComplete}
@@ -294,6 +304,16 @@ export default function UpgradeDialog({
                     Includes step-by-step milestones with expert guidance
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+          {!template && !project && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <p className="text-xs text-green-800">
+                  ✨ Milestones will be automatically generated based on your project type
+                </p>
               </div>
             </div>
           )}
