@@ -1,71 +1,58 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Home,
-  Edit,
-  Trash2,
-  TrendingUp,
-  MapPin,
-  Calendar,
-  DollarSign,
+import { 
+  Home, 
+  Plus, 
+  ChevronDown, 
+  ChevronRight, 
   Lightbulb,
-  AlertTriangle,
-  RefreshCw
+  Zap,
+  Upload
 } from "lucide-react";
-import { createPageUrl } from "@/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import StepNavigation from "../components/navigation/StepNavigation";
+import PropertyWizardWelcome from "../components/properties/PropertyWizardWelcome";
+import PropertyWizardSimplified from "../components/properties/PropertyWizardSimplified";
+import PropertySuccessScreen from "../components/properties/PropertySuccessScreen";
+import PropertyQuickAdd from "../components/properties/PropertyQuickAdd";
+import PropertyDashboard from "../components/properties/PropertyDashboard";
+import EnhancedPropertyCard from "../components/properties/EnhancedPropertyCard";
 import PropertyWizard from "../components/properties/PropertyWizard";
-import PropertyEditDialog from "../components/properties/PropertyEditDialog";
-import ConfirmDialog from "../components/ui/confirm-dialog";
-import UpgradePrompt from "../components/upgrade/UpgradePrompt";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { calculateTotalDoors, getTierConfig, canAddProperty } from "../components/shared/TierCalculator";
+import { createPageUrl } from "@/utils";
 
-const Label = ({ children, className = "", ...props }) => (
-  <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
-    {children}
-  </label>
-);
-
-export default function PropertiesPage() {
-  const [showWizard, setShowWizard] = React.useState(false);
-  const [editingProperty, setEditingProperty] = React.useState(null);
-  const [deletingProperty, setDeletingProperty] = React.useState(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-  const [deletionCounts, setDeletionCounts] = React.useState(null);
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const [editingDraft, setEditingDraft] = React.useState(null);
-  const [reconfigureProperty, setReconfigureProperty] = React.useState(null);
-  const [reconfigureConfirmOpen, setReconfigureConfirmOpen] = React.useState(false);
-  const [reconfigureCounts, setReconfigureCounts] = React.useState(null);
-  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(true);
-
+export default function Properties() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const searchParams = new URLSearchParams(location.search);
 
-  const { data: properties = [] } = useQuery({
+  // URL params
+  const newParam = searchParams.get('new');
+  const editId = searchParams.get('edit');
+  const modeParam = searchParams.get('mode'); // 'simple' or 'complete'
+
+  // State
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showSimplifiedWizard, setShowSimplifiedWizard] = useState(false);
+  const [showCompleteWizard, setShowCompleteWizard] = useState(false);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [completedProperty, setCompletedProperty] = useState(null);
+  const [editingPropertyId, setEditingPropertyId] = useState(null);
+  const [whyExpanded, setWhyExpanded] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState(null);
+
+  // Fetch data
+  const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties'],
-    queryFn: async () => {
-      const allProps = await base44.entities.Property.list('-created_date');
-      return allProps.filter(p => !p.is_draft);
-    }
-  });
-
-  const { data: draftProperties = [] } = useQuery({
-    queryKey: ['draft-properties'],
-    queryFn: async () => {
-      const allProps = await base44.entities.Property.list('-created_date');
-      return allProps.filter(p => p.is_draft);
-    }
+    queryFn: () => base44.entities.Property.list('-updated_date')
   });
 
   const { data: user } = useQuery({
@@ -73,517 +60,330 @@ export default function PropertiesPage() {
     queryFn: () => base44.auth.me()
   });
 
-  // Determine property limit based on tier
-  const currentTier = user?.tier || 'free';
-  const totalDoors = calculateTotalDoors(properties);
-  const addPropertyCheck = canAddProperty(currentTier, properties.length, totalDoors);
-
-  // CASCADE DELETE: Delete property and ALL related data
-  const deletePropertyMutation = useMutation({
-    mutationFn: async (propertyId) => {
-      setIsDeleting(true);
-
-      // Step 1: Delete all related data in parallel
-      const [tasks, inspections, baselines] = await Promise.all([
-        base44.entities.MaintenanceTask.filter({ property_id: propertyId }),
-        base44.entities.Inspection.filter({ property_id: propertyId }),
-        base44.entities.SystemBaseline.filter({ property_id: propertyId })
-      ]);
-
-      // Delete all related records in parallel
-      await Promise.all([
-        ...tasks.map(t => base44.entities.MaintenanceTask.delete(t.id)),
-        ...inspections.map(i => base44.entities.Inspection.delete(i.id)),
-        ...baselines.map(b => base44.entities.SystemBaseline.delete(b.id))
-      ]);
-
-      // Step 2: Delete the property itself
-      await base44.entities.Property.delete(propertyId);
-
-      return {
-        tasksDeleted: tasks.length,
-        inspectionsDeleted: inspections.length,
-        baselinesDeleted: baselines.length
-      };
-    },
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
-      queryClient.invalidateQueries({ queryKey: ['allSystemBaselines'] });
-      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['allInspections'] });
-      setIsDeleting(false);
-      setDeleteConfirmOpen(false);
-      setDeletingProperty(null);
-      setDeletionCounts(null);
-    },
-    onError: () => {
-      setIsDeleting(false);
+      queryClient.invalidateQueries(['properties']);
+      setShowConfirmDelete(false);
+      setPropertyToDelete(null);
     }
   });
 
-  const handleWizardComplete = () => {
-    setShowWizard(false);
-    setEditingDraft(null);
-    setReconfigureProperty(null);
-    queryClient.invalidateQueries({ queryKey: ['properties'] });
-    queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
-  };
-
-  const handleEditProperty = (property) => {
-    setEditingProperty(property);
-  };
-
-  const handleReconfigureProperty = async (property) => {
-    // Count related data before showing warning
-    const [tasks, inspections, baselines] = await Promise.all([
-      base44.entities.MaintenanceTask.filter({ property_id: property.id }),
-      base44.entities.Inspection.filter({ property_id: property.id }),
-      base44.entities.SystemBaseline.filter({ property_id: property.id })
-    ]);
-
-    setReconfigureCounts({
-      tasks: tasks.length,
-      inspections: inspections.length,
-      baselines: baselines.length
-    });
-    setReconfigureProperty(property);
-    setReconfigureConfirmOpen(true);
-  };
-
-  const handleCancelReconfigure = () => {
-    setReconfigureConfirmOpen(false);
-    setReconfigureProperty(null);
-    setReconfigureCounts(null);
-  };
-
-  const handleConfirmReconfigure = () => {
-    setReconfigureConfirmOpen(false);
-    setReconfigureCounts(null);
-    // Open wizard with existing property data
-    setEditingDraft(reconfigureProperty);
-    setShowWizard(true);
-  };
-
-  const handleDeleteProperty = async (property) => {
-    // Count related data before showing confirmation
-    const [tasks, inspections, baselines] = await Promise.all([
-      base44.entities.MaintenanceTask.filter({ property_id: property.id }),
-      base44.entities.Inspection.filter({ property_id: property.id }),
-      base44.entities.SystemBaseline.filter({ property_id: property.id })
-    ]);
-
-    setDeletionCounts({
-      tasks: tasks.length,
-      inspections: inspections.length,
-      baselines: baselines.length
-    });
-    setDeletingProperty(property);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (deletingProperty) {
-      deletePropertyMutation.mutate(deletingProperty.id);
+  // Check if first time (show welcome)
+  useEffect(() => {
+    const hideWelcome = localStorage.getItem('hidePropertyWelcome');
+    if (newParam === 'true' && properties.length === 0 && !hideWelcome) {
+      setShowWelcome(true);
+    } else if (newParam === 'true') {
+      setShowSimplifiedWizard(true);
     }
-  };
+  }, [newParam, properties.length]);
 
-  const handleAddProperty = () => {
-    if (!addPropertyCheck.canAdd) {
-      setShowUpgradePrompt(true);
+  // Handle edit mode
+  useEffect(() => {
+    if (editId) {
+      setEditingPropertyId(editId);
+      if (modeParam === 'complete') {
+        setShowCompleteWizard(true);
+      } else {
+        setShowSimplifiedWizard(true);
+      }
+    }
+  }, [editId, modeParam]);
+
+  const handleAddProperty = (mode = 'simple') => {
+    const hideWelcome = localStorage.getItem('hidePropertyWelcome');
+    
+    if (properties.length === 0 && !hideWelcome) {
+      setShowWelcome(true);
+    } else if (mode === 'quick') {
+      setShowQuickAdd(true);
+    } else if (mode === 'complete') {
+      setShowCompleteWizard(true);
     } else {
-      setShowWizard(true);
+      setShowSimplifiedWizard(true);
     }
   };
 
-  const handleContinueDraft = (draft) => {
-    setEditingDraft(draft);
-    setShowWizard(true);
+  const handleWizardComplete = (property) => {
+    setShowSimplifiedWizard(false);
+    setShowCompleteWizard(false);
+    setEditingPropertyId(null);
+    setCompletedProperty(property);
+    setShowSuccessScreen(true);
+    queryClient.invalidateQueries(['properties']);
+    
+    // Clear URL params
+    window.history.replaceState({}, '', createPageUrl('Properties'));
   };
 
-  const handleDeleteDraft = async (draft) => {
-    if (confirm('Delete this incomplete property?')) {
-      await base44.entities.Property.delete(draft.id);
-      queryClient.invalidateQueries({ queryKey: ['draft-properties'] });
-    }
+  const handleSuccessContinue = () => {
+    setShowSuccessScreen(false);
+    setCompletedProperty(null);
   };
 
-  const getDeleteMessage = () => {
-    if (!deletingProperty || !deletionCounts) return '';
-
-    const { tasks, inspections, baselines } = deletionCounts;
-    const hasData = tasks > 0 || inspections > 0 || baselines > 0;
-
-    let message = `⚠️ CASCADE DELETION WARNING\n\n`;
-    message += `You are about to permanently delete:\n\n`;
-    message += `📍 Property: ${deletingProperty.address}\n\n`;
-
-    if (hasData) {
-      message += `This will also delete ALL related data:\n`;
-      if (baselines > 0) message += `• ${baselines} System Baseline${baselines > 1 ? 's' : ''}\n`;
-      if (tasks > 0) message += `• ${tasks} Maintenance Task${tasks > 1 ? 's' : ''}\n`;
-      if (inspections > 0) message += `• ${inspections} Inspection${inspections > 1 ? 's' : ''}\n`;
-      message += `\n`;
-    }
-
-    message += `🚨 THIS ACTION CANNOT BE UNDONE\n\n`;
-    message += `All history, reports, and documentation for this property will be permanently erased from the system.`;
-
-    return message;
+  const handleDeleteProperty = (propertyId) => {
+    setPropertyToDelete(propertyId);
+    setShowConfirmDelete(true);
   };
 
-  const getReconfigureMessage = () => {
-    if (!reconfigureProperty || !reconfigureCounts) return '';
-
-    const { tasks, inspections, baselines } = reconfigureCounts;
-    const hasData = tasks > 0 || inspections > 0 || baselines > 0;
-
-    let message = `⚠️ RECONFIGURATION WARNING\n\n`;
-    message += `You are about to reconfigure:\n`;
-    message += `📍 ${reconfigureProperty.address}\n\n`;
-
-    if (hasData) {
-      message += `This property currently has:\n`;
-      if (baselines > 0) message += `• ${baselines} System Baseline${baselines > 1 ? 's' : ''}\n`;
-      if (tasks > 0) message += `• ${tasks} Maintenance Task${tasks > 1 ? 's' : ''}\n`;
-      if (inspections > 0) message += `• ${inspections} Inspection${inspections > 1 ? 's' : ''}\n`;
-      message += `\n`;
-      message += `⚠️ IMPORTANT: Changing key property attributes (type, door count, structure) may affect:\n`;
-      message += `• System baseline recommendations\n`;
-      message += `• Task priorities and scheduling\n`;
-      message += `• Inspection checklists\n`;
-      message += `• Financial calculations and reports\n\n`;
-      message += `Existing data will remain, but may need review for accuracy after reconfiguration.\n`;
-    } else {
-      message += `This property has no baseline systems, tasks, or inspections yet, so reconfiguration is safe.\n`;
-    }
-
-    return message;
-  };
-
-  // Portfolio analytics
-  const totalValue = properties.reduce((sum, p) => sum + (p.current_value || 0), 0);
-  const avgHealthScore = properties.length > 0
-    ? properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length
-    : 0;
-  // totalDoors is now calculated at the top of the component using `calculateTotalDoors` utility.
-
-
-  if (showWizard) {
+  // Show welcome screen
+  if (showWelcome) {
     return (
-      <PropertyWizard
-        onComplete={handleWizardComplete}
-        onCancel={() => {
-          setShowWizard(false);
-          setEditingDraft(null);
-          setReconfigureProperty(null);
+      <PropertyWizardWelcome
+        onContinue={() => {
+          setShowWelcome(false);
+          setShowSimplifiedWizard(true);
         }}
-        existingDraft={editingDraft}
+        onSkip={() => {
+          setShowWelcome(false);
+          navigate(createPageUrl('Properties'));
+        }}
       />
     );
   }
 
+  // Show success screen
+  if (showSuccessScreen && completedProperty) {
+    return (
+      <PropertySuccessScreen
+        property={completedProperty}
+        onAddAnother={() => {
+          setShowSuccessScreen(false);
+          setCompletedProperty(null);
+          setShowSimplifiedWizard(true);
+        }}
+        onGoToDashboard={() => {
+          setShowSuccessScreen(false);
+          setCompletedProperty(null);
+          navigate(createPageUrl('Dashboard'));
+        }}
+      />
+    );
+  }
+
+  // Show simplified wizard
+  if (showSimplifiedWizard) {
+    const editingProperty = editingPropertyId ? properties.find(p => p.id === editingPropertyId) : null;
+    
+    return (
+      <PropertyWizardSimplified
+        existingProperty={editingProperty}
+        onComplete={handleWizardComplete}
+        onCancel={() => {
+          setShowSimplifiedWizard(false);
+          setEditingPropertyId(null);
+          navigate(createPageUrl('Properties'));
+        }}
+      />
+    );
+  }
+
+  // Show complete wizard
+  if (showCompleteWizard) {
+    const editingProperty = editingPropertyId ? properties.find(p => p.id === editingPropertyId) : null;
+    
+    return (
+      <PropertyWizard
+        existingProperty={editingProperty}
+        onComplete={handleWizardComplete}
+        onCancel={() => {
+          setShowCompleteWizard(false);
+          setEditingPropertyId(null);
+          navigate(createPageUrl('Properties'));
+        }}
+      />
+    );
+  }
+
+  // Main dashboard view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-              My Properties
-            </h1>
-            <p className="text-gray-600">
-              {properties.length === 0
-                ? "Add your first property to get started"
-                : `Managing ${properties.length} propert${properties.length === 1 ? 'y' : 'ies'}`
-              }
-            </p>
-          </div>
-          <Button
-            onClick={handleAddProperty}
-            className="gap-2"
-            style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-          >
-            <Plus className="w-5 h-5" />
-            Add Property
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+        
+        {/* Step Navigation */}
+        <div className="mb-4 md:mb-6">
+          <StepNavigation currentStep={1} />
         </div>
 
-        {/* Educational: Why Properties Matter */}
-        {properties.length === 0 && (
-          <Card className="border-2 border-blue-200 bg-blue-50 mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
-                <Lightbulb className="w-6 h-6 text-blue-600" />
-                Why Add Your Properties?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-700">
-                The 360° Method organizes everything by property. Each property gets its own:
-              </p>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold mb-2 text-blue-900">📋 System Baseline</h3>
-                  <p className="text-sm text-gray-700">Document all major systems, appliances, and their condition</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold mb-2 text-blue-900">🔍 Inspection History</h3>
-                  <p className="text-sm text-gray-700">Track seasonal inspections and condition changes over time</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold mb-2 text-blue-900">📊 Maintenance Queue</h3>
-                  <p className="text-sm text-gray-700">Prioritize tasks by cascade risk and cost impact</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold mb-2 text-blue-900">💰 Financial Tracking</h3>
-                  <p className="text-sm text-gray-700">Monitor expenses, ROI, and property value over time</p>
-                </div>
+        {/* Page Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+                  Phase I - AWARE
+                </Badge>
+                <Badge variant="outline" className="text-sm px-3 py-1">
+                  Step 1: Foundation
+                </Badge>
               </div>
+              <h1 className="text-3xl md:text-4xl font-bold" style={{ color: '#1B365D' }}>
+                Your Properties
+              </h1>
+              <p className="text-gray-600 text-lg">
+                The foundation of your 360° Method journey
+              </p>
+            </div>
+
+            {/* Add Property Dropdown */}
+            {properties.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="bg-green-600 hover:bg-green-700 gap-2" style={{ minHeight: '48px' }}>
+                    <Plus className="w-5 h-5" />
+                    Add Property
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleAddProperty('simple')}>
+                    <Home className="w-4 h-4 mr-2" />
+                    Guided Setup (Recommended)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddProperty('quick')}>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Quick Add (Expert)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAddProperty('complete')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Complete Setup (All Details)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Bulk Import (Coming Soon)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+
+        {/* Why This Step Matters */}
+        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <button
+              onClick={() => setWhyExpanded(!whyExpanded)}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Why Properties Are Your Foundation</h3>
+                <p className="text-sm text-blue-800">
+                  Think of each property as a patient. Just like a doctor needs your medical history, the 360° Method needs to know about your property to prevent disasters.
+                </p>
+              </div>
+              {whyExpanded ? (
+                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              )}
+            </button>
+
+            {whyExpanded && (
+              <div className="mt-4 pt-4 border-t border-blue-200 space-y-3 text-sm text-blue-800">
+                <p>
+                  <strong>Your property is your largest asset.</strong> The 360° Method tracks 9 major systems that cause 87% of expensive failures.
+                </p>
+                <p>
+                  <strong>What happens after you add a property:</strong>
+                </p>
+                <ul className="ml-4 space-y-1">
+                  <li>• <strong>AWARE Phase:</strong> Document your major systems (HVAC, roof, etc.)</li>
+                  <li>• <strong>ACT Phase:</strong> Get maintenance tasks and schedules</li>
+                  <li>• <strong>ADVANCE Phase:</strong> Preserve value and plan strategic upgrades</li>
+                  <li>• <strong>SCALE Phase:</strong> Track equity and get wealth projections</li>
+                </ul>
+                <p className="text-xs">
+                  ⚡ Quick setup takes just 5 minutes and starts protecting your investment immediately.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-gray-600">Loading your properties...</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Portfolio Analytics */}
-        {properties.length > 1 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Home className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-1">Total Properties</p>
-                <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>{properties.length}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <MapPin className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-1">Total Doors</p>
-                <p className="text-2xl font-bold text-orange-700">{totalDoors}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-1">Portfolio Value</p>
-                <p className="text-2xl font-bold text-green-700">
-                  ${(totalValue / 1000000).toFixed(1)}M
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-1">Avg Health Score</p>
-                <p className="text-2xl font-bold text-purple-700">{avgHealthScore.toFixed(0)}%</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Upgrade Notice */}
-        {!addPropertyCheck.canAdd && showUpgradePrompt && (
-          <UpgradePrompt
-            context="property_limit"
-            onDismiss={() => setShowUpgradePrompt(false)}
-          />
-        )}
-
-        {/* Draft Properties */}
-        {draftProperties.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4" style={{ color: '#1B365D' }}>
-              Incomplete Properties
-            </h2>
-            <div className="grid gap-4">
-              {draftProperties.map((draft) => (
-                <Card key={draft.id} className="border-2 border-yellow-300 bg-yellow-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {draft.street_address || draft.address || 'Unnamed Property'}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Started {new Date(draft.created_date).toLocaleDateString()}
-                        </p>
-                        <Badge className="mt-2 bg-yellow-600">Draft</Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleContinueDraft(draft)}
-                          size="sm"
-                          style={{ backgroundColor: '#FF6B35', minHeight: '44px' }}
-                        >
-                          Continue Setup
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteDraft(draft)}
-                          variant="ghost"
-                          size="sm"
-                          style={{ minHeight: '44px' }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Properties Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {properties.map((property) => (
-            <Card key={property.id} className="border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl mb-2" style={{ color: '#1B365D' }}>
-                      {property.address}
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge style={{ backgroundColor: '#3B82F6' }}>
-                        {property.property_type || 'Property'}
-                      </Badge>
-                      {property.door_count > 1 && (
-                        <Badge variant="outline">
-                          {property.door_count} doors
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" style={{ minHeight: '44px', minWidth: '44px' }}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuItem onClick={() => handleEditProperty(property)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Quick Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleReconfigureProperty(property)}>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Reconfigure Property
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteProperty(property)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Property
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Property Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded p-3">
-                    <p className="text-xs text-gray-600 mb-1">Health Score</p>
-                    <p className="text-2xl font-bold" style={{ color: '#28A745' }}>
-                      {property.health_score || 0}%
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded p-3">
-                    <p className="text-xs text-gray-600 mb-1">Baseline</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {property.baseline_completion || 0}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="flex flex-col gap-2">
-                  <Button
-                    onClick={() => window.location.href = createPageUrl("Baseline") + `?property=${property.id}`}
-                    variant="outline"
-                    className="w-full justify-start"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    View Baseline
-                  </Button>
-                  <Button
-                    onClick={() => window.location.href = createPageUrl("Prioritize") + `?property=${property.id}`}
-                    variant="outline"
-                    className="w-full justify-start"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Priority Queue
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         {/* Empty State */}
-        {properties.length === 0 && draftProperties.length === 0 && (
-          <Card className="border-none shadow-lg">
+        {!isLoading && properties.length === 0 && (
+          <Card className="border-2 border-blue-300">
             <CardContent className="p-12 text-center">
-              <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold mb-2">No Properties Yet</h3>
-              <p className="text-gray-600 mb-6">
-                Add your first property to start using the 360° Method
+              <div className="w-20 h-20 rounded-full bg-blue-100 mx-auto mb-6 flex items-center justify-center">
+                <Home className="w-10 h-10 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                Add Your First Property
+              </h2>
+              <p className="text-gray-600 mb-2 max-w-md mx-auto">
+                Start protecting your largest asset with the 360° Method. It only takes 5 minutes.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Track systems, prevent disasters, and build wealth through strategic maintenance
               </p>
               <Button
-                onClick={handleAddProperty}
-                className="gap-2"
-                style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                onClick={() => handleAddProperty('simple')}
+                className="bg-blue-600 hover:bg-blue-700 gap-2"
+                style={{ minHeight: '56px', fontSize: '18px' }}
               >
-                <Plus className="w-5 h-5" />
-                Add Your First Property
+                <Plus className="w-6 h-6" />
+                Add My First Property
               </Button>
             </CardContent>
           </Card>
         )}
-      </div>
 
-      {/* Edit Property Dialog */}
-      {editingProperty && (
-        <PropertyEditDialog
-          property={editingProperty}
-          open={!!editingProperty}
-          onClose={() => setEditingProperty(null)}
-        />
-      )}
+        {/* Property Dashboard */}
+        {!isLoading && properties.length > 0 && (
+          <PropertyDashboard
+            properties={properties}
+            onAddProperty={() => handleAddProperty('simple')}
+            onQuickAdd={() => handleAddProperty('quick')}
+            onEditProperty={(propertyId) => {
+              setEditingPropertyId(propertyId);
+              setShowSimplifiedWizard(true);
+            }}
+            onDeleteProperty={handleDeleteProperty}
+          />
+        )}
 
-      {/* Reconfigure Warning Dialog */}
-      {reconfigureConfirmOpen && reconfigureProperty && (
-        <ConfirmDialog
-          open={reconfigureConfirmOpen}
-          onClose={handleCancelReconfigure}
-          onConfirm={handleConfirmReconfigure}
-          title="⚠️ Reconfigure Property?"
-          message={getReconfigureMessage()}
-          confirmText="Yes, Reconfigure"
-          cancelText="Not Now"
-          variant="warning"
-        />
-      )}
-
-      {/* Delete Confirmation Dialog with CASCADE WARNING */}
-      {deleteConfirmOpen && deletingProperty && (
-        <ConfirmDialog
-          open={deleteConfirmOpen}
-          onClose={() => {
-            setDeleteConfirmOpen(false);
-            setDeletingProperty(null);
-            setDeletionCounts(null);
+        {/* Quick Add Modal */}
+        <PropertyQuickAdd
+          isOpen={showQuickAdd}
+          onClose={() => setShowQuickAdd(false)}
+          onSuccess={(newProperty) => {
+            setCompletedProperty(newProperty);
+            setShowSuccessScreen(true);
           }}
-          onConfirm={handleConfirmDelete}
-          title="⚠️ Cascade Delete Property?"
-          message={getDeleteMessage()}
-          confirmText={isDeleting ? "Deleting..." : "Yes, Delete Everything"}
-          cancelText="Cancel"
-          variant="destructive"
         />
-      )}
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={showConfirmDelete}
+          onClose={() => {
+            setShowConfirmDelete(false);
+            setPropertyToDelete(null);
+          }}
+          onConfirm={() => {
+            if (propertyToDelete) {
+              deleteMutation.mutate(propertyToDelete);
+            }
+          }}
+          title="Delete Property?"
+          description="This will permanently delete this property and all associated data (systems, tasks, inspections, upgrades). This action cannot be undone."
+          confirmText="Delete Property"
+          confirmVariant="destructive"
+        />
+
+      </div>
     </div>
   );
 }
