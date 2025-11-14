@@ -54,9 +54,8 @@ export default function SchedulePage() {
   const [tasksForSelectedDate, setTasksForSelectedDate] = React.useState([]);
   const [showTaskDetail, setShowTaskDetail] = React.useState(false);
   const [taskForDetail, setTaskForDetail] = React.useState(null);
-  
-  // Advanced Filters
   const [showFilters, setShowFilters] = React.useState(false);
+  
   const [filters, setFilters] = React.useState({
     priority: 'all',
     executionMethod: 'all',
@@ -118,7 +117,6 @@ export default function SchedulePage() {
 
   const scheduledTasks = allTasks.filter(task => task.status === 'Scheduled');
 
-  // Apply filters
   const filteredTasks = scheduledTasks.filter(task => {
     if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
     if (filters.executionMethod !== 'all' && task.execution_method !== filters.executionMethod) return false;
@@ -129,7 +127,6 @@ export default function SchedulePage() {
     return true;
   });
 
-  // Sort tasks
   const sortedFilteredTasks = [...filteredTasks].sort((a, b) => {
     switch (filters.sortBy) {
       case 'priority':
@@ -167,7 +164,6 @@ export default function SchedulePage() {
     }
   }).length;
 
-  // Get unique values for filters
   const uniqueSystems = [...new Set(scheduledTasks.map(t => t.system_type).filter(Boolean))];
   const uniqueUnits = [...new Set(scheduledTasks.map(t => t.unit_tag).filter(Boolean))];
   const activeFiltersCount = Object.values(filters).filter(v => v !== 'all' && v !== 'priority').length;
@@ -314,7 +310,7 @@ export default function SchedulePage() {
                 Step 5: Schedule - Timeline Planner
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Season → Month → Week → Day → Time
+                Drag tasks to any date on any view
               </p>
             </div>
           </div>
@@ -335,7 +331,7 @@ export default function SchedulePage() {
               </div>
 
               <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Drag tasks to calendar dates, then drag between time ranges in daily view
+                <strong>Your Job:</strong> Drag tasks from sidebar to any date on season/month/week/day views
               </p>
             </CardContent>
           </Card>
@@ -366,131 +362,6 @@ export default function SchedulePage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Advanced Filters */}
-        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-blue-900">Filters & Sorting</h3>
-                {activeFiltersCount > 0 && (
-                  <Badge className="bg-blue-600">{activeFiltersCount} active</Badge>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="gap-1"
-                  >
-                    <X className="w-3 h-3" />
-                    Clear
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  {showFilters ? 'Hide' : 'Show'} Filters
-                </Button>
-              </div>
-            </div>
-
-            {showFilters && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-blue-200">
-                <Select value={filters.priority} onValueChange={(val) => setFilters({...filters, priority: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Routine">Routine</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.executionMethod} onValueChange={(val) => setFilters({...filters, executionMethod: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="Method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Methods</SelectItem>
-                    <SelectItem value="DIY">DIY</SelectItem>
-                    <SelectItem value="Contractor">Contractor</SelectItem>
-                    <SelectItem value="360_Operator">360° Operator</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.system} onValueChange={(val) => setFilters({...filters, system: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="System" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Systems</SelectItem>
-                    {uniqueSystems.map(sys => (
-                      <SelectItem key={sys} value={sys}>{sys}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {uniqueUnits.length > 0 && (
-                  <Select value={filters.unit} onValueChange={(val) => setFilters({...filters, unit: val})}>
-                    <SelectTrigger style={{ minHeight: '44px' }}>
-                      <SelectValue placeholder="Unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Units</SelectItem>
-                      {uniqueUnits.map(unit => (
-                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                <Select value={filters.timeRange} onValueChange={(val) => setFilters({...filters, timeRange: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="Time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Times</SelectItem>
-                    <SelectItem value="morning">🌅 Morning</SelectItem>
-                    <SelectItem value="afternoon">☀️ Afternoon</SelectItem>
-                    <SelectItem value="evening">🌙 Evening</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.riskLevel} onValueChange={(val) => setFilters({...filters, riskLevel: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="Risk" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Risk Levels</SelectItem>
-                    <SelectItem value="high">⚠️ High Risk Only</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.sortBy} onValueChange={(val) => setFilters({...filters, sortBy: val})}>
-                  <SelectTrigger style={{ minHeight: '44px' }}>
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="priority">Priority</SelectItem>
-                    <SelectItem value="time">Time Required</SelectItem>
-                    <SelectItem value="cost">Cost</SelectItem>
-                    <SelectItem value="risk">Risk Level</SelectItem>
-                    <SelectItem value="unit">Unit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {seasonalReminders.length > 0 && (
           <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
@@ -588,47 +459,177 @@ export default function SchedulePage() {
           </Card>
         </div>
 
+        {/* View Controls with Integrated Filters */}
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
-              <div className="flex items-center gap-3 flex-wrap">
-                <label className="font-bold text-yellow-900">View:</label>
-                <div className="flex gap-2 flex-wrap">
+            <div className="space-y-4">
+              {/* View Mode Selection */}
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className="font-bold text-yellow-900">View:</label>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      onClick={() => setViewMode('unscheduled')}
+                      variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
+                      size="sm"
+                      className={viewMode === 'unscheduled' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                      style={{ minHeight: '44px' }}
+                    >
+                      📝 Needs Dates ({awaitingDates})
+                    </Button>
+                    <Button
+                      onClick={() => setViewMode('calendar')}
+                      variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                      size="sm"
+                      className={viewMode === 'calendar' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                      style={{ minHeight: '44px' }}
+                    >
+                      📅 Calendar ({tasksReadyForExecution})
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {viewMode === 'calendar' && (
+                    <>
+                      <label className="text-sm font-semibold text-gray-700">Calendar:</label>
+                      <Select value={calendarViewMode} onValueChange={setCalendarViewMode}>
+                        <SelectTrigger className="w-32" style={{ minHeight: '44px' }}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="season">🍂 Season</SelectItem>
+                          <SelectItem value="month">📅 Month</SelectItem>
+                          <SelectItem value="week">📆 Week</SelectItem>
+                          <SelectItem value="day">🌞 Day</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
+                  
                   <Button
-                    onClick={() => setViewMode('unscheduled')}
-                    variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
+                    variant="outline"
                     size="sm"
-                    className={viewMode === 'unscheduled' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="gap-2"
                     style={{ minHeight: '44px' }}
                   >
-                    📝 Needs Dates ({awaitingDates})
-                  </Button>
-                  <Button
-                    onClick={() => setViewMode('calendar')}
-                    variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                    size="sm"
-                    className={viewMode === 'calendar' ? 'bg-yellow-600 hover:bg-yellow-700' : ''}
-                    style={{ minHeight: '44px' }}
-                  >
-                    📅 Calendar ({tasksReadyForExecution})
+                    <Filter className="w-4 h-4" />
+                    Filters
+                    {activeFiltersCount > 0 && (
+                      <Badge className="bg-blue-600 ml-1">{activeFiltersCount}</Badge>
+                    )}
                   </Button>
                 </div>
               </div>
 
-              {viewMode === 'calendar' && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700">View:</label>
-                  <Select value={calendarViewMode} onValueChange={setCalendarViewMode}>
-                    <SelectTrigger className="w-32" style={{ minHeight: '44px' }}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="season">🍂 Season</SelectItem>
-                      <SelectItem value="month">📅 Month</SelectItem>
-                      <SelectItem value="week">📆 Week</SelectItem>
-                      <SelectItem value="day">🌞 Day</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Filters Panel */}
+              {showFilters && (
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900">Filter & Sort Tasks</h4>
+                    {activeFiltersCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="gap-1 text-blue-600"
+                      >
+                        <X className="w-3 h-3" />
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Select value={filters.priority} onValueChange={(val) => setFilters({...filters, priority: val})}>
+                      <SelectTrigger style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priorities</SelectItem>
+                        <SelectItem value="High">🔥 High</SelectItem>
+                        <SelectItem value="Medium">⚡ Medium</SelectItem>
+                        <SelectItem value="Low">💡 Low</SelectItem>
+                        <SelectItem value="Routine">🔄 Routine</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={filters.executionMethod} onValueChange={(val) => setFilters({...filters, executionMethod: val})}>
+                      <SelectTrigger style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Methods</SelectItem>
+                        <SelectItem value="DIY">🔧 DIY</SelectItem>
+                        <SelectItem value="Contractor">👷 Contractor</SelectItem>
+                        <SelectItem value="360_Operator">⭐ 360° Operator</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {uniqueSystems.length > 0 && (
+                      <Select value={filters.system} onValueChange={(val) => setFilters({...filters, system: val})}>
+                        <SelectTrigger style={{ minHeight: '44px' }}>
+                          <SelectValue placeholder="System" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Systems</SelectItem>
+                          {uniqueSystems.map(sys => (
+                            <SelectItem key={sys} value={sys}>{sys}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {uniqueUnits.length > 0 && (
+                      <Select value={filters.unit} onValueChange={(val) => setFilters({...filters, unit: val})}>
+                        <SelectTrigger style={{ minHeight: '44px' }}>
+                          <SelectValue placeholder="Unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Units</SelectItem>
+                          {uniqueUnits.map(unit => (
+                            <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Select value={filters.timeRange} onValueChange={(val) => setFilters({...filters, timeRange: val})}>
+                      <SelectTrigger style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Times</SelectItem>
+                        <SelectItem value="morning">🌅 Morning</SelectItem>
+                        <SelectItem value="afternoon">☀️ Afternoon</SelectItem>
+                        <SelectItem value="evening">🌙 Evening</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={filters.riskLevel} onValueChange={(val) => setFilters({...filters, riskLevel: val})}>
+                      <SelectTrigger style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Risk" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Risk Levels</SelectItem>
+                        <SelectItem value="high">⚠️ High Risk Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={filters.sortBy} onValueChange={(val) => setFilters({...filters, sortBy: val})}>
+                      <SelectTrigger style={{ minHeight: '44px' }}>
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="priority">Priority</SelectItem>
+                        <SelectItem value="time">Time Required</SelectItem>
+                        <SelectItem value="cost">Cost</SelectItem>
+                        <SelectItem value="risk">Risk Level</SelectItem>
+                        <SelectItem value="unit">Unit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>
@@ -653,7 +654,7 @@ export default function SchedulePage() {
                           {selectedTasks.length > 0 ? (
                             <span className="font-semibold">{selectedTasks.length} selected</span>
                           ) : (
-                            <span className="text-xs">⌘+Click to select multiple</span>
+                            <span className="text-xs">Drag to any calendar view</span>
                           )}
                         </div>
                         
@@ -693,7 +694,7 @@ export default function SchedulePage() {
                         }}
                         onClick={(e) => handleTaskClick(task, e)}
                         className={`
-                          p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-pointer
+                          p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-move
                           hover:bg-orange-50 transition-all
                           ${selectedTasks.includes(task.id) ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''}
                         `}
@@ -718,12 +719,12 @@ export default function SchedulePage() {
                                 </Badge>
                               )}
                               <span>
-                                {task.execution_method === 'DIY' && '🔧 DIY'}
-                                {task.execution_method === 'Contractor' && '👷 Contractor'}
-                                {task.execution_method === '360_Operator' && '⭐ Operator'}
+                                {task.execution_method === 'DIY' && '🔧'}
+                                {task.execution_method === 'Contractor' && '👷'}
+                                {task.execution_method === '360_Operator' && '⭐'}
                               </span>
                               {(task.estimated_hours || task.diy_time_hours) && (
-                                <span>• ~{task.estimated_hours || task.diy_time_hours}h</span>
+                                <span>~{task.estimated_hours || task.diy_time_hours}h</span>
                               )}
                             </div>
                           </div>
@@ -765,7 +766,7 @@ export default function SchedulePage() {
                         {awaitingDates} Task{awaitingDates !== 1 ? 's' : ''} Waiting for Calendar Dates
                       </h3>
                       <p className="text-sm text-orange-800">
-                        Click any task for quick scheduling options or switch to Calendar View to drag and drop.
+                        Click any task for quick scheduling or switch to Calendar View to drag and drop.
                       </p>
                     </div>
                   </div>
