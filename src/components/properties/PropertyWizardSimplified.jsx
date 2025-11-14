@@ -260,6 +260,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                     I use this property as:
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* My Home - Primary Residence */}
                     <button
                       onClick={() => setFormData({ ...formData, property_use_type: 'primary', door_count: 1 })}
                       className={`p-4 rounded-lg border-2 transition-all ${
@@ -274,10 +275,11 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                       <p className="text-xs text-gray-600 mt-1">Primary residence</p>
                     </button>
 
+                    {/* Rental - Investment Property (FIXED: only matches rental, not primary_with_rental) */}
                     <button
                       onClick={() => setFormData({ ...formData, property_use_type: 'rental_unfurnished', door_count: formData.property_type?.includes('Duplex') ? 2 : formData.property_type?.includes('Triplex') ? 3 : formData.property_type?.includes('Fourplex') ? 4 : 1 })}
                       className={`p-4 rounded-lg border-2 transition-all ${
-                        formData.property_use_type?.includes('rental')
+                        formData.property_use_type === 'rental_unfurnished' || formData.property_use_type === 'rental_furnished' || formData.property_use_type === 'vacation_rental'
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-300 hover:border-blue-400'
                       }`}
@@ -288,6 +290,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                       <p className="text-xs text-gray-600 mt-1">Investment property</p>
                     </button>
 
+                    {/* Both - Live + Rent Part */}
                     <button
                       onClick={() => setFormData({ ...formData, property_use_type: 'primary_with_rental', door_count: 2 })}
                       className={`p-4 rounded-lg border-2 transition-all ${
@@ -305,7 +308,10 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
                 </div>
 
                 {/* Conditional: If rental or both */}
-                {(formData.property_use_type?.includes('rental') || formData.property_use_type === 'primary_with_rental') && (
+                {(formData.property_use_type === 'rental_unfurnished' || 
+                  formData.property_use_type === 'rental_furnished' || 
+                  formData.property_use_type === 'vacation_rental' || 
+                  formData.property_use_type === 'primary_with_rental') && (
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
                       Number of Rental Units (Doors)
