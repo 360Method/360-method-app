@@ -19,7 +19,9 @@ import {
   Calendar,
   Trophy,
   Search,
-  RefreshCw
+  RefreshCw,
+  Pause,
+  Activity
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
@@ -44,6 +46,7 @@ export default function Upgrade() {
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('browse');
+  const [statusFilter, setStatusFilter] = React.useState('all');
 
   React.useEffect(() => {
     if (showNewForm && templateIdFromUrl) {
@@ -80,6 +83,15 @@ export default function Upgrade() {
       console.log('✅ Fetched upgrades:', upgrades);
       console.log('Count:', upgrades?.length || 0);
       
+      // Log status breakdown for debugging
+      if (upgrades && upgrades.length > 0) {
+        const statusCounts = upgrades.reduce((acc, u) => {
+          acc[u.status] = (acc[u.status] || 0) + 1;
+          return acc;
+        }, {});
+        console.log('📊 Status breakdown:', statusCounts);
+      }
+      
       return upgrades || [];
     },
     enabled: !!selectedProperty || properties.length === 0,
@@ -99,16 +111,26 @@ export default function Upgrade() {
   // Get current property object
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
-  const activeProjects = allUpgrades.filter(u =>
-    u.status === 'Planned' || u.status === 'In Progress'
-  );
-
-  const plannedProjects = allUpgrades.filter(u => u.status === 'Planned');
+  // Filter projects by status
   const inProgressProjects = allUpgrades.filter(u => u.status === 'In Progress');
+  const plannedProjects = allUpgrades.filter(u => u.status === 'Planned');
+  const identifiedProjects = allUpgrades.filter(u => u.status === 'Identified');
+  const completedProjects = allUpgrades.filter(u => u.status === 'Completed');
+  const deferredProjects = allUpgrades.filter(u => u.status === 'Deferred');
 
-  const completedProjects = allUpgrades.filter(u =>
-    u.status === 'Completed'
-  );
+  // Active = In Progress + Planned
+  const activeProjects = [...inProgressProjects, ...plannedProjects];
+
+  // Apply status filter for display
+  const filteredProjects = statusFilter === 'all' 
+    ? allUpgrades 
+    : allUpgrades.filter(u => {
+        if (statusFilter === 'active') return u.status === 'In Progress' || u.status === 'Planned';
+        if (statusFilter === 'completed') return u.status === 'Completed';
+        if (statusFilter === 'identified') return u.status === 'Identified';
+        if (statusFilter === 'deferred') return u.status === 'Deferred';
+        return true;
+      });
 
   const totalInvestment = completedProjects.reduce((sum, p) =>
     sum + (p.actual_cost || p.investment_required || 0), 0
@@ -122,7 +144,7 @@ export default function Upgrade() {
 
   const currentTier = user?.subscription_tier || 'free';
   
-  // CRITICAL FIX: Check service availability for CURRENT PROPERTY, not user
+  // Check service availability for CURRENT PROPERTY
   const showMemberPricing = shouldShowMemberBenefits(user, currentProperty);
   const memberDiscountTier = showMemberPricing ? currentTier : 0;
   const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05
@@ -198,7 +220,7 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Service Availability Banner - Pass current property */}
+        {/* Service Availability Banner */}
         <ServiceAvailabilityBanner user={user} property={currentProperty} className="mb-6" />
 
         {/* Why This Step Matters */}
@@ -427,6 +449,101 @@ export default function Upgrade() {
               </div>
             )}
 
+            {!upgradesLoading && allUpgrades.length > 0 && (
+              <>
+                {/* Project Summary Stats */}
+                <Card className="border-2 border-blue-200 bg-blue-50">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Activity className="w-4 h-4 text-blue-600" />
+                          <p className="text-xs font-semibold text-blue-900">In Progress</p>
+                        </div>
+                        <p className="text-2xl font-bold text-blue-700">{inProgressProjects.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Calendar className="w-4 h-4 text-orange-600" />
+                          <p className="text-xs font-semibold text-orange-900">Planned</p>
+                        </div>
+                        <p className="text-2xl font-bold text-orange-700">{plannedProjects.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <LightbulbIcon className="w-4 h-4 text-yellow-600" />
+                          <p className="text-xs font-semibold text-yellow-900">Identified</p>
+                        </div>
+                        <p className="text-2xl font-bold text-yellow-700">{identifiedProjects.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          <p className="text-xs font-semibold text-green-900">Completed</p>
+                        </div>
+                        <p className="text-2xl font-bold text-green-700">{completedProjects.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Pause className="w-4 h-4 text-gray-600" />
+                          <p className="text-xs font-semibold text-gray-900">Deferred</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-700">{deferredProjects.length}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Filter Buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={statusFilter === 'all' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('all')}
+                    size="sm"
+                    style={{ minHeight: '40px' }}
+                  >
+                    All ({allUpgrades.length})
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'active' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('active')}
+                    size="sm"
+                    style={{ minHeight: '40px' }}
+                  >
+                    <Activity className="w-4 h-4 mr-1" />
+                    Active ({activeProjects.length})
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'identified' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('identified')}
+                    size="sm"
+                    style={{ minHeight: '40px' }}
+                  >
+                    <LightbulbIcon className="w-4 h-4 mr-1" />
+                    Identified ({identifiedProjects.length})
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('completed')}
+                    size="sm"
+                    style={{ minHeight: '40px' }}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Completed ({completedProjects.length})
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'deferred' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('deferred')}
+                    size="sm"
+                    style={{ minHeight: '40px' }}
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Deferred ({deferredProjects.length})
+                  </Button>
+                </div>
+              </>
+            )}
+
             {/* Wealth Impact Summary */}
             {!upgradesLoading && completedProjects.length > 0 && (
               <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
@@ -467,49 +584,22 @@ export default function Upgrade() {
               </Card>
             )}
 
-            {/* Active Projects */}
-            {!upgradesLoading && activeProjects.length > 0 && (
-              <div>
-                <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
-                  <Clock className="w-6 h-6 text-orange-600" />
-                  Active Projects ({activeProjects.length})
-                </h2>
-                <div className="space-y-4">
-                  {activeProjects.map((project) => (
-                    <UpgradeProjectCard
-                      key={project.id}
-                      project={project}
-                      properties={properties}
-                      memberDiscount={memberDiscountTier}
-                      onEdit={() => setEditingProject(project)}
-                    />
-                  ))}
-                </div>
+            {/* Projects List */}
+            {!upgradesLoading && filteredProjects.length > 0 && (
+              <div className="space-y-4">
+                {filteredProjects.map((project) => (
+                  <UpgradeProjectCard
+                    key={project.id}
+                    project={project}
+                    properties={properties}
+                    memberDiscount={memberDiscountTier}
+                    onEdit={() => setEditingProject(project)}
+                  />
+                ))}
               </div>
             )}
 
-            {/* Completed Projects */}
-            {!upgradesLoading && completedProjects.length > 0 && (
-              <div>
-                <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
-                  Completed Projects ({completedProjects.length})
-                </h2>
-                <div className="space-y-4">
-                  {completedProjects.map((project) => (
-                    <UpgradeProjectCard
-                      key={project.id}
-                      project={project}
-                      properties={properties}
-                      memberDiscount={memberDiscountTier}
-                      onEdit={() => setEditingProject(project)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Empty State */}
+            {/* Empty State - No Projects */}
             {!upgradesLoading && allUpgrades.length === 0 && (
               <Card className="border-none shadow-sm">
                 <CardContent className="p-12 text-center">
@@ -538,6 +628,26 @@ export default function Upgrade() {
                       Create Custom Project
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Empty State - Filtered */}
+            {!upgradesLoading && allUpgrades.length > 0 && filteredProjects.length === 0 && (
+              <Card className="border-none shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold mb-2">No Projects Match Filter</h3>
+                  <p className="text-gray-600 mb-4">
+                    No projects with status: {statusFilter}
+                  </p>
+                  <Button
+                    onClick={() => setStatusFilter('all')}
+                    variant="outline"
+                    style={{ minHeight: '48px' }}
+                  >
+                    Show All Projects
+                  </Button>
                 </CardContent>
               </Card>
             )}
