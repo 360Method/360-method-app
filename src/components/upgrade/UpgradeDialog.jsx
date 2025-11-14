@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -7,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  ChevronDown, ChevronUp, Calculator, Sparkles, 
+import {
+  ChevronDown, ChevronUp, Calculator, Sparkles,
   AlertCircle, Info, DollarSign, TrendingUp,
   Home, Hammer, Building2, HardHat, CheckCircle2
 } from 'lucide-react';
@@ -18,7 +19,7 @@ import AICostEstimator from './AICostEstimator';
 
 const CATEGORIES = [
   "High ROI Renovations",
-  "Energy Efficiency", 
+  "Energy Efficiency",
   "Rental Income Boosters",
   "Preventive Replacements",
   "Curb Appeal",
@@ -29,7 +30,7 @@ const CATEGORIES = [
   "Rental Appeal"
 ];
 
-export default function UpgradeDialog({ 
+export default function UpgradeDialog({
   properties,
   project = null,
   templateId = null,
@@ -38,7 +39,7 @@ export default function UpgradeDialog({
   onCancel
 }) {
   const queryClient = useQueryClient();
-  
+
   // UI State
   const [showFinancials, setShowFinancials] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -77,7 +78,7 @@ export default function UpgradeDialog({
     if (template && !project) {
       console.log('📋 Pre-filling from template:', template);
       const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
-      
+
       setFormData(prev => ({
         ...prev,
         title: template.title || '',
@@ -88,7 +89,7 @@ export default function UpgradeDialog({
         annual_savings: template.annual_savings || 0,
         status: 'Planned'
       }));
-      
+
       // Auto-open financials if from template
       setShowFinancials(true);
     }
@@ -122,7 +123,7 @@ export default function UpgradeDialog({
 
   const handleAIEstimate = (estimate) => {
     console.log('✨ Applying AI estimate to form:', estimate);
-    
+
     setFormData(prev => ({
       ...prev,
       investment_required: estimate.cost_average || 0,
@@ -134,15 +135,15 @@ export default function UpgradeDialog({
   const calculateROI = () => {
     const investment = parseFloat(formData.investment_required) || 0;
     const valueImpact = parseFloat(formData.property_value_impact) || 0;
-    
+
     if (investment === 0) return { roi: 0, netGain: 0, payback: 'N/A' };
-    
+
     const netGain = valueImpact - investment;
     const roi = ((valueImpact / investment) * 100).toFixed(1);
-    
+
     const annualSavings = parseFloat(formData.annual_savings) || 0;
     const payback = annualSavings > 0 ? (investment / annualSavings).toFixed(1) : 'N/A';
-    
+
     return { roi, netGain, payback };
   };
 
@@ -150,7 +151,7 @@ export default function UpgradeDialog({
     mutationFn: async (data) => {
       console.log('🚀 Starting project save...');
       console.log('Input data:', data);
-      
+
       const submitData = {
         ...data,
         investment_required: parseFloat(data.investment_required) || 0,
@@ -165,21 +166,57 @@ export default function UpgradeDialog({
         );
       }
 
-      // CRITICAL: Auto-generate milestones for ALL new projects (not just templates)
+      // CRITICAL: Auto-generate milestones for ALL new projects
       if (!project?.id) {
         console.log('✨ Auto-generating milestones for new project');
-        
-        const milestones = getMilestonesForUpgrade(
-          submitData.title,
-          submitData.category
-        );
-        
-        console.log(`📋 Generated ${milestones.length} milestones:`, milestones.map(m => m.title));
-        
+        console.log('Project title:', submitData.title);
+        console.log('Project category:', submitData.category);
+
+        let milestones = [];
+
+        try {
+          milestones = getMilestonesForUpgrade(
+            submitData.title,
+            submitData.category
+          );
+
+          console.log(`✅ Generated ${milestones.length} milestones`);
+          console.log('Milestone titles:', milestones.map(m => m.title));
+
+          if (milestones.length === 0) {
+            console.warn('⚠️ No milestones generated! Using fallback...');
+            // Absolute fallback - should never happen but just in case
+            milestones = [{
+              id: `milestone_${Date.now()}`,
+              title: 'Project Planning',
+              description: 'Plan and prepare for this project',
+              order: 0,
+              status: 'Not Started',
+              completed_date: null,
+              photos: [],
+              notes: ''
+            }];
+          }
+
+        } catch (milestoneError) {
+          console.error('❌ Milestone generation failed:', milestoneError);
+          // Even if generation fails, provide a basic milestone
+          milestones = [{
+            id: `milestone_${Date.now()}`,
+            title: 'Project Planning',
+            description: 'Plan and prepare for this project',
+            order: 0,
+            status: 'Not Started',
+            completed_date: null,
+            photos: [],
+            notes: ''
+          }];
+        }
+
         submitData.milestones = milestones;
         submitData.progress_percentage = 0;
         submitData.current_milestone = milestones[0]?.title || 'Not Started';
-        
+
         // Store template_id if created from template
         if (template) {
           submitData.template_id = template.id;
@@ -187,7 +224,8 @@ export default function UpgradeDialog({
       }
 
       console.log('💾 Calling base44.entities.Upgrade.' + (project?.id ? 'update' : 'create'));
-      console.log('Submit data:', submitData);
+      console.log('Final submit data:', submitData);
+      console.log('Milestones to save:', submitData.milestones?.length || 0);
 
       let result;
       if (project?.id) {
@@ -197,7 +235,7 @@ export default function UpgradeDialog({
         result = await base44.entities.Upgrade.create(submitData);
         console.log('✅ Project created:', result);
         console.log('New project ID:', result.id);
-        console.log('Milestones count:', result.milestones?.length || 0);
+        console.log('Milestones in saved project:', result.milestones?.length || 0);
       }
 
       return result;
@@ -205,15 +243,16 @@ export default function UpgradeDialog({
     onSuccess: (result) => {
       console.log('🎉 Save mutation successful!');
       console.log('Result:', result);
-      
+      console.log('Milestones saved:', result.milestones?.length || 0);
+
       // CRITICAL: Invalidate all upgrade queries to force reload
       console.log('🔄 Invalidating React Query cache...');
       queryClient.invalidateQueries({ queryKey: ['upgrades'] });
       queryClient.invalidateQueries({ queryKey: ['upgrade'] });
-      
+
       console.log('✅ Queries invalidated, showing success modal');
       setShowSuccess(true);
-      
+
       setTimeout(() => {
         console.log('➡️ Closing modals and calling onComplete');
         setShowSuccess(false);
@@ -231,10 +270,10 @@ export default function UpgradeDialog({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     console.log('📝 Form submitted');
     console.log('Current form data:', formData);
-    
+
     // Validation
     if (!formData.title.trim()) {
       console.warn('⚠️ Validation failed: Title is required');
@@ -265,11 +304,11 @@ export default function UpgradeDialog({
               {project ? 'Project Updated!' : 'Project Created!'}
             </h3>
             <p className="text-gray-600 mb-4">
-              {project 
+              {project
                 ? 'Your changes have been saved.'
                 : `Your "${formData.title}" project is ready with guided milestones.`}
             </p>
-            <Button 
+            <Button
               onClick={onComplete}
               className="bg-green-600 hover:bg-green-700"
               style={{ minHeight: '48px' }}
@@ -320,11 +359,11 @@ export default function UpgradeDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-          
+
           {/* ============================================ */}
           {/* SECTION 1: PROJECT BASICS (Always Visible) */}
           {/* ============================================ */}
-          
+
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Home className="w-5 h-5" />
@@ -502,7 +541,7 @@ export default function UpgradeDialog({
 
             {showFinancials && (
               <div className="mt-4 space-y-6 pl-7">
-                
+
                 {/* AI Cost Estimator */}
                 {!project && (
                   <>
@@ -599,7 +638,7 @@ export default function UpgradeDialog({
                       <Calculator className="w-5 h-5 text-green-600" />
                       <h4 className="font-bold text-green-900">Project Economics</h4>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-xs text-green-700 mb-1">ROI</p>
@@ -625,7 +664,7 @@ export default function UpgradeDialog({
                       <div className="mt-3 flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
                         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <p>
-                          This project has negative ROI. Consider if quality of life, 
+                          This project has negative ROI. Consider if quality of life,
                           energy savings, or other non-financial benefits justify the investment.
                         </p>
                       </div>
