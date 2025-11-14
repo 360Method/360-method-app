@@ -6,7 +6,8 @@ import { createPageUrl } from '@/utils';
 import {
   Sparkles, TrendingUp, DollarSign, Clock, Zap,
   ArrowLeft, Search, Filter, ChevronDown, Home,
-  Trophy, Leaf, Shield, Heart, Building2, MapPin
+  Trophy, Leaf, Shield, Heart, Building2, MapPin,
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
