@@ -6,18 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { 
   Building2, 
-  DollarSign, 
-  TrendingUp, 
-  AlertCircle,
   Grid3x3,
   List,
   Map,
   Search,
-  SlidersHorizontal,
   Plus,
   ChevronDown
 } from "lucide-react";
-import PropertyCard from "./PropertyCard";
+import EnhancedPropertyCard from "./EnhancedPropertyCard";
 
 export default function PropertyDashboard({ 
   properties, 
@@ -26,7 +22,7 @@ export default function PropertyDashboard({
   onEditProperty,
   onDeleteProperty 
 }) {
-  const [viewMode, setViewMode] = useState('grid'); // grid, list, map
+  const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterUseType, setFilterUseType] = useState('all');
   const [filterHealth, setFilterHealth] = useState('all');
@@ -90,7 +86,6 @@ export default function PropertyDashboard({
     } else if (sortBy === 'doors') {
       filtered.sort((a, b) => (b.door_count || 0) - (a.door_count || 0));
     } else {
-      // Recent (default)
       filtered.sort((a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date));
     }
 
@@ -264,11 +259,11 @@ export default function PropertyDashboard({
         </div>
       ) : null}
 
-      {/* Property Grid/List View */}
+      {/* Property Grid View */}
       {viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProperties.map((property) => (
-            <PropertyCard
+            <EnhancedPropertyCard
               key={property.id}
               property={property}
               onEdit={() => onEditProperty(property.id)}
@@ -278,6 +273,7 @@ export default function PropertyDashboard({
         </div>
       )}
 
+      {/* Property List View */}
       {viewMode === 'list' && (
         <Card>
           <CardContent className="p-0">
@@ -336,6 +332,7 @@ export default function PropertyDashboard({
         </Card>
       )}
 
+      {/* Map View */}
       {viewMode === 'map' && (
         <Card>
           <CardContent className="p-6">
