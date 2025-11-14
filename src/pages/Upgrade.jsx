@@ -19,7 +19,8 @@ import {
   Calendar,
   Trophy,
   Search,
-  RefreshCw
+  RefreshCw,
+  PauseCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
@@ -44,6 +45,7 @@ export default function Upgrade() {
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('browse');
+  const [showDeferred, setShowDeferred] = React.useState(false);
 
   React.useEffect(() => {
     if (showNewForm && templateIdFromUrl) {
@@ -80,6 +82,13 @@ export default function Upgrade() {
       console.log('✅ Fetched upgrades:', upgrades);
       console.log('Count:', upgrades?.length || 0);
       
+      // Debug: Count by status
+      const statusCounts = upgrades?.reduce((acc, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      }, {}) || {};
+      console.log('📊 Projects by status:', statusCounts);
+      
       return upgrades || [];
     },
     enabled: !!selectedProperty || properties.length === 0,
@@ -99,16 +108,29 @@ export default function Upgrade() {
   // Get current property object
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
+  // Filter projects by status
   const activeProjects = allUpgrades.filter(u =>
-    u.status === 'Planned' || u.status === 'In Progress'
+    ['Identified', 'Planned', 'In Progress'].includes(u.status)
   );
-
-  const plannedProjects = allUpgrades.filter(u => u.status === 'Planned');
-  const inProgressProjects = allUpgrades.filter(u => u.status === 'In Progress');
 
   const completedProjects = allUpgrades.filter(u =>
     u.status === 'Completed'
   );
+
+  const deferredProjects = allUpgrades.filter(u =>
+    u.status === 'Deferred'
+  );
+
+  // CRITICAL FIX: Only count visible projects (active + completed, NOT deferred)
+  const visibleProjectCount = activeProjects.length + completedProjects.length;
+
+  console.log('=== PROJECT COUNT DEBUG ===');
+  console.log('Active projects:', activeProjects.length);
+  console.log('Completed projects:', completedProjects.length);
+  console.log('Deferred projects:', deferredProjects.length);
+  console.log('Total visible:', visibleProjectCount);
+  console.log('Total all:', allUpgrades.length);
+  console.log('==========================');
 
   const totalInvestment = completedProjects.reduce((sum, p) =>
     sum + (p.actual_cost || p.investment_required || 0), 0
@@ -122,7 +144,6 @@ export default function Upgrade() {
 
   const currentTier = user?.subscription_tier || 'free';
   
-  // CRITICAL FIX: Check service availability for CURRENT PROPERTY, not user
   const showMemberPricing = shouldShowMemberBenefits(user, currentProperty);
   const memberDiscountTier = showMemberPricing ? currentTier : 0;
   const displayMemberDiscountPercentage = currentTier.includes('essential') ? 0.05
@@ -198,7 +219,7 @@ export default function Upgrade() {
           </p>
         </div>
 
-        {/* Service Availability Banner - Pass current property */}
+        {/* Service Availability Banner */}
         <ServiceAvailabilityBanner user={user} property={currentProperty} className="mb-6" />
 
         {/* Why This Step Matters */}
@@ -303,14 +324,14 @@ export default function Upgrade() {
               style={{ minHeight: '56px' }}
             >
               <Trophy className="w-5 h-5" />
-              <span>Your Projects ({allUpgrades.length})</span>
+              <span>Your Projects {visibleProjectCount > 0 && `(${visibleProjectCount})`}</span>
             </TabsTrigger>
           </TabsList>
 
           {/* TAB 1: BROWSE IDEAS */}
           <TabsContent value="browse" className="mt-6 space-y-6">
             
-            {/* Member Discount Banner - ONLY if service available */}
+            {/* Member Discount Banner */}
             {showMemberPricing && (
               <Card className="border-2 border-purple-300 bg-purple-50">
                 <CardContent className="p-4">
@@ -509,8 +530,42 @@ export default function Upgrade() {
               </div>
             )}
 
+            {/* Deferred Projects - Collapsible Section */}
+            {!upgradesLoading && deferredProjects.length > 0 && (
+              <div className="border-t pt-6">
+                <button
+                  onClick={() => setShowDeferred(!showDeferred)}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+                  style={{ minHeight: '40px' }}
+                >
+                  <PauseCircle className="w-5 h-5" />
+                  <span className="font-semibold">
+                    Deferred Projects ({deferredProjects.length})
+                  </span>
+                  {showDeferred ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+                {showDeferred && (
+                  <div className="space-y-4 opacity-60">
+                    {deferredProjects.map((project) => (
+                      <UpgradeProjectCard
+                        key={project.id}
+                        project={project}
+                        properties={properties}
+                        memberDiscount={memberDiscountTier}
+                        onEdit={() => setEditingProject(project)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Empty State */}
-            {!upgradesLoading && allUpgrades.length === 0 && (
+            {!upgradesLoading && visibleProjectCount === 0 && (
               <Card className="border-none shadow-sm">
                 <CardContent className="p-12 text-center">
                   <LightbulbIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
