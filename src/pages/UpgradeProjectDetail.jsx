@@ -4,27 +4,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { 
-  CheckCircle2, Circle, Clock, AlertTriangle, Camera, 
-  TrendingUp, DollarSign, Calendar, Edit, Trash2,
-  MessageSquare, Lightbulb, ArrowLeft, Trophy,
-  FileText, Image as ImageIcon, Zap
+  TrendingUp, DollarSign, Edit, Trash2, Lightbulb, ArrowLeft, Trophy, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import MilestonesView from '../components/upgrade/MilestonesView';
+import MilestonesTab from '../components/upgrade/MilestonesTab';
+import FilesTab from '../components/upgrade/FilesTab';
 import BudgetTrackingView from '../components/upgrade/BudgetTrackingView';
-import PhotoTimelineView from '../components/upgrade/PhotoTimelineView';
 import AIGuidanceView from '../components/upgrade/AIGuidanceView';
+import EditProjectButton from '../components/upgrade/EditProjectButton';
+import UpgradeDialog from '../components/upgrade/UpgradeDialog';
 
 export default function UpgradeProjectDetail() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const projectId = searchParams.get('id');
-  const [activeTab, setActiveTab] = useState('progress');
+  const [activeTab, setActiveTab] = useState('milestones');
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -37,14 +37,18 @@ export default function UpgradeProjectDetail() {
     enabled: !!projectId,
   });
 
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list(),
+  });
+
   const { data: property } = useQuery({
     queryKey: ['property', project?.property_id],
     queryFn: async () => {
       if (!project?.property_id) return null;
-      const properties = await base44.entities.Property.list();
       return properties.find(p => p.id === project.property_id);
     },
-    enabled: !!project?.property_id,
+    enabled: !!project?.property_id && properties.length > 0,
   });
 
   const deleteMutation = useMutation({
@@ -63,6 +67,11 @@ export default function UpgradeProjectDetail() {
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['upgrade', projectId] });
+  };
+
+  const handleEditComplete = () => {
+    setShowEditDialog(false);
+    handleRefresh();
   };
 
   if (isLoading) {
@@ -113,199 +122,225 @@ export default function UpgradeProjectDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-6">
-        
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(createPageUrl('Upgrade'))}
-            className="mb-4"
-            style={{ minHeight: '44px' }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Upgrades
-          </Button>
+    <>
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6">
+          
+          {/* Header */}
+          <div className="mb-4 md:mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(createPageUrl('Upgrade'))}
+              className="mb-3"
+              style={{ minHeight: '44px' }}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Upgrades
+            </Button>
 
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {project.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className={categoryColors[project.category]}>
-                  {project.category}
-                </Badge>
-                <Badge className={statusColors[project.status]}>
-                  {project.status}
-                </Badge>
-                {property && (
-                  <Badge variant="outline" className="text-xs">
-                    📍 {property.address}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-3">
+                  {project.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className={categoryColors[project.category]}>
+                    {project.category}
                   </Badge>
-                )}
-                {project.project_manager && (
-                  <Badge variant="outline">
-                    {project.project_manager === 'Operator' ? '🏢 Operator Managed' : 
-                     project.project_manager === 'Contractor' ? '👷 Contractor' : '🔨 DIY'}
+                  <Badge className={statusColors[project.status]}>
+                    {project.status}
                   </Badge>
-                )}
+                  {property && (
+                    <Badge variant="outline" className="text-xs">
+                      📍 {property.address}
+                    </Badge>
+                  )}
+                  {project.project_manager && (
+                    <Badge variant="outline">
+                      {project.project_manager === 'Operator' ? '🏢 Operator' : 
+                       project.project_manager === 'Contractor' ? '👷 Contractor' : '🔨 DIY'}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(createPageUrl('Upgrade') + `?new=true&edit=${projectId}`)}
-                style={{ minHeight: '44px' }}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={handleDelete}
-                style={{ minHeight: '44px' }}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <EditProjectButton
+                  onClick={() => setShowEditDialog(true)}
+                  variant="outline"
+                  size="default"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleDelete}
+                  style={{ minHeight: '44px', minWidth: '44px' }}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Progress Overview Card */}
-        <Card className="mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-blue-600" />
-                Project Progress
-              </span>
-              <span className="text-3xl font-bold text-blue-600">
-                {project.progress_percentage || 0}%
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Progress value={project.progress_percentage || 0} className="h-3 mb-4" />
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Milestones</p>
-                <p className="font-semibold text-gray-900">
-                  {project.milestones?.filter(m => m.status === 'Completed').length || 0} / {project.milestones?.length || 0}
-                </p>
-              </div>
-              {project.current_milestone && (
-                <div className="md:col-span-2">
-                  <p className="text-xs text-gray-600 mb-1">Current Step</p>
-                  <p className="font-semibold text-blue-700">{project.current_milestone}</p>
+          {/* Progress Overview Card */}
+          <Card className="mb-4 md:mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base sm:text-lg">
+                <span className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                  Project Progress
+                </span>
+                <span className="text-2xl sm:text-3xl font-bold text-blue-600">
+                  {project.progress_percentage || 0}%
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Progress value={project.progress_percentage || 0} className="h-2.5 sm:h-3 mb-3 sm:mb-4" />
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Milestones</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900">
+                    {project.milestones?.filter(m => m.status === 'Completed').length || 0} / {project.milestones?.length || 0}
+                  </p>
                 </div>
-              )}
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Status</p>
-                <p className="font-semibold text-gray-900">{project.status}</p>
+                {project.current_milestone && (
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-gray-600 mb-1">Current Step</p>
+                    <p className="text-sm sm:text-base font-semibold text-blue-700 line-clamp-1">
+                      {project.current_milestone}
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Status</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900">{project.status}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-4 h-4 text-blue-600" />
-                <p className="text-xs text-gray-600">Investment</p>
-              </div>
-              <p className="text-xl font-bold text-gray-900">
-                ${(project.final_investment || project.investment_required || 0).toLocaleString()}
-              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <p className="text-xs text-gray-600">Value Added</p>
-              </div>
-              <p className="text-xl font-bold text-green-700">
-                ${(project.final_value_added || project.property_value_impact || 0).toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
+          {/* Financial Summary - Mobile First */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 md:mb-6">
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <DollarSign className="w-4 h-4 text-blue-600" />
+                  <p className="text-xs text-gray-600">Investment</p>
+                </div>
+                <p className="text-base sm:text-xl font-bold text-gray-900">
+                  ${(project.final_investment || project.investment_required || 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-purple-600" />
-                <p className="text-xs text-gray-600">ROI</p>
-              </div>
-              <p className="text-xl font-bold text-purple-700">
-                {project.final_roi_percent || 
-                 (project.property_value_impact && project.investment_required 
-                   ? Math.round((project.property_value_impact / project.investment_required) * 100) 
-                   : 0)}%
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-600">Value Added</p>
+                </div>
+                <p className="text-base sm:text-xl font-bold text-green-700">
+                  ${(project.final_value_added || project.property_value_impact || 0).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-green-600" />
-                <p className="text-xs text-gray-600">Net Gain</p>
-              </div>
-              <p className="text-xl font-bold text-green-700">
-                +${(project.equity_increase || 
-                    ((project.property_value_impact || 0) - (project.investment_required || 0))).toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <Zap className="w-4 h-4 text-purple-600" />
+                  <p className="text-xs text-gray-600">ROI</p>
+                </div>
+                <p className="text-base sm:text-xl font-bold text-purple-700">
+                  {project.final_roi_percent || 
+                   (project.property_value_impact && project.investment_required 
+                     ? Math.round((project.property_value_impact / project.investment_required) * 100) 
+                     : 0)}%
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <Trophy className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-600">Net Gain</p>
+                </div>
+                <p className="text-base sm:text-xl font-bold text-green-700">
+                  +${(project.equity_increase || 
+                      ((project.property_value_impact || 0) - (project.investment_required || 0))).toLocaleString()}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Tabs - Mobile First */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-6 h-auto">
+              <TabsTrigger 
+                value="milestones" 
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="hidden sm:inline">Milestones</span>
+                <span className="sm:hidden">Steps</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="budget" 
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                Budget
+              </TabsTrigger>
+              <TabsTrigger 
+                value="files" 
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                Files
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ai-guide" 
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="hidden sm:inline">AI Guide</span>
+                <span className="sm:hidden">AI</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="milestones">
+              <MilestonesTab project={project} onUpdate={handleRefresh} />
+            </TabsContent>
+
+            <TabsContent value="budget">
+              <BudgetTrackingView project={project} onUpdate={handleRefresh} />
+            </TabsContent>
+
+            <TabsContent value="files">
+              <FilesTab project={project} onUpdate={handleRefresh} />
+            </TabsContent>
+
+            <TabsContent value="ai-guide">
+              <AIGuidanceView project={project} onUpdate={handleRefresh} />
+            </TabsContent>
+          </Tabs>
+
         </div>
-
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="progress" className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Progress</span>
-            </TabsTrigger>
-            <TabsTrigger value="budget" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              <span className="hidden sm:inline">Budget</span>
-            </TabsTrigger>
-            <TabsTrigger value="photos" className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Photos</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai-guide" className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" />
-              <span className="hidden sm:inline">AI Guide</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="progress">
-            <MilestonesView project={project} onUpdate={handleRefresh} />
-          </TabsContent>
-
-          <TabsContent value="budget">
-            <BudgetTrackingView project={project} onUpdate={handleRefresh} />
-          </TabsContent>
-
-          <TabsContent value="photos">
-            <PhotoTimelineView project={project} onUpdate={handleRefresh} />
-          </TabsContent>
-
-          <TabsContent value="ai-guide">
-            <AIGuidanceView project={project} onUpdate={handleRefresh} />
-          </TabsContent>
-        </Tabs>
-
       </div>
-    </div>
+
+      {/* Edit Dialog */}
+      {showEditDialog && (
+        <UpgradeDialog
+          properties={properties}
+          project={project}
+          onComplete={handleEditComplete}
+          onCancel={() => setShowEditDialog(false)}
+        />
+      )}
+    </>
   );
 }

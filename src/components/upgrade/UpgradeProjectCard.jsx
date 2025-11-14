@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  DollarSign, TrendingUp, Calendar, FileText, 
+  DollarSign, TrendingUp, FileText, 
   Image as ImageIcon, ArrowRight, Hammer, 
-  Building2, HardHat, CircleHelp, CheckCircle2,
-  Edit, Zap
+  Building2, HardHat, CircleHelp, CheckCircle2, Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { calculateMemberDiscount } from '../shared/MemberDiscountCalculator';
+import EditProjectButton from './EditProjectButton';
 
 export default function UpgradeProjectCard({ 
   project, 
@@ -117,16 +117,13 @@ export default function UpgradeProjectCard({
             )}
           </div>
           
-          {/* Quick Edit Button */}
-          <Button
-            variant="outline"
-            size="icon"
+          {/* Quick Edit Button - CONSISTENT STYLE */}
+          <EditProjectButton
             onClick={onEdit}
-            title="Edit project"
-            style={{ minHeight: '40px', minWidth: '40px' }}
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
+            variant="outline"
+            size="sm"
+            className="flex-shrink-0"
+          />
         </div>
       </CardHeader>
 
