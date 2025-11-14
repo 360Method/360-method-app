@@ -103,6 +103,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
   const autocompleteRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
+  const [inputValue, setInputValue] = useState(initialValue);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualAddress, setManualAddress] = useState({
@@ -112,6 +113,13 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     state: "",
     zip_code: ""
   });
+
+  // Update input value when initialValue changes
+  useEffect(() => {
+    if (initialValue) {
+      setInputValue(initialValue);
+    }
+  }, [initialValue]);
 
   useEffect(() => {
     console.log('🎯 AddressAutocomplete mounted');
@@ -171,6 +179,8 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
         const addressData = parseAddress(place);
         console.log('✅ Parsed address:', addressData);
         
+        // Update input to show formatted address
+        setInputValue(addressData.formatted_address);
         setSelectedAddress(addressData);
         
         if (onAddressSelect) {
@@ -221,9 +231,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
 
   const handleClearAddress = () => {
     setSelectedAddress(null);
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
+    setInputValue('');
   };
 
   const handleManualSubmit = () => {
@@ -379,7 +387,8 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
           ref={inputRef}
           type="text"
           placeholder={ready ? "Start typing your address..." : "Loading..."}
-          defaultValue={initialValue}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           disabled={!ready}
           autoComplete="off"
           style={{ minHeight: '48px' }}
