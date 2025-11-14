@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,11 +12,8 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
-  CheckCircle2,
-  XCircle,
   ChevronRight,
   ChevronDown,
-  Download,
   Calculator,
   Trophy,
   Lightbulb,
@@ -34,7 +30,6 @@ export default function Preserve() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('forecast');
   const [whyExpanded, setWhyExpanded] = useState(false);
-  const queryClient = useQueryClient();
 
   // Fetch data
   const { data: properties = [] } = useQuery({
@@ -313,7 +308,6 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
-                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
                     />
                   ))}
                 </div>
@@ -335,7 +329,6 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
-                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
                     />
                   ))}
                 </div>
@@ -346,7 +339,7 @@ export default function Preserve() {
             {optionalItems.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                  <Clock className="w-6 h-6 text-blue-600" />
                   <h2 className="font-bold text-xl text-gray-900">
                     💰 OPTIONAL - Consider for Optimization ({optionalItems.length})
                   </h2>
@@ -357,7 +350,6 @@ export default function Preserve() {
                       key={rec.id}
                       recommendation={rec}
                       systems={systems}
-                      onApprove={() => queryClient.invalidateQueries(['preservation-recommendations'])}
                     />
                   ))}
                 </div>
@@ -368,7 +360,7 @@ export default function Preserve() {
             {recommendations.filter(r => r.status === 'PENDING').length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                  <Shield className="w-16 h-16 text-green-600 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">All Systems Looking Good!</h3>
                   <p className="text-gray-600 mb-4">
                     No preservation recommendations at this time. Check back as systems age.
