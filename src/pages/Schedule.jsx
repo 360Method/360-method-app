@@ -29,7 +29,9 @@ import CalendarView from "../components/schedule/CalendarView";
 import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
 import SeasonalReminderCard from "../components/schedule/SeasonalReminderCard";
+import DayDetailsDialog from "../components/schedule/DayDetailsDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
+import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/schedule/seasonalHelpers";
 
 export default function SchedulePage() {
@@ -45,6 +47,11 @@ export default function SchedulePage() {
   const [selectedTaskForPicker, setSelectedTaskForPicker] = React.useState(null);
   const [selectedTasks, setSelectedTasks] = React.useState([]);
   const [showBatchScheduler, setShowBatchScheduler] = React.useState(false);
+  const [showDayDetails, setShowDayDetails] = React.useState(false);
+  const [selectedDate, setSelectedDate] = React.useState(null);
+  const [tasksForSelectedDate, setTasksForSelectedDate] = React.useState([]);
+  const [showTaskDetail, setShowTaskDetail] = React.useState(false);
+  const [taskForDetail, setTaskForDetail] = React.useState(null);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -125,7 +132,7 @@ export default function SchedulePage() {
     const workloadMap = {};
     tasks.forEach(task => {
       if (task.scheduled_date && (task.estimated_hours || task.diy_time_hours)) {
-        const dateKey = format(new Date(task.scheduled_date), 'yyyy-MM-dd');
+        const dateKey = format(startOfDay(new Date(task.scheduled_date)), 'yyyy-MM-dd');
         workloadMap[dateKey] = (workloadMap[dateKey] || 0) + (task.estimated_hours || task.diy_time_hours);
       }
     });
@@ -138,7 +145,7 @@ export default function SchedulePage() {
     .sort((a, b) => new Date(a[0]) - new Date(b[0]));
 
   const handleTaskDrop = (task, date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
+    const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
@@ -149,13 +156,14 @@ export default function SchedulePage() {
     });
   };
 
-  const handleSetDate = (task, date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
+  const handleSetDate = (task, date, timeRange = 'morning') => {
+    const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
         scheduled_date: formattedDate,
         status: 'Scheduled',
+        time_range: timeRange,
         last_reminded_date: new Date().toISOString()
       }
     });
@@ -168,6 +176,7 @@ export default function SchedulePage() {
         status: 'Identified',
         scheduled_date: null,
         execution_method: null,
+        time_range: null,
         last_reminded_date: new Date().toISOString()
       }
     });
@@ -181,9 +190,15 @@ export default function SchedulePage() {
         setSelectedTasks([...selectedTasks, task.id]);
       }
     } else {
-      setSelectedTaskForPicker(task);
-      setShowQuickDatePicker(true);
+      setTaskForDetail(task);
+      setShowTaskDetail(true);
     }
+  };
+
+  const handleDateClick = (date, tasks) => {
+    setSelectedDate(date);
+    setTasksForSelectedDate(tasks);
+    setShowDayDetails(true);
   };
 
   const handleBatchSchedule = (dateStr) => {
@@ -249,7 +264,7 @@ export default function SchedulePage() {
                 Step 5: Schedule - Timeline Planner
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Click tasks for quick scheduling or drag to calendar
+                Season → Month → Week → Day → Time
               </p>
             </div>
           </div>
@@ -270,8 +285,8 @@ export default function SchedulePage() {
               </div>
 
               <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Click any task for quick date options (Today/Tomorrow/Weekend) or drag to calendar → 
-                Tasks auto-flow to Execute on scheduled day
+                <strong>Your Job:</strong> Click tasks for quick scheduling or drag to calendar → 
+                Click dates to see daily breakdown with time ranges
               </p>
             </CardContent>
           </Card>
@@ -428,15 +443,16 @@ export default function SchedulePage() {
 
               {viewMode === 'calendar' && (
                 <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700">Calendar View:</label>
+                  <label className="text-sm font-semibold text-gray-700">View:</label>
                   <Select value={calendarViewMode} onValueChange={setCalendarViewMode}>
                     <SelectTrigger className="w-32" style={{ minHeight: '44px' }}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="month">Month</SelectItem>
-                      <SelectItem value="week">Week</SelectItem>
-                      <SelectItem value="season">Season</SelectItem>
+                      <SelectItem value="season">🍂 Season</SelectItem>
+                      <SelectItem value="month">📅 Month</SelectItem>
+                      <SelectItem value="week">📆 Week</SelectItem>
+                      <SelectItem value="day">🌞 Day</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -497,7 +513,10 @@ export default function SchedulePage() {
                       <div
                         key={task.id}
                         draggable
-                        onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('taskId', task.id);
+                        }}
                         onClick={(e) => handleTaskClick(task, e)}
                         className={`
                           p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-pointer
@@ -546,10 +565,10 @@ export default function SchedulePage() {
                 tasks={tasksWithDates}
                 viewMode={calendarViewMode}
                 onTaskClick={(task) => {
-                  setSelectedTaskForPicker(task);
-                  setShowQuickDatePicker(true);
+                  setTaskForDetail(task);
+                  setShowTaskDetail(true);
                 }}
-                onDateClick={() => {}}
+                onDateClick={handleDateClick}
                 onTaskDrop={handleTaskDrop}
               />
               
@@ -660,14 +679,41 @@ export default function SchedulePage() {
           <QuickDatePicker
             task={selectedTaskForPicker}
             property={currentProperty || properties.find(p => p.id === selectedTaskForPicker.property_id)}
-            onSchedule={(task, date) => {
-              handleSetDate(task, date);
+            onSchedule={(task, date, timeRange) => {
+              handleSetDate(task, date, timeRange);
             }}
             onClose={() => {
               setShowQuickDatePicker(false);
               setSelectedTaskForPicker(null);
             }}
             onSnooze={handleSendBackToPrioritize}
+          />
+        )}
+
+        {showDayDetails && selectedDate && (
+          <DayDetailsDialog
+            date={selectedDate}
+            tasks={tasksForSelectedDate}
+            open={showDayDetails}
+            onClose={() => setShowDayDetails(false)}
+            onTaskClick={(task) => {
+              setTaskForDetail(task);
+              setShowTaskDetail(true);
+            }}
+          />
+        )}
+
+        {showTaskDetail && taskForDetail && (
+          <TaskDetailModal
+            task={taskForDetail}
+            property={currentProperty || properties.find(p => p.id === taskForDetail.property_id)}
+            open={showTaskDetail}
+            onClose={() => {
+              setShowTaskDetail(false);
+              setTaskForDetail(null);
+            }}
+            onBackToPrioritize={handleSendBackToPrioritize}
+            context="schedule"
           />
         )}
 
