@@ -35,10 +35,9 @@ function getCurrentSeason(date) {
   return { name: 'Winter', emoji: '❄️', months: 'December - February' };
 }
 
-export default function CalendarView({ tasks = [], viewMode = 'month', onTaskClick, onDateClick, onTaskDrop, onTimeRangeChange }) {
+export default function CalendarView({ tasks = [], allTasks = [], viewMode = 'month', onTaskClick, onDateClick, onTaskDrop, onTimeRangeChange }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [draggedTask, setDraggedTask] = useState(null);
 
   let daysInCalendar = [];
   let headerText = '';
@@ -73,9 +72,8 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
   }
 
   const handleDragStart = (e, task) => {
-    setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.setData('text/plain', task.id);
   };
 
   const handleDragOver = (e) => {
@@ -85,33 +83,38 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
 
   const handleDrop = (e, date) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
+    e.stopPropagation();
     
-    let taskToMove = draggedTask;
-    if (!taskToMove && taskId) {
-      taskToMove = tasks.find(t => t.id === taskId);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    
+    // Look for task in both scheduled and all tasks
+    let taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove && allTasks.length > 0) {
+      taskToMove = allTasks.find(t => t.id === taskId);
     }
     
     if (taskToMove && onTaskDrop) {
       onTaskDrop(taskToMove, date);
     }
-    setDraggedTask(null);
   };
 
   const handleTimeRangeDrop = (e, timeRange) => {
     e.preventDefault();
     e.stopPropagation();
-    const taskId = e.dataTransfer.getData('taskId');
     
-    let taskToMove = draggedTask;
-    if (!taskToMove && taskId) {
-      taskToMove = tasks.find(t => t.id === taskId);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    
+    // Look for task in both scheduled and all tasks
+    let taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove && allTasks.length > 0) {
+      taskToMove = allTasks.find(t => t.id === taskId);
     }
     
     if (taskToMove && onTimeRangeChange) {
       onTimeRangeChange(taskToMove, timeRange);
     }
-    setDraggedTask(null);
   };
 
   const handlePrev = () => {
@@ -231,7 +234,11 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <div 
+                  onDrop={(e) => handleTimeRangeDrop(e, range.value)}
+                  onDragOver={handleDragOver}
+                  className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg"
+                >
                   Drag tasks here to schedule for {range.label.toLowerCase()}
                 </div>
               )}
@@ -321,7 +328,10 @@ export default function CalendarView({ tasks = [], viewMode = 'month', onTaskCli
                   <div
                     key={task.id}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      handleDragStart(e, task);
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onTaskClick && onTaskClick(task);

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -690,7 +691,7 @@ export default function SchedulePage() {
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('taskId', task.id);
+                          e.dataTransfer.setData('text/plain', task.id);
                         }}
                         onClick={(e) => handleTaskClick(task, e)}
                         className={`
@@ -743,6 +744,7 @@ export default function SchedulePage() {
             <div className="lg:col-span-3 order-1 lg:order-2">
               <CalendarView 
                 tasks={tasksWithDates}
+                allTasks={scheduledTasks} /* Added this prop based on outline */
                 viewMode={calendarViewMode}
                 onTaskClick={(task) => {
                   setTaskForDetail(task);
