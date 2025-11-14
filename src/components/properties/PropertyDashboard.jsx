@@ -11,7 +11,7 @@ import {
   Map,
   Search,
   Plus,
-  ChevronDown
+  ArrowRight
 } from "lucide-react";
 import EnhancedPropertyCard from "./EnhancedPropertyCard";
 
@@ -95,6 +95,25 @@ export default function PropertyDashboard({
   return (
     <div className="space-y-6">
       
+      {/* Foundation Layer Header */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className="bg-gray-700 text-white">
+            🏗️ Foundation Layer
+          </Badge>
+        </div>
+        <p className="text-sm text-gray-600">
+          Properties flow through the 360° Method: 
+          <span className="inline-flex items-center gap-1 ml-1 font-semibold">
+            <span className="text-blue-600">AWARE</span>
+            <ArrowRight className="w-3 h-3" />
+            <span className="text-orange-600">ACT</span>
+            <ArrowRight className="w-3 h-3" />
+            <span className="text-green-600">ADVANCE</span>
+          </span>
+        </p>
+      </div>
+
       {/* Portfolio Overview */}
       {properties.length > 0 && (
         <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50">

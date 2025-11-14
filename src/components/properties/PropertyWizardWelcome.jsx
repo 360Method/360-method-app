@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Home, Shield, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Home, Shield, TrendingUp, CheckCircle2, ArrowRight } from "lucide-react";
 
 export default function PropertyWizardWelcome({ onContinue, onSkip }) {
   const [neverShowAgain, setNeverShowAgain] = useState(false);
@@ -77,6 +77,28 @@ export default function PropertyWizardWelcome({ onContinue, onSkip }) {
                 <p className="font-semibold text-gray-900">Sleep Better at Night</p>
                 <p className="text-sm text-gray-600">Know exactly what needs attention and when</p>
               </div>
+            </div>
+          </div>
+
+          {/* 3×3 Structure Preview */}
+          <div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+            <p className="text-sm font-bold text-purple-900 mb-2 text-center">
+              📚 The 360° Method is a 3×3 system:
+            </p>
+            <div className="space-y-2 text-center">
+              <p className="text-xs text-purple-800">
+                <strong>3 Phases:</strong> AWARE, ACT, ADVANCE
+              </p>
+              <p className="text-xs text-purple-800">
+                <strong>3 Steps per phase</strong> = 9 total steps
+              </p>
+              <p className="text-xs text-purple-700 mt-2">
+                <span className="text-blue-700">AWARE</span>
+                <ArrowRight className="inline w-3 h-3 mx-1" />
+                <span className="text-orange-700">ACT</span>
+                <ArrowRight className="inline w-3 h-3 mx-1" />
+                <span className="text-green-700">ADVANCE</span>
+              </p>
             </div>
           </div>
 

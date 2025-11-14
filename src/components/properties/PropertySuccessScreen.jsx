@@ -13,22 +13,14 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
     // Confetti animation
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
 
     const interval = setInterval(function() {
       const timeLeft = animationEnd - Date.now();
-
       if (timeLeft <= 0) {
         return clearInterval(interval);
       }
 
-      const particleCount = 50 * (timeLeft / duration);
-      
-      // Simple confetti effect using CSS
+      // Simple confetti effect
       const confetti = document.createElement('div');
       confetti.style.cssText = `
         position: fixed;
@@ -36,11 +28,11 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
         height: 10px;
         background: ${['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b'][Math.floor(Math.random() * 4)]};
         top: 50%;
-        left: ${randomInRange(0, 100)}%;
+        left: ${Math.random() * 100}%;
         opacity: 1;
         border-radius: 50%;
         pointer-events: none;
-        animation: confetti-fall ${randomInRange(2, 4)}s linear forwards;
+        animation: confetti-fall ${2 + Math.random() * 2}s linear forwards;
         z-index: 9999;
       `;
       document.body.appendChild(confetti);
@@ -105,10 +97,10 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5 text-white" />
+                    <span className="text-white font-bold">1</span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-gray-900 mb-1">AWARE Phase (Recommended - 5 min)</p>
+                    <p className="font-bold text-gray-900 mb-1">AWARE Phase - Step 1: Baseline (Recommended - 5 min)</p>
                     <p className="text-sm text-gray-700">
                       Add your major systems (HVAC, roof, water heater) so we can prevent disasters and save you thousands.
                     </p>
@@ -155,25 +147,80 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
             </div>
           </div>
 
+          {/* 360° Method Structure (3×3) */}
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200">
+            <p className="text-sm font-bold text-purple-900 mb-3">📚 The 360° Method (3×3 Structure):</p>
+            
+            <div className="space-y-3">
+              {/* AWARE Phase */}
+              <div className="bg-white rounded-lg p-3 border-l-4 border-blue-600">
+                <p className="font-bold text-blue-900 text-sm mb-1">
+                  <span className="inline-block w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center mr-2">1</span>
+                  AWARE
+                </p>
+                <p className="text-xs text-gray-700 ml-8">
+                  1. Baseline • 2. Inspect • 3. Track
+                </p>
+                <p className="text-xs text-gray-600 ml-8 mt-1">
+                  Document systems, inspect regularly, monitor health
+                </p>
+              </div>
+
+              {/* ACT Phase */}
+              <div className="bg-white rounded-lg p-3 border-l-4 border-orange-600">
+                <p className="font-bold text-orange-900 text-sm mb-1">
+                  <span className="inline-block w-6 h-6 rounded-full bg-orange-600 text-white text-xs flex items-center justify-center mr-2">2</span>
+                  ACT
+                </p>
+                <p className="text-xs text-gray-700 ml-8">
+                  1. Prioritize • 2. Schedule • 3. Execute
+                </p>
+                <p className="text-xs text-gray-600 ml-8 mt-1">
+                  Rank tasks, plan maintenance, complete work
+                </p>
+              </div>
+
+              {/* ADVANCE Phase */}
+              <div className="bg-white rounded-lg p-3 border-l-4 border-green-600">
+                <p className="font-bold text-green-900 text-sm mb-1">
+                  <span className="inline-block w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center mr-2">3</span>
+                  ADVANCE
+                </p>
+                <p className="text-xs text-gray-700 ml-8">
+                  1. Preserve • 2. Upgrade • 3. SCALE
+                </p>
+                <p className="text-xs text-gray-600 ml-8 mt-1">
+                  Extend life, improve value, optimize portfolio
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-purple-200">
+              <p className="text-xs text-purple-800 text-center">
+                ⚡ 3 Phases × 3 Steps = 9 Total Steps
+              </p>
+            </div>
+          </div>
+
           {/* Progress Indicator */}
           <div className="p-4 bg-gray-50 rounded-lg border">
             <p className="text-sm font-semibold text-gray-900 mb-2">🎯 Your Progress:</p>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-gray-700">Property added</p>
+                <p className="text-sm text-gray-700">Property added (Foundation Layer)</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
-                <p className="text-sm text-gray-500">Add major systems (AWARE)</p>
+                <p className="text-sm text-gray-500">AWARE: Baseline (Step 1 of 9)</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
-                <p className="text-sm text-gray-500">Schedule maintenance (ACT)</p>
+                <p className="text-sm text-gray-500">ACT: Prioritize (Step 4 of 9)</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
-                <p className="text-sm text-gray-500">Optimize & grow (ADVANCE)</p>
+                <p className="text-sm text-gray-500">ADVANCE: Preserve (Step 7 of 9)</p>
               </div>
             </div>
           </div>

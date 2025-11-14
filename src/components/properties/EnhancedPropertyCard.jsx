@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Home, 
   Building2, 
-  TrendingUp, 
   AlertTriangle, 
   ArrowRight,
   MoreVertical,
   DollarSign,
-  Activity
+  Activity,
+  HelpCircle
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from "@/utils";
@@ -118,7 +118,7 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
               {equityData && (
                 <DropdownMenuItem asChild>
                   <Link to={createPageUrl('Scale') + `?property=${property.id}`}>
-                    💰 View SCALE Analysis
+                    💰 View Portfolio CFO (SCALE)
                   </Link>
                 </DropdownMenuItem>
               )}
@@ -167,19 +167,26 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
             </div>
             <Link to={createPageUrl('Scale') + `?property=${property.id}`}>
               <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                View Full SCALE Analysis →
+                View Full Portfolio CFO (SCALE) →
               </Button>
             </Link>
           </div>
         )}
 
-        {/* Phase Progress */}
+        {/* 360° Method Progress (3×3 Structure) */}
         <div>
-          <p className="text-xs font-semibold text-gray-700 mb-2">🎯 Phase Progress</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+              🎯 360° Method Progress
+              <span className="text-gray-500">(3×3)</span>
+            </p>
+          </div>
+          
           <div className="space-y-2">
+            {/* AWARE Phase */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-600">AWARE</span>
+                <span className="text-xs text-blue-700 font-semibold">AWARE</span>
                 <span className="text-xs font-semibold text-gray-900">{property.baseline_completion || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -188,11 +195,37 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
                   style={{ width: `${property.baseline_completion || 0}%` }}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">Baseline • Inspect • Track</p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span>ACT: {tasks.length} active</span>
-              <span>•</span>
-              <span>PRESERVE: {preserveRecs.length} opportunities</span>
+
+            {/* ACT Phase */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-orange-700 font-semibold">ACT</span>
+                <span className="text-xs font-semibold text-gray-900">{tasks.length} active</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-orange-600 h-2 rounded-full"
+                  style={{ width: tasks.length > 0 ? '33%' : '0%' }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Prioritize • Schedule • Execute</p>
+            </div>
+
+            {/* ADVANCE Phase */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-green-700 font-semibold">ADVANCE</span>
+                <span className="text-xs font-semibold text-gray-900">{preserveRecs.length} opportunities</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full"
+                  style={{ width: preserveRecs.length > 0 ? '25%' : '0%' }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Preserve • Upgrade • SCALE</p>
             </div>
           </div>
         </div>
