@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { initializeMilestones } from './upgradeMilestones';
 import AICostDisclaimer from '../shared/AICostDisclaimer';
+import AICostEstimator from './AICostEstimator';
 
 const CATEGORIES = [
   "High ROI Renovations",
@@ -74,6 +75,7 @@ export default function UpgradeDialog({
   // Pre-fill from template
   useEffect(() => {
     if (template && !project) {
+      console.log('📋 Pre-filling from template:', template);
       const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
       
       setFormData(prev => ({
@@ -95,6 +97,7 @@ export default function UpgradeDialog({
   // Pre-fill from existing project
   useEffect(() => {
     if (project) {
+      console.log('✏️ Pre-filling from existing project:', project);
       setFormData({
         property_id: project.property_id,
         title: project.title || '',
@@ -117,6 +120,17 @@ export default function UpgradeDialog({
     setError('');
   };
 
+  const handleAIEstimate = (estimate) => {
+    console.log('✨ Applying AI estimate to form:', estimate);
+    
+    setFormData(prev => ({
+      ...prev,
+      investment_required: estimate.cost_average || 0,
+      property_value_impact: estimate.value_impact || 0,
+      annual_savings: 0 // User can adjust if needed
+    }));
+  };
+
   const calculateROI = () => {
     const investment = parseFloat(formData.investment_required) || 0;
     const valueImpact = parseFloat(formData.property_value_impact) || 0;
@@ -134,6 +148,9 @@ export default function UpgradeDialog({
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      console.log('🚀 Starting project save...');
+      console.log('Input data:', data);
+      
       const submitData = {
         ...data,
         investment_required: parseFloat(data.investment_required) || 0,
@@ -155,27 +172,46 @@ export default function UpgradeDialog({
         submitData.progress_percentage = 0;
         submitData.current_milestone = milestones[0]?.title || 'Not Started';
         submitData.template_id = template.id;
+        console.log('✨ Initialized', milestones.length, 'milestones for project');
       }
 
-      console.log('💾 Saving upgrade project:', submitData);
+      console.log('💾 Calling base44.entities.Upgrade.' + (project?.id ? 'update' : 'create'));
+      console.log('Submit data:', submitData);
 
+      let result;
       if (project?.id) {
-        return base44.entities.Upgrade.update(project.id, submitData);
+        result = await base44.entities.Upgrade.update(project.id, submitData);
+        console.log('✅ Project updated:', result);
       } else {
-        return base44.entities.Upgrade.create(submitData);
+        result = await base44.entities.Upgrade.create(submitData);
+        console.log('✅ Project created:', result);
+        console.log('New project ID:', result.id);
       }
+
+      return result;
     },
     onSuccess: (result) => {
-      console.log('✅ Upgrade project saved successfully:', result);
+      console.log('🎉 Save mutation successful!');
+      console.log('Result:', result);
+      
+      // CRITICAL: Invalidate all upgrade queries to force reload
+      console.log('🔄 Invalidating React Query cache...');
       queryClient.invalidateQueries({ queryKey: ['upgrades'] });
+      queryClient.invalidateQueries({ queryKey: ['upgrade'] });
+      
+      console.log('✅ Queries invalidated, showing success modal');
       setShowSuccess(true);
+      
       setTimeout(() => {
+        console.log('➡️ Closing modals and calling onComplete');
         setShowSuccess(false);
         onComplete?.();
       }, 1500);
     },
     onError: (err) => {
-      console.error('❌ Error saving upgrade project:', err);
+      console.error('❌ ERROR saving upgrade project:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
       setError(err.message || 'Failed to save project. Please try again.');
       setIsSubmitting(false);
     }
@@ -184,16 +220,22 @@ export default function UpgradeDialog({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('📝 Form submitted');
+    console.log('Current form data:', formData);
+    
     // Validation
     if (!formData.title.trim()) {
+      console.warn('⚠️ Validation failed: Title is required');
       setError('Project title is required');
       return;
     }
     if (!formData.property_id) {
+      console.warn('⚠️ Validation failed: Property not selected');
       setError('Please select a property');
       return;
     }
 
+    console.log('✅ Validation passed, proceeding with save');
     setIsSubmitting(true);
     setError('');
     saveMutation.mutate(formData);
@@ -439,7 +481,29 @@ export default function UpgradeDialog({
             </button>
 
             {showFinancials && (
-              <div className="mt-4 space-y-4 pl-7">
+              <div className="mt-4 space-y-6 pl-7">
+                
+                {/* AI Cost Estimator */}
+                {!project && (
+                  <>
+                    <AICostEstimator
+                      propertyAddress={properties?.find(p => p.id === formData.property_id)?.address}
+                      projectTitle={formData.title}
+                      onEstimateGenerated={handleAIEstimate}
+                    />
+
+                    {/* Divider */}
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">or enter manually</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <AICostDisclaimer variant="compact" />
 
                 {/* Investment Required */}
@@ -653,7 +717,7 @@ export default function UpgradeDialog({
               type="submit"
               disabled={isSubmitting || !formData.title || !formData.property_id}
               className="flex-1"
-              style={{ minHeight: '48px' }}
+              style={{ minHeight: '48px', backgroundColor: 'var(--primary)' }}
             >
               {isSubmitting ? 'Saving...' : project ? 'Save Changes' : 'Create Project'}
             </Button>

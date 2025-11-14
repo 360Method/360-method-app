@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Calendar,
   Trophy,
-  Search
+  Search,
+  RefreshCw
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
@@ -51,7 +52,7 @@ export default function Upgrade() {
     }
   }, [showNewForm, templateIdFromUrl]);
 
-  const { data: properties = [] } = useQuery({
+  const { data: properties = [], refetch: refetchProperties } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list(),
   });
@@ -61,16 +62,36 @@ export default function Upgrade() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: allUpgrades = [] } = useQuery({
+  const { data: allUpgrades = [], refetch: refetchUpgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['upgrades', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date')
-      : base44.entities.Upgrade.list('-created_date'),
+    queryFn: async () => {
+      console.log('📊 Fetching upgrades...');
+      console.log('Selected property:', selectedProperty);
+      
+      let upgrades;
+      if (selectedProperty) {
+        console.log('🔍 Filtering by property_id:', selectedProperty);
+        upgrades = await base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date');
+      } else {
+        console.log('📋 Fetching all upgrades');
+        upgrades = await base44.entities.Upgrade.list('-created_date');
+      }
+      
+      console.log('✅ Fetched upgrades:', upgrades);
+      console.log('Count:', upgrades?.length || 0);
+      
+      return upgrades || [];
+    },
     enabled: !!selectedProperty || properties.length === 0,
   });
 
   React.useEffect(() => {
+    console.log('🔄 Upgrades data updated:', allUpgrades);
+  }, [allUpgrades]);
+
+  React.useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
+      console.log('🏠 Auto-selecting first property:', properties[0].id);
       setSelectedProperty(properties[0].id);
     }
   }, [properties, selectedProperty]);
@@ -110,7 +131,9 @@ export default function Upgrade() {
     : 0;
 
   const handleFormComplete = () => {
-    console.log('✅ Form completed, switching to projects tab');
+    console.log('✅ Form completed callback triggered');
+    console.log('Switching to projects tab and refetching data');
+    
     setShowNewProjectForm(false);
     setEditingProject(null);
     setTemplateId(null);
@@ -118,8 +141,17 @@ export default function Upgrade() {
     // Clear URL params
     window.history.replaceState({}, '', createPageUrl("Upgrade"));
     
+    // CRITICAL: Force refetch of upgrades
+    refetchUpgrades();
+    
     // Switch to "Your Projects" tab
     setActiveTab('projects');
+  };
+
+  const handleManualRefresh = () => {
+    console.log('🔄 Manual refresh triggered');
+    refetchUpgrades();
+    refetchProperties();
   };
 
   if (showNewProjectForm || editingProject) {
@@ -222,19 +254,34 @@ export default function Upgrade() {
         {properties.length > 0 && (
           <Card className="border-none shadow-lg mb-6">
             <CardContent className="p-4 md:p-6">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
-              <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
-                <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
-                  <SelectValue placeholder="Select a property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Property</label>
+                  <Select value={selectedProperty || ''} onValueChange={setSelectedProperty}>
+                    <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select a property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {properties.map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Debug Refresh Button */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleManualRefresh}
+                  disabled={upgradesLoading}
+                  title="Refresh data"
+                  style={{ minHeight: '48px', minWidth: '48px' }}
+                >
+                  <RefreshCw className={`w-5 h-5 ${upgradesLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -256,7 +303,7 @@ export default function Upgrade() {
               style={{ minHeight: '56px' }}
             >
               <Trophy className="w-5 h-5" />
-              <span>Your Projects</span>
+              <span>Your Projects ({allUpgrades.length})</span>
             </TabsTrigger>
           </TabsList>
 
@@ -372,8 +419,16 @@ export default function Upgrade() {
           {/* TAB 2: YOUR PROJECTS */}
           <TabsContent value="projects" className="mt-6 space-y-6">
             
+            {/* Loading State */}
+            {upgradesLoading && (
+              <div className="text-center py-12">
+                <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
+                <p className="text-gray-600">Loading your projects...</p>
+              </div>
+            )}
+
             {/* Wealth Impact Summary */}
-            {completedProjects.length > 0 && (
+            {!upgradesLoading && completedProjects.length > 0 && (
               <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
@@ -413,7 +468,7 @@ export default function Upgrade() {
             )}
 
             {/* Active Projects */}
-            {activeProjects.length > 0 && (
+            {!upgradesLoading && activeProjects.length > 0 && (
               <div>
                 <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
                   <Clock className="w-6 h-6 text-orange-600" />
@@ -434,7 +489,7 @@ export default function Upgrade() {
             )}
 
             {/* Completed Projects */}
-            {completedProjects.length > 0 && (
+            {!upgradesLoading && completedProjects.length > 0 && (
               <div>
                 <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
                   <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -455,7 +510,7 @@ export default function Upgrade() {
             )}
 
             {/* Empty State */}
-            {allUpgrades.length === 0 && (
+            {!upgradesLoading && allUpgrades.length === 0 && (
               <Card className="border-none shadow-sm">
                 <CardContent className="p-12 text-center">
                   <LightbulbIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
