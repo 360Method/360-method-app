@@ -101,6 +101,8 @@ export default function PriorityTaskCard({
   const [showAddToCart, setShowAddToCart] = React.useState(false);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [showDIYModal, setShowDIYModal] = React.useState(false);
+  const [showScheduleDateModal, setShowScheduleDateModal] = React.useState(false);
+  const [scheduleDate, setScheduleDate] = React.useState('');
   const [showContractorModal, setShowContractorModal] = React.useState(false);
   const [showOperatorModal, setShowOperatorModal] = React.useState(false);
   const [showWaitlistModal, setShowWaitlistModal] = React.useState(false);
@@ -164,17 +166,23 @@ export default function PriorityTaskCard({
   };
 
   const handleDIYScheduleNow = () => {
-    const date = prompt('When will you do this? (YYYY-MM-DD)');
-    if (date) {
+    setShowDIYModal(false);
+    setScheduleDate('');
+    setShowScheduleDateModal(true);
+  };
+
+  const handleScheduleDateSubmit = () => {
+    if (scheduleDate) {
       updateTaskMutation.mutate({
         taskId: task.id,
         data: {
           status: 'Scheduled',
-          scheduled_date: date,
+          scheduled_date: scheduleDate,
           execution_method: 'DIY'
         }
       });
-      setShowDIYModal(false);
+      setShowScheduleDateModal(false);
+      setScheduleDate('');
     }
   };
 
@@ -182,12 +190,11 @@ export default function PriorityTaskCard({
     updateTaskMutation.mutate({
       taskId: task.id,
       data: {
-        status: 'Scheduled', // Assuming 'Scheduled' means it's acknowledged and will be scheduled later
+        status: 'Scheduled',
         execution_method: 'DIY'
       }
     });
     setShowDIYModal(false);
-    // Optionally navigate to schedule tab or trigger a refresh there
   };
 
   const handleContractorSubmit = (e) => {
@@ -521,7 +528,7 @@ export default function PriorityTaskCard({
             </div>
           )}
 
-          {/* NEW: Intent-Based Action Buttons */}
+          {/* Intent-Based Action Buttons */}
           <div className="pt-4 border-t border-red-200">
             <div className="text-sm font-semibold text-gray-700 mb-3">
               How will you handle this?
@@ -608,7 +615,7 @@ export default function PriorityTaskCard({
         </CardContent>
       </Card>
 
-      {/* UPDATED DIY Modal with AI estimates and dual button options */}
+      {/* DIY Modal */}
       {showDIYModal && (
         <Dialog open={showDIYModal} onOpenChange={setShowDIYModal}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -618,12 +625,11 @@ export default function PriorityTaskCard({
                 DIY Guide: {task.title}
               </DialogTitle>
               <DialogDescription>
-                High-level AI estimated materials cost, time, and skill level.
+                High-level AI estimated materials cost, time, and skill level
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              {/* AI Estimated Summary - UPDATED with actual estimates */}
               <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="w-5 h-5 text-green-600" />
@@ -710,7 +716,6 @@ export default function PriorityTaskCard({
               )}
             </div>
 
-            {/* UPDATED: Dual button options - Schedule Now vs Send to Schedule Tab */}
             <div className="flex gap-3 pt-4 border-t">
               <Button
                 variant="outline"
@@ -737,6 +742,74 @@ export default function PriorityTaskCard({
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule Now
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* NEW: Schedule Date Modal */}
+      {showScheduleDateModal && (
+        <Dialog open={showScheduleDateModal} onOpenChange={setShowScheduleDateModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-green-600" />
+                Schedule DIY Task
+              </DialogTitle>
+              <DialogDescription>
+                When will you complete this task?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <p className="text-sm font-semibold text-green-900 mb-1">
+                  {task.title}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-green-800">
+                  <span>💰 ${task.diy_cost || task.current_fix_cost || 'TBD'}</span>
+                  <span>⏱️ {task.diy_time_hours || task.estimated_hours || '?'}h</span>
+                  <span>🎯 {task.diy_difficulty || 'Medium'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Target Date *
+                </label>
+                <Input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="text-base"
+                  style={{ minHeight: '48px' }}
+                  autoFocus
+                />
+                <p className="text-xs text-gray-600 mt-2">
+                  Pick a realistic date when you'll have time to complete this DIY project
+                </p>
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleDateModal(false)}
+                  className="flex-1"
+                  style={{ minHeight: '48px' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleScheduleDateSubmit}
+                  disabled={!scheduleDate}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  style={{ minHeight: '48px' }}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Schedule Task
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
