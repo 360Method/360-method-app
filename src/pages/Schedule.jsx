@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,7 +28,6 @@ import { format, parseISO, startOfDay } from "date-fns";
 import CalendarView from "../components/schedule/CalendarView";
 import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
-import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import SeasonalReminderCard from "../components/schedule/SeasonalReminderCard";
 import StepNavigation from "../components/navigation/StepNavigation";
 import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/schedule/seasonalHelpers";
@@ -42,7 +40,7 @@ export default function SchedulePage() {
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
   const [viewMode, setViewMode] = React.useState('unscheduled');
-  const [calendarViewMode, setCalendarViewMode] = React.useState('month'); // NEW
+  const [calendarViewMode, setCalendarViewMode] = React.useState('month');
   const [showQuickDatePicker, setShowQuickDatePicker] = React.useState(false);
   const [selectedTaskForPicker, setSelectedTaskForPicker] = React.useState(null);
   const [selectedTasks, setSelectedTasks] = React.useState([]);
@@ -82,7 +80,6 @@ export default function SchedulePage() {
   const { data: seasonalReminders = [] } = useQuery({
     queryKey: ['seasonal-reminders', selectedProperty],
     queryFn: async () => {
-      // Filter the existing allTasks data based on the seasonal helper
       return allTasks.filter(shouldShowSeasonalReminder);
     },
     enabled: allTasks.length > 0
@@ -98,13 +95,11 @@ export default function SchedulePage() {
     }
   });
 
-  // Filter tasks that are in "Scheduled" status (came from Prioritize)
   const scheduledTasks = allTasks.filter(task => task.status === 'Scheduled');
 
   const tasksWithDates = scheduledTasks.filter(t => t.scheduled_date);
   const tasksWithoutDates = scheduledTasks.filter(t => !t.scheduled_date);
 
-  // Simple flat sort by priority
   const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
   const sortedUnscheduledTasks = tasksWithoutDates.sort((a, b) => {
     return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
@@ -355,7 +350,6 @@ export default function SchedulePage() {
           </Card>
         )}
 
-        {/* Key Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
           <Card className="border-none shadow-md bg-gradient-to-br from-yellow-50 to-yellow-100">
             <CardContent className="p-4">
@@ -405,7 +399,6 @@ export default function SchedulePage() {
           </Card>
         </div>
 
-        {/* View Mode Selector - UPDATED with calendar view modes */}
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
@@ -452,10 +445,8 @@ export default function SchedulePage() {
           </CardContent>
         </Card>
 
-        {/* Main Content Area */}
         {viewMode === 'calendar' ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Unscheduled Tasks Sidebar */}
             <div className="lg:col-span-1 order-2 lg:order-1">
               <Card className="border-2 border-orange-300 bg-orange-50 sticky top-4">
                 <CardHeader>
@@ -465,7 +456,6 @@ export default function SchedulePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {/* Batch Selection UI */}
                   {sortedUnscheduledTasks.length > 0 && (
                     <div className="mb-3 p-3 bg-white rounded-lg border-2 border-orange-400">
                       <div className="flex items-center justify-between mb-2">
@@ -551,7 +541,6 @@ export default function SchedulePage() {
               </Card>
             </div>
 
-            {/* Calendar */}
             <div className="lg:col-span-3 order-1 lg:order-2">
               <CalendarView 
                 tasks={tasksWithDates}
@@ -564,7 +553,6 @@ export default function SchedulePage() {
                 onTaskDrop={handleTaskDrop}
               />
               
-              {/* Workload Warning */}
               {overloadedDays.length > 0 && (
                 <div className="mt-4 bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
                   <div className="flex items-start gap-3">
@@ -590,7 +578,6 @@ export default function SchedulePage() {
             </div>
           </div>
         ) : (
-          // UNSCHEDULED LIST VIEW
           sortedUnscheduledTasks.length > 0 ? (
             <div className="space-y-4">
               <Card className="border-2 border-orange-300 bg-orange-50">
@@ -609,7 +596,6 @@ export default function SchedulePage() {
                 </CardContent>
               </Card>
 
-              {/* Flat list sorted by priority */}
               {sortedUnscheduledTasks.map(task => (
                 <ScheduleTaskCard
                   key={task.id}
@@ -646,18 +632,6 @@ export default function SchedulePage() {
           )
         )}
 
-        {/* Seasonal Maintenance Suggestions (old component) */}
-        {currentProperty && (
-          <div className="mt-6">
-            <SeasonalTaskSuggestions
-              propertyId={currentProperty.id}
-              property={currentProperty}
-              compact={false}
-            />
-          </div>
-        )}
-
-        {/* Empty State */}
         {totalScheduling === 0 && (
           <Card className="mt-6 border-2 border-yellow-200 bg-white">
             <CardContent className="p-8 text-center">
@@ -682,7 +656,6 @@ export default function SchedulePage() {
           </Card>
         )}
 
-        {/* Quick Date Picker Modal */}
         {showQuickDatePicker && selectedTaskForPicker && (
           <QuickDatePicker
             task={selectedTaskForPicker}
@@ -698,7 +671,6 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* Batch Scheduler Modal */}
         {showBatchScheduler && selectedTasks.length > 0 && (
           <Dialog open={true} onOpenChange={() => setShowBatchScheduler(false)}>
             <DialogContent className="max-w-md">
