@@ -362,7 +362,7 @@ export default function UpgradeDialog({
             {/* Project Manager */}
             <div>
               <Label className="font-semibold mb-2 block">Who's Managing This?</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { value: 'DIY', icon: Hammer, label: 'DIY', desc: 'Self-Managed' },
                   { value: 'Operator', icon: Building2, label: '360° Operator', desc: 'Professional' },
@@ -373,18 +373,18 @@ export default function UpgradeDialog({
                     key={value}
                     type="button"
                     onClick={() => handleChange('project_manager', value)}
-                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                    className={`flex flex-col items-start p-4 border-2 rounded-lg transition-all ${
                       formData.project_manager === value
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
-                    style={{ minHeight: '80px' }}
+                    style={{ minHeight: '90px' }}
                   >
-                    <Icon className={`w-5 h-5 mb-1 ${
+                    <Icon className={`w-5 h-5 mb-2 ${
                       formData.project_manager === value ? 'text-blue-600' : 'text-gray-600'
                     }`} />
-                    <p className="text-sm font-semibold">{label}</p>
-                    <p className="text-xs text-gray-600">{desc}</p>
+                    <p className="text-sm font-semibold text-left">{label}</p>
+                    <p className="text-xs text-gray-600 text-left">{desc}</p>
                   </button>
                 ))}
               </div>
