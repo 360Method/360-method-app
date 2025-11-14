@@ -57,7 +57,13 @@ export default function ExploreTemplatesPage() {
   });
 
   const memberTier = user?.subscription_tier || 'free';
-  const isServiceMember = memberTier.includes('homecare') || memberTier.includes('propertycare');
+  const isServiceMember = memberTier !== 'free' && (memberTier.includes('homecare') || memberTier.includes('propertycare'));
+  
+  // Get tier name for display
+  const tierDisplayName = memberTier.includes('essential') ? 'Essential' 
+    : memberTier.includes('premium') ? 'Premium' 
+    : memberTier.includes('elite') ? 'Elite' 
+    : 'Free';
 
   // Filter and sort templates
   const filteredTemplates = useMemo(() => {
@@ -143,7 +149,7 @@ export default function ExploreTemplatesPage() {
                 ⭐ MEMBER BENEFIT
               </Badge>
               <p className="text-sm text-purple-900 font-semibold">
-                All prices shown include your {memberTier.includes('essential') ? 'Essential' : memberTier.includes('premium') ? 'Premium' : 'Elite'} member discount!
+                All prices shown include your {tierDisplayName} member discount!
               </p>
             </div>
           )}
@@ -222,6 +228,7 @@ export default function ExploreTemplatesPage() {
             const avgCost = (template.average_cost_min + template.average_cost_max) / 2;
             const CategoryIcon = CATEGORY_ICONS[template.category] || Sparkles;
             const memberDiscount = isServiceMember ? calculateMemberDiscount(avgCost, memberTier) : null;
+            const allDiscounts = getAllTierDiscounts(avgCost);
 
             return (
               <Card 
@@ -267,7 +274,7 @@ export default function ExploreTemplatesPage() {
                     {/* Cost Range */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
                       <span className="text-xs font-semibold text-gray-600">TYPICAL COST</span>
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-gray-900 text-sm">
                         ${template.average_cost_min?.toLocaleString()} - ${template.average_cost_max?.toLocaleString()}
                       </span>
                     </div>
@@ -283,10 +290,10 @@ export default function ExploreTemplatesPage() {
                       </div>
                     </div>
 
-                    {/* Member Price */}
-                    {memberDiscount && (
+                    {/* Member Price (for members) */}
+                    {memberDiscount && memberDiscount.actualSavings > 0 && (
                       <div className="p-3 bg-purple-50 border-2 border-purple-300 rounded">
-                        <p className="text-xs font-semibold text-purple-600 mb-1">⭐ YOUR MEMBER PRICE</p>
+                        <p className="text-xs font-semibold text-purple-600 mb-1">⭐ YOUR {tierDisplayName.toUpperCase()} PRICE</p>
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-purple-700">
                             ${(avgCost - memberDiscount.actualSavings).toLocaleString()}
@@ -295,6 +302,39 @@ export default function ExploreTemplatesPage() {
                             Save ${memberDiscount.actualSavings.toLocaleString()}
                           </Badge>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Free User Upsell */}
+                    {!isServiceMember && (
+                      <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded">
+                        <p className="text-xs font-semibold text-blue-900 mb-2">
+                          💰 Members Save 5-15%
+                        </p>
+                        <div className="text-xs text-blue-800 space-y-1">
+                          <div className="flex justify-between">
+                            <span>Essential:</span>
+                            <strong>${allDiscounts.essential.actualSavings.toLocaleString()} off</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Premium:</span>
+                            <strong>${allDiscounts.premium.actualSavings.toLocaleString()} off</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Elite:</span>
+                            <strong className="text-green-700">${allDiscounts.elite.actualSavings.toLocaleString()} off</strong>
+                          </div>
+                        </div>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-xs"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Link to={createPageUrl('Pricing')}>
+                            Become a Member →
+                          </Link>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -373,8 +413,8 @@ export default function ExploreTemplatesPage() {
                       💡 Why This Matters
                     </h3>
                     {selectedTemplate.why_it_works?.map((reason, idx) => (
-                      <p key={idx} className="text-sm text-gray-800 mb-2">
-                        • {reason}
+                      <p key={idx} className="text-sm text-gray-800 mb-2 leading-relaxed">
+                        {reason}
                       </p>
                     ))}
                   </CardContent>
@@ -427,51 +467,133 @@ export default function ExploreTemplatesPage() {
                   </CardContent>
                 </Card>
 
-                {/* Member Pricing */}
-                {isServiceMember && (
-                  <Card className="border-2 border-purple-300 bg-purple-50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-purple-600" />
-                        ⭐ Your Member Pricing
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {(() => {
-                        const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
-                        const discount = calculateMemberDiscount(avgCost, memberTier);
-                        
-                        return (
-                          <>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs text-purple-600 mb-1">Standard Price</p>
-                                <p className="text-xl font-bold text-gray-900 line-through">
-                                  ${avgCost.toLocaleString()}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-purple-600 mb-1">Your Price</p>
-                                <p className="text-2xl font-bold text-purple-700">
-                                  ${(avgCost - discount.actualSavings).toLocaleString()}
-                                </p>
+                {/* Member Pricing (for members) */}
+                {isServiceMember && (() => {
+                  const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
+                  const discount = calculateMemberDiscount(avgCost, memberTier);
+                  const allTiers = getAllTierDiscounts(avgCost);
+                  const isElite = memberTier.includes('elite');
+                  
+                  return (
+                    <Card className="border-2 border-purple-300 bg-purple-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-purple-600" />
+                          ⭐ Your Member Pricing
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-purple-600 mb-1">Standard Price</p>
+                            <p className="text-xl font-bold text-gray-900 line-through">
+                              ${avgCost.toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-purple-600 mb-1">Your {tierDisplayName} Price</p>
+                            <p className="text-2xl font-bold text-purple-700">
+                              ${(avgCost - discount.actualSavings).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-white rounded border border-purple-200">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">
+                            You Save: ${discount.actualSavings.toLocaleString()} ({discount.percent}% discount)
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {discount.isCapped ? `Maximum ${tierDisplayName} tier savings reached` : `${discount.percent}% member discount applied`}
+                          </p>
+                        </div>
+
+                        {!isElite && (
+                          <div className="p-3 bg-blue-50 border border-blue-300 rounded">
+                            <p className="text-xs font-semibold text-blue-900 mb-2">
+                              💡 Upgrade to Elite and Save Even More
+                            </p>
+                            <p className="text-sm text-blue-800">
+                              Elite Price: <strong>${(avgCost - allTiers.elite.actualSavings).toLocaleString()}</strong>
+                            </p>
+                            <p className="text-sm text-green-700">
+                              Additional Savings: <strong>${(allTiers.elite.actualSavings - discount.actualSavings).toLocaleString()}</strong>
+                            </p>
+                            <Button
+                              asChild
+                              size="sm"
+                              className="w-full mt-2 bg-blue-600"
+                              style={{ minHeight: '40px' }}
+                            >
+                              <Link to={createPageUrl('Pricing')}>
+                                Upgrade to Elite →
+                              </Link>
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                {/* Free User Pricing Comparison */}
+                {!isServiceMember && (() => {
+                  const avgCost = (selectedTemplate.average_cost_min + selectedTemplate.average_cost_max) / 2;
+                  const allTiers = getAllTierDiscounts(avgCost);
+                  
+                  return (
+                    <Card className="border-2 border-blue-300 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          💰 Member Pricing (Save 5-15%)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="p-3 bg-white rounded">
+                          <p className="text-sm font-semibold text-gray-900 mb-3">
+                            Standard Contractor Price: ${avgCost.toLocaleString()}
+                          </p>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <span className="font-medium">Essential Member:</span>
+                              <div className="text-right">
+                                <div className="font-bold text-green-700">${(avgCost - allTiers.essential.actualSavings).toLocaleString()}</div>
+                                <div className="text-xs text-gray-600">Save ${allTiers.essential.actualSavings.toLocaleString()}</div>
                               </div>
                             </div>
 
-                            <div className="p-3 bg-white rounded border border-purple-200">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">
-                                You Save: ${discount.actualSavings.toLocaleString()} ({discount.percent}% discount)
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {discount.isCapped ? `Maximum ${memberTier.includes('essential') ? 'Essential' : memberTier.includes('premium') ? 'Premium' : 'Elite'} tier savings reached` : `${discount.percent}% member discount applied`}
-                              </p>
+                            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <span className="font-medium">Premium Member:</span>
+                              <div className="text-right">
+                                <div className="font-bold text-green-700">${(avgCost - allTiers.premium.actualSavings).toLocaleString()}</div>
+                                <div className="text-xs text-gray-600">Save ${allTiers.premium.actualSavings.toLocaleString()}</div>
+                              </div>
                             </div>
-                          </>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                )}
+
+                            <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-300">
+                              <span className="font-bold">Elite Member:</span>
+                              <div className="text-right">
+                                <div className="font-bold text-green-700 text-lg">${(avgCost - allTiers.elite.actualSavings).toLocaleString()}</div>
+                                <div className="text-xs text-green-700 font-semibold">Save ${allTiers.elite.actualSavings.toLocaleString()}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button
+                          asChild
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          style={{ minHeight: '48px' }}
+                        >
+                          <Link to={createPageUrl('Pricing')}>
+                            <Sparkles className="w-5 h-5 mr-2" />
+                            Become a Member to Save
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
 
                 {/* What's Included */}
                 {selectedTemplate.whats_included?.length > 0 && (
