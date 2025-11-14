@@ -141,7 +141,6 @@ export default function CartDrawer() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            maxHeight: '100vh',
             maxHeight: '100dvh'
           }}
         >
