@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -17,9 +17,11 @@ export default function QuickPropertyAdd({ open, onClose, onSuccess }) {
     property_type: "Single-Family Home",
     occupancy_status: "Owner Occupied",
     year_built: "",
-    square_footage: ""
+    square_footage: "",
+    address_verified: false
   });
   const [showOptional, setShowOptional] = React.useState(false);
+  const [addressVerified, setAddressVerified] = React.useState(false);
   
   const queryClient = useQueryClient();
 
@@ -64,22 +66,44 @@ export default function QuickPropertyAdd({ open, onClose, onSuccess }) {
       address_verified: true,
       verification_source: 'google_maps'
     }));
+    setAddressVerified(true);
   };
 
   const handleSave = () => {
-    if (!formData.address) {
+    if (!formData.address || formData.address.trim().length < 5) {
       toast.error('Please enter your property address');
       return;
     }
 
+    // SOLUTION 1 + 2: Allow save even if not verified, but show warning
+    if (!addressVerified) {
+      toast.warning('Address not verified - you can update it later if needed');
+    }
+
     const submitData = {
       ...formData,
+      address_verified: addressVerified,
       // Only include optional fields if provided
       ...(formData.year_built && { year_built: parseInt(formData.year_built) }),
       ...(formData.square_footage && { square_footage: parseInt(formData.square_footage) })
     };
 
     createMutation.mutate(submitData);
+  };
+
+  const handleForceVerify = () => {
+    if (!formData.address || formData.address.trim().length < 5) {
+      toast.error('Please enter an address first');
+      return;
+    }
+
+    setAddressVerified(true);
+    setFormData(prev => ({
+      ...prev,
+      address_verified: true,
+      verification_source: 'manual_entry'
+    }));
+    toast.info('Address saved as entered');
   };
 
   return (
@@ -97,13 +121,36 @@ export default function QuickPropertyAdd({ open, onClose, onSuccess }) {
           <div>
             <Label className="text-lg font-semibold mb-2">Property Address *</Label>
             <AddressAutocomplete
-              value={formData.address}
-              onSelect={handleAddressSelect}
-              placeholder="123 Main St, Portland, OR"
-              className="text-lg h-12"
-              autoFocus
+              onAddressSelect={handleAddressSelect}
+              initialValue={formData.address}
             />
           </div>
+
+          {/* SOLUTION 2: Skip Verification Option */}
+          {!addressVerified && formData.address && formData.address.length > 10 && (
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-yellow-900 mb-1">
+                    Can't verify address?
+                  </p>
+                  <p className="text-xs text-yellow-800 mb-3">
+                    Address verification is having issues. You can save your property 
+                    without verification and update the address later if needed.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleForceVerify}
+                    className="border-yellow-600 text-yellow-900 hover:bg-yellow-100"
+                  >
+                    Save Address As-Entered
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Optional details - collapsed by default */}
           <Collapsible open={showOptional} onOpenChange={setShowOptional}>

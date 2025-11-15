@@ -134,14 +134,15 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
       }, 100);
     });
 
-    // Timeout fallback - enable manual entry after 10 seconds
+    // Timeout fallback - enable manual entry after 8 seconds (REDUCED)
     const timeout = setTimeout(() => {
       if (!ready) {
         console.error('❌ Timeout loading Google Maps - enabling manual entry');
         setError(true);
         setShowManualEntry(true);
+        toast.warning('Address verification timed out. You can enter manually or continue anyway.');
       }
-    }, 10000);
+    }, 8000);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -182,6 +183,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
         // Update input to show formatted address
         setInputValue(addressData.formatted_address);
         setSelectedAddress(addressData);
+        setAddressVerified(true);
         
         if (onAddressSelect) {
           onAddressSelect(addressData);
@@ -232,17 +234,19 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
   const handleClearAddress = () => {
     setSelectedAddress(null);
     setInputValue('');
+    setAddressVerified(false);
   };
 
   const handleManualSubmit = () => {
     if (!manualAddress.street_address || !manualAddress.city || !manualAddress.state || !manualAddress.zip_code) {
-      alert("Please fill in all required address fields");
+      toast.error("Please fill in all required address fields");
       return;
     }
 
     const addressData = {
       ...manualAddress,
       formatted_address: `${manualAddress.street_address}${manualAddress.unit_number ? ' ' + manualAddress.unit_number : ''}, ${manualAddress.city}, ${manualAddress.state} ${manualAddress.zip_code}`,
+      address: `${manualAddress.street_address}${manualAddress.unit_number ? ' ' + manualAddress.unit_number : ''}, ${manualAddress.city}, ${manualAddress.state} ${manualAddress.zip_code}`,
       address_verified: true,
       verification_source: 'manual_entry',
       coordinates: null,
@@ -251,9 +255,11 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     };
 
     setSelectedAddress(addressData);
+    setAddressVerified(true);
     if (onAddressSelect) {
       onAddressSelect(addressData);
     }
+    setShowManualEntry(false);
   };
 
   // Manual entry mode
@@ -335,7 +341,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
             className="w-full"
             style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
           >
-            Verify Address
+            Save Address
           </Button>
 
           {!error && ready && (
@@ -388,8 +394,19 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
           type="text"
           placeholder={ready ? "Start typing your address..." : "Loading..."}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          disabled={!ready}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            // CRITICAL FIX: Allow parent to track unverified address
+            if (onAddressSelect && e.target.value) {
+              onAddressSelect({
+                address: e.target.value,
+                formatted_address: e.target.value,
+                address_verified: false,
+                verification_source: 'manual_entry'
+              });
+            }
+          }}
+          disabled={!ready && !error}
           autoComplete="off"
           style={{ minHeight: '48px' }}
           className="w-full"
