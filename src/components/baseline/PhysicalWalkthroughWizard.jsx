@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, CheckCircle2, MapPin, Navigation, Zap, Camera, Clock } from "lucide-react";
 import SystemFormDialog from "./SystemFormDialog";
+import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 // Optimal physical route through a typical property
 const PHYSICAL_ZONES = [
@@ -197,6 +199,18 @@ export default function PhysicalWalkthroughWizard({ propertyId, property, onComp
       setCurrentZoneIndex(prev => prev + 1);
       setZoneStartTime(Date.now());
     } else {
+      // Completion celebration!
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
+
+      toast.success('🎉 Physical Walkthrough Complete!', {
+        description: `${existingSystems.length} systems documented across ${completedZones.length + 1} zones. Excellent work!`,
+        duration: 5000
+      });
+
       onComplete();
     }
   };

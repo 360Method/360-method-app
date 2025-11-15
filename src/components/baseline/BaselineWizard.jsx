@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 const QUICK_START_SYSTEMS = [
   {
@@ -225,6 +225,21 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     }
 
     if (isLastStep) {
+      // Celebration!
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      const systemsDocumented = existingSystems.length + 
+        QUICK_START_SYSTEMS.filter((sys, idx) => idx <= currentStep && !existingSystems.some(es => es.system_type === sys.type)).length;
+
+      toast.success('🎉 Baseline Started!', {
+        description: `${systemsDocumented} critical systems documented. Great start! Continue adding more systems from the baseline page.`,
+        duration: 5000
+      });
+
       onComplete();
     } else {
       setCurrentStep(prev => prev + 1);

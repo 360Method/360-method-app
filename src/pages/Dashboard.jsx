@@ -21,33 +21,28 @@ import {
   Sparkles,
   RefreshCw,
   Clock,
-  DollarSign,
   Calendar,
   Target,
   Activity,
   Flame,
   Award,
   ArrowUpRight,
-  Bell,
   Wrench,
   BookOpen,
   Users,
-  MapPin,
-  Building2
+  Building2,
+  ChevronDown
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
-import PhaseProgressCard from "../components/dashboard/PhaseProgressCard";
-import UpgradePrompt from "../components/upgrade/UpgradePrompt";
 import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
-import MiniCalendar from "../components/dashboard/MiniCalendar";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
 import { useDemoMode } from "../components/shared/useDemoMode";
 import { DEMO_PROPERTY, DEMO_SYSTEMS, DEMO_TASKS } from "../components/shared/demoProperty";
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
+import NextStepCard from "../components/dashboard/NextStepCard";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -60,19 +55,17 @@ export default function Dashboard() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const isDemoMode = useDemoMode();
-  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
   const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false);
+  const [methodExpanded, setMethodExpanded] = React.useState(false);
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
-
-  // REMOVED checkFirstTimeUser - was causing redirect loop with Welcome page
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -91,20 +84,14 @@ export default function Dashboard() {
     refetchOnWindowFocus: false
   });
 
-  // Determine which property to show based on filter
   const filteredProperty = selectedPropertyFilter === 'all' ? null :
     properties.find(p => p.id === selectedPropertyFilter);
 
   const isShowingAllProperties = selectedPropertyFilter === 'all';
-  // Use demo data if in demo mode and no real properties exist, otherwise use real properties
   const displayProperties = (isDemoMode && properties.length === 0) ? [DEMO_PROPERTY] : (isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []));
 
-  // Get active property IDs for filtering (for real data)
   const activePropertyIds = properties.map(p => p.id);
-  // For demo mode, all relevant queries will target the single DEMO_PROPERTY.id if no real properties
-  // const queryPropertyIds = isDemoMode && properties.length === 0 ? [DEMO_PROPERTY.id] : activePropertyIds; // This was unused, removing
 
-  // Fetch data based on selected property filter - FIXED to only show data for active properties
   const { data: allSystems = [] } = useQuery({
     queryKey: ['allSystemBaselines', selectedPropertyFilter, isDemoMode],
     queryFn: async () => {
@@ -147,7 +134,7 @@ export default function Dashboard() {
     queryKey: ['allInspections', selectedPropertyFilter, isDemoMode],
     queryFn: async () => {
       if (isDemoMode && properties.length === 0) {
-        return []; // No demo inspections for now
+        return [];
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -175,7 +162,6 @@ export default function Dashboard() {
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
   const canAddProperty = properties.length < propertyLimit;
 
-  // Calculate metrics based on displayed properties (which now include demo data if applicable)
   const avgHealthScore = displayProperties.length > 0 ?
     Math.round(displayProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayProperties.length) :
     0;
@@ -231,65 +217,8 @@ export default function Dashboard() {
     }))].
     sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
-  // Smart recommendations
-  const recommendations = [];
-
-  if (avgBaselineCompletion < 66) {
-    recommendations.push({
-      title: "Complete Your Baseline",
-      description: `You're ${avgBaselineCompletion}% done. Finishing your baseline unlocks powerful features.`,
-      action: "Continue",
-      url: createPageUrl("Baseline"),
-      icon: Target,
-      priority: "high"
-    });
-  }
-
-  if (highPriorityTasks.length > 0) {
-    recommendations.push({
-      title: `${highPriorityTasks.length} High Priority ${highPriorityTasks.length === 1 ? 'Task' : 'Tasks'}`,
-      description: "These issues could lead to expensive cascade failures if ignored.",
-      action: "Review",
-      url: createPageUrl("Prioritize"),
-      icon: Flame,
-      priority: "urgent"
-    });
-  }
-
-  const lastInspection = allInspections.length > 0 ? allInspections[0] : null;
-  const monthsSinceInspection = lastInspection?.inspection_date ?
-    Math.floor((new Date() - new Date(lastInspection.inspection_date)) / (1000 * 60 * 60 * 24 * 30)) :
-    999;
-
-  if (monthsSinceInspection >= 3 && avgBaselineCompletion >= 66) {
-    recommendations.push({
-      title: "Time for Seasonal Inspection",
-      description: lastInspection ?
-        `Last inspection was ${monthsSinceInspection} months ago. Stay ahead of issues.` :
-        "Start your first quarterly property inspection to catch issues early.",
-      action: "Inspect",
-      url: createPageUrl("Inspect"),
-      icon: ClipboardCheck,
-      priority: "medium"
-    });
-  }
-
-  if (allSystems.length >= 5 && !isFreeTier && avgBaselineCompletion >= 66) {
-    recommendations.push({
-      title: "Generate AI Maintenance Plan",
-      description: "Get a personalized 12-month maintenance roadmap based on your systems.",
-      action: "Generate",
-      url: createPageUrl("Schedule"),
-      icon: Sparkles,
-      priority: "low"
-    });
-  }
-
-  // Greeting based on time of day
   const hour = currentTime.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
-  // Show upgrade prompt if free tier with 1 property and high baseline completion is removed as per the outline.
 
   const handleRestartOnboarding = async () => {
     try {
@@ -307,6 +236,31 @@ export default function Dashboard() {
   const handleQuickPropertySuccess = (propertyId) => {
     setShowQuickPropertyAdd(false);
     navigate(`/baseline?propertyId=${propertyId}&welcome=true`);
+  };
+
+  const handleNextStepAction = (actionKey) => {
+    switch (actionKey) {
+      case 'add-property':
+        setShowQuickPropertyAdd(true);
+        break;
+      case 'continue-baseline':
+        navigate(createPageUrl("Baseline") + (filteredProperty ? `?property=${filteredProperty.id}` : ''));
+        break;
+      case 'view-urgent':
+        navigate(createPageUrl("Prioritize") + (filteredProperty ? `?property=${filteredProperty.id}` : ''));
+        break;
+      case 'open-schedule':
+        navigate(createPageUrl("Schedule") + (filteredProperty ? `?property=${filteredProperty.id}` : ''));
+        break;
+      case 'execute-today':
+        navigate(createPageUrl("Execute") + (filteredProperty ? `?property=${filteredProperty.id}` : ''));
+        break;
+      case 'explore-upgrades':
+        navigate(createPageUrl("Upgrade") + (filteredProperty ? `?property=${filteredProperty.id}` : ''));
+        break;
+      default:
+        console.warn(`Unknown actionKey: ${actionKey}`);
+    }
   };
 
   if (properties.length === 0 || isDemoMode) {
@@ -331,83 +285,56 @@ export default function Dashboard() {
             <TierBadge tier={currentTier} />
           </div>
 
-          {/* Demo Property Overview */}
+          {/* Simplified Welcome - UPDATED */}
           <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Home className="w-6 h-6 text-blue-600" />
-                {DEMO_PROPERTY.address}
-                {isDemoMode && <Badge variant="outline">Demo</Badge>}
+              <CardTitle style={{ color: '#1B365D', fontSize: '24px' }}>
+                Welcome to Your Property Command Center
               </CardTitle>
+              <p className="text-gray-600 mt-2">
+                Prevent disasters. Build wealth. Sleep soundly.
+              </p>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Health Score</p>
-                <p className="text-2xl font-bold text-green-600">{DEMO_PROPERTY.health_score}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Baseline</p>
-                <p className="text-2xl font-bold text-blue-600">{DEMO_PROPERTY.baseline_completion}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Systems</p>
-                <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>{DEMO_SYSTEMS.length}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Tasks</p>
-                <p className="text-2xl font-bold text-orange-600">{DEMO_TASKS.length}</p>
-              </div>
+            <CardContent>
+              <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                The 360° Method helps you prevent small $50 problems from becoming $5,000 disasters.
+                Most homeowners save <strong>$27,000-$72,000</strong> over 10-15 years through systematic maintenance.
+              </p>
+
+              <Button
+                size="lg"
+                className="w-full mb-3 bg-blue-600 hover:bg-blue-700"
+                onClick={() => setShowQuickPropertyAdd(true)}
+                style={{ minHeight: '56px', fontSize: '16px' }}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add My Property to Get Started
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full gap-2"
+                onClick={() => setMethodExpanded(!methodExpanded)}
+                style={{ minHeight: '44px' }}
+              >
+                {methodExpanded ? (
+                  <>
+                    <ChevronDown className="w-4 h-4 rotate-180" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Learn More About the 360° Method
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Explorable Phase Cards */}
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <Link to="/baseline?demo=true">
-              <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer hover:shadow-xl bg-gradient-to-br from-blue-50 to-cyan-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Eye className="w-8 h-8 text-blue-600" />
-                    <Badge className="bg-green-600 text-white">Complete</Badge>
-                  </div>
-                  <h3 className="font-bold text-lg mb-2" style={{ color: '#1B365D' }}>AWARE Phase</h3>
-                  <p className="text-sm text-gray-600 mb-3">{DEMO_SYSTEMS.length} systems documented</p>
-                  <Badge variant="outline" className="text-xs">Click to explore →</Badge>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link to="/prioritize?demo=true">
-              <Card className="border-2 border-orange-300 hover:border-orange-500 transition-all cursor-pointer hover:shadow-xl bg-gradient-to-br from-orange-50 to-yellow-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Zap className="w-8 h-8 text-orange-600" />
-                    <Badge className="bg-blue-600 text-white">In Progress</Badge>
-                  </div>
-                  <h3 className="font-bold text-lg mb-2" style={{ color: '#1B365D' }}>ACT Phase</h3>
-                  <p className="text-sm text-gray-600 mb-3">{DEMO_TASKS.length} tasks prioritized</p>
-                  <Badge variant="outline" className="text-xs">Click to explore →</Badge>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Card className="border-2 border-gray-300 bg-gradient-to-br from-gray-100 to-gray-200 opacity-75">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <TrendingUp className="w-8 h-8 text-gray-500" />
-                  <Badge variant="outline" className="text-gray-600">Locked</Badge>
-                </div>
-                <h3 className="font-bold text-lg mb-2 text-gray-700">ADVANCE Phase</h3>
-                <p className="text-sm text-gray-600 mb-3">Unlock by completing ACT</p>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Shield className="w-4 h-4" />
-                  <span>Preserve • Upgrade • Scale</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* The 360° Method Framework - Educational (non-demo mode only) */}
-          {!isDemoMode && (
+          {/* Expandable 360° Method Education - COLLAPSED BY DEFAULT */}
+          {methodExpanded && (
             <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
               <CardHeader>
                 <CardTitle className="text-center text-2xl md:text-3xl" style={{ color: '#1B365D' }}>
@@ -558,8 +485,39 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Demo Property Overview - Only if not expanded */}
+          {!methodExpanded && (
+            <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Home className="w-6 h-6 text-blue-600" />
+                  {DEMO_PROPERTY.address}
+                  {isDemoMode && <Badge variant="outline">Demo</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Health Score</p>
+                  <p className="text-2xl font-bold text-green-600">{DEMO_PROPERTY.health_score}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Baseline</p>
+                  <p className="text-2xl font-bold text-blue-600">{DEMO_PROPERTY.baseline_completion}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Systems</p>
+                  <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>{DEMO_SYSTEMS.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Tasks</p>
+                  <p className="text-2xl font-bold text-orange-600">{DEMO_TASKS.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Free Tier Notice */}
-          {isFreeTier &&
+          {isFreeTier && (
             <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -575,8 +533,8 @@ export default function Dashboard() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-100">
-
+                      className="border-blue-600 text-blue-600 hover:bg-blue-100"
+                    >
                       <Link to={createPageUrl("Pricing")}>
                         View Plans & Pricing
                       </Link>
@@ -585,7 +543,7 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-          }
+          )}
 
           {/* Manual Property Add Option - Bottom of Page */}
           <div className="text-center pt-6 border-t border-gray-200">
@@ -596,7 +554,8 @@ export default function Dashboard() {
               asChild
               variant="outline"
               size="lg"
-              className="gap-2">
+              className="gap-2"
+            >
               <Link to={createPageUrl("Properties")}>
                 <Plus className="w-4 h-4" />
                 Add Property Manually
@@ -634,25 +593,25 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2">
               <TierBadge tier={currentTier} />
-              {canAddProperty &&
+              {canAddProperty && (
                 <Button
                   asChild
                   size="sm"
                   className="shadow-lg"
-                  style={{ backgroundColor: '#FF6B35', minHeight: '40px' }}>
-
+                  style={{ backgroundColor: '#FF6B35', minHeight: '40px' }}
+                >
                   <Link to={createPageUrl("Properties")}>
                     <Plus className="w-4 h-4 mr-1" />
                     <span className="hidden md:inline">Add Property</span>
                   </Link>
                 </Button>
-              }
+              )}
             </div>
           </div>
         </div>
 
         {/* Property Selector - Prominent for Multi-Property Users */}
-        {properties.length > 1 &&
+        {properties.length > 1 && (
           <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -711,7 +670,7 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        }
+        )}
 
         {/* Onboarding Restart Card - Only show if user skipped */}
         {user?.onboarding_skipped &&
@@ -753,155 +712,20 @@ export default function Dashboard() {
           </Card>
         }
 
-        {/* Smart Recommendations - Top Priority */}
-        {recommendations.length > 0 &&
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            {recommendations.slice(0, 2).map((rec, idx) =>
-              <Card
-                key={idx}
-                className={`border-2 shadow-lg ${
-                  rec.priority === 'urgent' ? 'border-red-300 bg-gradient-to-br from-red-50 to-orange-50' :
-                  rec.priority === 'high' ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50' :
-                  rec.priority === 'medium' ? 'border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50' :
-                  'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50'}`
-                }>
-
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md ${
-                      rec.priority === 'urgent' ? 'bg-gradient-to-br from-red-600 to-red-700' :
-                      rec.priority === 'high' ? 'bg-gradient-to-br from-orange-600 to-orange-700' :
-                      rec.priority === 'medium' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
-                      'bg-gradient-to-br from-purple-600 to-purple-700'}`
-                    }>
-                      <rec.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold mb-1" style={{ color: '#1B365D' }}>
-                        {rec.title}
-                      </h3>
-                      <p className="text-sm text-gray-700 mb-3">
-                        {rec.description}
-                      </p>
-                      <Button
-                        asChild
-                        size="sm"
-                        className={`gap-2 ${
-                          rec.priority === 'urgent' ? 'bg-red-600 hover:bg-red-700' :
-                          rec.priority === 'high' ? 'bg-orange-600 hover:bg-orange-700' :
-                          rec.priority === 'medium' ? 'bg-blue-600 hover:bg-blue-700' :
-                          'bg-purple-600 hover:bg-purple-700'}`
-                        }>
-
-                        <Link to={rec.url + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-                          {rec.action}
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        }
-
-        {/* Key Metrics Dashboard - All Clickable */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <Link to={createPageUrl("Properties")}>
-            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 hover:scale-105">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Home className="w-5 h-5 text-blue-600" />
-                  <Badge className="bg-blue-600 text-white text-xs">
-                    {isShowingAllProperties ?
-                      (isFreeTier ? `${properties.length}/${propertyLimit}` : properties.length) :
-                      '1'
-                    }
-                  </Badge>
-                </div>
-                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                  {displayProperties.length}
-                </p>
-                <p className="text-xs text-gray-600 flex items-center gap-1">
-                  {displayProperties.length === 1 ? 'Property' : 'Properties'}
-                  <ChevronRight className="w-3 h-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-orange-50 to-red-100 hover:scale-105">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Flame className="w-5 h-5 text-orange-600" />
-                  {highPriorityTasks.length > 0 &&
-                    <Badge className="bg-red-600 text-white text-xs animate-pulse">
-                      Urgent
-                    </Badge>
-                  }
-                </div>
-                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                  {highPriorityTasks.length}
-                </p>
-                <p className="text-xs text-gray-600 flex items-center gap-1">
-                  Priority Tasks
-                  <ChevronRight className="w-3 h-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-green-50 to-emerald-100 hover:scale-105">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Shield className="w-5 h-5 text-green-600" />
-                  <ArrowUpRight className="w-4 h-4 text-green-600" />
-                </div>
-                <p className="text-2xl font-bold mb-1 text-green-700">
-                  ${(totalPrevented / 1000).toFixed(0)}k
-                </p>
-                <p className="text-xs text-gray-600 flex items-center gap-1">
-                  Prevented
-                  <ChevronRight className="w-3 h-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link to={createPageUrl("Track") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-            <Card className="border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 hover:scale-105">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Activity className="w-5 h-5 text-purple-600" />
-                  <Badge className="bg-purple-600 text-white text-xs">
-                    {completedTasksThisMonth}
-                  </Badge>
-                </div>
-                <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                  {avgHealthScore}
-                </p>
-                <p className="text-xs text-gray-600 flex items-center gap-1">
-                  Health Score
-                  <ChevronRight className="w-3 h-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+        {/* Next Step Card - NEW */}
+        <div className="mb-6">
+          <NextStepCard
+            selectedProperty={filteredProperty || (isShowingAllProperties && properties.length === 1 ? properties[0] : null)}
+            tasks={allTasks}
+            onAction={handleNextStepAction}
+          />
         </div>
 
         {/* 360° Method Progress - Unified */}
         <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 mb-6 shadow-md">
           <CardHeader className="pb-3">
             <button
-              onClick={() => {
-                const whyElement = document.getElementById('method-why-section');
-                if (whyElement) {
-                  whyElement.style.display = whyElement.style.display === 'none' ? 'block' : 'none';
-                }
-              }}
+              onClick={() => setMethodExpanded(!methodExpanded)}
               className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity">
 
               <Target className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
@@ -916,12 +740,12 @@ export default function Dashboard() {
                   } • Click to learn why this matters
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-indigo-600 flex-shrink-0 transform transition-transform" id="method-chevron" />
+              <ChevronDown className={`w-5 h-5 text-indigo-600 flex-shrink-0 transition-transform ${methodExpanded ? 'rotate-180' : ''}`} />
             </button>
           </CardHeader>
 
           {/* Why This Matters - Expandable */}
-          <div id="method-why-section" style={{ display: 'none' }}>
+          {methodExpanded && (
             <CardContent className="pt-0 pb-4">
               <div className="bg-white rounded-lg p-4 border border-indigo-200">
                 <h4 className="font-bold text-indigo-900 mb-2 text-sm">💡 Why the 360° Method Matters:</h4>
@@ -945,7 +769,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </CardContent>
-          </div>
+          )}
 
           <CardContent className="pt-0">
             <div className="grid md:grid-cols-3 gap-3 mb-4">
@@ -1393,53 +1217,6 @@ export default function Dashboard() {
                     </Link>
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        }
-
-        {/* Contextual Upgrade Prompt */}
-        {showUpgradePrompt && isFreeTier &&
-          <div className="mb-6">
-            <UpgradePrompt
-              context="cascade_alerts"
-              onDismiss={() => setShowUpgradePrompt(false)} />
-
-          </div>
-        }
-
-        {/* Free Tier CTA */}
-        {isFreeTier && !showUpgradePrompt && avgBaselineCompletion >= 33 &&
-          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl">
-            <CardContent className="p-6 text-center">
-              <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-600" />
-              <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
-                Ready for More?
-              </h3>
-              <p className="text-gray-700 mb-4">
-                Unlock advanced features, add more properties, or get professional help.
-              </p>
-              <div className="flex flex-col md:flex-row gap-3 justify-center">
-                <Button
-                  asChild
-                  className="shadow-lg"
-                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}>
-
-                  <Link to={createPageUrl("Pricing")}>
-                    <Award className="w-4 h-4 mr-2" />
-                    View Plans & Pricing
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  style={{ minHeight: '48px' }}>
-
-                  <Link to={createPageUrl("HomeCare")}>
-                    <Users className="w-4 h-4 mr-2" />
-                    Explore HomeCare
-                  </Link>
-                </Button>
               </div>
             </CardContent>
           </Card>
