@@ -28,6 +28,7 @@ import CartReview from './pages/CartReview';
 import Onboarding from './pages/Onboarding';
 import UpgradeProjectDetail from './pages/UpgradeProjectDetail';
 import WelcomeDemo from './pages/WelcomeDemo';
+import DemoEntry from './pages/DemoEntry';
 import Layout from './Layout.jsx';
 
 
@@ -62,6 +63,7 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "UpgradeProjectDetail": UpgradeProjectDetail,
     "WelcomeDemo": WelcomeDemo,
+    "DemoEntry": DemoEntry,
 }
 
 export const pagesConfig = {
