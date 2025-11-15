@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Shield,
   Calendar,
@@ -17,7 +19,8 @@ import {
   Trophy,
   Lightbulb,
   Zap,
-  AlertCircle
+  AlertCircle,
+  Info
 } from "lucide-react";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ReplacementForecastTimeline from "../components/preserve/ReplacementForecastTimeline";
@@ -25,6 +28,7 @@ import PreservationRecommendationCard from "../components/preserve/PreservationR
 import DecisionCalculator from "../components/preserve/DecisionCalculator";
 import InvestmentMatrix from "../components/preserve/InvestmentMatrix";
 import PreservationROIChart from "../components/preserve/PreservationROIChart";
+import { useDemo } from "../components/shared/DemoContext";
 
 // The Big 7 system categories
 const BIG_7_CATEGORIES = [
@@ -39,11 +43,17 @@ export default function Preserve() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('forecast');
   const [whyExpanded, setWhyExpanded] = useState(false);
+  const { demoMode, demoData } = useDemo();
 
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list()
+    queryFn: () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
+      return base44.entities.Property.list();
+    }
   });
 
   const { data: user } = useQuery({
@@ -51,11 +61,20 @@ export default function Preserve() {
     queryFn: () => base44.auth.me()
   });
 
-  const { data: allSystems = [] } = useQuery({
+  const { data: realSystems = [] } = useQuery({
     queryKey: ['systems', selectedProperty],
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty
+    enabled: !demoMode && !!selectedProperty
   });
+
+  const allSystems = demoMode
+    ? (demoData?.systems || [])
+    : realSystems;
+
+  console.log('=== PRESERVE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('All systems:', allSystems);
+  console.log('Systems count:', allSystems?.length);
 
   // Filter to Big 7 systems only with min replacement cost
   const systems = allSystems.filter(s => {
@@ -65,17 +84,31 @@ export default function Preserve() {
     return isBig7 && meetsMinCost;
   });
 
-  const { data: recommendations = [] } = useQuery({
+  const { data: realRecommendations = [] } = useQuery({
     queryKey: ['preservation-recommendations', selectedProperty],
     queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty
+    enabled: !demoMode && !!selectedProperty
   });
 
-  const { data: impacts = [] } = useQuery({
+  const recommendations = demoMode
+    ? [] // Demo doesn't use PreservationRecommendation entity, it uses preserveSchedules
+    : realRecommendations;
+
+  const { data: realImpacts = [] } = useQuery({
     queryKey: ['preservation-impacts', selectedProperty],
     queryFn: () => base44.entities.PreservationImpact.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty
+    enabled: !demoMode && !!selectedProperty
   });
+
+  const impacts = demoMode
+    ? [] // Demo doesn't use PreservationImpact entity
+    : realImpacts;
+
+  const preserveSchedules = demoMode
+    ? (demoData?.preserveSchedules || [])
+    : [];
+
+  const canEdit = !demoMode;
 
   // Auto-select first property
   React.useEffect(() => {
@@ -116,6 +149,9 @@ export default function Preserve() {
   // Calculate total capital at risk
   const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
 
+  // Get demo interventions if in demo mode
+  const demoInterventions = demoMode && preserveSchedules[0]?.interventions || [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
@@ -124,6 +160,18 @@ export default function Preserve() {
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={7} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
+
+        {/* Demo Banner */}
+        {demoMode && (
+          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 4 strategic interventions with 3x+ ROI 
+              (NOT routine maintenance). Total investment: ${preserveSchedules[0]?.total_investment?.toLocaleString()} to avoid ${preserveSchedules[0]?.total_replacement_costs_avoided?.toLocaleString()} in replacements. 
+              Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Phase & Step Header */}
         <div className="mb-6">
@@ -143,57 +191,69 @@ export default function Preserve() {
           </p>
         </div>
 
-        {/* Why This Step Matters */}
-        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">Why Preserve Matters</h3>
-                <p className="text-sm text-blue-800">
-                  70-80% of your home's capital is tied up in just 7 major systems. PRESERVE finds strategic interventions (ROI 3x+) that extend system life 3-15 years, avoiding emergency replacements.
-                </p>
-              </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              )}
-            </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 The Big 7 Systems:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>HVAC & Water Systems:</strong> Heating, cooling, hot water, drainage</li>
-                    <li>• <strong>Structural:</strong> Roof, foundation, major structures (deck, driveway)</li>
-                    <li>• <strong>Envelope:</strong> Siding, windows, doors, garage</li>
-                    <li>• <strong>Major Appliances:</strong> Fridge, washer, dryer, range, dishwasher</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Strategic Focus:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Not routine maintenance</strong> (that's ACT) - filters, batteries, etc.</li>
-                    <li>• <strong>Not full replacements</strong> (that's UPGRADE) - new systems</li>
-                    <li>• <strong>Strategic interventions only:</strong> $500-5,000 investments that extend life 3-15 years</li>
-                    <li>• <strong>ROI threshold:</strong> Must return 3x+ to recommend</li>
-                  </ul>
-                </div>
-                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
-                  <p className="text-xs text-blue-900">
-                    <strong>Example:</strong> Spend $800 on HVAC deep service to extend life 4 years, avoiding $8,500 replacement = 10.6x ROI
+        {/* Why Preserve Matters - Demo-specific */}
+        {demoMode && preserveSchedules[0]?.why_preserve_matters && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border-2 border-blue-300">
+            <h3 className="font-semibold text-lg mb-3 text-blue-900">Why Preserve Matters</h3>
+            <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+              {preserveSchedules[0].why_preserve_matters}
+            </div>
+          </div>
+        )}
+
+        {/* Why This Step Matters (Original) */}
+        {!demoMode && (
+          <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <button
+                onClick={() => setWhyExpanded(!whyExpanded)}
+                className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+              >
+                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900 mb-1">Why Preserve Matters</h3>
+                  <p className="text-sm text-blue-800">
+                    70-80% of your home's capital is tied up in just 7 major systems. PRESERVE finds strategic interventions (ROI 3x+) that extend system life 3-15 years, avoiding emergency replacements.
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
+                {whyExpanded ? (
+                  <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                )}
+              </button>
+            </CardHeader>
+            {whyExpanded && (
+              <CardContent className="pt-0">
+                <div className="bg-white rounded-lg p-4 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 The Big 7 Systems:</h4>
+                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                      <li>• <strong>HVAC & Water Systems:</strong> Heating, cooling, hot water, drainage</li>
+                      <li>• <strong>Structural:</strong> Roof, foundation, major structures (deck, driveway)</li>
+                      <li>• <strong>Envelope:</strong> Siding, windows, doors, garage</li>
+                      <li>• <strong>Major Appliances:</strong> Fridge, washer, dryer, range, dishwasher</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Strategic Focus:</h4>
+                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                      <li>• <strong>Not routine maintenance</strong> (that's ACT) - filters, batteries, etc.</li>
+                      <li>• <strong>Not full replacements</strong> (that's UPGRADE) - new systems</li>
+                      <li>• <strong>Strategic interventions only:</strong> $500-5,000 investments that extend life 3-15 years</li>
+                      <li>• <strong>ROI threshold:</strong> Must return 3x+ to recommend</li>
+                    </ul>
+                  </div>
+                  <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
+                    <p className="text-xs text-blue-900">
+                      <strong>Example:</strong> Spend $800 on HVAC deep service to extend life 4 years, avoiding $8,500 replacement = 10.6x ROI
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        )}
 
         {/* Property Selector */}
         {properties.length > 0 && (
@@ -220,8 +280,121 @@ export default function Preserve() {
           </Card>
         )}
 
+        {/* Demo Interventions Display */}
+        {demoMode && demoInterventions.length > 0 && (
+          <div className="space-y-6 mb-8">
+            <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#1B365D' }}>
+              <Lightbulb className="w-7 h-7 text-blue-600" />
+              Strategic Life Extension Interventions ({demoInterventions.length})
+            </h2>
+
+            <Card className="border-2 border-blue-300 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-1">Total Investment</p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      ${preserveSchedules[0]?.total_investment?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-1">Replacement Costs Avoided</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      ${preserveSchedules[0]?.total_replacement_costs_avoided?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-1">Average ROI</p>
+                    <p className="text-2xl font-bold text-purple-700">
+                      {preserveSchedules[0]?.average_roi}x
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-1">Total Years Extended</p>
+                    <p className="text-2xl font-bold text-orange-700">
+                      {demoInterventions.reduce((sum, i) => sum + (i.years_extended || 0), 0)} years
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              {demoInterventions.map((intervention, index) => (
+                <Card key={intervention.id} className="border-2 border-gray-200 hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          {intervention.intervention}
+                        </h3>
+                        <Badge className="bg-blue-600 text-white mb-2">
+                          {intervention.system_name}
+                        </Badge>
+                        <p className="text-gray-700 text-sm mb-3">
+                          {intervention.description}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600 mb-1">
+                          {intervention.roi_multiplier}x ROI
+                        </div>
+                        <Badge className={
+                          intervention.status === 'Recommended' ? 'bg-orange-600' :
+                          intervention.status === 'Planned' ? 'bg-blue-600' :
+                          'bg-gray-600'
+                        }>
+                          {intervention.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Investment</p>
+                        <p className="font-semibold">${intervention.investment_cost.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Replacement Avoided</p>
+                        <p className="font-semibold text-green-600">
+                          ${intervention.replacement_cost_avoided.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Life Extension</p>
+                        <p className="font-semibold text-blue-600">
+                          +{intervention.years_extended} years
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Frequency</p>
+                        <p className="font-semibold">{intervention.frequency}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 rounded-lg p-4 mb-3">
+                      <p className="text-sm font-semibold text-green-900 mb-2">
+                        💡 Why Worth It:
+                      </p>
+                      <p className="text-sm text-green-800">
+                        {intervention.why_worth_it}
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-600">
+                      <p className="text-xs text-blue-900">
+                        <strong>Not Routine Because:</strong> {intervention.not_routine_because}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Portfolio Overview Summary */}
-        {selectedProperty && systems.length > 0 && (
+        {!demoMode && selectedProperty && systems.length > 0 && (
           <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -276,199 +449,201 @@ export default function Preserve() {
           </Card>
         )}
 
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-            <TabsTrigger 
-              value="forecast" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="hidden md:inline">Forecast</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="opportunities" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Lightbulb className="w-5 h-5" />
-              <span className="hidden md:inline">Opportunities</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="calculator" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Calculator className="w-5 h-5" />
-              <span className="hidden md:inline">Calculator</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="priorities" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span className="hidden md:inline">Priorities</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="roi" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Trophy className="w-5 h-5" />
-              <span className="hidden md:inline">ROI</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Main Tabs - Only show for non-demo */}
+        {!demoMode && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+              <TabsTrigger 
+                value="forecast" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Calendar className="w-5 h-5" />
+                <span className="hidden md:inline">Forecast</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="opportunities" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Lightbulb className="w-5 h-5" />
+                <span className="hidden md:inline">Opportunities</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="calculator" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Calculator className="w-5 h-5" />
+                <span className="hidden md:inline">Calculator</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="priorities" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="hidden md:inline">Priorities</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="roi" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Trophy className="w-5 h-5" />
+                <span className="hidden md:inline">ROI</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Tab 1: Replacement Forecast */}
-          <TabsContent value="forecast" className="mt-6 space-y-6">
-            <ReplacementForecastTimeline 
-              systems={systems}
-              property={properties.find(p => p.id === selectedProperty)}
-            />
-          </TabsContent>
+            {/* Tab 1: Replacement Forecast */}
+            <TabsContent value="forecast" className="mt-6 space-y-6">
+              <ReplacementForecastTimeline 
+                systems={systems}
+                property={properties.find(p => p.id === selectedProperty)}
+              />
+            </TabsContent>
 
-          {/* Tab 2: Life-Extension Opportunities */}
-          <TabsContent value="opportunities" className="mt-6 space-y-6">
-            
-            {/* Info Banner */}
-            <Card className="border-2 border-blue-200 bg-blue-50">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-blue-900 text-sm mb-1">Strategic Interventions Only</p>
-                    <p className="text-sm text-blue-800">
-                      Showing Big 7 systems with ROI 3x+ and intervention costs $500-5,000. Routine maintenance tasks are in the ACT module.
-                    </p>
+            {/* Tab 2: Life-Extension Opportunities */}
+            <TabsContent value="opportunities" className="mt-6 space-y-6">
+              
+              {/* Info Banner */}
+              <Card className="border-2 border-blue-200 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-blue-900 text-sm mb-1">Strategic Interventions Only</p>
+                      <p className="text-sm text-blue-800">
+                        Showing Big 7 systems with ROI 3x+ and intervention costs $500-5,000. Routine maintenance tasks are in the ACT module.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Urgent Section */}
-            {urgentRecommendations.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                  <h2 className="font-bold text-xl text-gray-900">
-                    🔥 URGENT - Do Within 6 Months ({urgentRecommendations.length})
-                  </h2>
-                </div>
-                <div className="space-y-4">
-                  {urgentRecommendations.map(rec => (
-                    <PreservationRecommendationCard
-                      key={rec.id}
-                      recommendation={rec}
-                      systems={systems}
-                      property={properties.find(p => p.id === selectedProperty)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recommended Section */}
-            {recommendedItems.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-6 h-6 text-orange-600" />
-                  <h2 className="font-bold text-xl text-gray-900">
-                    ⚡ RECOMMENDED - Plan Within 12 Months ({recommendedItems.length})
-                  </h2>
-                </div>
-                <div className="space-y-4">
-                  {recommendedItems.map(rec => (
-                    <PreservationRecommendationCard
-                      key={rec.id}
-                      recommendation={rec}
-                      systems={systems}
-                      property={properties.find(p => p.id === selectedProperty)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Optional Section */}
-            {optionalItems.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <DollarSign className="w-6 h-6 text-blue-600" />
-                  <h2 className="font-bold text-xl text-gray-900">
-                    💰 OPTIONAL - Consider for Optimization ({optionalItems.length})
-                  </h2>
-                </div>
-                <div className="space-y-4">
-                  {optionalItems.map(rec => (
-                    <PreservationRecommendationCard
-                      key={rec.id}
-                      recommendation={rec}
-                      systems={systems}
-                      property={properties.find(p => p.id === selectedProperty)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {recommendations.filter(r => r.status === 'PENDING').length === 0 && (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Shield className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">All Systems Looking Good!</h3>
-                  <p className="text-gray-600 mb-4">
-                    No strategic preservation recommendations at this time. Your Big 7 systems are either:
-                  </p>
-                  <ul className="text-sm text-gray-600 space-y-1 text-left max-w-md mx-auto">
-                    <li>• Too new (less than 75% of lifespan)</li>
-                    <li>• Too old (better to replace than intervene)</li>
-                    <li>• In excellent condition</li>
-                    <li>• Not cost-effective to intervene (ROI below 3x)</li>
-                  </ul>
-                  <p className="text-sm text-gray-500 mt-4">
-                    Check back as systems age. PRESERVE monitors your Big 7 daily.
-                  </p>
                 </CardContent>
               </Card>
-            )}
 
-          </TabsContent>
+              {/* Urgent Section */}
+              {urgentRecommendations.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                    <h2 className="font-bold text-xl text-gray-900">
+                      🔥 URGENT - Do Within 6 Months ({urgentRecommendations.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-4">
+                    {urgentRecommendations.map(rec => (
+                      <PreservationRecommendationCard
+                        key={rec.id}
+                        recommendation={rec}
+                        systems={systems}
+                        property={properties.find(p => p.id === selectedProperty)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Tab 3: Decision Calculator */}
-          <TabsContent value="calculator" className="mt-6">
-            <DecisionCalculator 
-              systems={systems}
-              recommendations={recommendations}
-              property={properties.find(p => p.id === selectedProperty)}
-            />
-          </TabsContent>
+              {/* Recommended Section */}
+              {recommendedItems.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Zap className="w-6 h-6 text-orange-600" />
+                    <h2 className="font-bold text-xl text-gray-900">
+                      ⚡ RECOMMENDED - Plan Within 12 Months ({recommendedItems.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-4">
+                    {recommendedItems.map(rec => (
+                      <PreservationRecommendationCard
+                        key={rec.id}
+                        recommendation={rec}
+                        systems={systems}
+                        property={properties.find(p => p.id === selectedProperty)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Tab 4: Investment Priorities */}
-          <TabsContent value="priorities" className="mt-6">
-            <InvestmentMatrix 
-              recommendations={recommendations.filter(r => r.status === 'PENDING')}
-              systems={systems}
-            />
-          </TabsContent>
+              {/* Optional Section */}
+              {optionalItems.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <DollarSign className="w-6 h-6 text-blue-600" />
+                    <h2 className="font-bold text-xl text-gray-900">
+                      💰 OPTIONAL - Consider for Optimization ({optionalItems.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-4">
+                    {optionalItems.map(rec => (
+                      <PreservationRecommendationCard
+                        key={rec.id}
+                        recommendation={rec}
+                        systems={systems}
+                        property={properties.find(p => p.id === selectedProperty)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Tab 5: Preservation ROI */}
-          <TabsContent value="roi" className="mt-6 space-y-6">
-            <PreservationROIChart 
-              impacts={impacts}
-              totalInvested={totalInvested}
-              totalValueCreated={totalValueCreated}
-              overallROI={overallROI}
-              totalYearsExtended={totalYearsExtended}
-            />
-          </TabsContent>
+              {/* Empty State */}
+              {recommendations.filter(r => r.status === 'PENDING').length === 0 && (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Shield className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">All Systems Looking Good!</h3>
+                    <p className="text-gray-600 mb-4">
+                      No strategic preservation recommendations at this time. Your Big 7 systems are either:
+                    </p>
+                    <ul className="text-sm text-gray-600 space-y-1 text-left max-w-md mx-auto">
+                      <li>• Too new (less than 75% of lifespan)</li>
+                      <li>• Too old (better to replace than intervene)</li>
+                      <li>• In excellent condition</li>
+                      <li>• Not cost-effective to intervene (ROI below 3x)</li>
+                    </ul>
+                    <p className="text-sm text-gray-500 mt-4">
+                      Check back as systems age. PRESERVE monitors your Big 7 daily.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
-        </Tabs>
+            </TabsContent>
+
+            {/* Tab 3: Decision Calculator */}
+            <TabsContent value="calculator" className="mt-6">
+              <DecisionCalculator 
+                systems={systems}
+                recommendations={recommendations}
+                property={properties.find(p => p.id === selectedProperty)}
+              />
+            </TabsContent>
+
+            {/* Tab 4: Investment Priorities */}
+            <TabsContent value="priorities" className="mt-6">
+              <InvestmentMatrix 
+                recommendations={recommendations.filter(r => r.status === 'PENDING')}
+                systems={systems}
+              />
+            </TabsContent>
+
+            {/* Tab 5: Preservation ROI */}
+            <TabsContent value="roi" className="mt-6 space-y-6">
+              <PreservationROIChart 
+                impacts={impacts}
+                totalInvested={totalInvested}
+                totalValueCreated={totalValueCreated}
+                overallROI={overallROI}
+                totalYearsExtended={totalYearsExtended}
+              />
+            </TabsContent>
+
+          </Tabs>
+        )}
 
         {/* Empty State - No Big 7 Systems */}
-        {selectedProperty && systems.length === 0 && (
+        {!demoMode && selectedProperty && systems.length === 0 && (
           <Card className="border-2 border-gray-200">
             <CardContent className="p-12 text-center">
               <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />

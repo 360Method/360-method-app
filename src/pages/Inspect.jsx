@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Plus,
   Calendar,
@@ -22,7 +23,8 @@ import {
   Lightbulb,
   Shield,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import {
@@ -38,6 +40,7 @@ import InspectionReport from "../components/inspect/InspectionReport";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
 import StepNavigation from "../components/navigation/StepNavigation";
+import { useDemo } from "../components/shared/DemoContext";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -60,28 +63,47 @@ export default function Inspect() {
   const [whyExpanded, setWhyExpanded] = React.useState(false);
 
   const queryClient = useQueryClient();
+  const { demoMode, demoData } = useDemo();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
       const allProps = await base44.entities.Property.list();
       return allProps.filter(p => !p.is_draft);
     },
   });
 
-  const { data: inspections = [] } = useQuery({
+  const { data: realInspections = [] } = useQuery({
     queryKey: ['inspections', selectedPropertyId],
     queryFn: () => base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date'),
-    enabled: !!selectedPropertyId,
+    enabled: !demoMode && !!selectedPropertyId,
     initialData: [],
   });
 
-  const { data: baselineSystems = [] } = useQuery({
+  const inspections = demoMode 
+    ? (demoData?.inspections || [])
+    : realInspections;
+
+  console.log('=== INSPECT STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Inspections:', inspections);
+  console.log('Inspections count:', inspections?.length);
+
+  const { data: realBaselineSystems = [] } = useQuery({
     queryKey: ['baseline-systems', selectedPropertyId],
     queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId }),
-    enabled: !!selectedPropertyId,
+    enabled: !demoMode && !!selectedPropertyId,
     initialData: [],
   });
+
+  const baselineSystems = demoMode
+    ? (demoData?.systems || [])
+    : realBaselineSystems;
+
+  const canEdit = !demoMode;
 
   const deleteInspectionMutation = useMutation({
     mutationFn: async (inspectionId) => {
@@ -108,16 +130,19 @@ export default function Inspect() {
   const inProgressInspection = inspections.find(i => i.status === 'In Progress');
 
   const handleStartNewInspection = () => {
+    if (demoMode) return;
     setInspectionView('setup');
     setCurrentInspection(null);
   };
 
   const handleStartTraditionalInspection = () => {
+    if (demoMode) return;
     setInspectionView('setup');
     setCurrentInspection(null);
   };
 
   const handleStartPhysicalInspection = () => {
+    if (demoMode) return;
     // Create a new inspection and go directly to physical walkthrough
     setInspectionView('setup');
     setCurrentInspection({ usePhysicalWalkthrough: true });
@@ -153,11 +178,13 @@ export default function Inspect() {
   };
 
   const handleEditInspection = (inspection) => {
+    if (demoMode) return;
     setCurrentInspection(inspection);
     setInspectionView('walkthrough');
   };
 
   const handleDeleteInspection = (inspection) => {
+    if (demoMode) return;
     setInspectionToDelete(inspection);
     setDeleteConfirmOpen(true);
   };
@@ -244,6 +271,18 @@ export default function Inspect() {
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={2} propertyId={selectedPropertyId !== '' ? selectedPropertyId : null} />
         </div>
+
+        {/* Demo Banner */}
+        {demoMode && (
+          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 2 seasonal inspections completed 
+              (Fall 2024: 5/6 items passed, Spring 2024: 6/6 items passed). 
+              Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Phase & Step Header */}
         <div className="mb-6">
@@ -334,7 +373,7 @@ export default function Inspect() {
         )}
 
         {/* PROMINENT INSPECTION METHOD SELECTOR - Always visible when property selected and baseline complete */}
-        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
+        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && canEdit && (
           <Card className="border-4 border-blue-400 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 shadow-2xl mb-8">
             <CardHeader className="pb-4">
               <div className="text-center">
@@ -445,15 +484,17 @@ export default function Inspect() {
                         <p className="text-xs text-gray-600">Certified inspector comes to your property</p>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => setServiceRequestOpen(true)}
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      style={{ minHeight: '48px' }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Request Pro
-                    </Button>
+                    {canEdit && (
+                      <Button
+                        onClick={() => setServiceRequestOpen(true)}
+                        variant="outline"
+                        className="whitespace-nowrap"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Request Pro
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -771,28 +812,30 @@ export default function Inspect() {
                               </Button>
                             )}
 
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" style={{ minHeight: '44px', minWidth: '44px' }}>
-                                  <Plus className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white">
-                                {isCompleted && (
-                                  <DropdownMenuItem onClick={() => handleEditInspection(inspection)}>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Edit/Review
+                            {canEdit && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" style={{ minHeight: '44px', minWidth: '44px' }}>
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-white">
+                                  {isCompleted && (
+                                    <DropdownMenuItem onClick={() => handleEditInspection(inspection)}>
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      Edit/Review
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteInspection(inspection)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteInspection(inspection)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -817,18 +860,20 @@ export default function Inspect() {
         )}
       </div>
 
-      <ServiceRequestDialog
-        open={serviceRequestOpen}
-        onClose={() => setServiceRequestOpen(false)}
-        prefilledData={{
-          property_id: selectedPropertyId,
-          service_type: "Professional Inspection",
-          description: "Request professional seasonal inspection service",
-          urgency: "Medium"
-        }}
-      />
+      {canEdit && (
+        <ServiceRequestDialog
+          open={serviceRequestOpen}
+          onClose={() => setServiceRequestOpen(false)}
+          prefilledData={{
+            property_id: selectedPropertyId,
+            service_type: "Professional Inspection",
+            description: "Request professional seasonal inspection service",
+            urgency: "Medium"
+          }}
+        />
+      )}
 
-      {deleteConfirmOpen && (
+      {canEdit && deleteConfirmOpen && (
         <ConfirmDialog
           open={deleteConfirmOpen}
           onClose={() => {

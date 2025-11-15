@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { 
-  Trophy, TrendingUp, Calendar, Image as ImageIcon, Plus
+  Trophy, TrendingUp, Calendar, Image as ImageIcon, Plus, Info
 } from 'lucide-react';
 
 // UI Components
@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Custom components
 import WinsDashboard from '@/components/track/WinsDashboard';
@@ -19,10 +20,12 @@ import PhotoGallery from '@/components/track/PhotoGallery';
 import InsightsView from '@/components/track/InsightsView';
 import ExportMenu from '@/components/track/ExportMenu';
 import ManualTaskForm from '@/components/tasks/ManualTaskForm';
+import { useDemo } from '../components/shared/DemoContext';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const queryClient = useQueryClient();
+  const { demoMode, demoData } = useDemo();
   
   const [selectedProperty, setSelectedProperty] = useState(urlParams.get('property') || 'first');
   const [activeTab, setActiveTab] = useState('wins');
@@ -33,7 +36,12 @@ export default function TrackPage() {
   // Fetch properties
   const { data: properties = [], isLoading: isLoadingProperties } = useQuery({
     queryKey: ['properties'],
-    queryFn: async () => await base44.entities.Property.list('-created_date')
+    queryFn: async () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
+      return await base44.entities.Property.list('-created_date');
+    }
   });
 
   // Auto-select first property
@@ -44,7 +52,7 @@ export default function TrackPage() {
   }, [properties, selectedProperty]);
 
   // Fetch completed maintenance tasks
-  const { data: completedTasks = [], isLoading: isLoadingTasks } = useQuery({
+  const { data: realCompletedTasks = [] } = useQuery({
     queryKey: ['completed-tasks', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
@@ -53,21 +61,34 @@ export default function TrackPage() {
         status: 'Completed' 
       }, '-completion_date');
     },
-    enabled: !!selectedProperty && selectedProperty !== 'first'
+    enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
   });
 
+  const completedTasks = demoMode 
+    ? (demoData?.maintenanceHistory || [])
+    : realCompletedTasks;
+
+  console.log('=== TRACK STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Completed tasks:', completedTasks);
+  console.log('History count:', completedTasks?.length);
+
   // Fetch system baselines
-  const { data: systems = [] } = useQuery({
+  const { data: realSystems = [] } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
       return await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
     },
-    enabled: !!selectedProperty && selectedProperty !== 'first'
+    enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
   });
 
+  const systems = demoMode
+    ? (demoData?.systems || [])
+    : realSystems;
+
   // Fetch inspections
-  const { data: inspections = [] } = useQuery({
+  const { data: realInspections = [] } = useQuery({
     queryKey: ['inspections', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
@@ -76,11 +97,15 @@ export default function TrackPage() {
         status: 'Completed' 
       }, '-inspection_date');
     },
-    enabled: !!selectedProperty && selectedProperty !== 'first'
+    enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
   });
 
+  const inspections = demoMode
+    ? (demoData?.inspections || [])
+    : realInspections;
+
   // Fetch upgrades
-  const { data: upgrades = [] } = useQuery({
+  const { data: realUpgrades = [] } = useQuery({
     queryKey: ['upgrades', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
@@ -89,8 +114,14 @@ export default function TrackPage() {
         status: 'Completed' 
       }, '-completion_date');
     },
-    enabled: !!selectedProperty && selectedProperty !== 'first'
+    enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
   });
+
+  const upgrades = demoMode
+    ? (demoData?.upgrades || []).filter(u => u.status === 'Completed')
+    : realUpgrades;
+
+  const canEdit = !demoMode;
 
   // Calculate comprehensive metrics
   const metrics = useMemo(() => {
@@ -107,38 +138,29 @@ export default function TrackPage() {
     let inspectionSavings = 0;
     
     completedTasks.forEach(task => {
-      totalSpent += task.actual_cost || 0;
-      totalHours += task.actual_hours || 0;
+      totalSpent += task.cost || task.actual_cost || 0;
+      totalHours += task.time_spent_hours || task.actual_hours || 0;
+      
+      // Calculate prevented costs
+      const preventedCost = task.prevented_cost || 0;
+      totalSavings += preventedCost;
       
       // DIY savings
-      if (task.execution_method === 'DIY') {
+      if (task.completed_by === 'DIY' || task.execution_method === 'DIY') {
         diyTasks++;
-        const contractorCost = task.contractor_cost || 0;
-        const actualCost = task.actual_cost || 0;
-        const savings = contractorCost - actualCost;
-        if (savings > 0) {
-          diySavings += savings;
-          totalSavings += savings;
-        }
+        diySavings += preventedCost;
       }
       
-      // Disaster prevention savings
-      if (task.cascade_risk_score >= 7) {
+      // Disaster prevention
+      if (preventedCost > 1000) {
         disastersPrevented++;
-        const preventedCost = task.delayed_fix_cost || 0;
-        const actualCost = task.actual_cost || task.contractor_cost || 0;
-        const savings = preventedCost - actualCost;
-        if (savings > 0) {
-          wouldHaveCost += preventedCost;
-          totalSavings += savings;
-        }
+        wouldHaveCost += preventedCost;
       }
       
-      // Inspection efficiency savings
+      // Inspection efficiency
       if (task.resolved_during_inspection) {
         inspectionFixes++;
         inspectionSavings += 75;
-        totalSavings += 75;
       }
     });
     
@@ -166,14 +188,17 @@ export default function TrackPage() {
     const items = [];
     
     completedTasks.forEach(task => {
-      items.push({
-        type: 'task',
-        date: new Date(task.completion_date),
-        title: task.title,
-        category: task.system_type || 'General',
-        cost: task.actual_cost || 0,
-        data: task
-      });
+      const date = task.date || task.completion_date;
+      if (date) {
+        items.push({
+          type: 'task',
+          date: new Date(date),
+          title: task.title,
+          category: task.system_type || task.type || 'General',
+          cost: task.cost || task.actual_cost || 0,
+          data: task
+        });
+      }
     });
     
     systems.forEach(system => {
@@ -225,6 +250,7 @@ export default function TrackPage() {
 
   // Generate AI insights
   const handleGenerateInsights = async () => {
+    if (demoMode) return;
     setGeneratingAI(true);
     
     try {
@@ -346,15 +372,16 @@ Provide comprehensive analysis with this structure:
       completedTasks.length >= 3 && 
       systems.length >= 1 && 
       !aiInsights && 
-      !generatingAI;
+      !generatingAI &&
+      !demoMode;
     
     if (shouldAutoGenerate) {
       handleGenerateInsights();
     }
-  }, [completedTasks.length, systems.length]);
+  }, [completedTasks.length, systems.length, demoMode]);
 
   // Manual task form takeover
-  if (showTaskForm) {
+  if (showTaskForm && canEdit) {
     return (
       <ManualTaskForm
         propertyId={selectedProperty}
@@ -400,7 +427,7 @@ Provide comprehensive analysis with this structure:
   }
 
   // Empty state: No completed tasks
-  if (selectedProperty !== 'first' && completedTasks.length === 0 && !isLoadingTasks) {
+  if (selectedProperty !== 'first' && completedTasks.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         
@@ -437,14 +464,16 @@ Provide comprehensive analysis with this structure:
                   Go to Execute Phase
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowTaskForm(true)}
-                style={{ minHeight: '48px' }}
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Log Past Maintenance
-              </Button>
+              {canEdit && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTaskForm(true)}
+                  style={{ minHeight: '48px' }}
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Log Past Maintenance
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -452,7 +481,10 @@ Provide comprehensive analysis with this structure:
     );
   }
 
-  const isLoading = isLoadingTasks;
+  // Calculate stats
+  const totalInvested = completedTasks.reduce((sum, h) => sum + (h.cost || h.actual_cost || 0), 0);
+  const totalPrevented = completedTasks.reduce((sum, h) => sum + (h.prevented_cost || 0), 0);
+  const netSavings = totalPrevented - totalInvested;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -460,6 +492,17 @@ Provide comprehensive analysis with this structure:
       {/* Header - Sticky */}
       <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="p-4">
+          {/* Demo Banner */}
+          {demoMode && (
+            <Alert className="mb-4 border-yellow-400 bg-yellow-50">
+              <Info className="w-4 h-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-900">
+                <strong>Demo Mode:</strong> 5 maintenance records showing ${totalInvested.toLocaleString()} invested, 
+                ${totalPrevented.toLocaleString()}+ in costs prevented. Read-only example.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl font-bold text-gray-900">
               Your Wins 🎉
@@ -473,16 +516,18 @@ Provide comprehensive analysis with this structure:
                 property={currentProperty}
                 aiInsights={aiInsights}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTaskForm(true)}
-                className="flex items-center gap-2"
-                style={{ minHeight: '44px' }}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Log Task</span>
-              </Button>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTaskForm(true)}
+                  className="flex items-center gap-2"
+                  style={{ minHeight: '44px' }}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Log Task</span>
+                </Button>
+              )}
             </div>
           </div>
           
@@ -500,6 +545,30 @@ Provide comprehensive analysis with this structure:
               ))}
             </SelectContent>
           </Select>
+
+          {/* Summary Stats */}
+          {completedTasks.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow p-3 text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {completedTasks.length}
+                </p>
+                <p className="text-xs text-gray-600">Maintenance Records</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow p-3 text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  ${totalPrevented.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-600">Costs Prevented</p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow p-3 text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  ${netSavings.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-600">Net Savings</p>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Tabs */}
@@ -546,33 +615,26 @@ Provide comprehensive analysis with this structure:
         <Tabs value={activeTab}>
           
           <TabsContent value="wins" className="mt-0">
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Calculating your wins...</p>
-              </div>
-            ) : (
-              <WinsDashboard 
-                tasks={completedTasks}
-                metrics={metrics}
-                aiInsights={aiInsights}
-                generatingAI={generatingAI}
-                onRegenerateAI={handleGenerateInsights}
-              />
-            )}
+            <WinsDashboard 
+              tasks={completedTasks}
+              metrics={metrics}
+              aiInsights={aiInsights}
+              generatingAI={generatingAI}
+              onRegenerateAI={handleGenerateInsights}
+            />
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-0">
             <TimelineView 
               timelineItems={timelineItems}
-              isLoading={isLoading}
+              isLoading={false}
             />
           </TabsContent>
 
           <TabsContent value="photos" className="mt-0">
             <PhotoGallery 
               tasks={completedTasks}
-              isLoading={isLoading}
+              isLoading={false}
             />
           </TabsContent>
 
@@ -585,7 +647,7 @@ Provide comprehensive analysis with this structure:
               aiInsights={aiInsights}
               generatingAI={generatingAI}
               onRegenerateAI={handleGenerateInsights}
-              isLoading={isLoading}
+              isLoading={false}
             />
           </TabsContent>
 

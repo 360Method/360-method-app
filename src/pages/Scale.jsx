@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   DollarSign,
   TrendingUp,
@@ -13,7 +14,8 @@ import {
   Target,
   ChevronRight,
   ChevronDown,
-  Lightbulb
+  Lightbulb,
+  Info
 } from "lucide-react";
 import StepNavigation from "../components/navigation/StepNavigation";
 import EquityPositionCard from "../components/scale/EquityPositionCard";
@@ -21,16 +23,23 @@ import StrategicAnalysisCard from "../components/scale/StrategicAnalysisCard";
 import WealthProjectionChart from "../components/scale/WealthProjectionChart";
 import CapitalAllocationRanker from "../components/scale/CapitalAllocationRanker";
 import BenchmarkComparison from "../components/scale/BenchmarkComparison";
+import { useDemo } from "../components/shared/DemoContext";
 
 export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('equity-position');
   const [whyExpanded, setWhyExpanded] = useState(false);
+  const { demoMode, demoData } = useDemo();
 
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list()
+    queryFn: () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
+      return base44.entities.Property.list();
+    }
   });
 
   const { data: user } = useQuery({
@@ -38,35 +47,52 @@ export default function Scale() {
     queryFn: () => base44.auth.me()
   });
 
-  const { data: equityData = [] } = useQuery({
+  const { data: realEquityData = [] } = useQuery({
     queryKey: ['portfolio-equity', selectedProperty],
     queryFn: () => selectedProperty === 'all' 
       ? base44.entities.PortfolioEquity.list()
       : base44.entities.PortfolioEquity.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty
+    enabled: !demoMode && !!selectedProperty
   });
+
+  const equityData = demoMode
+    ? []
+    : realEquityData;
+
+  const portfolioMetrics = demoMode
+    ? demoData?.portfolioMetrics
+    : null;
+
+  console.log('=== SCALE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Portfolio metrics:', portfolioMetrics);
+
+  const canEdit = !demoMode;
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['strategic-recommendations', selectedProperty],
     queryFn: () => selectedProperty === 'all'
       ? base44.entities.StrategicRecommendation.list()
       : base44.entities.StrategicRecommendation.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty
+    enabled: !demoMode && !!selectedProperty
   });
 
   const { data: projections = [] } = useQuery({
     queryKey: ['wealth-projections'],
-    queryFn: () => base44.entities.WealthProjection.list()
+    queryFn: () => base44.entities.WealthProjection.list(),
+    enabled: !demoMode
   });
 
   const { data: capitalAllocations = [] } = useQuery({
     queryKey: ['capital-allocations'],
-    queryFn: () => base44.entities.CapitalAllocation.list()
+    queryFn: () => base44.entities.CapitalAllocation.list(),
+    enabled: !demoMode
   });
 
   const { data: benchmarks = [] } = useQuery({
     queryKey: ['portfolio-benchmarks'],
-    queryFn: () => base44.entities.PortfolioBenchmark.list()
+    queryFn: () => base44.entities.PortfolioBenchmark.list(),
+    enabled: !demoMode
   });
 
   // Auto-select property
@@ -95,6 +121,18 @@ export default function Scale() {
           <StepNavigation currentStep={9} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
+        {/* Demo Banner */}
+        {demoMode && (
+          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> Single property portfolio showing $250K current equity, 
+              $520K projected in 10 years. Full SCALE features unlock with 2+ properties. 
+              Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Phase & Step Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -115,6 +153,16 @@ export default function Scale() {
             Portfolio CFO Intelligence - strategic wealth command center for your real estate
           </p>
         </div>
+
+        {/* Why Scale Matters - Demo Content */}
+        {demoMode && portfolioMetrics?.why_scale_matters && (
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 mb-6 border-2 border-purple-300">
+            <h3 className="font-semibold text-lg mb-3 text-purple-900">Why Scale Matters</h3>
+            <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+              {portfolioMetrics.why_scale_matters}
+            </div>
+          </div>
+        )}
 
         {/* Why This Step Matters */}
         <Card className="mb-6 border-2 border-purple-200 bg-purple-50">
@@ -197,8 +245,78 @@ export default function Scale() {
           </Card>
         )}
 
-        {/* Portfolio Summary (when viewing all) */}
-        {selectedProperty === 'all' && equityData.length > 1 && (
+        {/* Demo Portfolio Metrics */}
+        {demoMode && portfolioMetrics && (
+          <div className="space-y-6">
+            <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-purple-600" />
+                  Current Equity Position
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-lg shadow p-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">Current Value</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      ${portfolioMetrics.current_property_value?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">Current Equity</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${portfolioMetrics.current_equity?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">10-Year Projection</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      ${portfolioMetrics.projected_equity_10yr?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4 text-center">
+                    <p className="text-sm text-gray-600 mb-1">Projected Growth</p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      +${portfolioMetrics.equity_growth_10yr?.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {portfolioMetrics.recommendation && (
+              <Card className="border-2 border-green-300 bg-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Badge className="bg-green-600 text-white text-lg px-4 py-2">
+                      Recommendation: {portfolioMetrics.recommendation}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                    {portfolioMetrics.recommendation_reasoning}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {portfolioMetrics.total_properties === 1 && portfolioMetrics.scale_message && (
+              <Card className="border-2 border-blue-400 bg-blue-50">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-blue-900 mb-3 text-lg">
+                    🔓 Unlock Full SCALE Features
+                  </h3>
+                  <p className="text-sm text-blue-800 mb-4 whitespace-pre-line leading-relaxed">
+                    {portfolioMetrics.scale_message}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Portfolio Summary (when viewing all) - Non-demo */}
+        {!demoMode && selectedProperty === 'all' && equityData.length > 1 && (
           <Card className="mb-6 border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -237,97 +355,94 @@ export default function Scale() {
           </Card>
         )}
 
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-            <TabsTrigger 
-              value="equity-position" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <DollarSign className="w-5 h-5" />
-              <span className="hidden md:inline">Equity</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="strategic-analysis" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Target className="w-5 h-5" />
-              <span className="hidden md:inline">Strategy</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="wealth-projections" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span className="hidden md:inline">Projections</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="capital-optimizer" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Calculator className="w-5 h-5" />
-              <span className="hidden md:inline">Capital</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="performance" 
-              className="flex items-center gap-2 py-3"
-              style={{ minHeight: '56px' }}
-            >
-              <Trophy className="w-5 h-5" />
-              <span className="hidden md:inline">Performance</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Main Tabs - Non-demo */}
+        {!demoMode && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+              <TabsTrigger 
+                value="equity-position" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <DollarSign className="w-5 h-5" />
+                <span className="hidden md:inline">Equity</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="strategic-analysis" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Target className="w-5 h-5" />
+                <span className="hidden md:inline">Strategy</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="wealth-projections" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="hidden md:inline">Projections</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="capital-optimizer" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Calculator className="w-5 h-5" />
+                <span className="hidden md:inline">Capital</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="performance" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Trophy className="w-5 h-5" />
+                <span className="hidden md:inline">Performance</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Tab 1: Equity Position */}
-          <TabsContent value="equity-position" className="mt-6 space-y-6">
-            <EquityPositionCard 
-              equityData={equityData}
-              properties={properties}
-              selectedProperty={selectedProperty}
-            />
-          </TabsContent>
+            <TabsContent value="equity-position" className="mt-6 space-y-6">
+              <EquityPositionCard 
+                equityData={equityData}
+                properties={properties}
+                selectedProperty={selectedProperty}
+              />
+            </TabsContent>
 
-          {/* Tab 2: Strategic Analysis */}
-          <TabsContent value="strategic-analysis" className="mt-6 space-y-6">
-            <StrategicAnalysisCard 
-              recommendations={recommendations}
-              equityData={equityData}
-              properties={properties}
-              selectedProperty={selectedProperty}
-            />
-          </TabsContent>
+            <TabsContent value="strategic-analysis" className="mt-6 space-y-6">
+              <StrategicAnalysisCard 
+                recommendations={recommendations}
+                equityData={equityData}
+                properties={properties}
+                selectedProperty={selectedProperty}
+              />
+            </TabsContent>
 
-          {/* Tab 3: Wealth Projections */}
-          <TabsContent value="wealth-projections" className="mt-6 space-y-6">
-            <WealthProjectionChart 
-              projections={projections}
-              equityData={equityData}
-              properties={properties}
-            />
-          </TabsContent>
+            <TabsContent value="wealth-projections" className="mt-6 space-y-6">
+              <WealthProjectionChart 
+                projections={projections}
+                equityData={equityData}
+                properties={properties}
+              />
+            </TabsContent>
 
-          {/* Tab 4: Capital Optimizer */}
-          <TabsContent value="capital-optimizer" className="mt-6 space-y-6">
-            <CapitalAllocationRanker 
-              capitalAllocations={capitalAllocations}
-              properties={properties}
-            />
-          </TabsContent>
+            <TabsContent value="capital-optimizer" className="mt-6 space-y-6">
+              <CapitalAllocationRanker 
+                capitalAllocations={capitalAllocations}
+                properties={properties}
+              />
+            </TabsContent>
 
-          {/* Tab 5: Portfolio Performance */}
-          <TabsContent value="performance" className="mt-6 space-y-6">
-            <BenchmarkComparison 
-              benchmarks={benchmarks}
-              equityData={equityData}
-              properties={properties}
-            />
-          </TabsContent>
+            <TabsContent value="performance" className="mt-6 space-y-6">
+              <BenchmarkComparison 
+                benchmarks={benchmarks}
+                equityData={equityData}
+                properties={properties}
+              />
+            </TabsContent>
 
-        </Tabs>
+          </Tabs>
+        )}
 
       </div>
     </div>

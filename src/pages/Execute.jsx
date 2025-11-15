@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CheckCircle2,
   Calendar,
@@ -17,24 +18,30 @@ import {
   PlayCircle,
   Wrench,
   HardHat,
-  Star
+  Star,
+  Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format, startOfDay, parseISO, isBefore, isSameDay } from "date-fns";
 import ExecuteTaskCard from "../components/execute/ExecuteTaskCard";
 import StepNavigation from "../components/navigation/StepNavigation";
+import { useDemo } from "../components/shared/DemoContext";
 
 export default function ExecutePage() {
   const location = useLocation();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
+  const { demoMode, demoData } = useDemo();
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     }
@@ -51,7 +58,7 @@ export default function ExecutePage() {
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
-  const { data: allTasks = [] } = useQuery({
+  const { data: realTasks = [] } = useQuery({
     queryKey: ['tasks', 'execute', selectedProperty],
     queryFn: async () => {
       if (selectedProperty === 'all') {
@@ -60,17 +67,25 @@ export default function ExecutePage() {
         return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-scheduled_date');
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null
+    enabled: !demoMode && properties.length > 0 && selectedProperty !== null
   });
+
+  const allTasks = demoMode
+    ? (demoData?.tasks || [])
+    : realTasks;
+
+  console.log('=== EXECUTE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Tasks:', allTasks);
+  console.log('Tasks count:', allTasks?.length);
+
+  const canEdit = !demoMode;
 
   const today = startOfDay(new Date());
 
   // Show tasks that are Scheduled or In Progress, have a date, and are due today or overdue
   const tasksForDisplay = allTasks.filter(task => {
-    // CRITICAL FIX: Must have valid status
     if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
-    
-    // Must have a scheduled date
     if (!task.scheduled_date) return false;
     
     try {
@@ -81,7 +96,6 @@ export default function ExecutePage() {
     }
   });
 
-  // FIXED: Calculate overdue count from the SAME filtered list
   const overdueCount = tasksForDisplay.filter(task => {
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
@@ -91,7 +105,7 @@ export default function ExecutePage() {
     }
   }).length;
 
-  // Sort tasks: priority first, then quick tasks first for momentum
+  // Sort tasks
   const sortedTasks = tasksForDisplay.sort((a, b) => {
     const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3, 'Routine': 4 };
     const priorityDiff = (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
@@ -103,7 +117,7 @@ export default function ExecutePage() {
     return aHours - bHours;
   });
 
-  // Group by execution method for visual distinction
+  // Group by execution method
   const operatorTasks = sortedTasks.filter(t => t.execution_method === '360_Operator');
   const diyTasks = sortedTasks.filter(t => t.execution_method === 'DIY');
   const contractorTasks = sortedTasks.filter(t => t.execution_method === 'Contractor');
@@ -156,6 +170,17 @@ export default function ExecutePage() {
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
+
+        {/* Demo Banner */}
+        {demoMode && (
+          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 8 tasks total (1 scheduled, 7 pending), 
+              5 completed maintenance records. Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Simplified Header with Progress Ring */}
         <div className="mb-6">
@@ -311,6 +336,7 @@ export default function ExecutePage() {
                         task={task}
                         urgency={isOverdue ? 'overdue' : 'today'}
                         properties={properties}
+                        canEdit={canEdit}
                       />
                     );
                   })}
@@ -345,6 +371,7 @@ export default function ExecutePage() {
                         task={task}
                         urgency={isOverdue ? 'overdue' : 'today'}
                         properties={properties}
+                        canEdit={canEdit}
                       />
                     );
                   })}
@@ -379,6 +406,7 @@ export default function ExecutePage() {
                         task={task}
                         urgency={isOverdue ? 'overdue' : 'today'}
                         properties={properties}
+                        canEdit={canEdit}
                       />
                     );
                   })}
@@ -388,7 +416,6 @@ export default function ExecutePage() {
             
           </div>
         ) : (
-          // IMPROVED EMPTY STATE
           <Card className="border-2 border-green-200 bg-white">
             <CardContent className="p-8 md:p-12 text-center">
               <div className="text-6xl md:text-7xl mb-4">✨</div>

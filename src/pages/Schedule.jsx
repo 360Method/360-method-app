@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Calendar as CalendarIcon,
   Building2,
@@ -23,7 +24,8 @@ import {
   CheckSquare,
   Sparkles,
   Filter,
-  X
+  X,
+  Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -36,12 +38,14 @@ import DayDetailsDialog from "../components/schedule/DayDetailsDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/schedule/seasonalHelpers";
+import { useDemo } from "../components/shared/DemoContext";
 
 export default function SchedulePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
+  const { demoMode, demoData } = useDemo();
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
   const [viewMode, setViewMode] = React.useState('unscheduled');
@@ -70,6 +74,9 @@ export default function SchedulePage() {
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      if (demoMode) {
+        return demoData?.property ? [demoData.property] : [];
+      }
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     }
@@ -86,7 +93,7 @@ export default function SchedulePage() {
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
-  const { data: allTasks = [] } = useQuery({
+  const { data: realTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty],
     queryFn: async () => {
       if (selectedProperty === 'all') {
@@ -95,8 +102,19 @@ export default function SchedulePage() {
         return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null
+    enabled: !demoMode && properties.length > 0 && selectedProperty !== null
   });
+
+  const allTasks = demoMode
+    ? (demoData?.tasks || [])
+    : realTasks;
+
+  console.log('=== SCHEDULE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('All tasks:', allTasks);
+  console.log('Tasks count:', allTasks?.length);
+
+  const canEdit = !demoMode;
 
   const { data: seasonalReminders = [] } = useQuery({
     queryKey: ['seasonal-reminders', selectedProperty],
@@ -170,6 +188,7 @@ export default function SchedulePage() {
   const activeFiltersCount = Object.values(filters).filter(v => v !== 'all' && v !== 'priority').length;
 
   const handleTaskDrop = (task, date) => {
+    if (demoMode) return;
     const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
@@ -182,6 +201,7 @@ export default function SchedulePage() {
   };
 
   const handleTimeRangeChange = (task, timeRange) => {
+    if (demoMode) return;
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
@@ -192,6 +212,7 @@ export default function SchedulePage() {
   };
 
   const handleSetDate = (task, date, timeRange = 'morning') => {
+    if (demoMode) return;
     const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
@@ -205,6 +226,7 @@ export default function SchedulePage() {
   };
 
   const handleSendBackToPrioritize = (task) => {
+    if (demoMode) return;
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
@@ -237,6 +259,7 @@ export default function SchedulePage() {
   };
 
   const handleBatchSchedule = (dateStr) => {
+    if (demoMode) return;
     selectedTasks.forEach(taskId => {
       updateTaskMutation.mutate({
         taskId,
@@ -300,6 +323,17 @@ export default function SchedulePage() {
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={5} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
+
+        {/* Demo Banner */}
+        {demoMode && (
+          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 1 task scheduled (HVAC Fall Service on Oct 28, 2024). 
+              Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
@@ -393,10 +427,13 @@ export default function SchedulePage() {
                     task={task}
                     properties={properties}
                     onSchedule={(task) => {
-                      setSelectedTaskForPicker(task);
-                      setShowQuickDatePicker(true);
+                      if (canEdit) {
+                        setSelectedTaskForPicker(task);
+                        setShowQuickDatePicker(true);
+                      }
                     }}
                     onSnooze={handleSendBackToPrioritize}
+                    canEdit={canEdit}
                   />
                 ))}
               </div>
@@ -460,11 +497,9 @@ export default function SchedulePage() {
           </Card>
         </div>
 
-        {/* View Controls with Integrated Filters */}
         <Card className="border-2 border-yellow-200 bg-white mb-6">
           <CardContent className="p-4">
             <div className="space-y-4">
-              {/* View Mode Selection */}
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
                 <div className="flex items-center gap-3 flex-wrap">
                   <label className="font-bold text-yellow-900">View:</label>
@@ -524,7 +559,6 @@ export default function SchedulePage() {
                 </div>
               </div>
 
-              {/* Filters Panel */}
               {showFilters && (
                 <div className="pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between mb-3">
@@ -648,7 +682,7 @@ export default function SchedulePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {tasksWithoutDates.length > 0 && (
+                  {tasksWithoutDates.length > 0 && canEdit && (
                     <div className="mb-3 p-3 bg-white rounded-lg border-2 border-orange-400">
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-sm text-gray-700">
@@ -688,15 +722,17 @@ export default function SchedulePage() {
                     tasksWithoutDates.map(task => (
                       <div
                         key={task.id}
-                        draggable
+                        draggable={canEdit}
                         onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('text/plain', task.id);
+                          if (canEdit) {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', task.id);
+                          }
                         }}
                         onClick={(e) => handleTaskClick(task, e)}
                         className={`
-                          p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white cursor-move
-                          hover:bg-orange-50 transition-all
+                          p-3 rounded-lg border-2 border-dashed border-orange-400 bg-white ${canEdit ? 'cursor-move hover:bg-orange-50' : 'cursor-default'}
+                          transition-all
                           ${selectedTasks.includes(task.id) ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''}
                         `}
                         style={{ minHeight: '44px' }}
@@ -751,8 +787,8 @@ export default function SchedulePage() {
                   setShowTaskDetail(true);
                 }}
                 onDateClick={handleDateClick}
-                onTaskDrop={handleTaskDrop}
-                onTimeRangeChange={handleTimeRangeChange}
+                onTaskDrop={canEdit ? handleTaskDrop : undefined}
+                onTimeRangeChange={canEdit ? handleTimeRangeChange : undefined}
               />
             </div>
           </div>
@@ -768,7 +804,7 @@ export default function SchedulePage() {
                         {awaitingDates} Task{awaitingDates !== 1 ? 's' : ''} Waiting for Calendar Dates
                       </h3>
                       <p className="text-sm text-orange-800">
-                        Click any task for quick scheduling or switch to Calendar View to drag and drop.
+                        {canEdit ? 'Click any task for quick scheduling or switch to Calendar View to drag and drop.' : 'View tasks below.'}
                       </p>
                     </div>
                   </div>
@@ -780,12 +816,13 @@ export default function SchedulePage() {
                   key={task.id}
                   task={task}
                   property={currentProperty || properties.find(p => p.id === task.property_id)}
-                  onSetDate={handleSetDate}
-                  onSendBack={handleSendBackToPrioritize}
-                  onQuickSchedule={() => {
+                  onSetDate={canEdit ? handleSetDate : undefined}
+                  onSendBack={canEdit ? handleSendBackToPrioritize : undefined}
+                  onQuickSchedule={canEdit ? () => {
                     setSelectedTaskForPicker(task);
                     setShowQuickDatePicker(true);
-                  }}
+                  } : undefined}
+                  canEdit={canEdit}
                 />
               ))}
             </div>
@@ -835,7 +872,7 @@ export default function SchedulePage() {
           </Card>
         )}
 
-        {showQuickDatePicker && selectedTaskForPicker && (
+        {canEdit && showQuickDatePicker && selectedTaskForPicker && (
           <QuickDatePicker
             task={selectedTaskForPicker}
             property={currentProperty || properties.find(p => p.id === selectedTaskForPicker.property_id)}
@@ -877,7 +914,7 @@ export default function SchedulePage() {
           />
         )}
 
-        {showBatchScheduler && selectedTasks.length > 0 && (
+        {canEdit && showBatchScheduler && selectedTasks.length > 0 && (
           <Dialog open={true} onOpenChange={() => setShowBatchScheduler(false)}>
             <DialogContent className="max-w-md">
               <DialogHeader>
