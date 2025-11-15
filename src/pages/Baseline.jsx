@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight, ChevronDown } from "lucide-react";
+import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight, ChevronDown, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
@@ -17,12 +18,13 @@ import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 import StepNavigation from "../components/navigation/StepNavigation";
-import { useDemoMode } from "../components/shared/useDemoMode";
+import { useDemo } from "../components/shared/DemoContext"; // Updated import
 import { DEMO_PROPERTY, DEMO_SYSTEMS } from "../components/shared/demoProperty";
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import BaselinePageHeader from "../components/baseline/BaselinePageHeader";
 import TermTooltip from "../components/shared/TermTooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -202,7 +204,7 @@ export default function Baseline() {
   const propertyIdFromUrl = urlParams.get('property');
   const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
   const welcomeNew = urlParams.get('welcome') === 'true';
-  const isDemoMode = useDemoMode();
+  const { demoMode, demoData } = useDemo(); // Updated: Use useDemo hook
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
@@ -222,40 +224,46 @@ export default function Baseline() {
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
-    if (welcomeNew && !fromOnboarding && !isDemoMode) {
+    if (welcomeNew && !fromOnboarding && !demoMode) { // Updated: use demoMode
       toast.success('🎉 Property added! Let\'s document your systems.', {
         duration: 4000,
         icon: '🏠'
       });
     }
-  }, [welcomeNew, fromOnboarding, isDemoMode]);
+  }, [welcomeNew, fromOnboarding, demoMode]); // Updated: use demoMode
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-created_date'),
+    enabled: !demoMode // Updated: Disable if in demo mode
   });
 
-  const { data: systems = [], isLoading } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty, isDemoMode],
+  const { data: realSystems = [], isLoading: isLoadingRealSystems } = useQuery({
+    queryKey: ['systemBaselines', selectedProperty],
     queryFn: () => {
-      if (isDemoMode && properties.length === 0) {
-        return Promise.resolve(DEMO_SYSTEMS);
-      }
-      
       return selectedProperty 
         ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
         : Promise.resolve([]);
     },
-    enabled: !!selectedProperty || (isDemoMode && properties.length === 0),
+    enabled: !!selectedProperty && !demoMode, // Updated: Only fetch if selectedProperty exists and not in demo mode
   });
 
+  // Use demo systems OR real systems
+  const systems = (demoMode && properties.length === 0) ? (demoData?.systems || []) : realSystems;
+  const isLoading = demoMode ? false : isLoadingRealSystems;
+
+  console.log('=== BASELINE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Systems:', systems);
+  console.log('Systems count:', systems?.length);
+
   React.useEffect(() => {
-    if (!selectedProperty && properties.length > 0 && !isDemoMode) {
+    if (!selectedProperty && properties.length > 0 && !demoMode) { // Updated: use demoMode
       setSelectedProperty(properties[0].id);
-    } else if (isDemoMode && properties.length === 0) {
+    } else if (demoMode && properties.length === 0) { // Updated: use demoMode
       setSelectedProperty(DEMO_PROPERTY.id);
     }
-  }, [properties, selectedProperty, isDemoMode]);
+  }, [properties, selectedProperty, demoMode]); // Updated: use demoMode
 
   const systemsByType = systems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
@@ -382,7 +390,7 @@ export default function Baseline() {
     statusBgColor = "bg-orange-50";
     statusIconElement = <AlertCircle className="w-8 h-8 text-orange-600" />;
     whyItMattersReminder = {
-      icon: <Lightbulb className="w-4 h-4 text-orange-600" />,
+      icon: <Lightbulb className="w-4 h-4 text-orange-800" />,
       text: "Each system documented = More control over your home + Fewer surprises + Better budgeting. Keep going!",
       color: "text-orange-800"
     };
@@ -391,7 +399,7 @@ export default function Baseline() {
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallProgress && !isDemoMode) {
+      if (property && property.baseline_completion !== overallProgress && !demoMode) { // Updated: use demoMode
         base44.entities.Property.update(selectedProperty, {
           baseline_completion: overallProgress
         }).then(() => {
@@ -399,10 +407,10 @@ export default function Baseline() {
         });
       }
     }
-  }, [overallProgress, selectedProperty, properties, queryClient, isDemoMode]);
+  }, [overallProgress, selectedProperty, properties, queryClient, demoMode]); // Updated: use demoMode
 
   const handleEditSystem = (system) => {
-    if (isDemoMode) {
+    if (demoMode) { // Updated: use demoMode
       toast.info('Add your property to edit systems');
       return;
     }
@@ -417,7 +425,7 @@ export default function Baseline() {
   };
 
   const handleAddSystem = (systemType) => {
-    if (isDemoMode) {
+    if (demoMode) { // Updated: use demoMode
       toast.info('Add your property to document systems');
       return;
     }
@@ -448,14 +456,14 @@ export default function Baseline() {
   };
 
   const handleRequestProService = () => {
-    if (isDemoMode) {
+    if (demoMode) { // Updated: use demoMode
       toast.info('Add your property to request services');
       return;
     }
     setShowCartDialog(true);
   };
 
-  const currentProperty = isDemoMode && properties.length === 0 ? DEMO_PROPERTY : properties.find(p => p.id === selectedProperty);
+  const currentProperty = demoMode && properties.length === 0 ? DEMO_PROPERTY : properties.find(p => p.id === selectedProperty);
 
   const renderSystemGroup = (systemType, instances, isRequired) => {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
@@ -545,7 +553,7 @@ export default function Baseline() {
                     size="sm"
                     onClick={() => handleDeleteSystem(instance)}
                     className="text-red-600 hover:text-red-700"
-                    disabled={isDemoMode}
+                    disabled={demoMode} // Updated: use demoMode
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -602,10 +610,20 @@ export default function Baseline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        {isDemoMode && (
+        {demoMode && ( // Updated: use demoMode
           <div className="mb-6 mt-4">
             <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
           </div>
+        )}
+
+        {demoMode && ( // Updated: Demo mode alert
+          <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> This property has 16 systems already documented. 
+              This is a read-only example. Add your own property to start editing.
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="mb-4 md:mb-6">
@@ -686,7 +704,7 @@ export default function Baseline() {
           />
         )}
 
-        {properties.length > 0 && !isDemoMode && (
+        {properties.length > 0 && !demoMode && ( // Updated: use demoMode
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
@@ -720,8 +738,8 @@ export default function Baseline() {
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card 
-                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => !isDemoMode && setShowWizard(true)}
+                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} // Updated: use demoMode
+                    onClick={() => !demoMode && setShowWizard(true)} // Updated: use demoMode
                   >
                     <CardContent className="p-6">
                       <div className="text-center space-y-4">
@@ -752,7 +770,7 @@ export default function Baseline() {
                         <Button 
                           className="w-full gap-2 text-lg py-6"
                           style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
-                          disabled={isDemoMode}
+                          disabled={demoMode} // Updated: use demoMode
                         >
                           <Sparkles className="w-5 h-5" />
                           Start Quick Setup
@@ -763,8 +781,8 @@ export default function Baseline() {
                   </Card>
 
                   <Card 
-                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => !isDemoMode && setShowPhysicalWalkthrough(true)}
+                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} // Updated: use demoMode
+                    onClick={() => !demoMode && setShowPhysicalWalkthrough(true)} // Updated: use demoMode
                   >
                     <CardContent className="p-6">
                       <div className="text-center space-y-4">
@@ -794,7 +812,7 @@ export default function Baseline() {
                         <Button 
                           className="w-full gap-2 text-lg py-6"
                           style={{ backgroundColor: '#28A745', minHeight: '56px' }}
-                          disabled={isDemoMode}
+                          disabled={demoMode} // Updated: use demoMode
                         >
                           <Navigation className="w-5 h-5" />
                           Start Walkthrough

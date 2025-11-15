@@ -30,7 +30,8 @@ import {
   CheckCircle2,
   Sparkles,
   Grid3x3,
-  List
+  List,
+  Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -42,6 +43,9 @@ import StepNavigation from "../components/navigation/StepNavigation";
 import TaskCreationIntentModal from "../components/prioritize/TaskCreationIntentModal";
 import EnhancedUnitSelectionModal from "../components/prioritize/EnhancedUnitSelectionModal";
 import DualUnitSelectionModal from "../components/prioritize/DualUnitSelectionModal";
+import { useDemo } from "../components/shared/DemoContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -94,6 +98,7 @@ function getPropertyFlowType(property) {
 export default function PrioritizePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { demoMode, demoData } = useDemo();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
 
@@ -124,7 +129,7 @@ export default function PrioritizePage() {
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft && p.created_by === currentUser?.email);
     },
-    enabled: !!currentUser?.email
+    enabled: !!currentUser?.email && !demoMode
   });
 
   // Fetch seasonal maintenance templates
@@ -147,7 +152,7 @@ export default function PrioritizePage() {
   }, [propertyIdFromUrl, properties, selectedProperty]);
 
   // Fetch tasks based on selected property - only for user's properties
-  const { data: allTasks = [], refetch: refetchTasks } = useQuery({
+  const { data: realTasks = [], refetch: refetchTasks } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty, currentUser?.email],
     queryFn: async () => {
       if (selectedProperty === 'all') {
@@ -163,8 +168,18 @@ export default function PrioritizePage() {
         return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email
+    enabled: properties.length > 0 && selectedProperty !== null && !!currentUser?.email && !demoMode
   });
+
+  // Use demo tasks OR real tasks
+  const allTasks = (demoMode && properties.length === 0) ? (demoData?.tasks || []) : realTasks;
+
+  console.log('=== PRIORITIZE STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Tasks:', allTasks);
+  console.log('Tasks count:', allTasks?.length);
+
+  const canEdit = !demoMode;
 
   // Mutations for task management
   const updateTaskMutation = useMutation({
@@ -310,6 +325,7 @@ export default function PrioritizePage() {
 
   // Handle task actions
   const handleSendToSchedule = (task) => {
+    if (!canEdit) return;
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { status: 'Scheduled' }
@@ -317,6 +333,7 @@ export default function PrioritizePage() {
   };
 
   const handleMarkComplete = (task) => {
+    if (!canEdit) return;
     updateTaskMutation.mutate({
       taskId: task.id,
       data: { 
@@ -327,6 +344,7 @@ export default function PrioritizePage() {
   };
 
   const handleDeleteTask = (task) => {
+    if (!canEdit) return;
     if (window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
       deleteTaskMutation.mutate(task.id);
     }
@@ -334,6 +352,7 @@ export default function PrioritizePage() {
 
   // NEW: Bulk actions
   const handleScheduleAll = () => {
+    if (!canEdit) return;
     bulkUpdateMutation.mutate({
       taskIds: selectedTasks,
       data: { status: 'Scheduled' }
@@ -341,6 +360,7 @@ export default function PrioritizePage() {
   };
 
   const handleCompleteAll = () => {
+    if (!canEdit) return;
     if (confirm(`Mark ${selectedTasks.length} tasks as complete?`)) {
       bulkUpdateMutation.mutate({
         taskIds: selectedTasks,
@@ -353,12 +373,14 @@ export default function PrioritizePage() {
   };
 
   const handleDeleteAll = () => {
+    if (!canEdit) return;
     if (confirm(`Delete ${selectedTasks.length} tasks permanently?`)) {
       bulkDeleteMutation.mutate(selectedTasks);
     }
   };
 
   const handleChangePriority = (newPriority) => {
+    if (!canEdit) return;
     bulkUpdateMutation.mutate({
       taskIds: selectedTasks,
       data: { priority: newPriority }
@@ -375,6 +397,7 @@ export default function PrioritizePage() {
 
   // Helper to create a single task from template data - UPDATED
   const createTaskFromTemplate = async (template, propertyId, unitTag = undefined, scope = 'property_wide', appliesToUnitCount = undefined, batchId = undefined) => {
+    if (!canEdit) return;
     try {
       const taskData = {
         property_id: propertyId,
@@ -402,6 +425,7 @@ export default function PrioritizePage() {
 
   // NEW: Simplified template addition with flow type detection
   const handleAddTemplate = async (template) => {
+    if (!canEdit) return;
     if (selectedProperty === 'all' && properties.length > 1) {
       alert('Please select a specific property to add this task.');
       return;
@@ -467,6 +491,7 @@ export default function PrioritizePage() {
 
   // NEW: Handle dual unit modal confirmation
   const handleDualUnitConfirm = async (selection) => {
+    if (!canEdit) return;
     const template = dualUnitModal.template;
     const property = dualUnitModal.property;
     
@@ -509,6 +534,7 @@ export default function PrioritizePage() {
   // NEW: Handle intent modal selections
   const handleIntentSelection = {
     createBuildingWide: async () => {
+      if (!canEdit) return;
       const template = intentModal.template;
       const property = intentModal.property;
       setAddingTemplateId(template.id);
@@ -531,6 +557,7 @@ export default function PrioritizePage() {
     },
     
     createPerUnit: async () => {
+      if (!canEdit) return;
       const template = intentModal.template;
       const property = intentModal.property;
       const batchId = generateBatchId(); // Generate a batch ID for these tasks
@@ -565,6 +592,7 @@ export default function PrioritizePage() {
     },
     
     chooseUnits: () => {
+      if (!canEdit) return;
       setUnitSelectionModal({ 
         open: true, 
         template: intentModal.template, 
@@ -576,6 +604,7 @@ export default function PrioritizePage() {
 
   // Handle unit selection modal confirmation - UPDATED
   const handleUnitSelectionConfirm = async (selectedUnitTags) => {
+    if (!canEdit) return;
     const template = unitSelectionModal.template;
     const property = unitSelectionModal.property;
     
@@ -607,7 +636,7 @@ export default function PrioritizePage() {
   };
 
   // No properties fallback
-  if (properties.length === 0) {
+  if (properties.length === 0 && !demoMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 pb-20">
         <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">
@@ -643,6 +672,16 @@ export default function PrioritizePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+        {demoMode && (
+          <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 8 tasks generated from baseline findings. 
+              1 urgent (smoke detectors), 3 high priority. Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={4} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
@@ -981,7 +1020,7 @@ export default function PrioritizePage() {
 
                 <Button
                   onClick={() => setShowTaskForm(true)}
-                  disabled={selectedProperty === 'all' && properties.length > 1}
+                  disabled={selectedProperty === 'all' && properties.length > 1 || !canEdit}
                   className="bg-red-600 hover:bg-red-700 gap-2 w-full md:w-auto"
                   style={{ minHeight: '44px' }}
                 >
@@ -1092,11 +1131,11 @@ export default function PrioritizePage() {
                       onClick={() => {
                         handleAddTemplate(template);
                       }}
-                      disabled={!canAdd || isAdding}
+                      disabled={!canAdd || isAdding || !canEdit}
                       className="w-full py-3 rounded-lg font-bold text-white transition-all"
                       style={{
-                        backgroundColor: (!canAdd || isAdding) ? '#9CA3AF' : '#2563EB',
-                        cursor: (!canAdd || isAdding) ? 'not-allowed' : 'pointer',
+                        backgroundColor: (!canAdd || isAdding || !canEdit) ? '#9CA3AF' : '#2563EB',
+                        cursor: (!canAdd || isAdding || !canEdit) ? 'not-allowed' : 'pointer',
                         minHeight: '48px',
                         border: 'none',
                         outline: 'none'
@@ -1133,6 +1172,7 @@ export default function PrioritizePage() {
                     onDelete={handleDeleteTask}
                     selectedTasks={selectedTasks}
                     onToggleTask={toggleTaskSelection}
+                    canEdit={canEdit}
                   />
                 ))}
                 
@@ -1147,6 +1187,7 @@ export default function PrioritizePage() {
                     property={currentProperty || properties.find(p => p.id === task.property_id)}
                     selectedTasks={selectedTasks}
                     onToggleTask={toggleTaskSelection}
+                    canEdit={canEdit}
                   />
                 ))}
               </>
@@ -1163,6 +1204,7 @@ export default function PrioritizePage() {
                     property={currentProperty || properties.find(p => p.id === task.property_id)}
                     selectedTasks={selectedTasks}
                     onToggleTask={toggleTaskSelection}
+                    canEdit={canEdit}
                   />
                 ))}
               </>
@@ -1242,6 +1284,7 @@ export default function PrioritizePage() {
           onComplete={() => setShowTaskForm(false)}
           onCancel={() => setShowTaskForm(false)}
           open={showTaskForm}
+          canEdit={canEdit}
         />
       )}
 
@@ -1255,6 +1298,7 @@ export default function PrioritizePage() {
         onCreatePerUnit={handleIntentSelection.createPerUnit}
         onChooseUnits={handleIntentSelection.chooseUnits}
         isCreating={addingTemplateId === intentModal.template?.id}
+        canEdit={canEdit}
       />
 
       {/* Dual Unit Selection Modal - NEW */}
@@ -1265,6 +1309,7 @@ export default function PrioritizePage() {
         property={dualUnitModal.property}
         onConfirm={handleDualUnitConfirm}
         isCreating={addingTemplateId === dualUnitModal.template?.id}
+        canEdit={canEdit}
       />
 
       {/* Enhanced Unit Selection Modal - Renamed/Updated */}
@@ -1275,6 +1320,7 @@ export default function PrioritizePage() {
         property={unitSelectionModal.property}
         onConfirm={handleUnitSelectionConfirm}
         isCreating={addingTemplateId === unitSelectionModal.template?.id}
+        canEdit={canEdit}
       />
 
       {/* Bulk Action Bar - NEW */}
@@ -1285,6 +1331,7 @@ export default function PrioritizePage() {
         onDeleteAll={handleDeleteAll}
         onChangePriority={handleChangePriority}
         onClearSelection={() => setSelectedTasks([])}
+        canEdit={canEdit}
       />
     </div>
   );

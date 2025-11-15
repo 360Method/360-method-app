@@ -38,8 +38,7 @@ import { createPageUrl } from "@/utils";
 import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
-import { useDemoMode } from "../components/shared/useDemoMode";
-import { DEMO_PROPERTY, DEMO_SYSTEMS, DEMO_TASKS } from "../components/shared/demoProperty";
+import { useDemo } from "../components/shared/DemoContext"; // Updated import
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import NextStepCard from "../components/dashboard/NextStepCard";
@@ -54,7 +53,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const isDemoMode = useDemoMode();
+  const { demoMode, demoData, enterDemoMode } = useDemo(); // Updated to use useDemo
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
@@ -67,15 +66,27 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const { data: properties = [] } = useQuery({
+  const { data: realProperties = [] } = useQuery({ // Renamed to realProperties
     queryKey: ['properties'],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     },
+    enabled: !demoMode, // Only fetch real properties if not in demo mode
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false
   });
+
+  // Use demo property OR real properties
+  const properties = (demoMode && realProperties.length === 0)
+    ? (demoData?.property ? [demoData.property] : []) // If in demo mode and no real properties, use demo property
+    : realProperties; // Otherwise use real properties
+
+  console.log('=== DASHBOARD STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Real properties:', realProperties);
+  console.log('Properties (final):', properties);
+  console.log('Should show demo option:', !demoMode && realProperties.length === 0);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
@@ -88,15 +99,15 @@ export default function Dashboard() {
     properties.find(p => p.id === selectedPropertyFilter);
 
   const isShowingAllProperties = selectedPropertyFilter === 'all';
-  const displayProperties = (isDemoMode && properties.length === 0) ? [DEMO_PROPERTY] : (isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []));
+  const displayProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
 
   const activePropertyIds = properties.map(p => p.id);
 
   const { data: allSystems = [] } = useQuery({
-    queryKey: ['allSystemBaselines', selectedPropertyFilter, isDemoMode],
+    queryKey: ['allSystemBaselines', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (isDemoMode && properties.length === 0) {
-        return DEMO_SYSTEMS;
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.systems || []; // Return demo systems
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -106,16 +117,16 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: displayProperties.length > 0,
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['allMaintenanceTasks', selectedPropertyFilter, isDemoMode],
+    queryKey: ['allMaintenanceTasks', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (isDemoMode && properties.length === 0) {
-        return DEMO_TASKS;
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.tasks || []; // Return demo tasks
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -125,16 +136,16 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayProperties.length > 0,
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
   const { data: allInspections = [] } = useQuery({
-    queryKey: ['allInspections', selectedPropertyFilter, isDemoMode],
+    queryKey: ['allInspections', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (isDemoMode && properties.length === 0) {
-        return [];
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.inspections || []; // Return demo inspections (empty for now)
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -144,7 +155,7 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayProperties.length > 0,
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -263,15 +274,13 @@ export default function Dashboard() {
     }
   };
 
-  if (properties.length === 0 || isDemoMode) {
+  // Show demo option if user has no real properties and NOT in demo mode
+  const showDemoOption = !demoMode && realProperties.length === 0;
+
+  if (properties.length === 0 && !demoMode) { // This condition is now for when there are NO real properties AND not in demo mode
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="mobile-container md:max-w-5xl md:mx-auto pt-8">
-          {/* Preview Banner for Demo Mode or Empty State */}
-          {(properties.length === 0 || isDemoMode) && (
-            <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
-          )}
-
           {/* Welcome Header with Tier Badge */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -279,13 +288,74 @@ export default function Dashboard() {
                 {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
               </h1>
               <p className="text-gray-600">
-                {isDemoMode ? 'Exploring demo property' : 'Welcome to your 360° Method Command Center'}
+                Welcome to your 360° Method Command Center
               </p>
             </div>
             <TierBadge tier={currentTier} />
           </div>
 
-          {/* Simplified Welcome - UPDATED */}
+          {/* NEW: Explore Demo Card */}
+          {showDemoOption && (
+            <Card className="border-2 border-blue-400 shadow-lg mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                  New here? Explore our demo property first
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-700">
+                  See a fully documented property with 16 systems, prioritized tasks,
+                  and maintenance schedule. No commitment required.
+                </p>
+
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-900 mb-2">
+                    Demo Property: 2847 Maple Grove Ln, Vancouver WA
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <p className="text-blue-600 font-semibold">16 Systems</p>
+                      <p className="text-blue-700">Fully documented</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600 font-semibold">8 Tasks</p>
+                      <p className="text-blue-700">1 urgent, 3 high</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600 font-semibold">Health: 78/100</p>
+                      <p className="text-blue-700">$7.2K saved</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      console.log('User clicked Explore Demo');
+                      enterDemoMode();
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Explore Demo Property
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowQuickPropertyAdd(true)}
+                    className="flex-1"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add My Property
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Simplified Welcome */}
           <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
             <CardHeader>
               <CardTitle style={{ color: '#1B365D', fontSize: '24px' }}>
@@ -485,37 +555,7 @@ export default function Dashboard() {
             </Card>
           )}
 
-          {/* Demo Property Overview - Only if not expanded */}
-          {!methodExpanded && (
-            <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="w-6 h-6 text-blue-600" />
-                  {DEMO_PROPERTY.address}
-                  {isDemoMode && <Badge variant="outline">Demo</Badge>}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Health Score</p>
-                  <p className="text-2xl font-bold text-green-600">{DEMO_PROPERTY.health_score}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Baseline</p>
-                  <p className="text-2xl font-bold text-blue-600">{DEMO_PROPERTY.baseline_completion}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Systems</p>
-                  <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>{DEMO_SYSTEMS.length}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Tasks</p>
-                  <p className="text-2xl font-bold text-orange-600">{DEMO_TASKS.length}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+          {/* This card is now removed from the empty state, as it relies on DEMO_PROPERTY which is replaced by demoData from useDemo */}
           {/* Free Tier Notice */}
           {isFreeTier && (
             <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
@@ -585,10 +625,11 @@ export default function Dashboard() {
                 {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                {isShowingAllProperties ?
-                  `Managing ${displayProperties.length} ${displayProperties.length === 1 ? 'property' : 'properties'}` :
-                  `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
-                }
+                {demoMode ? 'Exploring demo property' : (
+                  isShowingAllProperties ?
+                    `Managing ${displayProperties.length} ${displayProperties.length === 1 ? 'property' : 'properties'}` :
+                    `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -632,7 +673,6 @@ export default function Dashboard() {
                     </SelectItem>
                     {properties.map(prop => {
                       const doorCount = prop.door_count || 1;
-                      // const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : ''; // Currently unused
                       return (
                         <SelectItem key={prop.id} value={prop.id}>
                           <div className="flex items-center gap-2">
@@ -1226,7 +1266,7 @@ export default function Dashboard() {
       {/* Add Task Dialog */}
       {showAddTaskDialog && (
         <ManualTaskForm
-          propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null) || (isDemoMode && properties.length === 0 ? DEMO_PROPERTY.id : null)}
+          propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null)}
           onComplete={() => setShowAddTaskDialog(false)}
           onCancel={() => setShowAddTaskDialog(false)}
           open={showAddTaskDialog}
