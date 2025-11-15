@@ -1,25 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
-import { Sparkles, Target, TrendingUp, Unlock, Eye } from 'lucide-react';
+import { Sparkles, Target, TrendingUp, Unlock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 function getEducationTriggers(user, properties, selectedProperty, location, systems, tasks) {
   return [
-    {
-      id: 'welcome_tour',
-      priority: 1,
-      condition: () => {
-        return !user?.onboarding_completed && 
-               properties?.length === 0 &&
-               location.pathname !== '/welcome';
-      },
-      action: (navigate) => {
-        navigate('/welcome');
-      }
-    },
+    // Removed welcome_tour trigger that was causing the loop
     
     {
       id: 'baseline_primer',
@@ -190,6 +179,7 @@ export default function ProgressiveEducation({
   const navigate = useNavigate();
   const location = useLocation();
   const [dismissedTrigger, setDismissedTrigger] = useState(null);
+  const hasExecutedAction = useRef(false);
   
   const triggers = useMemo(() => {
     return getEducationTriggers(
@@ -209,7 +199,11 @@ export default function ProgressiveEducation({
   }, [triggers]);
   
   useEffect(() => {
-    if (activeTrigger?.action && activeTrigger.id !== dismissedTrigger) {
+    // Prevent navigation loops by using a ref
+    if (activeTrigger?.action && 
+        activeTrigger.id !== dismissedTrigger && 
+        !hasExecutedAction.current) {
+      hasExecutedAction.current = true;
       activeTrigger.action(navigate);
     }
   }, [activeTrigger, navigate, dismissedTrigger]);
