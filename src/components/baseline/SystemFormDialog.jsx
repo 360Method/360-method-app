@@ -12,10 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2, Shield, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner"; // Added import
+import { toast } from "sonner";
 import { analyzePreservationOpportunity, generateAIPreservationPlan } from "../shared/PreservationAnalyzer";
-import { useDraftSave } from "./useDraftSave"; // Added import
-import DraftRecoveryDialog from "./DraftRecoveryDialog"; // Added import
+import { useDraftSave } from "./useDraftSave";
+import DraftRecoveryDialog from "./DraftRecoveryDialog";
+import SystemFormDialogMobile from "./SystemFormDialogMobile"; // Added import
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
@@ -257,6 +258,31 @@ const WHAT_TO_LOOK_FOR = {
 };
 
 export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription, allowsMultiple }) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile(); // Check on mount
+    window.addEventListener('resize', checkMobile); // Add event listener for resize
+    return () => window.removeEventListener('resize', checkMobile); // Clean up
+  }, []);
+
+  // Use mobile wizard for new systems on mobile devices
+  if (isMobile && !editingSystem?.id) {
+    return (
+      <SystemFormDialogMobile
+        open={open}
+        onClose={onClose}
+        propertyId={propertyId}
+        editingSystem={editingSystem} // This will likely be { system_type: "..." }
+        allowsMultiple={allowsMultiple}
+      />
+    );
+  }
+
+  // Desktop or editing existing system - use full form
   // Initialize form data based on whether we're editing or creating
   const getInitialFormData = React.useCallback(() => {
     if (editingSystem?.id) {
@@ -343,7 +369,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
   const [preservationPlan, setPreservationPlan] = React.useState(null);
   const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
-  const [isDirty, setIsDirty] = React.useState(false); // Added state
+  const [isDirty, setIsDirty] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -510,10 +536,10 @@ Be specific, practical, and focus on preventing expensive failures.`;
         const aiPlan = await generateAIPreservationPlan(savedSystem, preservation);
         setPreservationPlan({ ...preservation, aiPlan });
       }
-      toast.success('AI analysis complete!', { icon: '🤖', duration: 2000 }); // Added toast
+      toast.success('AI analysis complete!', { icon: '🤖', duration: 2000 });
     } catch (error) {
       console.error('AI analysis failed:', error);
-      toast.error('Failed to generate AI analysis. Please try again later.', { duration: 3000 }); // Replaced alert
+      toast.error('Failed to generate AI analysis. Please try again later.', { duration: 3000 });
       throw error; // Re-throw to indicate failure in onSuccess
     } finally {
       setGeneratingAnalysis(false);
@@ -541,8 +567,8 @@ Be specific, practical, and focus on preventing expensive failures.`;
     },
     onSuccess: async (savedSystem) => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-      clearDraft(); // Added
-      setIsDirty(false); // Added
+      clearDraft();
+      setIsDirty(false);
 
       toast.success(`${formData.system_type} saved!`, {
         icon: '✅',
@@ -573,16 +599,16 @@ Be specific, practical, and focus on preventing expensive failures.`;
     },
     onError: (error) => {
       console.error("Save failed:", error);
-      toast.error('Failed to save system. Please try again.', { duration: 4000 }); // Replaced alert
+      toast.error('Failed to save system. Please try again.', { duration: 4000 });
     }
   });
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return; // Prevent toast for no files
+    if (files.length === 0) return;
 
     setUploading(true);
-    const uploadToast = toast.loading('Uploading photos...', { icon: '📸' }); // Added toast
+    const uploadToast = toast.loading('Uploading photos...', { icon: '📸' });
 
     try {
       const uploadPromises = files.map(file =>
@@ -593,7 +619,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
       setPhotos(prev => [...prev, ...newUrls]);
 
       toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} uploaded!`, {
-        id: uploadToast, // Use id to update loading toast
+        id: uploadToast,
         icon: '✅',
         duration: 2000
       });
@@ -614,7 +640,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     if (files.length === 0) return;
 
     setUploadingManuals(true);
-    const uploadToast = toast.loading('Uploading documents...', { icon: '📄' }); // Added toast
+    const uploadToast = toast.loading('Uploading documents...', { icon: '📄' });
 
     try {
       const uploadPromises = files.map(file =>
@@ -646,7 +672,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     if (!file) return;
 
     setScanningBarcode(true);
-    const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' }); // Added toast
+    const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' });
 
     try {
       // Upload the barcode image
@@ -729,26 +755,26 @@ Be specific, practical, and focus on preventing expensive failures.`;
             setPhotos(prev => [...prev, file_url]);
           }
 
-          toast.success(`Data extracted! ${brandModel ? `Brand: ${brandModel}` : ''} ${extractedYear ? `Year: ${extractedYear}` : ''}`, { // Replaced alert
+          toast.success(`Data extracted! ${brandModel ? `Brand: ${brandModel}` : ''} ${extractedYear ? `Year: ${extractedYear}` : ''}`, {
             id: scanToast,
             icon: '✨',
             duration: 4000
           });
         } else {
-          toast.warning('No data found. Please enter manually.', { // Replaced alert
+          toast.warning('No data found. Please enter manually.', {
             id: scanToast,
             duration: 3000
           });
         }
       } else {
-        toast.error('Could not read data plate. Try better lighting or enter manually.', { // Replaced alert
+        toast.error('Could not read data plate. Try better lighting or enter manually.', {
           id: scanToast,
           duration: 4000
         });
       }
     } catch (error) {
       console.error('Barcode scan failed:', error);
-      toast.error('Scanning failed. Please try again or enter the information manually.', { // Replaced alert
+      toast.error('Scanning failed. Please try again or enter the information manually.', {
         id: scanToast,
         duration: 3000
       });
@@ -761,12 +787,12 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
   const removePhoto = (index) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
-    toast.info('Photo removed', { duration: 1500 }); // Added toast
+    toast.info('Photo removed', { duration: 1500 });
   };
 
   const removeManual = (index) => {
     setManuals(prev => prev.filter((_, i) => i !== index));
-    toast.info('Document removed', { duration: 1500 }); // Added toast
+    toast.info('Document removed', { duration: 1500 });
   };
 
   const handleSubmit = (e) => {
@@ -797,7 +823,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     });
     setPhotos([]);
     setManuals([]);
-    setIsDirty(false); // Added
+    setIsDirty(false);
   };
 
   const updateComponent = (key, value) => {
@@ -1552,7 +1578,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
               <Button
                 onClick={handleAddAnother}
                 className="w-full gap-2"
-                style={{ backgroundColor: 'var(--primary)', minHeight: '48px' }} // Added minHeight
+                style={{ backgroundColor: 'var(--primary)', minHeight: '48px' }}
               >
                 <Plus className="w-4 h-4" />
                 Add Another {formData.system_type}
@@ -1561,7 +1587,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
                 onClick={onClose}
                 variant="outline"
                 className="w-full"
-                style={{ minHeight: '48px' }} // Added minHeight
+                style={{ minHeight: '48px' }}
               >
                 Back to Baseline
               </Button>
@@ -1587,7 +1613,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
   return (
     <>
-      {hasDraft && !editingSystem?.id && ( // Conditional rendering for DraftRecoveryDialog
+      {hasDraft && !editingSystem?.id && (
         <DraftRecoveryDialog
           open={hasDraft}
           onRestore={() => {
@@ -1619,7 +1645,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
         />
       )}
 
-      <Dialog open={open && !hasDraft} onOpenChange={onClose}> {/* Modified open prop */}
+      <Dialog open={open && !hasDraft} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
