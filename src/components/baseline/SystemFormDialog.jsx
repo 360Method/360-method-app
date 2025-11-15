@@ -258,6 +258,7 @@ const WHAT_TO_LOOK_FOR = {
 };
 
 export default function SystemFormDialog({ open, onClose, propertyId, editingSystem, systemDescription, allowsMultiple }) {
+  // Check if mobile FIRST (before any other hooks)
   const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
@@ -269,20 +270,6 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
     return () => window.removeEventListener('resize', checkMobile); // Clean up
   }, []);
 
-  // Use mobile wizard for new systems on mobile devices
-  if (isMobile && !editingSystem?.id) {
-    return (
-      <SystemFormDialogMobile
-        open={open}
-        onClose={onClose}
-        propertyId={propertyId}
-        editingSystem={editingSystem} // This will likely be { system_type: "..." }
-        allowsMultiple={allowsMultiple}
-      />
-    );
-  }
-
-  // Desktop or editing existing system - use full form
   // Initialize form data based on whether we're editing or creating
   const getInitialFormData = React.useCallback(() => {
     if (editingSystem?.id) {
@@ -365,7 +352,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [uploadingManuals, setUploadingManuals] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
   const [showAddAnother, setShowAddAnother] = React.useState(false);
-  const [scanningBarcode, setScanningBarcode] = React.useState(false);
+  const [scanningBarcode, setScanningBarcode] = React.useRef(false); // Changed to useRef to avoid unnecessary re-renders
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
   const [preservationPlan, setPreservationPlan] = React.useState(null);
   const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
@@ -671,7 +658,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     const file = e.target.files[0];
     if (!file) return;
 
-    setScanningBarcode(true);
+    scanningBarcode.current = true; // Use .current for useRef
     const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' });
 
     try {
@@ -779,7 +766,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
         duration: 3000
       });
     } finally {
-      setScanningBarcode(false);
+      scanningBarcode.current = false; // Use .current for useRef
       // Reset the file input
       e.target.value = '';
     }
@@ -1345,6 +1332,22 @@ Be specific, practical, and focus on preventing expensive failures.`;
     }
   };
 
+  // RENDER mobile wizard directly if mobile and creating new system
+  // This must happen AFTER all hooks are initialized
+  const shouldUseMobileWizard = isMobile && !editingSystem?.id;
+
+  if (shouldUseMobileWizard) {
+    return (
+      <SystemFormDialogMobile
+        open={open}
+        onClose={onClose}
+        propertyId={propertyId}
+        editingSystem={editingSystem}
+        allowsMultiple={allowsMultiple}
+      />
+    );
+  }
+
   // Show AI analysis with preservation opportunity before "Add Another" screen
   if ((aiAnalysis || preservationPlan) && !showAddAnother) {
     return (
@@ -1716,17 +1719,17 @@ Be specific, practical, and focus on preventing expensive failures.`;
                         capture="environment"
                         onChange={handleBarcodeUpload}
                         className="hidden"
-                        disabled={scanningBarcode}
+                        disabled={scanningBarcode.current}
                       />
                       <Button
                         type="button"
                         variant="outline"
                         className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
-                        disabled={scanningBarcode}
+                        disabled={scanningBarcode.current}
                         asChild
                       >
                         <span>
-                          {scanningBarcode ? (
+                          {scanningBarcode.current ? (
                             <>
                               <span className="animate-spin">⚙️</span>
                               Scanning...
