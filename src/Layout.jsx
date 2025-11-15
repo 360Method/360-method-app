@@ -78,8 +78,8 @@ function LayoutContent({ children }) {
     enabled: !!selectedProperty?.id
   });
 
-  const urgentTasks = tasks.filter(t => 
-    (t.priority === 'High' || t.cascade_risk_score >= 7) && 
+  const urgentTasks = tasks.filter(t =>
+    (t.priority === 'High' || t.cascade_risk_score >= 7) &&
     t.status !== 'Completed'
   );
 
@@ -165,7 +165,7 @@ function LayoutContent({ children }) {
     <>
       <Toaster position="top-center" richColors closeButton />
       <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />
-      
+
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
         <ProgressiveEducation
           user={user}
@@ -221,7 +221,7 @@ function LayoutContent({ children }) {
                       const isLocked = isNavItemLocked(item, selectedProperty);
                       const isActive = location.pathname === item.url;
                       const Icon = item.icon;
-                      
+
                       return (
                         <Link
                           key={item.id}
@@ -239,15 +239,15 @@ function LayoutContent({ children }) {
                           }`}
                         >
                           <Icon className="w-4 h-4 flex-shrink-0" />
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium truncate">
                                 {item.label}
                               </span>
                               {item.step && (
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className="text-xs flex-shrink-0"
                                 >
                                   {item.step}
@@ -258,7 +258,7 @@ function LayoutContent({ children }) {
                               {item.subtitle}
                             </p>
                           </div>
-                          
+
                           {isLocked && (
                             <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
                           )}
@@ -272,7 +272,7 @@ function LayoutContent({ children }) {
           </div>
 
           <div className="border-t border-gray-200 p-2 space-y-2">
-            <HelpSystem 
+            <HelpSystem
               currentPhase={getCurrentPhase()}
               nextStep={getNextStep()}
               selectedProperty={selectedProperty}
@@ -285,6 +285,7 @@ function LayoutContent({ children }) {
           </div>
         </aside>
 
+        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div
             className="md:hidden fixed inset-0 bg-black/75 z-[60]"
@@ -349,7 +350,7 @@ function LayoutContent({ children }) {
                       const isLocked = isNavItemLocked(item, selectedProperty);
                       const isActive = location.pathname === item.url;
                       const Icon = item.icon;
-                      
+
                       return (
                         <Link
                           key={item.id}
@@ -443,7 +444,7 @@ function LayoutContent({ children }) {
           </div>
         </main>
 
-        <BottomNav 
+        <BottomNav
           taskCount={urgentTasks?.length || 0}
           onQuickAdd={() => setShowQuickAddMenu(true)}
           selectedProperty={selectedProperty}
@@ -574,7 +575,7 @@ function LayoutContent({ children }) {
             border-radius: 8px;
             margin-bottom: 16px;
           }
-          
+
           body {
             padding-bottom: env(safe-area-inset-bottom);
           }

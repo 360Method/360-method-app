@@ -42,6 +42,7 @@ import { useDemo } from "../components/shared/DemoContext"; // Updated import
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import NextStepCard from "../components/dashboard/NextStepCard";
+import MethodProgressWidget from "../components/dashboard/MethodProgressWidget"; // NEW Import
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -58,7 +59,7 @@ export default function Dashboard() {
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
   const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false);
-  const [methodExpanded, setMethodExpanded] = React.useState(false);
+  const [methodExpanded, setMethodExpanded] = React.useState(false); // Kept for the empty state's "Learn More"
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
@@ -277,10 +278,26 @@ export default function Dashboard() {
   // Show demo option if user has no real properties and NOT in demo mode
   const showDemoOption = !demoMode && realProperties.length === 0;
 
+  // Helper to determine completed steps for the MethodProgressWidget
+  const getCompletedSteps = () => {
+    const completed = [];
+    if (avgBaselineCompletion >= 66) completed.push(1);
+    if (allInspections.length > 0) completed.push(2);
+    if (totalSpent > 0) completed.push(3);
+    if (allTasks.length > 0) completed.push(4); // A general indicator for 'Prioritize'
+    if (scheduledTasks.length > 0) completed.push(5);
+    if (completedTasksThisMonth > 0) completed.push(6);
+    if (totalPrevented > 0) completed.push(7);
+    // Step 8 (Upgrade) is typically active when upgrades are recorded, or user interacts with upgrade path.
+    // Step 9 (Scale) is active if there's more than one property.
+    if (properties.length > 1) completed.push(9);
+    return completed;
+  };
+
   if (properties.length === 0 && !demoMode) { // This condition is now for when there are NO real properties AND not in demo mode
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="mobile-container md:max-w-5xl md:mx-auto pt-8">
+        <div className="mobile-container md::max-w-5xl md:mx-auto pt-8">
           {/* Welcome Header with Tier Badge */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -761,248 +778,23 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* 360° Method Progress - Unified */}
-        <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 mb-6 shadow-md">
-          <CardHeader className="pb-3">
-            <button
-              onClick={() => setMethodExpanded(!methodExpanded)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity">
-
-              <Target className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <CardTitle style={{ color: '#1B365D', fontSize: '18px', marginBottom: '4px' }}>
-                  Your 360° Method Progress
-                </CardTitle>
-                <p className="text-xs text-indigo-700 font-normal">
-                  {isShowingAllProperties ?
-                    `Tracking across all ${displayProperties.length} properties` :
-                    `Tracking for ${filteredProperty?.address || 'this property'}`
-                  } • Click to learn why this matters
-                </p>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-indigo-600 flex-shrink-0 transition-transform ${methodExpanded ? 'rotate-180' : ''}`} />
-            </button>
-          </CardHeader>
-
-          {/* Why This Matters - Expandable */}
-          {methodExpanded && (
-            <CardContent className="pt-0 pb-4">
-              <div className="bg-white rounded-lg p-4 border border-indigo-200">
-                <h4 className="font-bold text-indigo-900 mb-2 text-sm">💡 Why the 360° Method Matters:</h4>
-                <p className="text-xs text-gray-700 leading-relaxed mb-3">
-                  Most homeowners react to problems—they replace systems when they fail during peak season at emergency pricing.
-                  The 360° Method flips this: <strong>you stay ahead of issues, plan replacements on your timeline, and save 30%+ on maintenance costs.</strong>
-                </p>
-                <div className="grid md:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <p className="font-semibold text-blue-900 mb-1">🔵 AWARE: Know What You Have</p>
-                    <p className="text-gray-600">Document systems, inspect regularly, track all maintenance</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-orange-900 mb-1">🟠 ACT: Make Smart Decisions</p>
-                    <p className="text-gray-600">Prioritize by risk, schedule strategically, execute before disaster</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-green-900 mb-1">🟢 ADVANCE: Build Value</p>
-                    <p className="text-gray-600">Forecast expenses, invest in upgrades, scale your portfolio</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          )}
-
-          <CardContent className="pt-0">
-            <div className="grid md:grid-cols-3 gap-3 mb-4">
-              {/* Phase I - AWARE */}
-              <div className="bg-white p-4 rounded-lg border-2 border-blue-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                    <Eye className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="font-bold text-blue-900 text-sm">I. AWARE</h4>
-                </div>
-                <p className="text-xs text-gray-600 mb-3">Know what you have</p>
-                <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Baseline") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${avgBaselineCompletion >= 66 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {avgBaselineCompletion >= 66 ? '✓' : '1'}
-                    </span>
-                    <span className={avgBaselineCompletion >= 66 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Baseline</span>
-                    {avgBaselineCompletion < 100 && avgBaselineCompletion > 0 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{avgBaselineCompletion}%</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Inspect") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allInspections.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {allInspections.length > 0 ? '✓' : '2'}
-                    </span>
-                    <span className={allInspections.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Inspect</span>
-                    {allInspections.length > 0 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{allInspections.length}</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Track") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-blue-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalSpent > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {totalSpent > 0 ? '✓' : '3'}
-                    </span>
-                    <span className={totalSpent > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Track</span>
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs border-blue-600 text-blue-600 hover:bg-blue-50">
-
-                  <Link to={createPageUrl("Baseline") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-                    Take Action
-                  </Link>
-                </Button>
-              </div>
-
-              {/* Phase II - ACT */}
-              <div className="bg-white p-4 rounded-lg border-2 border-orange-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="font-bold text-orange-900 text-sm">II. ACT</h4>
-                </div>
-                <p className="text-xs text-gray-600 mb-3">Make smart decisions</p>
-                <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${allTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {allTasks.length > 0 ? '✓' : '4'}
-                    </span>
-                    <span className={allTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Prioritize</span>
-                    {allTasks.length > 0 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{allTasks.length}</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Schedule") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${scheduledTasks.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {scheduledTasks.length > 0 ? '✓' : '5'}
-                    </span>
-                    <span className={scheduledTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Schedule</span>
-                    {scheduledTasks.length > 0 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{scheduledTasks.length}</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Execute") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-orange-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${completedTasksThisMonth > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {completedTasksThisMonth > 0 ? '✓' : '6'}
-                    </span>
-                    <span className={completedTasksThisMonth > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Execute</span>
-                    {completedTasksThisMonth > 0 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{completedTasksThisMonth}</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs border-orange-600 text-orange-600 hover:bg-orange-50">
-
-                  <Link to={createPageUrl("Prioritize") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-                    Take Action
-                  </Link>
-                </Button>
-              </div>
-
-              {/* Phase III - ADVANCE */}
-              <div className="bg-white p-4 rounded-lg border-2 border-green-300 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="font-bold text-green-900 text-sm">III. ADVANCE</h4>
-                </div>
-                <p className="text-xs text-gray-600 mb-3">Build long-term value</p>
-                <div className="space-y-2 mb-3">
-                  <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${totalPrevented > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {totalPrevented > 0 ? '✓' : '7'}
-                    </span>
-                    <span className={totalPrevented > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Preserve</span>
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Upgrade") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
-                    <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                      8
-                    </span>
-                    <span className="text-gray-600">Upgrade</span>
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                  <Link to={createPageUrl("Scale")} className="flex items-center gap-2 text-xs hover:bg-green-50 p-1 rounded transition-colors">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${properties.length > 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {properties.length > 1 ? '✓' : '9'}
-                    </span>
-                    <span className={properties.length > 1 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Scale</span>
-                    {properties.length > 1 &&
-                      <span className="text-[10px] text-gray-500 ml-auto">{properties.length}</span>
-                    }
-                    <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                  </Link>
-                </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs border-green-600 text-green-600 hover:bg-green-50">
-
-                  <Link to={createPageUrl("Preserve") + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
-                    Take Action
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Overall Progress Summary */}
-            <div className="p-4 bg-white rounded-lg border-2 border-indigo-300 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700">Overall Method Progress:</span>
-                <span className="font-bold text-indigo-600">
-                  {[
-                    avgBaselineCompletion >= 66,
-                    allInspections.length > 0,
-                    totalSpent > 0,
-                    allTasks.length > 0,
-                    scheduledTasks.length > 0,
-                    completedTasksThisMonth > 0,
-                    totalPrevented > 0,
-                    false, // Upgrade step
-                    properties.length > 1].
-                    filter(Boolean).length} of 9 steps
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="h-3 rounded-full bg-gradient-to-r from-blue-500 via-orange-500 to-green-500 transition-all"
-                  style={{
-                    width: `${[
-                      avgBaselineCompletion >= 66,
-                      allInspections.length > 0,
-                      totalSpent > 0,
-                      allTasks.length > 0,
-                      scheduledTasks.length > 0,
-                      completedTasksThisMonth > 0,
-                      totalPrevented > 0,
-                      false,
-                      properties.length > 1].
-                      filter(Boolean).length / 9 * 100}%`
-                  }} />
-
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* NEW: Enhanced Method Progress Widget (Always Visible) */}
+        <MethodProgressWidget
+          completedSteps={getCompletedSteps()}
+          properties={properties}
+          selectedProperty={filteredProperty || (isShowingAllProperties && properties.length === 1 ? properties[0] : null)}
+          isShowingAllProperties={isShowingAllProperties}
+          systems={allSystems}
+          tasks={allTasks}
+          inspections={allInspections}
+          avgBaselineCompletion={avgBaselineCompletion}
+          allInspectionsCount={allInspections.length}
+          totalSpent={totalSpent}
+          allTasksCount={allTasks.length}
+          scheduledTasksCount={scheduledTasks.length}
+          completedTasksThisMonthCount={completedTasksThisMonth}
+          totalPrevented={totalPrevented}
+        />
 
         {/* Main Content Grid - Compact & Mobile-First */}
         <div className="space-y-4 mb-6">
@@ -1235,7 +1027,7 @@ export default function Dashboard() {
         </div>
 
         {/* Property Limit Warning */}
-        {!canAddProperty &&
+        {!canAddProperty && (
           <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -1260,7 +1052,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        }
+        )}
       </div>
 
       {/* Add Task Dialog */}
@@ -1272,6 +1064,6 @@ export default function Dashboard() {
           open={showAddTaskDialog}
         />
       )}
-    </div>);
-
+    </div>
+  );
 }
