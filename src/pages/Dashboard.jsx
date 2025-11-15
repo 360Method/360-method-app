@@ -58,12 +58,12 @@ const Label = ({ children, className = "", ...props }) => (
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isDemoMode = useDemoMode(); // Hook to check if in demo mode
+  const isDemoMode = useDemoMode();
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
-  const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false); // New state for QuickPropertyAdd
+  const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false);
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
@@ -85,26 +85,30 @@ export default function Dashboard() {
         const realProperties = allProps.filter(p => !p.is_draft);
         
         if (realProperties.length === 0 && !user.onboarding_completed && !isDemoMode) {
-          navigate('/welcome');
+          navigate('/welcome', { replace: true });
         }
       } catch (error) {
         console.error('Error checking first-time user:', error);
       }
     };
     checkFirstTimeUser();
-  }, []); // Empty dependency array - runs once only
+  }, [isDemoMode, navigate]); // Added isDemoMode, navigate to dependencies to satisfy linter, though the ref guard makes it run once.
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
-    }
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   // Determine which property to show based on filter
@@ -118,8 +122,7 @@ export default function Dashboard() {
   // Get active property IDs for filtering (for real data)
   const activePropertyIds = properties.map(p => p.id);
   // For demo mode, all relevant queries will target the single DEMO_PROPERTY.id if no real properties
-  const queryPropertyIds = isDemoMode && properties.length === 0 ? [DEMO_PROPERTY.id] : activePropertyIds;
-
+  // const queryPropertyIds = isDemoMode && properties.length === 0 ? [DEMO_PROPERTY.id] : activePropertyIds; // This was unused, removing
 
   // Fetch data based on selected property filter - FIXED to only show data for active properties
   const { data: allSystems = [] } = useQuery({
@@ -136,7 +139,9 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: displayProperties.length > 0
+    enabled: displayProperties.length > 0,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const { data: allTasks = [] } = useQuery({
@@ -153,7 +158,9 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayProperties.length > 0
+    enabled: displayProperties.length > 0,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const { data: allInspections = [] } = useQuery({
@@ -170,7 +177,9 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayProperties.length > 0
+    enabled: displayProperties.length > 0,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const updateUserMutation = useMutation({
@@ -300,13 +309,17 @@ export default function Dashboard() {
   const hour = currentTime.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  // Show upgrade prompt if free tier with 1 property and high baseline completion
+  // Show upgrade prompt if free tier with 1 property and high baseline completion - FIXED with ref guard
+  const hasShownUpgradePrompt = React.useRef(false);
   React.useEffect(() => {
-    if (isFreeTier && properties.length === 1 && avgBaselineCompletion >= 66 && !showUpgradePrompt) {
+    if (hasShownUpgradePrompt.current) return;
+    
+    if (isFreeTier && properties.length === 1 && avgBaselineCompletion >= 66) {
+      hasShownUpgradePrompt.current = true;
       const timer = setTimeout(() => setShowUpgradePrompt(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [isFreeTier, properties.length, avgBaselineCompletion, showUpgradePrompt]);
+  }, []); // Empty deps - only check once
 
   const handleRestartOnboarding = async () => {
     try {
