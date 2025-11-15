@@ -1,13 +1,15 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  BookOpen, 
-  Video, 
-  Calculator, 
-  Download, 
-  HelpCircle, 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  BookOpen,
+  Video,
+  Calculator,
+  Download,
+  HelpCircle,
   Users,
   GraduationCap,
   FileText,
@@ -19,12 +21,16 @@ import {
   Wrench,
   CheckCircle2,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { useDemo } from "../components/shared/DemoContext";
 
 export default function Resources() {
+  const { demoMode } = useDemo();
+
   const popularResources = [
     {
       icon: GraduationCap,
@@ -113,7 +119,7 @@ export default function Resources() {
   ];
 
   const systems = [
-    "HVAC", "Plumbing", "Electrical", "Roofing", 
+    "HVAC", "Plumbing", "Electrical", "Roofing",
     "Foundation", "Exterior", "Interior", "Appliances"
   ];
 
@@ -141,8 +147,20 @@ export default function Resources() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-20">
       <div className="mobile-container md:max-w-6xl md:mx-auto">
+
+        {/* Demo Notice - Resources are fully accessible */}
+        {demoMode && (
+          <Alert className="mb-6 mt-4 border-blue-400 bg-blue-50">
+            <Info className="w-4 h-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              <strong>Demo Mode:</strong> All resources are available for exploration.
+              Educational content is fully accessible without restrictions.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="mb-8 text-center">
           <Badge className="mb-4" style={{ backgroundColor: '#3B82F6' }}>
@@ -199,7 +217,7 @@ export default function Resources() {
           })}
         </div>
 
-        {/* Browse by Topic - 360° Method Framework */}
+        {/* Browse by Topic: The 360° Method Framework */}
         <Card className="border-none shadow-sm mb-8">
           <CardHeader>
             <CardTitle style={{ color: '#1B365D' }}>
