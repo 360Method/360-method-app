@@ -352,7 +352,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [uploadingManuals, setUploadingManuals] = React.useState(false);
   const [warnings, setWarnings] = React.useState([]);
   const [showAddAnother, setShowAddAnother] = React.useState(false);
-  const [scanningBarcode, setScanningBarcode] = React.useRef(false); // Changed to useRef to avoid unnecessary re-renders
+  const [scanningBarcode, setScanningBarcode] = React.useState(false); // Changed to useState
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
   const [preservationPlan, setPreservationPlan] = React.useState(null);
   const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
@@ -658,7 +658,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     const file = e.target.files[0];
     if (!file) return;
 
-    scanningBarcode.current = true; // Use .current for useRef
+    setScanningBarcode(true); // Changed from scanningBarcode.current = true
     const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' });
 
     try {
@@ -766,7 +766,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
         duration: 3000
       });
     } finally {
-      scanningBarcode.current = false; // Use .current for useRef
+      setScanningBarcode(false); // Changed from scanningBarcode.current = false
       // Reset the file input
       e.target.value = '';
     }
@@ -1719,17 +1719,17 @@ Be specific, practical, and focus on preventing expensive failures.`;
                         capture="environment"
                         onChange={handleBarcodeUpload}
                         className="hidden"
-                        disabled={scanningBarcode.current}
+                        disabled={scanningBarcode} // Changed from scanningBarcode.current
                       />
                       <Button
                         type="button"
                         variant="outline"
                         className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
-                        disabled={scanningBarcode.current}
+                        disabled={scanningBarcode} // Changed from scanningBarcode.current
                         asChild
                       >
                         <span>
-                          {scanningBarcode.current ? (
+                          {scanningBarcode ? ( // Changed from scanningBarcode.current
                             <>
                               <span className="animate-spin">⚙️</span>
                               Scanning...
