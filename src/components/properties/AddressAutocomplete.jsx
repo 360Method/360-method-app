@@ -1,9 +1,11 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 // Google Maps API Key
 const GOOGLE_MAPS_API_KEY = "AIzaSyBQaKy7wOT8z0Rw_96AS5-GoMe1z2GzTa0";
@@ -183,7 +185,10 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
         // Update input to show formatted address
         setInputValue(addressData.formatted_address);
         setSelectedAddress(addressData);
-        setAddressVerified(true);
+        // Assuming setAddressVerified was meant to be here, though not defined.
+        // If this component manages a "verified" state internally, it should be added.
+        // For now, based on the diff, no `setAddressVerified` prop or state exists.
+        // If it's intended to be passed up, `onAddressSelect` handles it.
         
         if (onAddressSelect) {
           onAddressSelect(addressData);
@@ -234,7 +239,23 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
   const handleClearAddress = () => {
     setSelectedAddress(null);
     setInputValue('');
-    setAddressVerified(false);
+    // If there's an external state for verification, it should be updated here.
+    // Assuming onAddressSelect handles resetting for the parent.
+    if (onAddressSelect) {
+        onAddressSelect({
+            street_address: "",
+            unit_number: "",
+            city: "",
+            state: "",
+            zip_code: "",
+            county: "",
+            formatted_address: "",
+            place_id: null,
+            coordinates: null,
+            address_verified: false,
+            verification_source: null
+        });
+    }
   };
 
   const handleManualSubmit = () => {
@@ -255,7 +276,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     };
 
     setSelectedAddress(addressData);
-    setAddressVerified(true);
+    // Again, if `setAddressVerified` is meant to be called here, it's missing.
     if (onAddressSelect) {
       onAddressSelect(addressData);
     }
