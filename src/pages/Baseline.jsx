@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Home, Plus, CheckCircle2, AlertCircle, Shield, Award, Edit, Trash2, BookOpen, Video, Calculator, ShoppingCart, DollarSign, TrendingUp, Lightbulb, Zap, Target, Sparkles, Lock, Unlock, MapPin, Navigation, ArrowRight, Clock, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
 import SystemFormDialog from "../components/baseline/SystemFormDialog";
 import AddToCartDialog from "../components/cart/AddToCartDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
@@ -17,6 +18,10 @@ import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 import StepNavigation from "../components/navigation/StepNavigation";
+import { useDemoMode } from "../components/shared/useDemoMode";
+import { DEMO_PROPERTY, DEMO_SYSTEMS } from "../components/shared/demoProperty";
+import PreviewBanner from "../components/shared/PreviewBanner";
+import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -196,6 +201,8 @@ export default function Baseline() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property');
   const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
+  const welcomeNew = urlParams.get('welcome') === 'true';
+  const isDemoMode = useDemoMode();
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
@@ -211,8 +218,23 @@ export default function Baseline() {
   const [recentMilestone, setRecentMilestone] = React.useState(null);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
   const [showPostOnboardingPrompt, setShowPostOnboardingPrompt] = React.useState(fromOnboarding);
+  const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  // Welcome celebration
+  React.useEffect(() => {
+    if (welcomeNew && !fromOnboarding && !isDemoMode) {
+      toast.success('🎉 Property added! Let\'s document your systems.', {
+        duration: 4000,
+        icon: '🏠'
+      });
+      // Remove welcome from URL to prevent showing it again on refresh
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('welcome');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [welcomeNew, fromOnboarding, isDemoMode]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -220,18 +242,26 @@ export default function Baseline() {
   });
 
   const { data: systems = [], isLoading } = useQuery({
-    queryKey: ['systemBaselines', selectedProperty],
-    queryFn: () => selectedProperty 
-      ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
-      : Promise.resolve([]),
-    enabled: !!selectedProperty,
+    queryKey: ['systemBaselines', selectedProperty, isDemoMode],
+    queryFn: () => {
+      if (isDemoMode && properties.length === 0) {
+        return Promise.resolve(DEMO_SYSTEMS);
+      }
+      
+      return selectedProperty 
+        ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
+        : Promise.resolve([]);
+    },
+    enabled: !!selectedProperty || (isDemoMode && properties.length === 0),
   });
 
   React.useEffect(() => {
-    if (!selectedProperty && properties.length > 0) {
+    if (!selectedProperty && properties.length > 0 && !isDemoMode) {
       setSelectedProperty(properties[0].id);
+    } else if (isDemoMode && properties.length === 0) {
+      setSelectedProperty(DEMO_PROPERTY.id);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, isDemoMode]);
 
   // Calculate completion metrics for milestone check
   const systemsByType = systems.reduce((acc, system) => {
@@ -373,7 +403,7 @@ export default function Baseline() {
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallProgress) {
+      if (property && property.baseline_completion !== overallProgress && !isDemoMode) { // Do not update in demo mode
         base44.entities.Property.update(selectedProperty, {
           baseline_completion: overallProgress
         }).then(() => {
@@ -381,9 +411,16 @@ export default function Baseline() {
         });
       }
     }
-  }, [overallProgress, selectedProperty, properties, queryClient]);
+  }, [overallProgress, selectedProperty, properties, queryClient, isDemoMode]);
 
   const handleEditSystem = (system) => {
+    if (isDemoMode) {
+      toast.info('Add your property to edit systems', {
+        description: 'Demo mode data cannot be modified. Add a real property to manage your systems.',
+      });
+      return;
+    }
+    
     // Save scroll position before opening dialog
     setScrollPosition(window.scrollY);
     
@@ -396,6 +433,13 @@ export default function Baseline() {
   };
 
   const handleAddSystem = (systemType) => {
+    if (isDemoMode) {
+      toast.info('Add your property to document systems', {
+        description: 'Demo mode data cannot be modified. Add a real property to manage your systems.',
+      });
+      return;
+    }
+    
     // Save scroll position and system type before opening dialog
     setScrollPosition(window.scrollY);
     setLastAddedSystemType(systemType);
@@ -428,10 +472,16 @@ export default function Baseline() {
   };
 
   const handleRequestProService = () => {
+    if (isDemoMode) {
+      toast.info('Add your property to request Pro Services', {
+        description: 'This feature is unavailable in demo mode.',
+      });
+      return;
+    }
     setShowCartDialog(true);
   };
 
-  const currentProperty = properties.find(p => p.id === selectedProperty);
+  const currentProperty = isDemoMode && properties.length === 0 ? DEMO_PROPERTY : properties.find(p => p.id === selectedProperty);
 
   const renderSystemGroup = (systemType, instances, isRequired) => {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
@@ -525,6 +575,7 @@ export default function Baseline() {
                     size="sm"
                     onClick={() => handleDeleteSystem(instance)}
                     className="text-red-600 hover:text-red-700"
+                    disabled={isDemoMode}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -583,6 +634,7 @@ export default function Baseline() {
           }, 500);
         }}
         onSkip={() => setShowWizard(false)}
+        isDemoMode={isDemoMode}
       />
     );
   }
@@ -600,6 +652,7 @@ export default function Baseline() {
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
         }}
         onSkip={() => setShowPhysicalWalkthrough(false)}
+        isDemoMode={isDemoMode}
       />
     );
   }
@@ -607,6 +660,13 @@ export default function Baseline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+        {/* Preview Banner for Demo Mode */}
+        {isDemoMode && (
+          <div className="mb-6 mt-4">
+            <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
+          </div>
+        )}
+
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
@@ -697,7 +757,7 @@ export default function Baseline() {
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
-              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+              <Select value={selectedProperty} onValueChange={setSelectedProperty} disabled={isDemoMode}>
                 <SelectTrigger className="w-full md:w-96">
                   <SelectValue placeholder="Select a property" />
                 </SelectTrigger>
@@ -715,7 +775,7 @@ export default function Baseline() {
 
         {/* PROMINENT DOCUMENTATION METHOD SELECTOR - Always visible when property selected */}
         {selectedProperty && (
-          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl">
+          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl mb-6">
             <CardHeader className="pb-4">
               <div className="text-center">
                 <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -729,8 +789,16 @@ export default function Baseline() {
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Quick Start Wizard */}
                 <Card 
-                  className="border-3 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group hover:shadow-xl"
-                  onClick={() => setShowWizard(true)}
+                  className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={() => {
+                    if (isDemoMode) {
+                      toast.info('Add your property to use the wizard', {
+                        description: 'This feature is unavailable in demo mode.',
+                      });
+                    } else {
+                      setShowWizard(true);
+                    }
+                  }}
                 >
                   <CardContent className="p-6">
                     <div className="text-center space-y-4">
@@ -761,6 +829,7 @@ export default function Baseline() {
                       <Button 
                         className="w-full gap-2 text-lg py-6 group-hover:bg-purple-700"
                         style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
+                        disabled={isDemoMode}
                       >
                         <Sparkles className="w-5 h-5" />
                         Start Quick Setup
@@ -772,8 +841,16 @@ export default function Baseline() {
 
                 {/* Physical Walkthrough */}
                 <Card 
-                  className="border-3 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl"
-                  onClick={() => setShowPhysicalWalkthrough(true)}
+                  className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={() => {
+                    if (isDemoMode) {
+                      toast.info('Add your property to use the walkthrough', {
+                        description: 'This feature is unavailable in demo mode.',
+                      });
+                    } else {
+                      setShowPhysicalWalkthrough(true);
+                    }
+                  }}
                 >
                   <CardContent className="p-6">
                     <div className="text-center space-y-4">
@@ -804,6 +881,7 @@ export default function Baseline() {
                       <Button 
                         className="w-full gap-2 text-lg py-6 group-hover:bg-green-700"
                         style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+                        disabled={isDemoMode}
                       >
                         <Navigation className="w-5 h-5" />
                         Start Walkthrough
@@ -830,7 +908,7 @@ export default function Baseline() {
         )}
 
         {/* Why This Matters - Prominent Educational Section */}
-        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl">
+        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
               <Lightbulb className="w-8 h-8 text-yellow-600" />
@@ -979,7 +1057,7 @@ export default function Baseline() {
 
         {/* Milestone Celebration */}
         {recentMilestone && (
-          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 animate-pulse">
+          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 animate-pulse mb-6">
             <CardContent className="p-6">
               <div className="text-center">
                 <div className="text-6xl mb-3">{recentMilestone.icon}</div>
@@ -1011,7 +1089,7 @@ export default function Baseline() {
         {selectedProperty ? (
           <>
             {/* Status Message with Professional Option AND Why It Matters Reminder */}
-            <Card className={`border-2 ${statusBorderColor}`} style={{ backgroundColor: statusBgColor }}>
+            <Card className={`border-2 ${statusBorderColor} mb-6`} style={{ backgroundColor: statusBgColor }}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
@@ -1071,7 +1149,7 @@ export default function Baseline() {
             </Card>
 
             {/* Professional Service CTA */}
-            <Card className="border-2 border-blue-300 bg-blue-50">
+            <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
               <CardContent className="p-6">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
@@ -1089,6 +1167,7 @@ export default function Baseline() {
                       variant="default"
                       className="gap-2"
                       style={{ backgroundColor: '#28A745', minHeight: '48px' }}
+                      disabled={isDemoMode}
                     >
                       <ShoppingCart className="w-4 h-4" />
                       Add Professional Baseline to Cart ($299)
@@ -1099,7 +1178,7 @@ export default function Baseline() {
             </Card>
 
             {/* Essential Systems */}
-            <Card className="border-2 border-red-200 shadow-lg">
+            <Card className="border-2 border-red-200 shadow-lg mb-6">
               <CardHeader className="bg-red-50">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
@@ -1125,7 +1204,7 @@ export default function Baseline() {
             </Card>
 
             {/* Recommended Systems */}
-            <Card className="border-2 border-blue-200 shadow-lg">
+            <Card className="border-2 border-blue-200 shadow-lg mb-6">
               <CardHeader className="bg-blue-50">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
@@ -1148,7 +1227,7 @@ export default function Baseline() {
             </Card>
 
             {/* Major Appliances */}
-            <Card className="border-2 border-purple-200 shadow-lg">
+            <Card className="border-2 border-purple-200 shadow-lg mb-6">
               <CardHeader className="bg-purple-50">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
@@ -1172,7 +1251,7 @@ export default function Baseline() {
             </Card>
 
             {/* Safety Systems */}
-            <Card className="border-2 border-orange-200 shadow-lg">
+            <Card className="border-2 border-orange-200 shadow-lg mb-6">
               <CardHeader className="bg-orange-50">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
@@ -1210,6 +1289,7 @@ export default function Baseline() {
               <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold mb-2">No Property Selected</h3>
               <p className="text-gray-600">Please add a property first to start documenting your baseline</p>
+              <Button onClick={() => setShowQuickPropertyAdd(true)} className="mt-4">Add Your First Property</Button>
             </CardContent>
           </Card>
         )}
@@ -1245,6 +1325,16 @@ export default function Baseline() {
             variant="destructive"
           />
         )}
+
+        {/* QuickPropertyAdd Modal */}
+        <QuickPropertyAdd
+          open={showQuickPropertyAdd}
+          onClose={() => setShowQuickPropertyAdd(false)}
+          onSuccess={(propertyId) => {
+            setShowQuickPropertyAdd(false);
+            window.location.href = `/baseline?property=${propertyId}&welcome=true`;
+          }}
+        />
       </div>
     </div>
   );

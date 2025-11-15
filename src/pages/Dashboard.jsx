@@ -44,6 +44,10 @@ import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import MiniCalendar from "../components/dashboard/MiniCalendar";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
+import { useDemoMode } from "../components/shared/useDemoMode";
+import { DEMO_PROPERTY, DEMO_SYSTEMS, DEMO_TASKS } from "../components/shared/demoProperty";
+import PreviewBanner from "../components/shared/PreviewBanner";
+import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -54,16 +58,36 @@ const Label = ({ children, className = "", ...props }) => (
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isDemoMode = useDemoMode(); // Hook to check if in demo mode
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
+  const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false); // New state for QuickPropertyAdd
 
   // Update time every minute for "good morning" greeting
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Redirect new users to welcome demo
+  React.useEffect(() => {
+    const checkFirstTimeUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        const allProps = await base44.entities.Property.list();
+        const realProperties = allProps.filter(p => !p.is_draft);
+        
+        if (realProperties.length === 0 && !user.onboarding_completed && !isDemoMode) {
+          navigate('/welcome');
+        }
+      } catch (error) {
+        console.error('Error checking first-time user:', error);
+      }
+    };
+    checkFirstTimeUser();
+  }, [navigate, isDemoMode]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -83,52 +107,65 @@ export default function Dashboard() {
     properties.find(p => p.id === selectedPropertyFilter);
 
   const isShowingAllProperties = selectedPropertyFilter === 'all';
-  const displayedProperties = isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []);
+  // Use demo data if in demo mode and no real properties exist, otherwise use real properties
+  const displayProperties = (isDemoMode && properties.length === 0) ? [DEMO_PROPERTY] : (isShowingAllProperties ? properties : (filteredProperty ? [filteredProperty] : []));
 
-  // Get active property IDs for filtering
+  // Get active property IDs for filtering (for real data)
   const activePropertyIds = properties.map(p => p.id);
+  // For demo mode, all relevant queries will target the single DEMO_PROPERTY.id if no real properties
+  const queryPropertyIds = isDemoMode && properties.length === 0 ? [DEMO_PROPERTY.id] : activePropertyIds;
+
 
   // Fetch data based on selected property filter - FIXED to only show data for active properties
   const { data: allSystems = [] } = useQuery({
-    queryKey: ['allSystemBaselines', selectedPropertyFilter],
+    queryKey: ['allSystemBaselines', selectedPropertyFilter, isDemoMode],
     queryFn: async () => {
+      if (isDemoMode && properties.length === 0) {
+        return DEMO_SYSTEMS;
+      }
+      
       if (selectedPropertyFilter === 'all') {
-        // Fetch all systems, then filter to only active properties
         const allSystemsList = await base44.entities.SystemBaseline.list();
         return allSystemsList.filter(s => activePropertyIds.includes(s.property_id));
       } else {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: displayedProperties.length > 0
+    enabled: displayProperties.length > 0
   });
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['allMaintenanceTasks', selectedPropertyFilter],
+    queryKey: ['allMaintenanceTasks', selectedPropertyFilter, isDemoMode],
     queryFn: async () => {
+      if (isDemoMode && properties.length === 0) {
+        return DEMO_TASKS;
+      }
+      
       if (selectedPropertyFilter === 'all') {
-        // Fetch all tasks, then filter to only active properties
         const allTasksList = await base44.entities.MaintenanceTask.list('-created_date');
         return allTasksList.filter(t => activePropertyIds.includes(t.property_id));
       } else {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayedProperties.length > 0
+    enabled: displayProperties.length > 0
   });
 
   const { data: allInspections = [] } = useQuery({
-    queryKey: ['allInspections', selectedPropertyFilter],
+    queryKey: ['allInspections', selectedPropertyFilter, isDemoMode],
     queryFn: async () => {
+      if (isDemoMode && properties.length === 0) {
+        return []; // No demo inspections for now
+      }
+      
       if (selectedPropertyFilter === 'all') {
-        // Fetch all inspections, then filter to only active properties
         const allInspectionsList = await base44.entities.Inspection.list('-created_date');
         return allInspectionsList.filter(i => activePropertyIds.includes(i.property_id));
       } else {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: displayedProperties.length > 0
+    enabled: displayProperties.length > 0
   });
 
   const updateUserMutation = useMutation({
@@ -144,13 +181,13 @@ export default function Dashboard() {
   const isServiceMember = currentTier.includes('homecare') || currentTier.includes('propertycare');
   const canAddProperty = properties.length < propertyLimit;
 
-  // Calculate metrics based on displayed properties
-  const avgHealthScore = displayedProperties.length > 0 ?
-  Math.round(displayedProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayedProperties.length) :
+  // Calculate metrics based on displayed properties (which now include demo data if applicable)
+  const avgHealthScore = displayProperties.length > 0 ?
+  Math.round(displayProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayProperties.length) :
   0;
 
-  const avgBaselineCompletion = displayedProperties.length > 0 ?
-  Math.round(displayedProperties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / displayedProperties.length) :
+  const avgBaselineCompletion = displayProperties.length > 0 ?
+  Math.round(displayProperties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / displayProperties.length) :
   0;
 
   const highPriorityTasks = allTasks.filter((t) =>
@@ -171,8 +208,8 @@ export default function Dashboard() {
     t.status === 'Completed';
   }).length;
 
-  const totalSpent = displayedProperties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
-  const totalPrevented = displayedProperties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
+  const totalSpent = displayProperties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
+  const totalPrevented = displayProperties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
 
   const upcomingTasks = scheduledTasks.
   map((t) => ({
@@ -279,86 +316,110 @@ export default function Dashboard() {
     }
   };
 
-  if (properties.length === 0) {
+  const handleQuickPropertySuccess = (propertyId) => {
+    setShowQuickPropertyAdd(false);
+    navigate(`/baseline?propertyId=${propertyId}&welcome=true`);
+  };
+
+  if (properties.length === 0 || isDemoMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="mobile-container md:max-w-5xl md:mx-auto pt-8">
+          {/* Preview Banner for Demo Mode or Empty State */}
+          {(properties.length === 0 || isDemoMode) && (
+            <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
+          )}
+
           {/* Welcome Header with Tier Badge */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="font-bold mb-1" style={{ color: '#1B365D', fontSize: '28px' }}>
                 {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
               </h1>
-              <p className="text-gray-600">Welcome to your 360° Method Command Center</p>
+              <p className="text-gray-600">
+                {isDemoMode ? 'Exploring demo property' : 'Welcome to your 360° Method Command Center'}
+              </p>
             </div>
             <TierBadge tier={currentTier} />
           </div>
 
-          {/* Quick Start Onboarding Guide - PROMINENT */}
-          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 mb-6 shadow-2xl">
-            <CardContent className="p-6 md:p-8">
-              <div className="flex items-start gap-4 md:gap-6">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-purple-900 mb-2 text-xl md:text-2xl">
-                    🚀 Start Your 5-Minute Quick Setup
-                  </h3>
-                  <p className="text-sm md:text-base text-gray-700 mb-4 leading-relaxed">
-                    Our guided onboarding helps you add your first property, understand how the 360° Method works,
-                    and choose the best documentation path for your needs. You'll be protecting your investment in minutes!
-                  </p>
+          {/* Demo Property Overview */}
+          <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Home className="w-6 h-6 text-blue-600" />
+                {DEMO_PROPERTY.address}
+                {isDemoMode && <Badge variant="outline">Demo</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Health Score</p>
+                <p className="text-2xl font-bold text-green-600">{DEMO_PROPERTY.health_score}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Baseline</p>
+                <p className="text-2xl font-bold text-blue-600">{DEMO_PROPERTY.baseline_completion}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Systems</p>
+                <p className="text-2xl font-bold" style={{ color: '#1B365D' }}>{DEMO_SYSTEMS.length}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Tasks</p>
+                <p className="text-2xl font-bold text-orange-600">{DEMO_TASKS.length}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-                  {/* Value Props */}
-                  <div className="grid md:grid-cols-3 gap-3 mb-4">
-                    <div className="bg-white rounded-lg p-3 border border-green-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Shield className="w-4 h-4 text-green-600" />
-                        <p className="font-semibold text-sm text-gray-900">Protect Your Asset</p>
-                      </div>
-                      <p className="text-xs text-gray-600">Prevent $25K-50K+ in disasters through proactive maintenance</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border border-blue-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
-                          <p className="font-semibold text-sm text-gray-900">Increase Value</p>
-                        </div>
-                        <p className="text-xs text-gray-600">Documentation adds $8K-15K to resale value</p>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 border border-purple-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Target className="w-4 h-4 text-purple-600" />
-                          <p className="font-semibold text-sm">Plan Ahead</p>
-                        </div>
-                        <p className="text-xs text-gray-600">Budget 2-5 years ahead with lifecycle forecasting</p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={handleRestartOnboarding}
-                      disabled={updateUserMutation.isPending}
-                      className="gap-2 text-lg font-bold shadow-lg w-full md:w-auto"
-                      style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}>
-
-                      {updateUserMutation.isPending ?
-                      <>
-                          <RefreshCw className="w-5 h-5 animate-spin" />
-                          Starting...
-                        </> :
-
-                      <>
-                          <Sparkles className="w-5 h-5" />
-                          Start Guided Setup Now
-                        </>
-                      }
-                    </Button>
+          {/* Explorable Phase Cards */}
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <Link to="/baseline?demo=true">
+              <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer hover:shadow-xl bg-gradient-to-br from-blue-50 to-cyan-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Eye className="w-8 h-8 text-blue-600" />
+                    <Badge className="bg-green-600 text-white">Complete</Badge>
                   </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#1B365D' }}>AWARE Phase</h3>
+                  <p className="text-sm text-gray-600 mb-3">{DEMO_SYSTEMS.length} systems documented</p>
+                  <Badge variant="outline" className="text-xs">Click to explore →</Badge>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/prioritize?demo=true">
+              <Card className="border-2 border-orange-300 hover:border-orange-500 transition-all cursor-pointer hover:shadow-xl bg-gradient-to-br from-orange-50 to-yellow-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Zap className="w-8 h-8 text-orange-600" />
+                    <Badge className="bg-blue-600 text-white">In Progress</Badge>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#1B365D' }}>ACT Phase</h3>
+                  <p className="text-sm text-gray-600 mb-3">{DEMO_TASKS.length} tasks prioritized</p>
+                  <Badge variant="outline" className="text-xs">Click to explore →</Badge>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Card className="border-2 border-gray-300 bg-gradient-to-br from-gray-100 to-gray-200 opacity-75">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <TrendingUp className="w-8 h-8 text-gray-500" />
+                  <Badge variant="outline" className="text-gray-600">Locked</Badge>
+                </div>
+                <h3 className="font-bold text-lg mb-2 text-gray-700">ADVANCE Phase</h3>
+                <p className="text-sm text-gray-600 mb-3">Unlock by completing ACT</p>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Shield className="w-4 h-4" />
+                  <span>Preserve • Upgrade • Scale</span>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* The 360° Method Framework - Educational */}
+          {/* The 360° Method Framework - Educational (non-demo mode only) */}
+          {!isDemoMode && (
             <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
               <CardHeader>
                 <CardTitle className="text-center text-2xl md:text-3xl" style={{ color: '#1B365D' }}>
@@ -507,55 +568,63 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Free Tier Notice */}
-            {isFreeTier &&
-            <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-blue-900 mb-1">
-                        You're on the Free Tier
-                      </p>
-                      <p className="text-sm text-blue-700 mb-3">
-                        Limited to 1 property. Upgrade to Pro for 3 properties or get unlimited with HomeCare/PropertyCare service.
-                      </p>
-                      <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-100">
+          {/* Free Tier Notice */}
+          {isFreeTier &&
+          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">
+                      You're on the Free Tier
+                    </p>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Limited to 1 property. Upgrade to Pro for 3 properties or get unlimited with HomeCare/PropertyCare service.
+                    </p>
+                    <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-100">
 
-                        <Link to={createPageUrl("Pricing")}>
-                          View Plans & Pricing
-                        </Link>
-                      </Button>
-                    </div>
+                      <Link to={createPageUrl("Pricing")}>
+                        View Plans & Pricing
+                      </Link>
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            }
+                </div>
+              </CardContent>
+            </Card>
+          }
 
-            {/* Manual Property Add Option - Bottom of Page */}
-            <div className="text-center pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-3">
-                Prefer to add your property manually?
-              </p>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="gap-2">
-                <Link to={createPageUrl("Properties")}>
-                  <Plus className="w-4 h-4" />
-                  Add Property Manually
-                </Link>
-              </Button>
-            </div>
+          {/* Manual Property Add Option - Bottom of Page */}
+          <div className="text-center pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-3">
+              Prefer to add your property manually?
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="gap-2">
+              <Link to={createPageUrl("Properties")}>
+                <Plus className="w-4 h-4" />
+                Add Property Manually
+              </Link>
+            </Button>
           </div>
-        </div>);
 
+          {/* QuickPropertyAdd Modal */}
+          <QuickPropertyAdd
+            open={showQuickPropertyAdd}
+            onClose={() => setShowQuickPropertyAdd(false)}
+            onSuccess={handleQuickPropertySuccess}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -570,7 +639,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
                 {isShowingAllProperties ?
-                `Managing ${displayedProperties.length} ${displayedProperties.length === 1 ? 'property' : 'properties'}` :
+                `Managing ${displayProperties.length} ${displayProperties.length === 1 ? 'property' : 'properties'}` :
                 `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
                 }
               </p>
@@ -616,7 +685,7 @@ export default function Dashboard() {
                     </SelectItem>
                     {properties.map(prop => {
                       const doorCount = prop.door_count || 1;
-                      const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : '';
+                      // const doorLabel = doorCount > 1 ? ` • ${doorCount} units` : ''; // Currently unused
                       return (
                         <SelectItem key={prop.id} value={prop.id}>
                           <div className="flex items-center gap-2">
@@ -764,10 +833,10 @@ export default function Dashboard() {
                   </Badge>
                 </div>
                 <p className="text-2xl font-bold mb-1" style={{ color: '#1B365D' }}>
-                  {displayedProperties.length}
+                  {displayProperties.length}
                 </p>
                 <p className="text-xs text-gray-600 flex items-center gap-1">
-                  {displayedProperties.length === 1 ? 'Property' : 'Properties'}
+                  {displayProperties.length === 1 ? 'Property' : 'Properties'}
                   <ChevronRight className="w-3 h-3" />
                 </p>
               </CardContent>
@@ -854,7 +923,7 @@ export default function Dashboard() {
                 </CardTitle>
                 <p className="text-xs text-indigo-700 font-normal">
                   {isShowingAllProperties ?
-                  `Tracking across all ${displayedProperties.length} properties` :
+                  `Tracking across all ${displayProperties.length} properties` :
                   `Tracking for ${filteredProperty?.address || 'this property'}`
                   } • Click to learn why this matters
                 </p>
@@ -1226,8 +1295,6 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* QUICK ACTIONS CARD REMOVED FROM HERE */}
           </div>
 
           {/* Recent Activity - Compact */}
@@ -1394,7 +1461,7 @@ export default function Dashboard() {
       {/* Add Task Dialog */}
       {showAddTaskDialog && (
         <ManualTaskForm
-          propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null)}
+          propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null) || (isDemoMode && properties.length === 0 ? DEMO_PROPERTY.id : null)}
           onComplete={() => setShowAddTaskDialog(false)}
           onCancel={() => setShowAddTaskDialog(false)}
           open={showAddTaskDialog}

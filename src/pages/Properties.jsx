@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -5,11 +6,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Home, 
-  Plus, 
-  ChevronDown, 
-  ChevronRight, 
+import {
+  Home,
+  Plus,
+  ChevronDown,
+  ChevronRight,
   Lightbulb,
   Zap,
   Upload,
@@ -23,7 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import PropertyWizardWelcome from "../components/properties/PropertyWizardWelcome";
 import PropertyWizardSimplified from "../components/properties/PropertyWizardSimplified";
 import PropertySuccessScreen from "../components/properties/PropertySuccessScreen";
-import PropertyQuickAdd from "../components/properties/PropertyQuickAdd";
+import QuickPropertyAdd from "../components/properties/QuickPropertyAdd"; // Changed from PropertyQuickAdd
 import PropertyDashboard from "../components/properties/PropertyDashboard";
 import EnhancedPropertyCard from "../components/properties/EnhancedPropertyCard";
 import PropertyWizard from "../components/properties/PropertyWizard";
@@ -80,7 +81,7 @@ export default function Properties() {
     if (newParam === 'true' && properties.length === 0 && !hideWelcome) {
       setShowWelcome(true);
     } else if (newParam === 'true') {
-      setShowSimplifiedWizard(true);
+      setShowQuickAdd(true); // Changed from setShowSimplifiedWizard(true)
     }
   }, [newParam, properties.length]);
 
@@ -96,9 +97,9 @@ export default function Properties() {
     }
   }, [editId, modeParam]);
 
-  const handleAddProperty = (mode = 'simple') => {
+  const handleAddProperty = (mode = 'quick') => { // Changed default mode from 'simple' to 'quick'
     const hideWelcome = localStorage.getItem('hidePropertyWelcome');
-    
+
     if (properties.length === 0 && !hideWelcome) {
       setShowWelcome(true);
     } else if (mode === 'quick') {
@@ -117,9 +118,15 @@ export default function Properties() {
     setCompletedProperty(property);
     setShowSuccessScreen(true);
     queryClient.invalidateQueries(['properties']);
-    
+
     // Clear URL params
     window.history.replaceState({}, '', createPageUrl('Properties'));
+  };
+
+  // New function for Quick Add success
+  const handleQuickAddSuccess = (propertyId) => {
+    setShowQuickAdd(false);
+    navigate(`/baseline?propertyId=${propertyId}&welcome=true`);
   };
 
   const handleSuccessContinue = () => {
@@ -170,7 +177,7 @@ export default function Properties() {
   // Show simplified wizard
   if (showSimplifiedWizard) {
     const editingProperty = editingPropertyId ? properties.find(p => p.id === editingPropertyId) : null;
-    
+
     return (
       <PropertyWizardSimplified
         existingProperty={editingProperty}
@@ -187,7 +194,7 @@ export default function Properties() {
   // Show complete wizard
   if (showCompleteWizard) {
     const editingProperty = editingPropertyId ? properties.find(p => p.id === editingPropertyId) : null;
-    
+
     return (
       <PropertyWizard
         existingProperty={editingProperty}
@@ -205,7 +212,7 @@ export default function Properties() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        
+
         {/* Foundation Layer Header (Replaces StepNavigation) */}
         <div className="mb-6 mt-4">
           <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50">
@@ -385,14 +392,11 @@ export default function Properties() {
           />
         )}
 
-        {/* Quick Add Modal */}
-        <PropertyQuickAdd
-          isOpen={showQuickAdd}
+        {/* Quick Add Modal - UPDATED */}
+        <QuickPropertyAdd
+          open={showQuickAdd}
           onClose={() => setShowQuickAdd(false)}
-          onSuccess={(newProperty) => {
-            setCompletedProperty(newProperty);
-            setShowSuccessScreen(true);
-          }}
+          onSuccess={handleQuickAddSuccess}
         />
 
         {/* Delete Confirmation */}
