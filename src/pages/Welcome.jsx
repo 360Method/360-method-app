@@ -6,59 +6,59 @@ import { createPageUrl } from "@/utils";
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const [hasRedirected, setHasRedirected] = React.useState(false);
+  const redirectedRef = React.useRef(false);
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user, isLoading: userLoading, isError: userError } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
-    retry: false,
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        throw error;
+      }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list(),
-    enabled: !!user,
-    retry: false,
+    enabled: !!user && !userError,
+    retry: 1,
+    staleTime: 30000,
   });
 
   React.useEffect(() => {
-    // Prevent multiple redirects
-    if (hasRedirected) return;
+    // Only redirect once
+    if (redirectedRef.current) return;
     
-    // Wait for both queries to load
-    if (userLoading || propertiesLoading) return;
+    // Wait for queries to complete
+    if (userLoading || (!!user && propertiesLoading)) return;
 
-    // Small delay to prevent flashing
-    const timer = setTimeout(() => {
-      setHasRedirected(true);
-      
-      // If user has completed onboarding and has properties, go to dashboard
-      if (user?.onboarding_completed && properties.length > 0) {
-        navigate(createPageUrl('Dashboard'), { replace: true });
-        return;
-      }
+    // Handle errors
+    if (userError) {
+      console.error('User loading error, redirecting to onboarding');
+      redirectedRef.current = true;
+      navigate(createPageUrl('Onboarding'), { replace: true });
+      return;
+    }
 
-      // If user has NOT completed onboarding, send to onboarding flow
-      if (!user?.onboarding_completed) {
-        navigate(createPageUrl('Onboarding'), { replace: true });
-        return;
-      }
+    // Redirect logic
+    if (user?.onboarding_completed && properties.length > 0) {
+      redirectedRef.current = true;
+      navigate(createPageUrl('Dashboard'), { replace: true });
+    } else {
+      redirectedRef.current = true;
+      navigate(createPageUrl('Onboarding'), { replace: true });
+    }
+  }, [user, properties, userLoading, propertiesLoading, userError, navigate]);
 
-      // If user completed onboarding but has no properties (edge case), send to onboarding
-      if (user?.onboarding_completed && properties.length === 0) {
-        navigate(createPageUrl('Onboarding'), { replace: true });
-        return;
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [user, properties, userLoading, propertiesLoading, navigate, hasRedirected]);
-
-  // Show loading state while redirecting
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 mx-auto mb-4 flex items-center justify-center animate-pulse">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 mx-auto mb-4 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full border-4 border-white border-t-transparent animate-spin"></div>
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to 360° Method</h2>

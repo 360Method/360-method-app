@@ -23,8 +23,8 @@ export default function Onboarding() {
     selectedPath: null
   });
   const [showSkipDialog, setShowSkipDialog] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [hasCheckedOnboarding, setHasCheckedOnboarding] = React.useState(false);
+  const [showContent, setShowContent] = React.useState(false);
+  const checkedRef = React.useRef(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,17 +32,18 @@ export default function Onboarding() {
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
-    retry: false,
+    retry: 1,
+    staleTime: 30000,
   });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list(),
     enabled: !!user,
-    retry: false,
+    retry: 1,
+    staleTime: 30000,
   });
 
-  // Update user profile mutation
   const updateUserMutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
     onSuccess: () => {
@@ -50,66 +51,31 @@ export default function Onboarding() {
     },
   });
 
-  // Check if user has already completed onboarding - only once
+  // Check onboarding status once
   React.useEffect(() => {
-    if (hasCheckedOnboarding) return;
+    if (checkedRef.current) return;
     if (userLoading || propertiesLoading) return;
 
-    // Mark as checked
-    setHasCheckedOnboarding(true);
+    checkedRef.current = true;
 
-    // Small delay to prevent flashing
-    setTimeout(() => {
-      if (user?.onboarding_completed && properties.length > 0) {
-        // User has already onboarded, redirect to dashboard
-        navigate(createPageUrl("Dashboard"), { replace: true });
-      } else {
-        // Show onboarding
-        setIsLoading(false);
-      }
-    }, 300);
-  }, [user, properties, userLoading, propertiesLoading, navigate, hasCheckedOnboarding]);
+    if (user?.onboarding_completed && properties.length > 0) {
+      navigate(createPageUrl("Dashboard"), { replace: true });
+    } else {
+      setShowContent(true);
+    }
+  }, [user, properties, userLoading, propertiesLoading, navigate]);
 
   const steps = [
-    {
-      id: 'welcome',
-      component: OnboardingWelcome,
-      title: 'Welcome to 360° Method'
-    },
-    {
-      id: 'profile',
-      component: OnboardingUserProfile,
-      title: 'Tell Us About You'
-    },
-    {
-      id: 'propertyType',
-      component: OnboardingPropertyType,
-      title: 'Property Type'
-    },
-    {
-      id: 'property',
-      component: OnboardingPropertySetup,
-      title: 'Add Your First Property'
-    },
-    {
-      id: 'baseline',
-      component: OnboardingBaselinePrimer,
-      title: 'Understanding Your Baseline'
-    },
-    {
-      id: 'complete',
-      component: OnboardingComplete,
-      title: 'You\'re All Set!'
-    }
+    { id: 'welcome', component: OnboardingWelcome, title: 'Welcome to 360° Method' },
+    { id: 'profile', component: OnboardingUserProfile, title: 'Tell Us About You' },
+    { id: 'propertyType', component: OnboardingPropertyType, title: 'Property Type' },
+    { id: 'property', component: OnboardingPropertySetup, title: 'Add Your First Property' },
+    { id: 'baseline', component: OnboardingBaselinePrimer, title: 'Understanding Your Baseline' },
+    { id: 'complete', component: OnboardingComplete, title: 'You\'re All Set!' }
   ];
 
   const handleStepComplete = (stepData) => {
-    setOnboardingData(prev => ({
-      ...prev,
-      ...stepData
-    }));
-    
-    // Move to next step
+    setOnboardingData(prev => ({ ...prev, ...stepData }));
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -126,7 +92,6 @@ export default function Onboarding() {
   };
 
   const handleSkipConfirm = async () => {
-    // Mark onboarding as skipped/completed and go to dashboard
     await updateUserMutation.mutateAsync({ 
       onboarding_completed: true,
       onboarding_skipped: true,
@@ -137,7 +102,6 @@ export default function Onboarding() {
   };
 
   const handleComplete = async (finalData) => {
-    // Save any final data and mark onboarding complete
     await updateUserMutation.mutateAsync({
       ...finalData,
       onboarding_completed: true,
@@ -145,7 +109,6 @@ export default function Onboarding() {
       onboarding_completed_date: new Date().toISOString()
     });
     
-    // Navigate based on selected path
     if (onboardingData.selectedPath === 'wizard') {
       navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&wizard=true&fromOnboarding=true`, { replace: true });
     } else if (onboardingData.selectedPath === 'walkthrough') {
@@ -155,16 +118,15 @@ export default function Onboarding() {
     }
   };
 
-  // Show loading while checking onboarding status
-  if (isLoading || userLoading || propertiesLoading) {
+  if (!showContent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 mx-auto mb-4 flex items-center justify-center animate-pulse">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 mx-auto mb-4 flex items-center justify-center">
             <div className="w-12 h-12 rounded-full border-4 border-white border-t-transparent animate-spin"></div>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Loading...</h2>
-          <p className="text-gray-600">Preparing your onboarding experience</p>
+          <p className="text-gray-600">Preparing your experience</p>
         </div>
       </div>
     );
@@ -175,22 +137,15 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
-        {/* Skip Button - Only show on non-welcome and non-complete steps */}
         {currentStep > 0 && currentStep < steps.length - 1 && (
           <div className="flex justify-end mb-4">
-            <Button
-              onClick={handleSkipRequest}
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-gray-700"
-            >
+            <Button onClick={handleSkipRequest} variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
               <X className="w-4 h-4 mr-1" />
               Skip Setup
             </Button>
           </div>
         )}
 
-        {/* Progress Bar */}
         {currentStep > 0 && currentStep < steps.length - 1 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
@@ -213,7 +168,6 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* Current Step */}
         <CurrentStepComponent
           onNext={handleStepComplete}
           onBack={currentStep > 0 ? handleBack : null}
@@ -224,7 +178,6 @@ export default function Onboarding() {
         />
       </div>
 
-      {/* Skip Confirmation Dialog */}
       <OnboardingSkipDialog
         open={showSkipDialog}
         onClose={() => setShowSkipDialog(false)}
