@@ -45,6 +45,8 @@ import EnhancedUnitSelectionModal from "../components/prioritize/EnhancedUnitSel
 import DualUnitSelectionModal from "../components/prioritize/DualUnitSelectionModal";
 import { useDemo } from "../components/shared/DemoContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 
 const Label = ({ children, className = "", ...props }) => (
@@ -106,7 +108,7 @@ export default function PrioritizePage() {
   const [showTaskForm, setShowTaskForm] = React.useState(false);
   const [priorityFilter, setPriorityFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('cascade_risk');
-  const [showEducation, setShowEducation] = React.useState(false);
+  const [showEducation, setShowEducation] = React.useState(false); // This state will no longer control the main education card
   const [addingTemplateId, setAddingTemplateId] = React.useState(null);
   const [viewMode, setViewMode] = React.useState('grouped');
   const [selectedTasks, setSelectedTasks] = React.useState([]);
@@ -703,7 +705,14 @@ export default function PrioritizePage() {
             </div>
           </div>
 
-          {/* ACT Phase 3-Step Flow - PROMINENT */}
+          {/* NEW: Step Education Card (high-level context) */}
+          <StepEducationCard 
+            {...STEP_EDUCATION.prioritize}
+            defaultExpanded={false}
+            className="mb-6"
+          />
+
+          {/* ACT Phase 3-Step Flow - KEPT (detailed workflow) */}
           <Card className="border-2 border-red-400 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 shadow-lg">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -753,116 +762,6 @@ export default function PrioritizePage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Educational Card - Expandable */}
-        <Card className="border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50 mb-6">
-          <CardContent className="p-4">
-            <button
-              onClick={() => setShowEducation(!showEducation)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-bold text-red-900 mb-1">
-                  🎟️ Understanding the Ticket Queue
-                </h3>
-                <p className="text-sm text-red-800">
-                  Click to learn how the central ticket system routes all maintenance work
-                </p>
-              </div>
-              {showEducation ? (
-                <ChevronUp className="w-5 h-5 text-red-600 flex-shrink-0" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-red-600 flex-shrink-0" />
-              )}
-            </button>
-
-            {showEducation && (
-              <div className="mt-4 space-y-3 text-sm text-gray-800 border-t border-red-200 pt-4">
-                <p className="leading-relaxed">
-                  <strong>This is Step 1 of ACT:</strong> Every task - whether discovered during inspections, flagged 
-                  by Preserve analysis, planned upgrades, generated from seasonal maintenance templates, or manually 
-                  entered - arrives in this Ticket Queue. Here you make the critical decisions that route work through 
-                  the 3-step ACT workflow.
-                </p>
-                
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-3 border border-red-200">
-                    <p className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                      <Inbox className="w-4 h-4" />
-                      Ticket Sources
-                    </p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• <strong>Seasonal Inspections</strong> - Issues discovered during quarterly walkthroughs</li>
-                      <li>• <strong>Seasonal Maintenance Tasks</strong> - Routine work specific to your region (e.g., gutter cleaning, HVAC maintenance)</li>
-                      <li>• <strong>Preserve Analysis</strong> - Lifecycle planning based on system age</li>
-                      <li>• <strong>Upgrade Projects</strong> - Value-add improvement ideas</li>
-                      <li>• <strong>Manual Entry</strong> - Ad-hoc discoveries you add yourself</li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-3 border border-red-200">
-                    <p className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      What You Do Here
-                    </p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Review AI cost & cascade analysis</li>
-                      <li>• Set priority level (High/Medium/Low/Routine)</li>
-                      <li>• Choose DIY or Professional service</li>
-                      <li>• Tag by unit (for multi-unit properties)</li>
-                      <li>• Add to cart OR send to Schedule</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Routine Seasonal Maintenance Card */}
-                <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300">
-                  <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Seasonal Maintenance Tasks
-                  </p>
-                  <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                    <strong>Actual maintenance work</strong> suggested based on your property's climate zone. 
-                    These are physical tasks that need to be done, not visual inspections. Examples:
-                  </p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• 🍂 <strong>Fall:</strong> Clean gutters, winterize irrigation, service heating system</li>
-                    <li>• ❄️ <strong>Winter:</strong> Prevent frozen pipes, snow removal, salt walkways</li>
-                    <li>• 🌸 <strong>Spring:</strong> AC tune-up, power wash exterior, fertilize lawn</li>
-                    <li>• ☀️ <strong>Summer:</strong> Replace HVAC filters, pest control, seal driveway</li>
-                  </ul>
-                  <p className="text-xs text-gray-600 mt-2 italic">
-                    💡 Inspections are separate - run those in the Inspect step
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
-                  <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                    <Archive className="w-4 h-4" />
-                    Automatic Archiving to Track
-                  </p>
-                  <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                    <strong>You never manually log to Track.</strong> When tasks are marked complete (either here or in Execute), 
-                    they're <strong>automatically archived</strong> with:
-                  </p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• ✅ Completion date automatically recorded</li>
-                    <li>• 💰 All costs preserved (current fix, actual cost)</li>
-                    <li>• 🏷️ Unit tags maintained for filtering</li>
-                    <li>• 📸 Photos, AI analysis, and notes intact</li>
-                    <li>• 📊 Feeds into property health score & spending analytics</li>
-                  </ul>
-                </div>
-
-                <p className="text-xs italic text-red-700 bg-red-100 border border-red-300 rounded p-2">
-                  💡 <strong>Pro Tip:</strong> Always tag tickets by unit (for multi-unit properties) so you can later 
-                  sort Track history by unit. This helps identify problem units and unit-specific maintenance patterns.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Property Selector */}
         {properties.length > 1 && (
