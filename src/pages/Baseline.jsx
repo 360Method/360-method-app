@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -145,7 +144,6 @@ const SYSTEM_DESCRIPTIONS = {
   }
 };
 
-// Milestone definitions
 const MILESTONES = [
   {
     id: 'first_system',
@@ -182,7 +180,7 @@ const MILESTONES = [
   },
   {
     id: 'recommended_complete',
-    threshold: 14, // 6 Required + 8 Recommended = 14
+    threshold: 14,
     icon: '🏆',
     title: 'Recommended Systems Complete!',
     message: 'You have comprehensive coverage. This is elite homeownership.',
@@ -190,7 +188,7 @@ const MILESTONES = [
   },
   {
     id: 'baseline_boss',
-    threshold: 16, // 14 + 1 Appliance type + 1 Safety type = 16
+    threshold: 16,
     icon: '👑',
     title: 'BASELINE BOSS!',
     message: "Complete documentation. You're in the top 1% of homeowners.",
@@ -214,7 +212,6 @@ export default function Baseline() {
   const [lastAddedSystemType, setLastAddedSystemType] = React.useState(null);
   const [deletingSystem, setDeletingSystem] = React.useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  // const [viewMode, setViewMode] = React.useState('cards'); // 'cards' or 'compact' - Not yet used in this implementation
   const [showWizard, setShowWizard] = React.useState(false);
   const [showPhysicalWalkthrough, setShowPhysicalWalkthrough] = React.useState(false);
   const [recentMilestone, setRecentMilestone] = React.useState(null);
@@ -224,14 +221,12 @@ export default function Baseline() {
 
   const queryClient = useQueryClient();
 
-  // Welcome celebration
   React.useEffect(() => {
     if (welcomeNew && !fromOnboarding && !isDemoMode) {
       toast.success('🎉 Property added! Let\'s document your systems.', {
         duration: 4000,
         icon: '🏠'
       });
-      // The original code had URL cleanup here. The outline removes this.
     }
   }, [welcomeNew, fromOnboarding, isDemoMode]);
 
@@ -262,7 +257,6 @@ export default function Baseline() {
     }
   }, [properties, selectedProperty, isDemoMode]);
 
-  // Calculate completion metrics for milestone check
   const systemsByType = systems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
       acc[system.system_type] = [];
@@ -285,7 +279,6 @@ export default function Baseline() {
   
   const totalSystemTypes = requiredComplete + recommendedComplete + (appliancesComplete > 0 ? 1 : 0) + (safetyComplete > 0 ? 1 : 0);
   
-  // Check if user just hit a milestone
   React.useEffect(() => {
     const milestone = MILESTONES.find(m => m.threshold === totalSystemTypes);
     if (milestone && !recentMilestone) {
@@ -330,20 +323,17 @@ export default function Baseline() {
     return message;
   };
 
-  // Calculate completion metrics
   const essentialProgress = Math.round((requiredComplete / REQUIRED_SYSTEMS.length) * 100);
   const recommendedProgress = Math.round((recommendedComplete / RECOMMENDED_SYSTEMS.length) * 100);
   const overallProgress = Math.round((totalSystemTypes / 16) * 100);
   
   const actPhaseUnlocked = requiredComplete >= 4;
   const allRequiredComplete = requiredComplete === REQUIRED_SYSTEMS.length;
-  const baselineBoss = totalSystemTypes >= MILESTONES[MILESTONES.length - 1].threshold; // Dynamically check for baseline boss based on last milestone threshold
+  const baselineBoss = totalSystemTypes >= MILESTONES[MILESTONES.length - 1].threshold;
 
-  // Get next milestone
   const nextMilestone = MILESTONES.find(m => m.threshold > totalSystemTypes);
   const systemsToNextMilestone = nextMilestone ? nextMilestone.threshold - totalSystemTypes : 0;
 
-  // Dynamic messaging for status card
   let statusMessage = "";
   let statusSubtext = "";
   let statusBorderColor = "";
@@ -398,11 +388,10 @@ export default function Baseline() {
     };
   }
 
-  // Update property baseline_completion
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallProgress && !isDemoMode) { // Do not update in demo mode
+      if (property && property.baseline_completion !== overallProgress && !isDemoMode) {
         base44.entities.Property.update(selectedProperty, {
           baseline_completion: overallProgress
         }).then(() => {
@@ -414,15 +403,11 @@ export default function Baseline() {
 
   const handleEditSystem = (system) => {
     if (isDemoMode) {
-      toast.info('Add your property to edit systems', {
-        description: 'Demo mode data cannot be modified. Add a real property to manage your systems.',
-      });
+      toast.info('Add your property to edit systems');
       return;
     }
     
-    // Save scroll position before opening dialog
     setScrollPosition(window.scrollY);
-    
     setEditingSystem({
       ...system,
       description: SYSTEM_DESCRIPTIONS[system.system_type],
@@ -433,16 +418,12 @@ export default function Baseline() {
 
   const handleAddSystem = (systemType) => {
     if (isDemoMode) {
-      toast.info('Add your property to document systems', {
-        description: 'Demo mode data cannot be modified. Add a real property to manage your systems.',
-      });
+      toast.info('Add your property to document systems');
       return;
     }
     
-    // Save scroll position and system type before opening dialog
     setScrollPosition(window.scrollY);
     setLastAddedSystemType(systemType);
-    
     setEditingSystem({ 
       system_type: systemType, 
       property_id: selectedProperty,
@@ -456,12 +437,8 @@ export default function Baseline() {
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingSystem(null);
-    
-    // Invalidate both specific and general queries
     queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
     queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-    
-    // Restore scroll position after a short delay to allow DOM updates
     setTimeout(() => {
       window.scrollTo({
         top: scrollPosition,
@@ -472,9 +449,7 @@ export default function Baseline() {
 
   const handleRequestProService = () => {
     if (isDemoMode) {
-      toast.info('Add your property to request Pro Services', {
-        description: 'This feature is unavailable in demo mode.',
-      });
+      toast.info('Add your property to request services');
       return;
     }
     setShowCartDialog(true);
@@ -486,7 +461,6 @@ export default function Baseline() {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
     
     if (instances.length === 0) {
-      // No instances - show add button
       return (
         <Card
           key={systemType}
@@ -514,7 +488,6 @@ export default function Baseline() {
       );
     }
 
-    // Has instances - show list
     return (
       <Card key={systemType} className={`border-2 shadow-md hover:shadow-lg transition-shadow ${isRequired ? 'border-red-200' : 'border-blue-200'}`}>
         <CardHeader className="pb-3">
@@ -523,9 +496,7 @@ export default function Baseline() {
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <span className="text-base">{systemType} ({instances.length})</span>
               {isRequired && (
-                <Badge className="bg-green-600 text-white">
-                  COMPLETE
-                </Badge>
+                <Badge className="bg-green-600 text-white">COMPLETE</Badge>
               )}
             </div>
           </CardTitle>
@@ -598,7 +569,6 @@ export default function Baseline() {
     );
   };
 
-  // Conditional render for the Wizard
   if (showWizard && selectedProperty) {
     return (
       <BaselineWizard
@@ -606,39 +576,14 @@ export default function Baseline() {
         property={currentProperty}
         onComplete={() => {
           setShowWizard(false);
-          // Force refresh of systems data
           queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
-          
-          // Check for milestone after wizard completes
-          setTimeout(() => {
-            const updatedSystems = queryClient.getQueryData(['systemBaselines', selectedProperty]) || systems;
-            const updatedSystemsByType = updatedSystems.reduce((acc, system) => {
-              if (!acc[system.system_type]) acc[system.system_type] = [];
-              acc[system.system_type].push(system);
-              return acc;
-            }, {});
-            
-            const requiredTypes = REQUIRED_SYSTEMS.filter(type => updatedSystemsByType[type]?.length > 0).length;
-            const recommendedTypes = RECOMMENDED_SYSTEMS.filter(type => updatedSystemsByType[type]?.length > 0).length;
-            const applianceTypes = APPLIANCE_TYPES.filter(type => updatedSystemsByType[type]?.length > 0).length;
-            const safetyTypes = SAFETY_TYPES.filter(type => updatedSystemsByType[type]?.length > 0).length;
-            const totalTypes = requiredTypes + recommendedTypes + (applianceTypes > 0 ? 1 : 0) + (safetyTypes > 0 ? 1 : 0);
-            
-            const milestone = MILESTONES.find(m => m.threshold === totalTypes);
-            if (milestone && !recentMilestone) {
-              setRecentMilestone(milestone);
-              setTimeout(() => setRecentMilestone(null), 10000);
-            }
-          }, 500);
         }}
         onSkip={() => setShowWizard(false)}
-        isDemoMode={isDemoMode}
       />
     );
   }
 
-  // Conditional render for the Physical Walkthrough Wizard
   if (showPhysicalWalkthrough && selectedProperty) {
     return (
       <PhysicalWalkthroughWizard
@@ -646,12 +591,10 @@ export default function Baseline() {
         property={currentProperty}
         onComplete={() => {
           setShowPhysicalWalkthrough(false);
-          // Force refresh of systems data
           queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
         }}
         onSkip={() => setShowPhysicalWalkthrough(false)}
-        isDemoMode={isDemoMode}
       />
     );
   }
@@ -659,26 +602,22 @@ export default function Baseline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        {/* Preview Banner for Demo Mode */}
         {isDemoMode && (
           <div className="mb-6 mt-4">
             <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
           </div>
         )}
 
-        {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Baseline Page Header */}
         <BaselinePageHeader
           property={currentProperty}
           documentedCount={requiredComplete}
           totalRequired={6}
         />
 
-        {/* Why This Step Matters - Educational Card */}
         <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
           <CardHeader className="pb-3">
             <button
@@ -716,9 +655,9 @@ export default function Baseline() {
               <div className="flex gap-3">
                 <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold mb-1">Prevent <TermTooltip term="cascade failure">Cascade Failures</TermTooltip></h4>
+                  <h4 className="font-semibold mb-1">Prevent Cascade Failures</h4>
                   <p className="text-sm text-gray-700">
-                    $50 clogged gutter &rarr; $5,000 flood. Catch problems early.
+                    $50 clogged gutter → $5,000 flood. Catch problems early.
                   </p>
                 </div>
               </div>
@@ -736,25 +675,22 @@ export default function Baseline() {
           )}
         </Card>
 
-        {/* Post-Onboarding Completion Prompt */}
         {showPostOnboardingPrompt && currentProperty && (
           <PostOnboardingPrompt
             property={currentProperty}
             onDismiss={() => {
               setShowPostOnboardingPrompt(false);
-              // Remove the flag from URL
               const newUrl = window.location.pathname + window.location.search.replace(/[?&]fromOnboarding=true/, '').replace(/^&/, '?');
               window.history.replaceState({}, '', newUrl);
             }}
           />
         )}
 
-        {/* Property Selector - MOVED UP */}
-        {properties.length > 0 && (
+        {properties.length > 0 && !isDemoMode && (
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
-              <Select value={selectedProperty} onValueChange={setSelectedProperty} disabled={isDemoMode}>
+              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
                 <SelectTrigger className="w-full md:w-96">
                   <SelectValue placeholder="Select a property" />
                 </SelectTrigger>
@@ -770,322 +706,118 @@ export default function Baseline() {
           </Card>
         )}
 
-        {/* PROMINENT DOCUMENTATION METHOD SELECTOR - Always visible when property selected */}
         {selectedProperty && (
-          <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl mb-6">
-            <CardHeader className="pb-4">
-              <div className="text-center">
-                <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                  Choose Your Documentation Method
-                </CardTitle>
-                <p className="text-gray-700">Pick the approach that works best for you</p>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Two Big Options */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Quick Start Wizard */}
-                <Card 
-                  className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  onClick={() => {
-                    if (isDemoMode) {
-                      toast.info('Add your property to use the wizard', {
-                        description: 'This feature is unavailable in demo mode.',
-                      });
-                    } else {
-                      setShowWizard(true);
-                    }
-                  }}
-                >
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Sparkles className="w-10 h-10 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          ⚡ Quick Start Wizard
-                        </h3>
-                        <Badge className="bg-purple-600 text-white mb-3">
-                          <Clock className="w-3 h-3 mr-1" />
-                          10-15 minutes
-                        </Badge>
-                        <p className="text-sm text-gray-700 mb-4">
-                          Guided step-by-step documentation of your 4 most critical systems. Get started fast with smart photo scanning.
-                        </p>
-                      </div>
-                      <div className="bg-purple-100 rounded-lg p-4 text-left">
-                        <p className="text-xs font-semibold text-purple-900 mb-2">✓ Perfect for:</p>
-                        <ul className="text-xs text-purple-800 space-y-1">
-                          <li>• First-time users</li>
-                          <li>• Digital-first approach</li>
-                          <li>• Quick essential coverage</li>
-                          <li>• Unlock ACT phase fast</li>
-                        </ul>
-                      </div>
-                      <Button 
-                        className="w-full gap-2 text-lg py-6 group-hover:bg-purple-700"
-                        style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
-                        disabled={isDemoMode}
-                      >
-                        <Sparkles className="w-5 h-5" />
-                        Start Quick Setup
-                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Physical Walkthrough */}
-                <Card 
-                  className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  onClick={() => {
-                    if (isDemoMode) {
-                      toast.info('Add your property to use the walkthrough', {
-                        description: 'This feature is unavailable in demo mode.',
-                      });
-                    } else {
-                      setShowPhysicalWalkthrough(true);
-                    }
-                  }}
-                >
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <MapPin className="w-10 h-10 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          🏠 Physical Walkthrough
-                        </h3>
-                        <Badge className="bg-green-600 text-white mb-3">
-                          <Clock className="w-3 h-3 mr-1" />
-                          30-45 minutes
-                        </Badge>
-                        <p className="text-sm text-gray-700 mb-4">
-                          Room-by-room route through your property. Document everything efficiently with optimal zone-based navigation.
-                        </p>
-                      </div>
-                      <div className="bg-green-100 rounded-lg p-4 text-left">
-                        <p className="xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
-                        <ul className="text-xs text-green-800 space-y-1">
-                          <li>• Complete documentation</li>
-                          <li>• Physical inspection mindset</li>
-                          <li>• Mobile on-site use</li>
-                          <li>• Maximum coverage</li>
-                        </ul>
-                      </div>
-                      <Button 
-                        className="w-full gap-2 text-lg py-6 group-hover:bg-green-700"
-                        style={{ backgroundColor: '#28A745', minHeight: '56px' }}
-                        disabled={isDemoMode}
-                      >
-                        <Navigation className="w-5 h-5" />
-                        Start Walkthrough
-                        <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Manual Option - Smaller, Below */}
-              <div className="border-t pt-4">
-                <p className="text-center text-sm text-gray-600 mb-3">
-                  Or document systems individually as you go &rarr;
-                </p>
-                <div className="text-center">
-                  <Badge variant="outline" className="text-xs text-gray-600">
-                    Scroll down to browse all system categories
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Why This Matters - Prominent Educational Section */}
-        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
-              <Lightbulb className="w-8 h-8 text-yellow-600" />
-              Why Your Baseline Matters
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Prevent Disasters */}
-              <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-red-600" />
-                  </div>
-                  <h3 className="font-bold text-red-900 text-lg">Prevent Disasters</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
-                    <span><strong>$25K-50K</strong> in prevented emergency costs</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
-                    <span>Know when systems will fail <strong>before</strong> they do</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
-                    <span>Replace on <strong>your timeline</strong>, not during crisis</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
-                    <span>Avoid <strong>3X emergency pricing</strong> during peak season</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Financial Control */}
-              <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                  </div>
-                  <h3 className="font-bold text-green-900 text-lg">Financial Control</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
-                    <span>Budget <strong>2-3 years ahead</strong> with confidence</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
-                    <span>Plan major expenses <strong>before</strong> they're urgent</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
-                    <span>Get <strong>competitive bids</strong> when you have time</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
-                    <span>Tax deductions for <strong>rental properties</strong></span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Property Value */}
-              <div className="bg-white rounded-lg p-5 border-2 border-blue-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-bold text-blue-900 text-lg">Property Value</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
-                    <span><strong>$8K-15K</strong> higher sale value with documentation</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
-                    <span>Pass <strong>inspections faster</strong> during sales</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
-                    <span>Command <strong>premium pricing</strong> as well-maintained</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
-                    <span><strong>Lower insurance</strong> premiums possible</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* The Bottom Line */}
-            <div className="bg-white rounded-lg p-5 border-2 border-purple-300">
-              <div className="flex items-start gap-3">
-                <Target className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
-                  <p className="text-gray-800 leading-relaxed">
-                    <strong>Most homeowners react to problems.</strong> They replace systems when they fail&mdash;during peak season, 
-                    at emergency pricing, with no time to shop around. A $6,000 planned HVAC replacement becomes $12,000+ when 
-                    it fails in July. <strong>Your baseline changes this.</strong> You'll know your 18-year-old HVAC has 
-                    2 years left, budget for it, get quotes in spring, and replace on <em>your</em> timeline at half the cost.
-                  </p>
-                  <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
-                    <p className="text-sm font-semibold text-purple-900">
-                      ⚡ <strong>This takes 30-60 minutes.</strong> It saves you tens of thousands of dollars and years of stress.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* What You'll Document */}
-            <div className="bg-white rounded-lg p-5 border-2 border-gray-300">
-              <h3 className="font-bold text-gray-900 text-lg mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-6 h-6 text-gray-700" />
-                What You'll Document:
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-800">
-                <div>
-                  <p className="font-semibold mb-2">&check; For Each System:</p>
-                  <ul className="space-y-1 ml-4">
-                    <li>&bull; Brand/model (photo of data plate works!)</li>
-                    <li>&bull; Installation year (critical for planning)</li>
-                    <li>&bull; Current condition</li>
-                    <li>&bull; Photos for insurance claims</li>
-                    <li>&bull; Warranty information</li>
-                  </ul>
-                </div>
-                <div>
-                  <p className="font-semibold mb-2">&check; Then We Calculate:</p>
-                  <ul className="space-y-1 ml-4">
-                    <li>&bull; Expected lifespan remaining</li>
-                    <li>&bull; Replacement timeline &amp; budget</li>
-                    <li>&bull; Preventive maintenance schedule</li>
-                    <li>&bull; Cascade failure risks</li>
-                    <li>&bull; Property health score</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Milestone Celebration */}
-        {recentMilestone && (
-          <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 animate-pulse mb-6">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <div className="text-6xl mb-3">{recentMilestone.icon}</div>
-                <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                  {recentMilestone.title}
-                </h2>
-                <p className="text-lg text-gray-700 mb-4">{recentMilestone.message}</p>
-                {recentMilestone.unlocks && (
-                  <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-                    <p className="font-semibold mb-2 text-purple-900">🎁 Unlocked Features:</p>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {recentMilestone.unlocks.map((unlock, idx) => (
-                        <Badge key={idx} className="bg-purple-600 text-white">
-                          <Unlock className="w-3 h-3 mr-1" />
-                          {unlock}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <Badge className="bg-purple-600 text-white text-lg px-4 py-2 mt-4">
-                  {recentMilestone.badge}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {selectedProperty ? (
           <>
-            {/* Status Message with Professional Option AND Why It Matters Reminder */}
+            <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl mb-6">
+              <CardHeader className="pb-4">
+                <div className="text-center">
+                  <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                    Choose Your Documentation Method
+                  </CardTitle>
+                  <p className="text-gray-700">Pick the approach that works best for you</p>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card 
+                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => !isDemoMode && setShowWizard(true)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <Sparkles className="w-10 h-10 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                            ⚡ Quick Start Wizard
+                          </h3>
+                          <Badge className="bg-purple-600 text-white mb-3">
+                            <Clock className="w-3 h-3 mr-1" />
+                            10-15 minutes
+                          </Badge>
+                          <p className="text-sm text-gray-700 mb-4">
+                            Guided step-by-step documentation of your 4 most critical systems.
+                          </p>
+                        </div>
+                        <div className="bg-purple-100 rounded-lg p-4 text-left">
+                          <p className="text-xs font-semibold text-purple-900 mb-2">✓ Perfect for:</p>
+                          <ul className="text-xs text-purple-800 space-y-1">
+                            <li>• First-time users</li>
+                            <li>• Digital-first approach</li>
+                            <li>• Quick essential coverage</li>
+                            <li>• Unlock ACT phase fast</li>
+                          </ul>
+                        </div>
+                        <Button 
+                          className="w-full gap-2 text-lg py-6"
+                          style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
+                          disabled={isDemoMode}
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          Start Quick Setup
+                          <ArrowRight className="w-5 h-5 ml-1" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${isDemoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => !isDemoMode && setShowPhysicalWalkthrough(true)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <MapPin className="w-10 h-10 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                            🏠 Physical Walkthrough
+                          </h3>
+                          <Badge className="bg-green-600 text-white mb-3">
+                            <Clock className="w-3 h-3 mr-1" />
+                            30-45 minutes
+                          </Badge>
+                          <p className="text-sm text-gray-700 mb-4">
+                            Room-by-room route through your property.
+                          </p>
+                        </div>
+                        <div className="bg-green-100 rounded-lg p-4 text-left">
+                          <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
+                          <ul className="text-xs text-green-800 space-y-1">
+                            <li>• Complete documentation</li>
+                            <li>• Physical inspection mindset</li>
+                            <li>• Mobile on-site use</li>
+                          </ul>
+                        </div>
+                        <Button 
+                          className="w-full gap-2 text-lg py-6"
+                          style={{ backgroundColor: '#28A745', minHeight: '56px' }}
+                          disabled={isDemoMode}
+                        >
+                          <Navigation className="w-5 h-5" />
+                          Start Walkthrough
+                          <ArrowRight className="w-5 h-5 ml-1" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-center text-sm text-gray-600 mb-3">
+                    Or document systems individually as you go →
+                  </p>
+                  <div className="text-center">
+                    <Badge variant="outline" className="text-xs text-gray-600">
+                      Scroll down to browse all system categories
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className={`border-2 ${statusBorderColor} mb-6`} style={{ backgroundColor: statusBgColor }}>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -1095,7 +827,6 @@ export default function Baseline() {
                       <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>{statusMessage}</h3>
                       <p className="text-gray-700">{statusSubtext}</p>
                       
-                      {/* Next Milestone Progress */}
                       {nextMilestone && totalSystemTypes < MILESTONES[MILESTONES.length - 1].threshold && (
                         <div className="mt-4 p-3 bg-white/80 rounded-lg border">
                           <div className="flex items-center justify-between mb-2">
@@ -1110,20 +841,9 @@ export default function Baseline() {
                             value={(totalSystemTypes / nextMilestone.threshold) * 100} 
                             className="h-2"
                           />
-                          {nextMilestone.unlocks && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {nextMilestone.unlocks.map((unlock, idx) => (
-                                <span key={idx} className="text-xs text-gray-600 flex items-center gap-1">
-                                  <Lock className="w-3 h-3" />
-                                  {unlock}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       )}
 
-                      {/* Condensed "Why It Matters" Reminder - Always visible after first system */}
                       {systems.length > 0 && whyItMattersReminder && (
                         <div className="mt-3 p-3 bg-white/60 border border-gray-300 rounded-lg">
                           <div className="flex items-start gap-2">
@@ -1145,36 +865,6 @@ export default function Baseline() {
               </CardContent>
             </Card>
 
-            {/* Professional Service CTA */}
-            <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">
-                    💼
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-blue-900 mb-1">
-                      Want help documenting your property?
-                    </p>
-                    <p className="text-xs text-gray-700 mb-3">
-                      Our certified technicians will walk through your home and document everything - taking 2-3 hours of work off your plate.
-                    </p>
-                    <Button
-                      onClick={handleRequestProService}
-                      variant="default"
-                      className="gap-2"
-                      style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                      disabled={isDemoMode}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      Add Professional Baseline to Cart ($299)
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Essential Systems */}
             <Card className="border-2 border-red-200 shadow-lg mb-6">
               <CardHeader className="bg-red-50">
                 <div className="flex items-center justify-between">
@@ -1200,7 +890,6 @@ export default function Baseline() {
               </CardContent>
             </Card>
 
-            {/* Recommended Systems */}
             <Card className="border-2 border-blue-200 shadow-lg mb-6">
               <CardHeader className="bg-blue-50">
                 <div className="flex items-center justify-between">
@@ -1223,7 +912,6 @@ export default function Baseline() {
               </CardContent>
             </Card>
 
-            {/* Major Appliances */}
             <Card className="border-2 border-purple-200 shadow-lg mb-6">
               <CardHeader className="bg-purple-50">
                 <div className="flex items-center justify-between">
@@ -1237,7 +925,7 @@ export default function Baseline() {
               </CardHeader>
               <CardContent className="p-6">
                 <p className="text-sm text-gray-700 mb-6">
-                  Document each appliance type. You can add multiple of each (especially useful for multi-unit properties).
+                  Document each appliance type. You can add multiple of each.
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {APPLIANCE_TYPES.map((applianceType) => 
@@ -1247,7 +935,6 @@ export default function Baseline() {
               </CardContent>
             </Card>
 
-            {/* Safety Systems */}
             <Card className="border-2 border-orange-200 shadow-lg mb-6">
               <CardHeader className="bg-orange-50">
                 <div className="flex items-center justify-between">
@@ -1261,7 +948,7 @@ export default function Baseline() {
               </CardHeader>
               <CardContent className="p-6">
                 <p className="text-sm text-gray-700 mb-6">
-                  Add detectors and extinguishers for each location. Track batteries and test dates.
+                  Add detectors and extinguishers for each location.
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {SAFETY_TYPES.map((safetyType) => 
@@ -1280,7 +967,9 @@ export default function Baseline() {
               allowsMultiple={editingSystem?.allowsMultiple}
             />
           </>
-        ) : (
+        )}
+
+        {!selectedProperty && (
           <Card className="border-none shadow-lg">
             <CardContent className="p-12 text-center">
               <Home className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -1323,7 +1012,6 @@ export default function Baseline() {
           />
         )}
 
-        {/* QuickPropertyAdd Modal */}
         <QuickPropertyAdd
           open={showQuickPropertyAdd}
           onClose={() => setShowQuickPropertyAdd(false)}
