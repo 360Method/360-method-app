@@ -18,10 +18,12 @@ import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 import StepNavigation from "../components/navigation/StepNavigation";
-import { useDemoMode } from "../components/shared/useDemoMode";
+import { useDemoMode } => "../components/shared/useDemoMode";
 import { DEMO_PROPERTY, DEMO_SYSTEMS } from "../components/shared/demoProperty";
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
+import BaselinePageHeader from "../components/baseline/BaselinePageHeader";
+import TermTooltip from "../components/shared/TermTooltip";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -229,10 +231,7 @@ export default function Baseline() {
         duration: 4000,
         icon: '🏠'
       });
-      // Remove welcome from URL to prevent showing it again on refresh
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('welcome');
-      window.history.replaceState({}, '', newUrl.toString());
+      // The original code had URL cleanup here. The outline removes this.
     }
   }, [welcomeNew, fromOnboarding, isDemoMode]);
 
@@ -672,23 +671,12 @@ export default function Baseline() {
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Phase & Step Header */}
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
-              Phase I - AWARE
-            </Badge>
-            <Badge variant="outline" className="text-sm px-3 py-1">
-              Step 1 of 9
-            </Badge>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Baseline
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Document your property's systems to unlock powerful insights
-          </p>
-        </div>
+        {/* Baseline Page Header */}
+        <BaselinePageHeader
+          property={currentProperty}
+          documentedCount={requiredComplete}
+          totalRequired={6}
+        />
 
         {/* Why This Step Matters - Educational Card */}
         <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
@@ -699,9 +687,11 @@ export default function Baseline() {
             >
               <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">Why Baseline Matters</h3>
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  Why <TermTooltip term="baseline">Baseline</TermTooltip> Matters
+                </h3>
                 <p className="text-sm text-blue-800">
-                  Your baseline is the foundation of the 360° Method. Without knowing what you have, you can't protect it, plan for it, or improve it effectively.
+                  Your baseline is the foundation. Without knowing what you have, you can't protect it.
                 </p>
               </div>
               {whyExpanded ? (
@@ -712,26 +702,33 @@ export default function Baseline() {
             </button>
           </CardHeader>
           {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
+            <CardContent className="pt-0 space-y-3">
+              <div className="flex gap-3">
+                <Target className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Baseline is Step 1 of the AWARE phase. It creates your property's "digital twin" - a complete inventory of every major system with age, condition, and maintenance history. This knowledge powers every subsequent step in the method.
+                  <h4 className="font-semibold mb-1">Know What You Own</h4>
+                  <p className="text-sm text-gray-700">
+                    You can't protect what you don't know exists. Document every system.
                   </p>
                 </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 What This Unlocks:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Inspect</strong> becomes faster - you know what to check and where</li>
-                    <li>• <strong>Track</strong> can show trends - system age vs. maintenance costs</li>
-                    <li>• <strong>Prioritize</strong> gets smarter - AI understands your property's unique profile</li>
-                    <li>• <strong>Preserve</strong> forecasts accurately - based on real system ages and lifespans</li>
-                  </ul>
+                  <h4 className="font-semibold mb-1">Prevent <TermTooltip term="cascade failure">Cascade Failures</TermTooltip></h4>
+                  <p className="text-sm text-gray-700">
+                    $50 clogged gutter &rarr; $5,000 flood. Catch problems early.
+                  </p>
                 </div>
-                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
-                  <p className="text-xs text-blue-900">
-                    <strong>Pro Tip:</strong> Document at least the 6 required systems to unlock ACT phase features. Complete all systems for full 360° Method capabilities.
+              </div>
+              
+              <div className="flex gap-3">
+                <DollarSign className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold mb-1">Save $27K-$72K</h4>
+                  <p className="text-sm text-gray-700">
+                    Average savings over 10-15 years through preventive maintenance.
                   </p>
                 </div>
               </div>
@@ -895,7 +892,7 @@ export default function Baseline() {
               {/* Manual Option - Smaller, Below */}
               <div className="border-t pt-4">
                 <p className="text-center text-sm text-gray-600 mb-3">
-                  Or document systems individually as you go →
+                  Or document systems individually as you go &rarr;
                 </p>
                 <div className="text-center">
                   <Badge variant="outline" className="text-xs text-gray-600">
@@ -927,19 +924,19 @@ export default function Baseline() {
                 </div>
                 <ul className="space-y-2 text-sm text-gray-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
                     <span><strong>$25K-50K</strong> in prevented emergency costs</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
                     <span>Know when systems will fail <strong>before</strong> they do</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
                     <span>Replace on <strong>your timeline</strong>, not during crisis</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
+                    <span className="text-red-600 font-bold mt-0.5">&bull;</span>
                     <span>Avoid <strong>3X emergency pricing</strong> during peak season</span>
                   </li>
                 </ul>
@@ -955,19 +952,19 @@ export default function Baseline() {
                 </div>
                 <ul className="space-y-2 text-sm text-gray-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
                     <span>Budget <strong>2-3 years ahead</strong> with confidence</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
                     <span>Plan major expenses <strong>before</strong> they're urgent</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
                     <span>Get <strong>competitive bids</strong> when you have time</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
+                    <span className="text-green-600 font-bold mt-0.5">&bull;</span>
                     <span>Tax deductions for <strong>rental properties</strong></span>
                   </li>
                 </ul>
@@ -983,19 +980,19 @@ export default function Baseline() {
                 </div>
                 <ul className="space-y-2 text-sm text-gray-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
                     <span><strong>$8K-15K</strong> higher sale value with documentation</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
                     <span>Pass <strong>inspections faster</strong> during sales</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
                     <span>Command <strong>premium pricing</strong> as well-maintained</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-blue-600 font-bold mt-0.5">•</span>
+                    <span className="text-blue-600 font-bold mt-0.5">&bull;</span>
                     <span><strong>Lower insurance</strong> premiums possible</span>
                   </li>
                 </ul>
@@ -1009,7 +1006,7 @@ export default function Baseline() {
                 <div>
                   <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
                   <p className="text-gray-800 leading-relaxed">
-                    <strong>Most homeowners react to problems.</strong> They replace systems when they fail—during peak season, 
+                    <strong>Most homeowners react to problems.</strong> They replace systems when they fail&mdash;during peak season, 
                     at emergency pricing, with no time to shop around. A $6,000 planned HVAC replacement becomes $12,000+ when 
                     it fails in July. <strong>Your baseline changes this.</strong> You'll know your 18-year-old HVAC has 
                     2 years left, budget for it, get quotes in spring, and replace on <em>your</em> timeline at half the cost.
@@ -1031,23 +1028,23 @@ export default function Baseline() {
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-800">
                 <div>
-                  <p className="font-semibold mb-2">✓ For Each System:</p>
+                  <p className="font-semibold mb-2">&check; For Each System:</p>
                   <ul className="space-y-1 ml-4">
-                    <li>• Brand/model (photo of data plate works!)</li>
-                    <li>• Installation year (critical for planning)</li>
-                    <li>• Current condition</li>
-                    <li>• Photos for insurance claims</li>
-                    <li>• Warranty information</li>
+                    <li>&bull; Brand/model (photo of data plate works!)</li>
+                    <li>&bull; Installation year (critical for planning)</li>
+                    <li>&bull; Current condition</li>
+                    <li>&bull; Photos for insurance claims</li>
+                    <li>&bull; Warranty information</li>
                   </ul>
                 </div>
                 <div>
-                  <p className="font-semibold mb-2">✓ Then We Calculate:</p>
+                  <p className="font-semibold mb-2">&check; Then We Calculate:</p>
                   <ul className="space-y-1 ml-4">
-                    <li>• Expected lifespan remaining</li>
-                    <li>• Replacement timeline & budget</li>
-                    <li>• Preventive maintenance schedule</li>
-                    <li>• Cascade failure risks</li>
-                    <li>• Property health score</li>
+                    <li>&bull; Expected lifespan remaining</li>
+                    <li>&bull; Replacement timeline &amp; budget</li>
+                    <li>&bull; Preventive maintenance schedule</li>
+                    <li>&bull; Cascade failure risks</li>
+                    <li>&bull; Property health score</li>
                   </ul>
                 </div>
               </div>
@@ -1332,7 +1329,7 @@ export default function Baseline() {
           onClose={() => setShowQuickPropertyAdd(false)}
           onSuccess={(propertyId) => {
             setShowQuickPropertyAdd(false);
-            window.location.href = `/baseline?property=${propertyId}&welcome=true`;
+            window.location.href = `/baseline?propertyId=${propertyId}&welcome=true`;
           }}
         />
       </div>

@@ -1,89 +1,151 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   LayoutDashboard, 
-  Eye, 
-  Zap, 
-  TrendingUp,
-  Home
+  ListTodo,
+  PlusCircle,
+  CalendarDays,
+  Menu
 } from "lucide-react";
+import { Badge } from "../ui/badge";
 
 const navItems = [
   {
-    label: "Dashboard",
+    id: "home",
+    label: "Home",
     url: createPageUrl("Dashboard"),
     icon: LayoutDashboard
   },
   {
-    label: "Aware",
-    url: createPageUrl("Inspect"),
-    icon: Eye
-  },
-  {
-    label: "Act",
+    id: "tasks",
+    label: "Tasks",
     url: createPageUrl("Prioritize"),
-    icon: Zap
+    icon: ListTodo,
+    showBadge: true
   },
   {
-    label: "Advance",
-    url: createPageUrl("Preserve"),
-    icon: TrendingUp
+    id: "add",
+    label: "Add",
+    icon: PlusCircle,
+    action: true,
+    primary: true
   },
   {
-    label: "Properties",
+    id: "calendar",
+    label: "Calendar",
+    url: createPageUrl("Schedule"),
+    icon: CalendarDays
+  },
+  {
+    id: "more",
+    label: "More",
     url: createPageUrl("Properties"),
-    icon: Home
+    icon: Menu
   }
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleItemClick = (item) => {
+    // Handle Add button
+    if (item.id === "add") {
+      onQuickAdd?.();
+      return;
+    }
+    
+    // Smart routing for Tasks button
+    if (item.id === "tasks") {
+      const baselineComplete = selectedProperty?.baseline_completion >= 66;
+      const targetRoute = baselineComplete ? createPageUrl("Prioritize") : createPageUrl("Baseline");
+      navigate(targetRoute);
+      return;
+    }
+    
+    // Regular navigation
+    if (item.url) {
+      navigate(item.url);
+    }
+  };
+
+  const isActive = (item) => {
+    if (item.id === "home") return location.pathname === createPageUrl("Dashboard");
+    if (item.id === "tasks") {
+      return [
+        createPageUrl("Baseline"),
+        createPageUrl("Prioritize"),
+        createPageUrl("Execute")
+      ].some(path => location.pathname === path);
+    }
+    if (item.id === "calendar") return location.pathname === createPageUrl("Schedule");
+    if (item.id === "more") {
+      return [
+        createPageUrl("Properties"),
+        createPageUrl("Settings"),
+        createPageUrl("Services")
+      ].some(path => location.pathname === path);
+    }
+    return location.pathname === item.url;
+  };
 
   return (
     <nav 
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl" 
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-2xl z-[9999]" 
       style={{ 
         height: '64px',
-        zIndex: 9999,
         paddingBottom: 'env(safe-area-inset-bottom)'
       }}
     >
       <div className="flex items-center justify-around h-full px-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.url || 
-                          location.pathname.includes(item.label.toLowerCase());
+          const isItemActive = isActive(item);
           const Icon = item.icon;
           
           return (
-            <Link
-              key={item.label}
-              to={item.url}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg active:bg-gray-100 transition-colors"
+            <button
+              key={item.id}
+              onClick={() => handleItemClick(item)}
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg active:bg-gray-100 transition-colors relative ${
+                item.primary ? 'transform scale-110' : ''
+              }`}
               style={{ 
                 minHeight: '56px', 
                 minWidth: '56px',
                 WebkitTapHighlightColor: 'transparent'
               }}
             >
-              <Icon 
-                className="w-6 h-6 flex-shrink-0" 
-                style={{ 
-                  color: isActive ? '#FF6B35' : '#1B365D',
-                  strokeWidth: isActive ? 2.5 : 2
-                }} 
-              />
+              <div className="relative">
+                <Icon 
+                  className={`w-6 h-6 flex-shrink-0 ${item.primary ? 'w-7 h-7' : ''}`}
+                  style={{ 
+                    color: isItemActive ? '#FF6B35' : (item.primary ? '#1B365D' : '#1B365D'),
+                    strokeWidth: isItemActive ? 2.5 : 2
+                  }} 
+                />
+                
+                {/* Badge for task count */}
+                {item.showBadge && taskCount > 0 && (
+                  <Badge 
+                    className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 p-0 flex items-center justify-center"
+                  >
+                    {taskCount > 9 ? '9+' : taskCount}
+                  </Badge>
+                )}
+              </div>
+              
               <span 
-                className="font-semibold leading-tight text-center"
+                className={`font-semibold leading-tight text-center ${item.primary ? 'font-bold' : ''}`}
                 style={{ 
-                  color: isActive ? '#FF6B35' : '#1B365D',
+                  color: isItemActive ? '#FF6B35' : '#1B365D',
                   fontSize: '11px',
                   lineHeight: '1.2'
                 }}
               >
                 {item.label}
               </span>
-            </Link>
+            </button>
           );
         })}
       </div>
