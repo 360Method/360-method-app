@@ -71,8 +71,13 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Redirect new users to welcome demo
+  // Redirect new users to welcome demo - FIXED with ref guard
+  const hasCheckedFirstTime = React.useRef(false);
   React.useEffect(() => {
+    // Only check once on mount
+    if (hasCheckedFirstTime.current) return;
+    hasCheckedFirstTime.current = true;
+
     const checkFirstTimeUser = async () => {
       try {
         const user = await base44.auth.me();
@@ -87,7 +92,7 @@ export default function Dashboard() {
       }
     };
     checkFirstTimeUser();
-  }, [navigate, isDemoMode]);
+  }, []); // Empty dependency array - runs once only
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
