@@ -423,6 +423,353 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       created_date: '2024-10-15T00:00:00Z'
     }
   ],
+
+  inspections: [
+    {
+      id: 'demo-h-insp-001',
+      property_id: 'demo-homeowner-001',
+      inspection_type: 'Fall Winterization',
+      season: 'Fall',
+      inspection_date: '2024-10-15',
+      completed_by: 'Self',
+      status: 'Completed',
+      items_checked: [
+        { item: 'HVAC system serviced', status: 'Pass', notes: 'Serviced Oct 10' },
+        { item: 'Gutters cleaned', status: 'Pass', notes: 'Cleaned Sept 20' },
+        { item: 'Weather stripping inspected', status: 'Pass', notes: 'All intact' },
+        { item: 'Outdoor faucets drained', status: 'Pass', notes: 'Completed Oct 15' },
+        { item: 'Sump pump tested', status: 'Pass', notes: 'Working properly' },
+        { item: 'Smoke detectors tested', status: 'Fail', notes: 'Need replacement (10 years old)' }
+      ],
+      findings: '5 of 6 items passed. Smoke detectors flagged for replacement.',
+      next_inspection_due: '2025-04-15',
+      notes: 'Property ready for winter. Smoke detector replacement scheduled for Nov 9.'
+    },
+    {
+      id: 'demo-h-insp-002',
+      property_id: 'demo-homeowner-001',
+      inspection_type: 'Spring Opening',
+      season: 'Spring',
+      inspection_date: '2024-04-20',
+      completed_by: 'Self',
+      status: 'Completed',
+      items_checked: [
+        { item: 'HVAC system serviced', status: 'Pass', notes: 'Serviced April 10' },
+        { item: 'Gutters cleaned', status: 'Pass', notes: 'Cleaned April 15' },
+        { item: 'Roof inspection', status: 'Pass', notes: 'No winter damage' },
+        { item: 'Outdoor faucets turned on', status: 'Pass', notes: 'All working' },
+        { item: 'Windows cleaned', status: 'Pass', notes: 'Completed' },
+        { item: 'Landscaping check', status: 'Pass', notes: 'Irrigation system tested' }
+      ],
+      findings: 'All items passed. No issues detected.',
+      next_inspection_due: '2024-10-15',
+      notes: 'Property in excellent condition for summer.'
+    }
+  ],
+
+  maintenanceHistory: [
+    {
+      id: 'demo-h-hist-001',
+      property_id: 'demo-homeowner-001',
+      system_id: 'demo-h-sys-009',
+      date: '2022-06-01',
+      type: 'Replacement',
+      title: 'Upgraded Washing Machine Hoses',
+      description: 'Replaced rubber hoses with braided stainless steel auto-shutoff hoses',
+      cost: 45,
+      completed_by: 'DIY',
+      time_spent_hours: 0.5,
+      notes: 'Easy upgrade. Prevents potential $5,000+ flood damage.',
+      before_photo_url: null,
+      after_photo_url: null,
+      prevented_cost: 5000
+    },
+    {
+      id: 'demo-h-hist-002',
+      property_id: 'demo-homeowner-001',
+      system_id: 'demo-h-sys-001',
+      date: '2024-04-10',
+      type: 'Service',
+      title: 'Spring HVAC Service',
+      description: 'Professional bi-annual HVAC maintenance',
+      cost: 165,
+      completed_by: 'ABC Heating & Cooling',
+      time_spent_hours: 1.5,
+      notes: 'Cleaned coils, changed filter, checked refrigerant. System running at 95% efficiency.',
+      prevented_cost: 800
+    },
+    {
+      id: 'demo-h-hist-003',
+      property_id: 'demo-homeowner-001',
+      system_id: 'demo-h-sys-003',
+      date: '2024-04-20',
+      type: 'Maintenance',
+      title: 'Spring Gutter Cleaning',
+      description: 'Removed debris and flushed downspouts',
+      cost: 0,
+      completed_by: 'DIY',
+      time_spent_hours: 2,
+      notes: 'Prevents foundation damage and basement flooding.',
+      prevented_cost: 3000
+    },
+    {
+      id: 'demo-h-hist-004',
+      property_id: 'demo-homeowner-001',
+      system_id: 'demo-h-sys-002',
+      date: '2024-03-15',
+      type: 'Service',
+      title: 'Water Heater Flush',
+      description: 'Annual sediment flush and anode rod inspection',
+      cost: 150,
+      completed_by: 'Plumbing Pro',
+      time_spent_hours: 1,
+      notes: 'Moderate sediment buildup. Anode rod 40% depleted. Plan replacement 2025.',
+      prevented_cost: 1200
+    },
+    {
+      id: 'demo-h-hist-005',
+      property_id: 'demo-homeowner-001',
+      system_id: 'demo-h-sys-008',
+      date: '2024-09-15',
+      type: 'Test',
+      title: 'Sump Pump Quarterly Test',
+      description: 'Tested sump pump operation and battery backup',
+      cost: 0,
+      completed_by: 'DIY',
+      time_spent_hours: 0.25,
+      notes: 'Pump working properly. Battery backup functional. Replace proactively before winter.',
+      prevented_cost: 8000
+    }
+  ],
+
+  preserveSchedules: [
+    {
+      id: 'demo-h-pres-001',
+      season: 'Fall',
+      title: 'Fall Winterization Checklist',
+      month: 'October',
+      tasks: [
+        { 
+          task: 'Schedule HVAC fall service', 
+          frequency: 'Annual',
+          importance: 'High',
+          estimated_time: '1 hour (professional)',
+          estimated_cost: 150,
+          why_it_matters: 'Ensures heating system runs efficiently through winter. Prevents mid-winter breakdowns.',
+          completed: true
+        },
+        { 
+          task: 'Clean gutters and downspouts', 
+          frequency: 'Bi-annual',
+          importance: 'High',
+          estimated_time: '2-3 hours',
+          estimated_cost: 0,
+          why_it_matters: 'Prevents water damage to foundation, basement flooding, and roof damage.',
+          completed: true
+        },
+        { 
+          task: 'Test sump pump', 
+          frequency: 'Quarterly',
+          importance: 'High',
+          estimated_time: '15 minutes',
+          estimated_cost: 0,
+          why_it_matters: 'Pacific NW rainy season. Pump failure = $5K-$10K basement flood.',
+          completed: true
+        },
+        { 
+          task: 'Drain outdoor faucets', 
+          frequency: 'Annual',
+          importance: 'Medium',
+          estimated_time: '30 minutes',
+          estimated_cost: 0,
+          why_it_matters: 'Prevents frozen pipes. Burst pipe = $1K-$3K repair.',
+          completed: true
+        },
+        { 
+          task: 'Check weather stripping', 
+          frequency: 'Annual',
+          importance: 'Medium',
+          estimated_time: '1 hour',
+          estimated_cost: 50,
+          why_it_matters: 'Reduces heating costs by 10-15%. Saves $200-$300/year.',
+          completed: true
+        },
+        { 
+          task: 'Reverse ceiling fan direction', 
+          frequency: 'Bi-annual',
+          importance: 'Low',
+          estimated_time: '10 minutes',
+          estimated_cost: 0,
+          why_it_matters: 'Pushes warm air down. Improves heating efficiency.',
+          completed: false
+        },
+        { 
+          task: 'Test smoke and CO detectors', 
+          frequency: 'Monthly',
+          importance: 'Critical',
+          estimated_time: '5 minutes',
+          estimated_cost: 0,
+          why_it_matters: 'Life safety. Replace units every 10 years.',
+          completed: true,
+          urgent_note: 'UNITS ARE 10 YEARS OLD - REPLACE IMMEDIATELY'
+        }
+      ],
+      completion_percentage: 86,
+      status: 'In Progress',
+      notes: 'Most tasks complete. Smoke detector replacement scheduled for Nov 9.'
+    },
+    {
+      id: 'demo-h-pres-002',
+      season: 'Spring',
+      title: 'Spring Home Opening Checklist',
+      month: 'April',
+      tasks: [
+        { 
+          task: 'Schedule HVAC spring service', 
+          frequency: 'Annual',
+          importance: 'High',
+          estimated_time: '1 hour (professional)',
+          estimated_cost: 150,
+          completed: true
+        },
+        { 
+          task: 'Clean gutters and downspouts', 
+          frequency: 'Bi-annual',
+          importance: 'High',
+          estimated_time: '2-3 hours',
+          estimated_cost: 0,
+          completed: true
+        },
+        { 
+          task: 'Test sump pump', 
+          frequency: 'Quarterly',
+          importance: 'High',
+          estimated_time: '15 minutes',
+          estimated_cost: 0,
+          completed: true
+        },
+        { 
+          task: 'Turn on outdoor faucets', 
+          frequency: 'Annual',
+          importance: 'Medium',
+          estimated_time: '15 minutes',
+          estimated_cost: 0,
+          completed: true
+        },
+        { 
+          task: 'Inspect roof for winter damage', 
+          frequency: 'Annual',
+          importance: 'High',
+          estimated_time: '30 minutes',
+          estimated_cost: 0,
+          completed: true
+        },
+        { 
+          task: 'Power wash exterior', 
+          frequency: 'Annual',
+          importance: 'Medium',
+          estimated_time: '3-4 hours',
+          estimated_cost: 200,
+          completed: false
+        },
+        { 
+          task: 'Service lawn equipment', 
+          frequency: 'Annual',
+          importance: 'Low',
+          estimated_time: '1 hour',
+          estimated_cost: 75,
+          completed: true
+        }
+      ],
+      completion_percentage: 100,
+      status: 'Completed',
+      completed_date: '2024-04-25',
+      notes: 'All spring tasks completed successfully.'
+    }
+  ],
+
+  upgrades: [
+    {
+      id: 'demo-h-upg-001',
+      property_id: 'demo-homeowner-001',
+      title: 'Attic Insulation Upgrade',
+      category: 'Energy Efficiency',
+      description: 'Add blown-in insulation to increase R-value from R-30 to R-49',
+      priority: 'High',
+      status: 'Planned',
+      target_date: '2025-06-01',
+      estimated_cost_low: 1500,
+      estimated_cost_high: 2500,
+      estimated_roi_years: 5,
+      annual_savings: 400,
+      total_savings_10yr: 4000,
+      payback_period_years: 5,
+      rebates_available: [
+        { source: 'Energy Trust of Oregon', amount: 200, details: 'Insulation rebate' }
+      ],
+      why_worth_it: 'Reduces heating/cooling costs by 15-20%. Improves comfort. Increases home value.',
+      notes: 'Get quotes in spring. Complete before summer heat.',
+      research_links: []
+    },
+    {
+      id: 'demo-h-upg-002',
+      property_id: 'demo-homeowner-001',
+      title: 'Smart Thermostat Installation',
+      category: 'Smart Home',
+      description: 'Replace manual thermostat with Ecobee Smart Thermostat Premium',
+      priority: 'Medium',
+      status: 'Researching',
+      target_date: '2025-03-01',
+      estimated_cost_low: 200,
+      estimated_cost_high: 300,
+      estimated_roi_years: 2,
+      annual_savings: 150,
+      total_savings_10yr: 1500,
+      payback_period_years: 1.7,
+      rebates_available: [
+        { source: 'Local Utility', amount: 50, details: 'Smart thermostat rebate' }
+      ],
+      why_worth_it: 'Save 23% on heating/cooling. Remote control. Auto-scheduling. Easy DIY install.',
+      notes: 'Wait for Black Friday sale. Check utility rebates.',
+      research_links: []
+    },
+    {
+      id: 'demo-h-upg-003',
+      property_id: 'demo-homeowner-001',
+      title: 'LED Light Bulb Conversion',
+      category: 'Energy Efficiency',
+      description: 'Replace all incandescent and CFL bulbs with LED',
+      priority: 'Low',
+      status: 'In Progress',
+      target_date: '2024-12-31',
+      estimated_cost_low: 150,
+      estimated_cost_high: 200,
+      estimated_roi_years: 1,
+      annual_savings: 180,
+      total_savings_10yr: 1800,
+      payback_period_years: 1,
+      rebates_available: [],
+      why_worth_it: 'Last 25x longer. Use 75% less energy. Better light quality.',
+      notes: '60% complete. Replace as bulbs burn out.',
+      progress_percentage: 60
+    }
+  ],
+
+  portfolioMetrics: {
+    total_properties: 1,
+    total_units: 1,
+    total_property_value: 550000,
+    total_equity: 250000,
+    total_monthly_income: 0,
+    average_health_score: 78,
+    properties_needing_attention: 1,
+    upcoming_capex_12mo: 2000,
+    maintenance_cost_per_unit: 1200,
+    total_maintenance_invested: 4800,
+    total_savings_from_prevention: 7200,
+    roi_on_maintenance: 150,
+    message: 'Scale feature designed for investors with 2+ properties. Add more properties to unlock portfolio analytics.'
+  },
   
   stats: {
     total_systems: 16,
