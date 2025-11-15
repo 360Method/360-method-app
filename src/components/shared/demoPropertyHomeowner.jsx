@@ -545,146 +545,110 @@ export const DEMO_PROPERTY_HOMEOWNER = {
   preserveSchedules: [
     {
       id: 'demo-h-pres-001',
-      season: 'Fall',
-      title: 'Fall Winterization Checklist',
-      month: 'October',
-      tasks: [
-        { 
-          task: 'Schedule HVAC fall service', 
-          frequency: 'Annual',
-          importance: 'High',
-          estimated_time: '1 hour (professional)',
-          estimated_cost: 150,
-          why_it_matters: 'Ensures heating system runs efficiently through winter. Prevents mid-winter breakdowns.',
-          completed: true
+      season: 'Annual',
+      title: 'Strategic Life Extension Interventions',
+      description: 'High-ROI maintenance that extends system life 3-15 years. NOT routine maintenance (that\'s ACT phase).',
+      interventions: [
+        {
+          id: 'pres-int-001',
+          system_id: 'demo-h-sys-001',
+          system_name: 'HVAC Heat Pump',
+          intervention: 'Deep HVAC Service & Coil Treatment',
+          description: 'Professional deep clean, coil treatment, refrigerant optimization. Goes beyond bi-annual service.',
+          current_age_years: 8,
+          estimated_lifespan_without: 12,
+          estimated_lifespan_with: 16,
+          years_extended: 4,
+          investment_cost: 800,
+          replacement_cost_avoided: 8500,
+          roi_multiplier: 10.6,
+          frequency: 'Every 3-4 years',
+          next_due: '2026-01-01',
+          status: 'Recommended',
+          why_worth_it: 'Extends heat pump life 4 years, avoiding $8,500 replacement. Deep cleaning restores 90%+ efficiency.',
+          not_routine_because: 'This is beyond routine filter changes and bi-annual service. It\'s a strategic deep intervention.'
         },
-        { 
-          task: 'Clean gutters and downspouts', 
-          frequency: 'Bi-annual',
-          importance: 'High',
-          estimated_time: '2-3 hours',
-          estimated_cost: 0,
-          why_it_matters: 'Prevents water damage to foundation, basement flooding, and roof damage.',
-          completed: true
+        {
+          id: 'pres-int-002',
+          system_id: 'demo-h-sys-002',
+          system_name: 'Water Heater',
+          intervention: 'Anode Rod Replacement + Tank Treatment',
+          description: 'Replace sacrificial anode rod and apply tank protection treatment. Extends life significantly.',
+          current_age_years: 9,
+          estimated_lifespan_without: 10,
+          estimated_lifespan_with: 13,
+          years_extended: 3,
+          investment_cost: 350,
+          replacement_cost_avoided: 1800,
+          roi_multiplier: 5.1,
+          frequency: 'One-time intervention',
+          next_due: '2025-03-01',
+          status: 'Recommended',
+          why_worth_it: 'Proactive anode replacement can extend water heater life 3+ years beyond typical 10-year lifespan.',
+          not_routine_because: 'Annual flushes are ACT. This is a strategic replacement that extends life.'
         },
-        { 
-          task: 'Test sump pump', 
-          frequency: 'Quarterly',
-          importance: 'High',
-          estimated_time: '15 minutes',
-          estimated_cost: 0,
-          why_it_matters: 'Pacific NW rainy season. Pump failure = $5K-$10K basement flood.',
-          completed: true
+        {
+          id: 'pres-int-003',
+          system_id: 'demo-h-sys-003',
+          system_name: 'Roof',
+          intervention: 'Roof Coating Application',
+          description: 'Professional elastomeric coating protects shingles, seals small cracks, extends life 5-7 years.',
+          current_age_years: 10,
+          estimated_lifespan_without: 25,
+          estimated_lifespan_with: 32,
+          years_extended: 7,
+          investment_cost: 2500,
+          replacement_cost_avoided: 12000,
+          roi_multiplier: 4.8,
+          frequency: 'One-time intervention',
+          next_due: '2026-06-01',
+          status: 'Planned',
+          why_worth_it: 'Coating extends roof life 5-7 years, delaying $12K replacement. Also improves energy efficiency.',
+          not_routine_because: 'Gutter cleaning is routine (ACT). Coating is a strategic life extension investment.'
         },
-        { 
-          task: 'Drain outdoor faucets', 
-          frequency: 'Annual',
-          importance: 'Medium',
-          estimated_time: '30 minutes',
-          estimated_cost: 0,
-          why_it_matters: 'Prevents frozen pipes. Burst pipe = $1K-$3K repair.',
-          completed: true
-        },
-        { 
-          task: 'Check weather stripping', 
-          frequency: 'Annual',
-          importance: 'Medium',
-          estimated_time: '1 hour',
-          estimated_cost: 50,
-          why_it_matters: 'Reduces heating costs by 10-15%. Saves $200-$300/year.',
-          completed: true
-        },
-        { 
-          task: 'Reverse ceiling fan direction', 
-          frequency: 'Bi-annual',
-          importance: 'Low',
-          estimated_time: '10 minutes',
-          estimated_cost: 0,
-          why_it_matters: 'Pushes warm air down. Improves heating efficiency.',
-          completed: false
-        },
-        { 
-          task: 'Test smoke and CO detectors', 
-          frequency: 'Monthly',
-          importance: 'Critical',
-          estimated_time: '5 minutes',
-          estimated_cost: 0,
-          why_it_matters: 'Life safety. Replace units every 10 years.',
-          completed: true,
-          urgent_note: 'UNITS ARE 10 YEARS OLD - REPLACE IMMEDIATELY'
+        {
+          id: 'pres-int-004',
+          system_id: 'demo-h-sys-007',
+          system_name: 'Foundation',
+          intervention: 'Exterior Waterproofing & Drainage Upgrade',
+          description: 'Install perimeter drainage system and waterproof exterior foundation walls.',
+          current_age_years: 10,
+          estimated_lifespan_without: 100,
+          estimated_lifespan_with: 100,
+          years_extended: 0,
+          investment_cost: 4500,
+          replacement_cost_avoided: 50000,
+          roi_multiplier: 11.1,
+          frequency: 'One-time intervention',
+          next_due: '2027-01-01',
+          status: 'Future Consideration',
+          why_worth_it: 'Prevents foundation damage from water intrusion. Foundation repairs cost $30K-$50K+. This prevents catastrophic failure.',
+          not_routine_because: 'This is major preventive work, not routine inspection. Prevents cascade failure.'
         }
       ],
-      completion_percentage: 86,
-      status: 'In Progress',
-      notes: 'Most tasks complete. Smoke detector replacement scheduled for Nov 9.'
-    },
-    {
-      id: 'demo-h-pres-002',
-      season: 'Spring',
-      title: 'Spring Home Opening Checklist',
-      month: 'April',
-      tasks: [
-        { 
-          task: 'Schedule HVAC spring service', 
-          frequency: 'Annual',
-          importance: 'High',
-          estimated_time: '1 hour (professional)',
-          estimated_cost: 150,
-          completed: true
-        },
-        { 
-          task: 'Clean gutters and downspouts', 
-          frequency: 'Bi-annual',
-          importance: 'High',
-          estimated_time: '2-3 hours',
-          estimated_cost: 0,
-          completed: true
-        },
-        { 
-          task: 'Test sump pump', 
-          frequency: 'Quarterly',
-          importance: 'High',
-          estimated_time: '15 minutes',
-          estimated_cost: 0,
-          completed: true
-        },
-        { 
-          task: 'Turn on outdoor faucets', 
-          frequency: 'Annual',
-          importance: 'Medium',
-          estimated_time: '15 minutes',
-          estimated_cost: 0,
-          completed: true
-        },
-        { 
-          task: 'Inspect roof for winter damage', 
-          frequency: 'Annual',
-          importance: 'High',
-          estimated_time: '30 minutes',
-          estimated_cost: 0,
-          completed: true
-        },
-        { 
-          task: 'Power wash exterior', 
-          frequency: 'Annual',
-          importance: 'Medium',
-          estimated_time: '3-4 hours',
-          estimated_cost: 200,
-          completed: false
-        },
-        { 
-          task: 'Service lawn equipment', 
-          frequency: 'Annual',
-          importance: 'Low',
-          estimated_time: '1 hour',
-          estimated_cost: 75,
-          completed: true
-        }
-      ],
-      completion_percentage: 100,
-      status: 'Completed',
-      completed_date: '2024-04-25',
-      notes: 'All spring tasks completed successfully.'
+      total_investment: 8150,
+      total_replacement_costs_avoided: 72300,
+      average_roi: 8.9,
+      why_preserve_matters: `
+        70-80% of your home's capital is tied up in just 7 major systems. 
+        PRESERVE finds strategic interventions (ROI 3x+) that extend system life 3-15 years, 
+        avoiding emergency replacements.
+        
+        🎯 The Big 7 Systems:
+        • HVAC & Water Systems: Heating, cooling, hot water, drainage
+        • Structural: Roof, foundation, major structures (deck, driveway)
+        • Envelope: Siding, windows, doors, garage
+        • Major Appliances: Fridge, washer, dryer, range, dishwasher
+        
+        💡 Strategic Focus:
+        • NOT routine maintenance (that's ACT) - filters, batteries, etc.
+        • NOT full replacements (that's UPGRADE) - new systems
+        • Strategic interventions only: $500-$5,000 investments that extend life 3-15 years
+        • ROI threshold: Must return 3x+ to recommend
+        
+        Example: Spend $800 on HVAC deep service to extend life 4 years, 
+        avoiding $8,500 replacement = 10.6x ROI.
+      `
     }
   ],
 
@@ -752,23 +716,105 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       why_worth_it: 'Last 25x longer. Use 75% less energy. Better light quality.',
       notes: '60% complete. Replace as bulbs burn out.',
       progress_percentage: 60
+    },
+    {
+      id: 'demo-h-upg-004',
+      property_id: 'demo-homeowner-001',
+      title: 'Master Bathroom Remodel',
+      category: 'Quality of Life',
+      description: 'Update master bath: new vanity, tile shower, modern fixtures, improved lighting',
+      priority: 'Medium',
+      status: 'Wishlist',
+      target_date: '2026-03-01',
+      estimated_cost_low: 12000,
+      estimated_cost_high: 18000,
+      estimated_roi_years: null,
+      annual_savings: 0,
+      total_savings_10yr: 0,
+      payback_period_years: null,
+      rebates_available: [],
+      property_value_increase: 10000,
+      quality_of_life_score: 10,
+      why_worth_it: `
+        This isn't about ROI - it's about joy! Quality of life upgrades matter.
+        
+        Benefits:
+        • Start/end every day in a space you love
+        • Improved functionality (better storage, lighting)
+        • Increased home value (~$10K)
+        • Makes your home feel new again
+        
+        💡 The 360° Method Philosophy:
+        Wealth building isn't just about numbers. Strategic "fun" upgrades that bring 
+        you daily joy are investments in your happiness. Budget for them guilt-free 
+        after you've handled critical maintenance.
+      `,
+      notes: 'Save $500/month for 2 years. Start planning design in 2025.',
+      inspiration_links: [],
+      contractor_quotes: []
     }
   ],
 
   portfolioMetrics: {
     total_properties: 1,
     total_units: 1,
-    total_property_value: 550000,
-    total_equity: 250000,
-    total_monthly_income: 0,
+    current_property_value: 550000,
+    outstanding_mortgage: 300000,
+    current_equity: 250000,
+    loan_to_value_ratio: 54.5,
+    
     average_health_score: 78,
-    properties_needing_attention: 1,
-    upcoming_capex_12mo: 2000,
-    maintenance_cost_per_unit: 1200,
     total_maintenance_invested: 4800,
     total_savings_from_prevention: 7200,
     roi_on_maintenance: 150,
-    message: 'Scale feature designed for investors with 2+ properties. Add more properties to unlock portfolio analytics.'
+    
+    properties_needing_attention: 0,
+    upcoming_capex_12mo: 2000,
+    maintenance_cost_per_unit_annual: 1200,
+    
+    projected_value_10yr: 770000,
+    projected_equity_10yr: 520000,
+    equity_growth_10yr: 270000,
+    appreciation_rate_assumed: 3.5,
+    
+    recommendation: 'Hold',
+    recommendation_reasoning: `
+      With 78/100 health score and strong equity position, this property is 
+      well-maintained and appreciating. Continue preventive maintenance to 
+      maximize long-term value.
+    `,
+    
+    scale_message: `
+      You have 1 property. SCALE features unlock with 2+ properties.
+      
+      Add more properties to access:
+      • Portfolio-wide equity tracking
+      • Multi-property performance benchmarking
+      • Strategic hold/sell/refinance recommendations
+      • Capital allocation optimizer
+      • 10-year wealth trajectory modeling
+    `,
+    
+    why_scale_matters: `
+      SCALE transforms the 360° Method from tactical maintenance into long-term 
+      wealth strategy. It answers: "What is my equity position?", 
+      "Should I sell, hold, or refinance?", and "What's my 10-year wealth trajectory?"
+      
+      🎯 SCALE Is Your Portfolio CFO:
+      • Equity Position Tracker: Current value, debt, and net worth
+      • Strategic Advisor: AI-powered hold/sell/refinance recommendations
+      • Wealth Projections: 10-year scenarios and growth forecasts
+      • Capital Optimizer: Where to invest for maximum ROI
+      • Performance Benchmarking: Compare vs market averages
+      
+      💡 The Transformation:
+      • Before SCALE: "This app helps me maintain my home" (tactical)
+      • After SCALE: "This app is my portfolio CFO" (strategic)
+      
+      The Cherry on Top: SCALE proves membership value by showing $2M+ equity 
+      growth potential over 10 years, strategic capital allocation, and portfolio 
+      performance benchmarking.
+    `
   },
   
   stats: {
