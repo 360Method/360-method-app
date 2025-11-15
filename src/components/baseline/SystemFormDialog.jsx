@@ -12,7 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2, Shield, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner"; // Added import
 import { analyzePreservationOpportunity, generateAIPreservationPlan } from "../shared/PreservationAnalyzer";
+import { useDraftSave } from "./useDraftSave"; // Added import
+import DraftRecoveryDialog from "./DraftRecoveryDialog"; // Added import
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
@@ -340,9 +343,16 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [aiAnalysis, setAiAnalysis] = React.useState(null);
   const [preservationPlan, setPreservationPlan] = React.useState(null);
   const [generatingAnalysis, setGeneratingAnalysis] = React.useState(false);
+  const [isDirty, setIsDirty] = React.useState(false); // Added state
 
   const queryClient = useQueryClient();
 
+  // Draft save integration
+  const draftKey = `baseline-draft-${propertyId}-${formData.system_type}`;
+  const { hasDraft, restoreDraft, clearDraft, getDraftTimestamp } = useDraftSave(draftKey, formData, isDirty);
+
+
+  const initialDataRef = React.useRef(null); // Store initial data for dirty check
   // Effect to reset form data when dialog opens or editingSystem changes
   React.useEffect(() => {
     if (open) {
@@ -355,8 +365,24 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
       setShowAddAnother(false); // Reset this flag when dialog opens
       setAiAnalysis(null); // Reset AI analysis when dialog opens
       setPreservationPlan(null); // Reset preservation plan
+      setIsDirty(false); // Reset dirty state when dialog opens or system changes
+      initialDataRef.current = initialData; // Capture the initial state for dirty checking
     }
   }, [editingSystem, open, getInitialFormData]);
+
+  // Effect to determine if form is dirty based on changes from initial state
+  React.useEffect(() => {
+    if (open && initialDataRef.current) {
+      const currentFormState = {
+        ...formData,
+        photo_urls: photos,
+        manual_urls: manuals.map(m => (typeof m === 'string' ? { url: m, name: m.split('/').pop() } : m))
+      };
+      // Simple deep comparison for dirtiness
+      const hasChanged = JSON.stringify(currentFormState) !== JSON.stringify(initialDataRef.current);
+      setIsDirty(hasChanged);
+    }
+  }, [formData, photos, manuals, open]); // Dependencies for dirty check
 
   // Check for warnings based on form data
   React.useEffect(() => {
@@ -484,10 +510,10 @@ Be specific, practical, and focus on preventing expensive failures.`;
         const aiPlan = await generateAIPreservationPlan(savedSystem, preservation);
         setPreservationPlan({ ...preservation, aiPlan });
       }
+      toast.success('AI analysis complete!', { icon: '🤖', duration: 2000 }); // Added toast
     } catch (error) {
       console.error('AI analysis failed:', error);
-      // Optionally show an error message to the user
-      alert("Failed to generate AI analysis. Please try again later.");
+      toast.error('Failed to generate AI analysis. Please try again later.', { duration: 3000 }); // Replaced alert
       throw error; // Re-throw to indicate failure in onSuccess
     } finally {
       setGeneratingAnalysis(false);
@@ -515,6 +541,13 @@ Be specific, practical, and focus on preventing expensive failures.`;
     },
     onSuccess: async (savedSystem) => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+      clearDraft(); // Added
+      setIsDirty(false); // Added
+
+      toast.success(`${formData.system_type} saved!`, {
+        icon: '✅',
+        duration: 2000
+      });
 
       let analysisWasAttemptedAndSuccessful = false;
       if (savedSystem.installation_year && savedSystem.system_type) {
@@ -540,13 +573,16 @@ Be specific, practical, and focus on preventing expensive failures.`;
     },
     onError: (error) => {
       console.error("Save failed:", error);
-      alert("Failed to save system. Please try again.");
+      toast.error('Failed to save system. Please try again.', { duration: 4000 }); // Replaced alert
     }
   });
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return; // Prevent toast for no files
+
     setUploading(true);
+    const uploadToast = toast.loading('Uploading photos...', { icon: '📸' }); // Added toast
 
     try {
       const uploadPromises = files.map(file =>
@@ -555,8 +591,18 @@ Be specific, practical, and focus on preventing expensive failures.`;
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);
       setPhotos(prev => [...prev, ...newUrls]);
+
+      toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} uploaded!`, {
+        id: uploadToast, // Use id to update loading toast
+        icon: '✅',
+        duration: 2000
+      });
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error('Upload failed. Please try again.', {
+        id: uploadToast,
+        duration: 3000
+      });
     } finally {
       setUploading(false);
       e.target.value = ''; // Clear input
@@ -565,7 +611,10 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
   const handleManualUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
     setUploadingManuals(true);
+    const uploadToast = toast.loading('Uploading documents...', { icon: '📄' }); // Added toast
 
     try {
       const uploadPromises = files.map(file =>
@@ -574,8 +623,18 @@ Be specific, practical, and focus on preventing expensive failures.`;
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => ({ url: r.file_url, name: r.file_name || r.file_url.split('/').pop() }));
       setManuals(prev => [...prev, ...newUrls]);
+
+      toast.success('Documents uploaded!', {
+        id: uploadToast,
+        icon: '✅',
+        duration: 2000
+      });
     } catch (error) {
       console.error('Manual upload failed:', error);
+      toast.error('Upload failed. Please try again.', {
+        id: uploadToast,
+        duration: 3000
+      });
     } finally {
       setUploadingManuals(false);
       e.target.value = ''; // Clear input
@@ -587,6 +646,8 @@ Be specific, practical, and focus on preventing expensive failures.`;
     if (!file) return;
 
     setScanningBarcode(true);
+    const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' }); // Added toast
+
     try {
       // Upload the barcode image
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -663,24 +724,34 @@ Be specific, practical, and focus on preventing expensive failures.`;
             return updates;
           });
 
-          // Show success feedback
-          const successMessage = `✅ Data extracted successfully!\n\nBrand/Model: ${brandModel || 'N/A'}\nYear: ${extractedYear || 'N/A'}`;
-          console.log(successMessage);
-          alert(successMessage);
-        } else {
-          alert("Could not extract clear data from the image. Please try taking a clearer photo or enter the information manually.");
-        }
+          // Add image to photos only if not already present
+          if (!photos.includes(file_url)) {
+            setPhotos(prev => [...prev, file_url]);
+          }
 
-        // Add image to photos only if not already present
-        if (!photos.includes(file_url)) {
-          setPhotos(prev => [...prev, file_url]);
+          toast.success(`Data extracted! ${brandModel ? `Brand: ${brandModel}` : ''} ${extractedYear ? `Year: ${extractedYear}` : ''}`, { // Replaced alert
+            id: scanToast,
+            icon: '✨',
+            duration: 4000
+          });
+        } else {
+          toast.warning('No data found. Please enter manually.', { // Replaced alert
+            id: scanToast,
+            duration: 3000
+          });
         }
       } else {
-        alert("Could not extract data from the image. Please try:\n- Taking a clearer photo\n- Ensuring good lighting\n- Getting closer to the data plate\n\nOr enter the information manually.");
+        toast.error('Could not read data plate. Try better lighting or enter manually.', { // Replaced alert
+          id: scanToast,
+          duration: 4000
+        });
       }
     } catch (error) {
       console.error('Barcode scan failed:', error);
-      alert("Scanning failed. Please try again or enter the information manually.");
+      toast.error('Scanning failed. Please try again or enter the information manually.', { // Replaced alert
+        id: scanToast,
+        duration: 3000
+      });
     } finally {
       setScanningBarcode(false);
       // Reset the file input
@@ -690,10 +761,12 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
   const removePhoto = (index) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
+    toast.info('Photo removed', { duration: 1500 }); // Added toast
   };
 
   const removeManual = (index) => {
     setManuals(prev => prev.filter((_, i) => i !== index));
+    toast.info('Document removed', { duration: 1500 }); // Added toast
   };
 
   const handleSubmit = (e) => {
@@ -724,6 +797,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
     });
     setPhotos([]);
     setManuals([]);
+    setIsDirty(false); // Added
   };
 
   const updateComponent = (key, value) => {
@@ -1469,7 +1543,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
           <div className="text-center space-y-6 py-6">
             <div className="text-5xl">🎉</div>
             <p className="text-lg text-gray-700">
-              +10 PP
+              +10 PropertyIQ Points
             </p>
             <p className="text-gray-600">
               Do you have another {formData.system_type}?
@@ -1478,7 +1552,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
               <Button
                 onClick={handleAddAnother}
                 className="w-full gap-2"
-                style={{ backgroundColor: 'var(--primary)' }}
+                style={{ backgroundColor: 'var(--primary)', minHeight: '48px' }} // Added minHeight
               >
                 <Plus className="w-4 h-4" />
                 Add Another {formData.system_type}
@@ -1487,6 +1561,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
                 onClick={onClose}
                 variant="outline"
                 className="w-full"
+                style={{ minHeight: '48px' }} // Added minHeight
               >
                 Back to Baseline
               </Button>
@@ -1511,297 +1586,331 @@ Be specific, practical, and focus on preventing expensive failures.`;
   ].includes(formData.system_type);
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
-            {editingSystem?.id ? 'Update' : "Let's Document Your"} {formData.system_type}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      {hasDraft && !editingSystem?.id && ( // Conditional rendering for DraftRecoveryDialog
+        <DraftRecoveryDialog
+          open={hasDraft}
+          onRestore={() => {
+            const draft = restoreDraft();
+            if (draft) {
+              setFormData(draft);
+              // Draft restores photos and manuals as arrays of URLs/objects.
+              // Need to set these states too if they are part of the draft.
+              setPhotos(draft.photo_urls || []);
+              setManuals((draft.manual_urls || []).map(item =>
+                typeof item === 'string' ? { url: item, name: item.split('/').pop() } : item
+              ));
+              setIsDirty(false); // After restoring, it's not dirty relative to the draft
+              toast.success('Draft restored!', { icon: '✅', duration: 2000 });
+            }
+          }}
+          onDiscard={() => {
+            clearDraft();
+            // Reset form to initial empty state for a new system of this type
+            // (since we are not editing, and a draft was discarded, user starts fresh)
+            const initialData = getInitialFormData();
+            setFormData(initialData);
+            setPhotos([]);
+            setManuals([]);
+            setIsDirty(false); // Not dirty, we've discarded the draft
+            toast.info('Starting fresh', { duration: 1500 });
+          }}
+          timestamp={getDraftTimestamp()}
+        />
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Why This Matters - Prominent Educational Section */}
-          {!editingSystem?.id && SYSTEM_IMPORTANCE[formData.system_type] && (
-            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-5 -mt-2">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-bold text-yellow-900 text-lg mb-2">💡 Why This Matters:</h3>
-                  <p className="text-gray-800 leading-relaxed">
-                    {SYSTEM_IMPORTANCE[formData.system_type]}
-                  </p>
+      <Dialog open={open && !hasDraft} onOpenChange={onClose}> {/* Modified open prop */}
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              {editingSystem?.id ? 'Update' : "Let's Document Your"} {formData.system_type}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Why This Matters - Prominent Educational Section */}
+            {!editingSystem?.id && SYSTEM_IMPORTANCE[formData.system_type] && (
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-5 -mt-2">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold text-yellow-900 text-lg mb-2">💡 Why This Matters:</h3>
+                    <p className="text-gray-800 leading-relaxed">
+                      {SYSTEM_IMPORTANCE[formData.system_type]}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* What to Look For - Prominent Guidance Section */}
-          {!editingSystem?.id && WHAT_TO_LOOK_FOR[formData.system_type] && (
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-5">
-              <div className="flex items-start gap-3">
-                <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-bold text-blue-900 text-lg mb-3">🔍 What to Look For:</h3>
-                  <ul className="space-y-2">
-                    {WHAT_TO_LOOK_FOR[formData.system_type].map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
-                        <span className="text-blue-600 font-bold mt-0.5">✓</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+            {/* What to Look For - Prominent Guidance Section */}
+            {!editingSystem?.id && WHAT_TO_LOOK_FOR[formData.system_type] && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-5">
+                <div className="flex items-start gap-3">
+                  <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-blue-900 text-lg mb-3">🔍 What to Look For:</h3>
+                    <ul className="space-y-2">
+                      {WHAT_TO_LOOK_FOR[formData.system_type].map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-800">
+                          <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Barcode Scanner for Systems with Model/Serial Numbers */}
-          {showBarcodeScanner && (
-            <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xl">📷</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-purple-900 mb-1">Quick Scan Model/Serial Plate</h3>
-                  <p className="text-sm text-purple-800 mb-3">
-                    {formData.system_type === "HVAC System" &&
-                      "Take a photo of the unit's data plate (usually on furnace or outdoor AC unit) and we'll extract the details automatically"
-                    }
-                    {formData.system_type === "Plumbing System" &&
-                      "Take a photo of your water heater's data plate and we'll extract brand, model, and year automatically"
-                    }
-                    {!["HVAC System", "Plumbing System"].includes(formData.system_type) &&
-                      "Take a photo of the model/serial number plate and we'll extract the details automatically"
-                    }
-                  </p>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleBarcodeUpload}
-                      className="hidden"
-                      disabled={scanningBarcode}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
-                      disabled={scanningBarcode}
-                      asChild
-                    >
-                      <span>
-                        {scanningBarcode ? (
-                          <>
-                            <span className="animate-spin">⚙️</span>
-                            Scanning...
-                          </>
-                        ) : (
-                          <>
-                            📸 Scan Data Plate
-                          </>
-                        )}
-                      </span>
-                    </Button>
-                  </label>
+            {/* Barcode Scanner for Systems with Model/Serial Numbers */}
+            {showBarcodeScanner && (
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xl">📷</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-purple-900 mb-1">Quick Scan Model/Serial Plate</h3>
+                    <p className="text-sm text-purple-800 mb-3">
+                      {formData.system_type === "HVAC System" &&
+                        "Take a photo of the unit's data plate (usually on furnace or outdoor AC unit) and we'll extract the details automatically"
+                      }
+                      {formData.system_type === "Plumbing System" &&
+                        "Take a photo of your water heater's data plate and we'll extract brand, model, and year automatically"
+                      }
+                      {!["HVAC System", "Plumbing System"].includes(formData.system_type) &&
+                        "Take a photo of the model/serial number plate and we'll extract the details automatically"
+                      }
+                    </p>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleBarcodeUpload}
+                        className="hidden"
+                        disabled={scanningBarcode}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
+                        disabled={scanningBarcode}
+                        asChild
+                      >
+                        <span>
+                          {scanningBarcode ? (
+                            <>
+                              <span className="animate-spin">⚙️</span>
+                              Scanning...
+                            </>
+                          ) : (
+                            <>
+                              📸 Scan Data Plate
+                            </>
+                          )}
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Nickname Field for Multi-Instance Systems */}
-          {allowsMultiple && (
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-              <Label className="text-blue-900 font-bold text-lg">
-                Nickname / Location {!editingSystem?.id && "(Required)"}
-              </Label>
-              <Input
-                value={formData.nickname}
-                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                placeholder="e.g., Main Floor Unit, Upstairs Zone, Unit A, Master Bedroom"
-                className="mt-2"
-                required={allowsMultiple && !editingSystem?.id}
-              />
-              <p className="text-sm text-blue-800 mt-2">
-                Give this a name so you can tell them apart
-              </p>
-            </div>
-          )}
+            {/* Nickname Field for Multi-Instance Systems */}
+            {allowsMultiple && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Label className="text-blue-900 font-bold text-lg">
+                  Nickname / Location {!editingSystem?.id && "(Required)"}
+                </Label>
+                <Input
+                  value={formData.nickname}
+                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                  placeholder="e.g., Main Floor Unit, Upstairs Zone, Unit A, Master Bedroom"
+                  className="mt-2"
+                  required={allowsMultiple && !editingSystem?.id}
+                />
+                <p className="text-sm text-blue-800 mt-2">
+                  Give this a name so you can tell them apart
+                </p>
+              </div>
+            )}
 
-          {/* Warnings Display */}
-          {warnings.length > 0 && (
-            <div className="space-y-3">
-              {warnings.map((warning, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
-                    warning.level === "danger"
-                      ? "bg-red-50 border-red-500"
-                      : warning.level === "warning"
-                      ? "bg-orange-50 border-orange-500"
-                      : "bg-green-50 border-green-500"
-                  }`}
-                >
-                  {warning.level === "danger" ? (
-                    <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                  ) : warning.level === "warning" ? (
-                    <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  )}
-                  <p
-                    className={`text-sm font-medium ${
+            {/* Warnings Display */}
+            {warnings.length > 0 && (
+              <div className="space-y-3">
+                {warnings.map((warning, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
                       warning.level === "danger"
-                        ? "text-red-900"
+                        ? "bg-red-50 border-red-500"
                         : warning.level === "warning"
-                        ? "text-orange-900"
-                        : "text-green-900"
+                        ? "bg-orange-50 border-orange-500"
+                        : "bg-green-50 border-green-500"
                     }`}
                   >
-                    {warning.message}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* System-specific fields */}
-          {renderSystemSpecificFields()}
-
-          {/* General Condition Section */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-4">Overall Condition</h4>
-            <div className="space-y-4">
-              <div>
-                <Label>Current Condition</Label>
-                <Select
-                  value={formData.condition}
-                  onValueChange={(value) => setFormData({ ...formData, condition: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Excellent">Excellent</SelectItem>
-                    <SelectItem value="Good">Good</SelectItem>
-                    <SelectItem value="Fair">Fair</SelectItem>
-                    <SelectItem value="Poor">Poor</SelectItem>
-                    <SelectItem value="Urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Notes</Label>
-                <Textarea
-                  value={formData.condition_notes}
-                  onChange={(e) => setFormData({ ...formData, condition_notes: e.target.value })}
-                  placeholder="Any known issues or recurring problems?"
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Photo Upload Section */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Photos
-            </h4>
-            <p className="text-sm text-blue-800 mb-4">
-              Take photos with model plates and installation dates visible
-            </p>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handlePhotoUpload}
-              className="mb-4"
-              disabled={uploading}
-            />
-            {uploading && <p className="text-sm text-gray-600">Uploading...</p>}
-            <div className="flex flex-wrap gap-2 mt-4">
-              {photos.map((url, idx) => (
-                <div key={idx} className="relative">
-                  <img src={url} alt={`Upload ${idx + 1}`} className="w-24 h-24 object-cover rounded border-2 border-white shadow" />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(idx)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Manuals & Documents Upload Section */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
-              📄 Owner's Manuals & Warranty Documents
-            </h4>
-            <p className="text-sm text-green-800 mb-4">
-              Upload PDFs of manuals, warranty info, or installation guides. Never lose important documents again!
-            </p>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,image/*"
-              multiple
-              onChange={handleManualUpload}
-              className="mb-4"
-              disabled={uploadingManuals}
-            />
-            {uploadingManuals && <p className="text-sm text-gray-600">Uploading manuals...</p>}
-            {manuals.length > 0 && (
-              <div className="space-y-2 mt-4">
-                {manuals.map((manual, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-white border border-green-300 rounded">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">📄</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {manual.name || `Document ${idx + 1}`}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeManual(idx)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                    {warning.level === "danger" ? (
+                      <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                    ) : warning.level === "warning" ? (
+                      <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <p
+                      className={`text-sm font-medium ${
+                        warning.level === "danger"
+                          ? "text-red-900"
+                          : warning.level === "warning"
+                          ? "text-orange-900"
+                          : "text-green-900"
+                      }`}
                     >
-                      <X className="w-4 h-4" />
-                    </button>
+                      {warning.message}
+                    </p>
                   </div>
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 pt-6 border-t">
-            <Button
-              type="submit"
-              disabled={saveMutation.isPending || generatingAnalysis}
-              className="w-full h-14 text-lg font-semibold"
-              style={{ backgroundColor: 'var(--accent)' }}
-            >
-              {generatingAnalysis ? (
-                <>
-                  <span className="animate-spin">⚙️</span>
-                  Generating AI Analysis...
-                </>
-              ) : (saveMutation.isPending ? 'Saving...' : editingSystem?.id ? `Update ${formData.system_type}` : `Save ${formData.system_type}`)}
-            </Button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              {editingSystem?.id ? 'Cancel' : 'Skip for Now'}
-            </button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* System-specific fields */}
+            {renderSystemSpecificFields()}
+
+            {/* General Condition Section */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-4">Overall Condition</h4>
+              <div className="space-y-4">
+                <div>
+                  <Label>Current Condition</Label>
+                  <Select
+                    value={formData.condition}
+                    onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Excellent">Excellent</SelectItem>
+                      <SelectItem value="Good">Good</SelectItem>
+                      <SelectItem value="Fair">Fair</SelectItem>
+                      <SelectItem value="Poor">Poor</SelectItem>
+                      <SelectItem value="Urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={formData.condition_notes}
+                    onChange={(e) => setFormData({ ...formData, condition_notes: e.target.value })}
+                    placeholder="Any known issues or recurring problems?"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Photo Upload Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Photos
+              </h4>
+              <p className="text-sm text-blue-800 mb-4">
+                Take photos with model plates and installation dates visible
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoUpload}
+                className="mb-4"
+                disabled={uploading}
+              />
+              {uploading && <p className="text-sm text-gray-600">Uploading...</p>}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {photos.map((url, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={url} alt={`Upload ${idx + 1}`} className="w-24 h-24 object-cover rounded border-2 border-white shadow" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Manuals & Documents Upload Section */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                📄 Owner's Manuals & Warranty Documents
+              </h4>
+              <p className="text-sm text-green-800 mb-4">
+                Upload PDFs of manuals, warranty info, or installation guides. Never lose important documents again!
+              </p>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,image/*"
+                multiple
+                onChange={handleManualUpload}
+                className="mb-4"
+                disabled={uploadingManuals}
+              />
+              {uploadingManuals && <p className="text-sm text-gray-600">Uploading manuals...</p>}
+              {manuals.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {manuals.map((manual, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-white border border-green-300 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">📄</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {manual.name || `Document ${idx + 1}`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeManual(idx)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3 pt-6 border-t">
+              <Button
+                type="submit"
+                disabled={saveMutation.isPending || generatingAnalysis}
+                className="w-full h-14 text-lg font-semibold"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                {generatingAnalysis ? (
+                  <>
+                    <span className="animate-spin">⚙️</span>
+                    Generating AI Analysis...
+                  </>
+                ) : (saveMutation.isPending ? 'Saving...' : editingSystem?.id ? `Update ${formData.system_type}` : `Save ${formData.system_type}`)}
+              </Button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                {editingSystem?.id ? 'Cancel' : 'Skip for Now'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

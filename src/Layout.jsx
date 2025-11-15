@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 import {
   LayoutDashboard,
   Home,
@@ -174,6 +175,7 @@ export default function Layout({ children }) {
 
   return (
     <>
+      <Toaster position="top-center" richColors closeButton />
       <style>{`
         :root {
           --primary: #1B365D;

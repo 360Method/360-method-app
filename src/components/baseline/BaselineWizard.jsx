@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 const QUICK_START_SYSTEMS = [
   {
@@ -79,6 +81,8 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     if (files.length === 0) return;
 
     setUploading(true);
+    const uploadToast = toast.loading('Uploading photos...', { icon: '📸' });
+
     try {
       const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
       const results = await Promise.all(uploadPromises);
@@ -88,8 +92,18 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
         ...prev,
         [currentSystem.id]: [...(prev[currentSystem.id] || []), ...urls]
       }));
+
+      toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} uploaded!`, {
+        id: uploadToast,
+        icon: '✅',
+        duration: 2000
+      });
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error('Upload failed. Please try again.', {
+        id: uploadToast,
+        duration: 3000
+      });
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -101,6 +115,8 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     if (!file) return;
 
     setScanning(true);
+    const scanToast = toast.loading('AI scanning...', { icon: '🤖' });
+
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
@@ -143,11 +159,18 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
           [currentSystem.id]: [...(prev[currentSystem.id] || []), file_url]
         }));
 
-        alert('✅ Data extracted! Review and adjust as needed.');
+        toast.success('Data extracted! Review and adjust as needed.', {
+          id: scanToast,
+          icon: '✨',
+          duration: 3000
+        });
       }
     } catch (error) {
       console.error('Scan failed:', error);
-      alert('Scanning failed. Please enter information manually.');
+      toast.error('Scanning failed. Please enter manually.', {
+        id: scanToast,
+        duration: 3000
+      });
     } finally {
       setScanning(false);
       e.target.value = '';
