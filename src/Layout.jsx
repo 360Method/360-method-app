@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -31,8 +32,10 @@ import CartDrawer from "./components/cart/CartDrawer";
 import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
+import { DemoProvider, useDemo } from "./components/shared/DemoContext";
+import { DemoBanner } from "./components/demo/DemoBanner";
 
-export default function Layout({ children }) {
+function LayoutContent({ children }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
@@ -161,6 +164,7 @@ export default function Layout({ children }) {
   return (
     <>
       <Toaster position="top-center" richColors closeButton />
+      <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />
       
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
         <ProgressiveEducation
@@ -586,5 +590,13 @@ export default function Layout({ children }) {
         }
       `}</style>
     </>
+  );
+}
+
+export default function Layout({ children }) {
+  return (
+    <DemoProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </DemoProvider>
   );
 }
