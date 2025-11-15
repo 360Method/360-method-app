@@ -6,39 +6,53 @@ import { createPageUrl } from "@/utils";
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [hasRedirected, setHasRedirected] = React.useState(false);
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['current-user'],
     queryFn: () => base44.auth.me(),
+    retry: false,
   });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list(),
+    enabled: !!user,
+    retry: false,
   });
 
   React.useEffect(() => {
+    // Prevent multiple redirects
+    if (hasRedirected) return;
+    
     // Wait for both queries to load
     if (userLoading || propertiesLoading) return;
 
-    // If user has completed onboarding and has properties, go to dashboard
-    if (user?.onboarding_completed && properties.length > 0) {
-      navigate(createPageUrl('Dashboard'));
-      return;
-    }
+    // Small delay to prevent flashing
+    const timer = setTimeout(() => {
+      setHasRedirected(true);
+      
+      // If user has completed onboarding and has properties, go to dashboard
+      if (user?.onboarding_completed && properties.length > 0) {
+        navigate(createPageUrl('Dashboard'), { replace: true });
+        return;
+      }
 
-    // If user has NOT completed onboarding, send to onboarding flow
-    if (!user?.onboarding_completed) {
-      navigate(createPageUrl('Onboarding'));
-      return;
-    }
+      // If user has NOT completed onboarding, send to onboarding flow
+      if (!user?.onboarding_completed) {
+        navigate(createPageUrl('Onboarding'), { replace: true });
+        return;
+      }
 
-    // If user completed onboarding but has no properties (edge case), send to onboarding
-    if (user?.onboarding_completed && properties.length === 0) {
-      navigate(createPageUrl('Onboarding'));
-      return;
-    }
-  }, [user, properties, userLoading, propertiesLoading, navigate]);
+      // If user completed onboarding but has no properties (edge case), send to onboarding
+      if (user?.onboarding_completed && properties.length === 0) {
+        navigate(createPageUrl('Onboarding'), { replace: true });
+        return;
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [user, properties, userLoading, propertiesLoading, navigate, hasRedirected]);
 
   // Show loading state while redirecting
   return (

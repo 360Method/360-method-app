@@ -23,18 +23,23 @@ export default function Onboarding() {
     selectedPath: null
   });
   const [showSkipDialog, setShowSkipDialog] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = React.useState(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
+    retry: false,
   });
 
-  const { data: properties = [] } = useQuery({
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list(),
+    enabled: !!user,
+    retry: false,
   });
 
   // Update user profile mutation
@@ -45,13 +50,25 @@ export default function Onboarding() {
     },
   });
 
-  // Check if user has already completed onboarding
+  // Check if user has already completed onboarding - only once
   React.useEffect(() => {
-    if (user?.onboarding_completed && properties.length > 0) {
-      // User has already onboarded, redirect to dashboard
-      navigate(createPageUrl("Dashboard"));
-    }
-  }, [user, properties, navigate]);
+    if (hasCheckedOnboarding) return;
+    if (userLoading || propertiesLoading) return;
+
+    // Mark as checked
+    setHasCheckedOnboarding(true);
+
+    // Small delay to prevent flashing
+    setTimeout(() => {
+      if (user?.onboarding_completed && properties.length > 0) {
+        // User has already onboarded, redirect to dashboard
+        navigate(createPageUrl("Dashboard"), { replace: true });
+      } else {
+        // Show onboarding
+        setIsLoading(false);
+      }
+    }, 300);
+  }, [user, properties, userLoading, propertiesLoading, navigate, hasCheckedOnboarding]);
 
   const steps = [
     {
@@ -116,7 +133,7 @@ export default function Onboarding() {
       onboarding_completed_date: new Date().toISOString()
     });
     setShowSkipDialog(false);
-    navigate(createPageUrl("Dashboard"));
+    navigate(createPageUrl("Dashboard"), { replace: true });
   };
 
   const handleComplete = async (finalData) => {
@@ -130,13 +147,28 @@ export default function Onboarding() {
     
     // Navigate based on selected path
     if (onboardingData.selectedPath === 'wizard') {
-      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&wizard=true&fromOnboarding=true`);
+      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&wizard=true&fromOnboarding=true`, { replace: true });
     } else if (onboardingData.selectedPath === 'walkthrough') {
-      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&walkthrough=true&fromOnboarding=true`);
+      navigate(createPageUrl("Baseline") + `?property=${onboardingData.property.id}&walkthrough=true&fromOnboarding=true`, { replace: true });
     } else {
-      navigate(createPageUrl("Dashboard"));
+      navigate(createPageUrl("Dashboard"), { replace: true });
     }
   };
+
+  // Show loading while checking onboarding status
+  if (isLoading || userLoading || propertiesLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 mx-auto mb-4 flex items-center justify-center animate-pulse">
+            <div className="w-12 h-12 rounded-full border-4 border-white border-t-transparent animate-spin"></div>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Loading...</h2>
+          <p className="text-gray-600">Preparing your onboarding experience</p>
+        </div>
+      </div>
+    );
+  }
 
   const CurrentStepComponent = steps[currentStep].component;
 
