@@ -39,6 +39,8 @@ import StepNavigation from "../components/navigation/StepNavigation";
 import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/schedule/seasonalHelpers";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -349,6 +351,13 @@ export default function SchedulePage() {
               </p>
             </div>
           </div>
+
+          {/* NEW: Step Education Card */}
+          <StepEducationCard 
+            {...STEP_EDUCATION.schedule}
+            defaultExpanded={false}
+            className="mb-6"
+          />
 
           <Card className="border-2 border-yellow-400 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 shadow-lg">
             <CardContent className="p-4">

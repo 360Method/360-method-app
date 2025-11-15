@@ -1,3 +1,4 @@
+
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -8,18 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  CheckCircle2,
-  Calendar,
-  AlertTriangle,
-  Plus,
-  Eye,
-  Building2,
-  ArrowRight,
-  PlayCircle,
-  Wrench,
-  HardHat,
-  Star,
-  Info
+  CheckCircle2, Calendar, AlertTriangle, Plus, Eye, Building2, ArrowRight,
+  PlayCircle, Wrench, HardHat, Star, Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -27,6 +18,8 @@ import { format, startOfDay, parseISO, isBefore, isSameDay } from "date-fns";
 import ExecuteTaskCard from "../components/execute/ExecuteTaskCard";
 import StepNavigation from "../components/navigation/StepNavigation";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 export default function ExecutePage() {
   const location = useLocation();
@@ -227,6 +220,13 @@ export default function ExecutePage() {
               </div>
             )}
           </div>
+
+          {/* NEW: Step Education Card */}
+          <StepEducationCard 
+            {...STEP_EDUCATION.execute}
+            defaultExpanded={false}
+            className="mb-6"
+          />
 
           <div className="bg-white rounded-lg p-3 border-2 border-green-300 shadow-sm">
             <div className="flex items-center gap-2 mb-2 flex-wrap">

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -21,6 +22,10 @@ import InsightsView from '@/components/track/InsightsView';
 import ExportMenu from '@/components/track/ExportMenu';
 import ManualTaskForm from '@/components/tasks/ManualTaskForm';
 import { useDemo } from '../components/shared/DemoContext';
+import StepEducationCard from '../components/shared/StepEducationCard';
+import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
+import StepNavigation from '../components/navigation/StepNavigation';
+import { Badge } from '@/components/ui/badge';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -378,7 +383,7 @@ Provide comprehensive analysis with this structure:
     if (shouldAutoGenerate) {
       handleGenerateInsights();
     }
-  }, [completedTasks.length, systems.length, demoMode]);
+  }, [completedTasks.length, systems.length, demoMode, aiInsights, generatingAI]);
 
   // Manual task form takeover
   if (showTaskForm && canEdit) {
@@ -389,6 +394,8 @@ Provide comprehensive analysis with this structure:
           setShowTaskForm(false);
           queryClient.invalidateQueries({ queryKey: ['completed-tasks'] });
           queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+          queryClient.invalidateQueries({ queryKey: ['inspections'] });
+          queryClient.invalidateQueries({ queryKey: ['upgrades'] });
         }}
         onCancel={() => setShowTaskForm(false)}
       />
@@ -431,7 +438,19 @@ Provide comprehensive analysis with this structure:
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         
+        <div className="mb-4 md:mb-6">
+          <StepNavigation currentStep={3} propertyId={selectedProperty !== 'first' ? selectedProperty : null} />
+        </div>
+
         <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+              Phase I - AWARE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 3 of 9
+            </Badge>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Your Wins 🎉</h1>
           
           <Select value={selectedProperty} onValueChange={setSelectedProperty}>
@@ -448,6 +467,13 @@ Provide comprehensive analysis with this structure:
             </SelectContent>
           </Select>
         </div>
+
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.track}
+          defaultExpanded={false}
+          className="mb-6"
+        />
 
         <Card className="text-center py-12">
           <CardContent>
@@ -502,6 +528,19 @@ Provide comprehensive analysis with this structure:
               </AlertDescription>
             </Alert>
           )}
+
+          <div className="mb-4 md:mb-6">
+            <StepNavigation currentStep={3} propertyId={selectedProperty !== 'first' ? selectedProperty : null} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-blue-600 text-white text-sm px-3 py-1">
+              Phase I - AWARE
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 3 of 9
+            </Badge>
+          </div>
 
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -612,6 +651,13 @@ Provide comprehensive analysis with this structure:
 
       {/* Tab Content */}
       <div className="p-4">
+        {/* NEW: Step Education Card (above tabs content) */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.track}
+          defaultExpanded={false}
+          className="mb-6"
+        />
+
         <Tabs value={activeTab}>
           
           <TabsContent value="wins" className="mt-0">

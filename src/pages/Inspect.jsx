@@ -10,28 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  Plus,
-  Calendar,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Eye,
-  FileText,
-  Trash2,
-  PlayCircle,
-  BookOpen,
-  Lightbulb,
-  Shield,
-  ChevronRight,
-  ChevronDown,
-  Info
+  Plus, Calendar, CheckCircle2, AlertTriangle, Clock, Eye, FileText, Trash2,
+  PlayCircle, BookOpen, Lightbulb, Shield, ChevronRight, ChevronDown, Info
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import InspectionSetup from "../components/inspect/InspectionSetup";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
@@ -41,6 +25,8 @@ import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -60,7 +46,8 @@ export default function Inspect() {
   const [inspectionToDelete, setInspectionToDelete] = React.useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [viewingInspection, setViewingInspection] = React.useState(null);
-  const [whyExpanded, setWhyExpanded] = React.useState(false);
+
+  // Removed: [whyExpanded, setWhyExpanded] = React.useState(false); - Managed internally by StepEducationCard now
 
   const queryClient = useQueryClient();
   const { demoMode, demoData } = useDemo();
@@ -302,54 +289,12 @@ export default function Inspect() {
           </p>
         </div>
 
-        {/* Why This Step Matters - Educational Card */}
-        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">Why Inspect Matters</h3>
-                <p className="text-sm text-blue-800">
-                  Regular inspections are your early warning system. Small issues caught now prevent expensive disasters later - this is where cascade prevention begins.
-                </p>
-              </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              )}
-            </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 In the 360° Method Framework:</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Inspect is Step 2 of AWARE. It builds on your Baseline by routinely checking system conditions. This creates a living record that feeds directly into Track (historical trends) and Prioritize (what needs attention now).
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 The Cascade Prevention Strategy:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Seasonal timing:</strong> Catch issues before extreme weather hits</li>
-                    <li>• <strong>AI-assisted detection:</strong> Get cost estimates and cascade risk scores instantly</li>
-                    <li>• <strong>Quick-fix vs. Queue:</strong> Handle simple items immediately, escalate complex ones</li>
-                    <li>• <strong>Updates your baseline:</strong> System conditions reflect latest inspection findings</li>
-                  </ul>
-                </div>
-                <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
-                  <p className="text-xs text-blue-900">
-                    <strong>Best Practice:</strong> Inspect quarterly (once per season). This cadence catches 90% of issues before they cascade into major damage.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.inspect}
+          defaultExpanded={false}
+          className="mb-6"
+        />
 
         {/* Property Selector */}
         {properties.length > 0 && (

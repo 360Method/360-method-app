@@ -8,19 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Shield,
-  Calendar,
-  TrendingUp,
-  AlertTriangle,
-  DollarSign,
-  ChevronRight,
-  ChevronDown,
-  Calculator,
-  Trophy,
-  Lightbulb,
-  Zap,
-  AlertCircle,
-  Info
+  Shield, Calendar, TrendingUp, AlertTriangle, DollarSign, ChevronRight, ChevronDown,
+  Calculator, Trophy, Lightbulb, Zap, AlertCircle, Info
 } from "lucide-react";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ReplacementForecastTimeline from "../components/preserve/ReplacementForecastTimeline";
@@ -29,6 +18,8 @@ import DecisionCalculator from "../components/preserve/DecisionCalculator";
 import InvestmentMatrix from "../components/preserve/InvestmentMatrix";
 import PreservationROIChart from "../components/preserve/PreservationROIChart";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 // The Big 7 system categories
 const BIG_7_CATEGORIES = [
@@ -42,7 +33,9 @@ const BIG_7_CATEGORIES = [
 export default function Preserve() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('forecast');
-  const [whyExpanded, setWhyExpanded] = useState(false);
+  // `whyExpanded` state was related to the old "Why Preserve Matters" card.
+  // Since that card is being replaced by `StepEducationCard`, this state is no longer needed.
+  // const [whyExpanded, setWhyExpanded] = useState(false); 
   const { demoMode, demoData } = useDemo();
 
   // Fetch data
@@ -191,69 +184,13 @@ export default function Preserve() {
           </p>
         </div>
 
-        {/* Why Preserve Matters - Demo-specific */}
-        {demoMode && preserveSchedules[0]?.why_preserve_matters && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border-2 border-blue-300">
-            <h3 className="font-semibold text-lg mb-3 text-blue-900">Why Preserve Matters</h3>
-            <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-              {preserveSchedules[0].why_preserve_matters}
-            </div>
-          </div>
-        )}
-
-        {/* Why This Step Matters (Original) */}
-        {!demoMode && (
-          <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
-            <CardHeader className="pb-3">
-              <button
-                onClick={() => setWhyExpanded(!whyExpanded)}
-                className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-              >
-                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-blue-900 mb-1">Why Preserve Matters</h3>
-                  <p className="text-sm text-blue-800">
-                    70-80% of your home's capital is tied up in just 7 major systems. PRESERVE finds strategic interventions (ROI 3x+) that extend system life 3-15 years, avoiding emergency replacements.
-                  </p>
-                </div>
-                {whyExpanded ? (
-                  <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                )}
-              </button>
-            </CardHeader>
-            {whyExpanded && (
-              <CardContent className="pt-0">
-                <div className="bg-white rounded-lg p-4 space-y-3">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 The Big 7 Systems:</h4>
-                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                      <li>• <strong>HVAC & Water Systems:</strong> Heating, cooling, hot water, drainage</li>
-                      <li>• <strong>Structural:</strong> Roof, foundation, major structures (deck, driveway)</li>
-                      <li>• <strong>Envelope:</strong> Siding, windows, doors, garage</li>
-                      <li>• <strong>Major Appliances:</strong> Fridge, washer, dryer, range, dishwasher</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 Strategic Focus:</h4>
-                    <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                      <li>• <strong>Not routine maintenance</strong> (that's ACT) - filters, batteries, etc.</li>
-                      <li>• <strong>Not full replacements</strong> (that's UPGRADE) - new systems</li>
-                      <li>• <strong>Strategic interventions only:</strong> $500-5,000 investments that extend life 3-15 years</li>
-                      <li>• <strong>ROI threshold:</strong> Must return 3x+ to recommend</li>
-                    </ul>
-                  </div>
-                  <div className="bg-blue-50 rounded p-3 border-l-4 border-blue-600">
-                    <p className="text-xs text-blue-900">
-                      <strong>Example:</strong> Spend $800 on HVAC deep service to extend life 4 years, avoiding $8,500 replacement = 10.6x ROI
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        )}
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.preserve}
+          defaultExpanded={false}
+          className="mb-6"
+          demoMode={demoMode} // Pass demoMode to the card if it needs to adjust content based on it
+        />
 
         {/* Property Selector */}
         {properties.length > 0 && (

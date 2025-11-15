@@ -34,6 +34,8 @@ import StepNavigation from "../components/navigation/StepNavigation";
 import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
 import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/components/shared/serviceAreas";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 export default function Upgrade() {
   const location = useLocation();
@@ -228,6 +230,13 @@ export default function Upgrade() {
             Strategic improvements that pay for themselves
           </p>
         </div>
+
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.upgrade}
+          defaultExpanded={false}
+          className="mb-6"
+        />
 
         {/* Service Availability Banner */}
         <ServiceAvailabilityBanner user={user} property={currentProperty} className="mb-6" />

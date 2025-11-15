@@ -25,6 +25,8 @@ import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import BaselinePageHeader from "../components/baseline/BaselinePageHeader";
 import TermTooltip from "../components/shared/TermTooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -636,62 +638,12 @@ export default function Baseline() {
           totalRequired={6}
         />
 
-        <Card className="mb-6 border-2 border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">
-                  Why <TermTooltip term="baseline">Baseline</TermTooltip> Matters
-                </h3>
-                <p className="text-sm text-blue-800">
-                  Your baseline is the foundation. Without knowing what you have, you can't protect it.
-                </p>
-              </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              )}
-            </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0 space-y-3">
-              <div className="flex gap-3">
-                <Target className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold mb-1">Know What You Own</h4>
-                  <p className="text-sm text-gray-700">
-                    You can't protect what you don't know exists. Document every system.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <Shield className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold mb-1">Prevent Cascade Failures</h4>
-                  <p className="text-sm text-gray-700">
-                    $50 clogged gutter → $5,000 flood. Catch problems early.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <DollarSign className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold mb-1">Save $27K-$72K</h4>
-                  <p className="text-sm text-gray-700">
-                    Average savings over 10-15 years through preventive maintenance.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.baseline}
+          defaultExpanded={false}
+          className="mb-6"
+        />
 
         {showPostOnboardingPrompt && currentProperty && (
           <PostOnboardingPrompt

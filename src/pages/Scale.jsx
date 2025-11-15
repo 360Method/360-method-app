@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -24,11 +25,13 @@ import WealthProjectionChart from "../components/scale/WealthProjectionChart";
 import CapitalAllocationRanker from "../components/scale/CapitalAllocationRanker";
 import BenchmarkComparison from "../components/scale/BenchmarkComparison";
 import { useDemo } from "../components/shared/DemoContext";
+import StepEducationCard from "../components/shared/StepEducationCard";
+import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 
 export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('equity-position');
-  const [whyExpanded, setWhyExpanded] = useState(false);
+  // const [whyExpanded, setWhyExpanded] = useState(false); // This state is no longer needed for the new StepEducationCard
   const { demoMode, demoData } = useDemo();
 
   // Fetch data
@@ -154,6 +157,13 @@ export default function Scale() {
           </p>
         </div>
 
+        {/* NEW: Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.scale}
+          defaultExpanded={false}
+          className="mb-6"
+        />
+
         {/* Why Scale Matters - Demo Content */}
         {demoMode && portfolioMetrics?.why_scale_matters && (
           <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 mb-6 border-2 border-purple-300">
@@ -163,57 +173,6 @@ export default function Scale() {
             </div>
           </div>
         )}
-
-        {/* Why This Step Matters */}
-        <Card className="mb-6 border-2 border-purple-200 bg-purple-50">
-          <CardHeader className="pb-3">
-            <button
-              onClick={() => setWhyExpanded(!whyExpanded)}
-              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-            >
-              <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-purple-900 mb-1">Why Scale Matters</h3>
-                <p className="text-sm text-purple-800">
-                  SCALE transforms the 360° Method from tactical maintenance into long-term wealth strategy. It answers: "What is my equity position?", "Should I sell, hold, or refinance?", and "What's my 10-year wealth trajectory?"
-                </p>
-              </div>
-              {whyExpanded ? (
-                <ChevronDown className="w-5 h-5 text-purple-600 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-purple-600 flex-shrink-0" />
-              )}
-            </button>
-          </CardHeader>
-          {whyExpanded && (
-            <CardContent className="pt-0">
-              <div className="bg-white rounded-lg p-4 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">🎯 SCALE Is Your Portfolio CFO:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Equity Position Tracker:</strong> Current value, debt, and net worth</li>
-                    <li>• <strong>Strategic Advisor:</strong> AI-powered hold/sell/refinance recommendations</li>
-                    <li>• <strong>Wealth Projections:</strong> 10-year scenarios and growth forecasts</li>
-                    <li>• <strong>Capital Optimizer:</strong> Where to invest for maximum ROI</li>
-                    <li>• <strong>Performance Benchmarking:</strong> Compare vs market averages</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm">💡 The Transformation:</h4>
-                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                    <li>• <strong>Before SCALE:</strong> "This app helps me maintain my home" (tactical)</li>
-                    <li>• <strong>After SCALE:</strong> "This app is my portfolio CFO" (strategic)</li>
-                  </ul>
-                </div>
-                <div className="bg-purple-50 rounded p-3 border-l-4 border-purple-600">
-                  <p className="text-xs text-purple-900">
-                    <strong>The Cherry on Top:</strong> SCALE proves membership value by showing $2M+ equity growth potential over 10 years, strategic capital allocation, and portfolio performance benchmarking.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
 
         {/* Property Selector */}
         {properties.length > 0 && (
