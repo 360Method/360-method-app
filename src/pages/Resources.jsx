@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -8,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   BookOpen, Video, Calculator, Download, Sparkles, Eye, TrendingUp,
   Home, Building2, Wrench, HelpCircle, MessageSquare, FileText,
-  Info, ArrowRight, PlayCircle, Target
+  Info, ArrowRight, PlayCircle, Target, Clock
 } from 'lucide-react';
 import { useDemo } from '../components/shared/DemoContext';
 
