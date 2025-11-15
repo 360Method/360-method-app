@@ -18,7 +18,7 @@ import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 import StepNavigation from "../components/navigation/StepNavigation";
-import { useDemoMode } => "../components/shared/useDemoMode";
+import { useDemoMode } from "../components/shared/useDemoMode";
 import { DEMO_PROPERTY, DEMO_SYSTEMS } from "../components/shared/demoProperty";
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
