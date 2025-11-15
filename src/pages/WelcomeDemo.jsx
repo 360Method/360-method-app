@@ -6,22 +6,35 @@ import { useEffect, useState } from 'react';
 export default function WelcomeDemo() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   useEffect(() => {
     if (currentSlide === 0) {
       const timer = setTimeout(() => {
-        setCurrentSlide(1);
+        handleSlideChange(1);
       }, 8000);
       return () => clearTimeout(timer);
     }
   }, [currentSlide]);
+  
+  const handleSlideChange = (nextSlide) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentSlide(nextSlide);
+      setIsTransitioning(false);
+    }, 300);
+  };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
         {/* Slide 1: Problem + Solution */}
         {currentSlide === 0 && (
-          <div className="text-center space-y-8 bg-white p-8 md:p-12 rounded-2xl shadow-2xl animate-fade-in">
+          <div 
+            className={`text-center space-y-8 bg-white p-8 md:p-12 rounded-2xl shadow-2xl transition-all duration-300 ${
+              isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+            }`}
+          >
             <div className="space-y-4">
               <p className="text-sm font-semibold text-blue-600 tracking-wide uppercase">
                 360° Asset Command Center
@@ -84,7 +97,7 @@ export default function WelcomeDemo() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg"
-                onClick={() => setCurrentSlide(1)}
+                onClick={() => handleSlideChange(1)}
                 className="gap-2"
               >
                 Continue <ArrowRight className="w-4 h-4" />
@@ -102,7 +115,11 @@ export default function WelcomeDemo() {
         
         {/* Slide 2: Value + CTA */}
         {currentSlide === 1 && (
-          <div className="text-center space-y-6 bg-white p-8 md:p-12 rounded-2xl shadow-2xl animate-fade-in">
+          <div 
+            className={`text-center space-y-6 bg-white p-8 md:p-12 rounded-2xl shadow-2xl transition-all duration-300 ${
+              isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+            }`}
+          >
             <h2 className="text-3xl md:text-4xl font-bold">
               Save $27K-$72K Over 10-15 Years
             </h2>
@@ -142,23 +159,6 @@ export default function WelcomeDemo() {
           </div>
         )}
       </div>
-      
-      <style>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
-        }
-      `}</style>
     </div>
   );
 }
