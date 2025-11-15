@@ -1,10 +1,9 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import {
   Home,
   Menu,
@@ -31,9 +30,7 @@ import BottomNav from "./components/navigation/BottomNav";
 import CartDrawer from "./components/cart/CartDrawer";
 import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
-import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./constants/navigation";
-import { toast } from "sonner";
-
+import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
 
 export default function Layout({ children }) {
   const location = useLocation();
@@ -45,7 +42,6 @@ export default function Layout({ children }) {
   });
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
 
-  // Fetch current user
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
@@ -112,7 +108,6 @@ export default function Layout({ children }) {
     return "Schedule Maintenance";
   };
 
-  // Account dropdown component
   const AccountDropdown = ({ isMobile = false }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -166,157 +161,8 @@ export default function Layout({ children }) {
   return (
     <>
       <Toaster position="top-center" richColors closeButton />
-      <style>{`
-        :root {
-          --primary: #1B365D;
-          --secondary: #FF6B35;
-          --accent: #28A745;
-          --alert: #DC3545;
-          --background: #FAFAF9;
-        }
-
-        /* Mobile-first base styles */
-        * {
-          -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
-        }
-
-        html {
-          font-size: 16px;
-          -webkit-text-size-adjust: 100%;
-          scroll-behavior: smooth;
-        }
-
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          line-height: 1.5;
-        }
-
-        /* Typography mobile-first */
-        h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }
-        h2 { font-size: 22px; font-weight: 600; line-height: 1.3; }
-        h3 { font-size: 18px; font-weight: 600; line-height: 1.4; }
-        p, div { font-size: 16px; line-height: 1.5; }
-        small { font-size: 14px; line-height: 1.4; }
-
-        /* Touch targets minimum 44px */
-        button, a, [role="button"] {
-          min-height: 44px;
-          min-width: 44px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* Form elements minimum 48px */
-        input, textarea, select {
-          min-height: 48px;
-          font-size: 16px;
-        }
-
-        /* Disable zoom on input focus iOS */
-        @media screen and (-webkit-min-device-pixel-ratio: 0) {
-          select, textarea, input {
-            font-size: 16px;
-          }
-        }
-
-        /* CRITICAL: Solid background styling for all modals and popups */
-        [data-radix-dialog-overlay] {
-          background-color: rgba(0, 0, 0, 0.75) !important;
-          backdrop-filter: none !important;
-          z-index: 100 !important;
-        }
-
-        [data-radix-dialog-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-          border-radius: 8px !important;
-          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
-          padding: 16px !important;
-          width: calc(100vw - 32px) !important;
-          max-height: 85vh !important;
-          overflow-y: auto !important;
-          z-index: 101 !important;
-        }
-
-        @media (min-width: 768px) {
-          [data-radix-dialog-content] {
-            padding: 24px !important;
-            width: auto !important;
-            max-width: 600px !important;
-          }
-        }
-
-        [data-radix-dialog-title] {
-          color: #1B365D !important;
-          font-size: 22px !important;
-          font-weight: 700 !important;
-        }
-
-        [data-radix-dialog-content] input,
-        [data-radix-dialog-content] textarea,
-        [data-radix-dialog-content] select {
-          background-color: #FFFFFF !important;
-          border: 1px solid #CCCCCC !important;
-          color: #333333 !important;
-          opacity: 1 !important;
-          min-height: 48px !important;
-        }
-
-        [data-radix-dialog-content] input:focus,
-        [data-radix-dialog-content] textarea:focus,
-        [data-radix-dialog-content] select:focus {
-          border-color: #FF6B35 !important;
-          outline: none !important;
-        }
-
-        [data-radix-select-content],
-        [data-radix-popover-content],
-        [data-radix-dropdown-menu-content] {
-          background-color: #FFFFFF !important;
-          opacity: 1 !important;
-          border-radius: 8px !important;
-          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
-          z-index: 102 !important;
-        }
-
-        /* Mobile spacing */
-        @media (max-width: 767px) {
-          .mobile-container {
-            padding: 16px;
-          }
-
-          .mobile-section {
-            margin-bottom: 24px;
-          }
-
-          .mobile-card {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-          }
-        }
-
-        /* Hide scrollbar but keep functionality */
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* CRITICAL: Ensure bottom nav is always visible on mobile */
-        @media (max-width: 767px) {
-          body {
-            padding-bottom: env(safe-area-inset-bottom);
-          }
-        }
-      `}</style>
-
+      
       <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
-        {/* Progressive Education System */}
         <ProgressiveEducation
           user={user}
           properties={properties}
@@ -325,7 +171,7 @@ export default function Layout({ children }) {
           tasks={tasks}
         />
 
-        {/* Desktop Sidebar - Hidden on mobile */}
+        {/* Desktop Sidebar */}
         <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
           <div className="border-b border-gray-200 p-4">
             <div className="flex items-center gap-3">
@@ -342,18 +188,17 @@ export default function Layout({ children }) {
           <div className="flex-1 overflow-y-auto p-2">
             {NAVIGATION_STRUCTURE.map((section) => (
               <div key={section.section} className="mb-4">
-                {/* Section Header */}
                 {section.section !== "Core" && (
                   <button
                     onClick={() => toggleSection(section.section)}
                     className="w-full flex items-center justify-between px-3 py-2 mb-1"
                   >
-                    <div>
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">
+                    <div className="text-left">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         {section.section}
                       </h3>
                       {section.sectionSubtitle && (
-                        <p className="text-xs text-gray-400 mt-0.5 text-left">
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {section.sectionSubtitle}
                         </p>
                       )}
@@ -366,7 +211,6 @@ export default function Layout({ children }) {
                   </button>
                 )}
 
-                {/* Nav Items */}
                 {(section.section === "Core" || openSections[section.section]) && (
                   <div className="space-y-1">
                     {section.items.map((item) => {
@@ -381,7 +225,7 @@ export default function Layout({ children }) {
                           onClick={(e) => {
                             if (isLocked) {
                               e.preventDefault();
-                              toast.info(item.unlockHint || "Complete previous steps to unlock this feature.");
+                              toast.info(item.unlockHint || "Complete previous steps to unlock");
                             }
                           }}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
@@ -423,7 +267,6 @@ export default function Layout({ children }) {
             ))}
           </div>
 
-          {/* Settings and Account at bottom */}
           <div className="border-t border-gray-200 p-2 space-y-2">
             <HelpSystem 
               currentPhase={getCurrentPhase()}
@@ -438,7 +281,6 @@ export default function Layout({ children }) {
           </div>
         </aside>
 
-        {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div
             className="md:hidden fixed inset-0 bg-black/75 z-[60]"
@@ -446,7 +288,6 @@ export default function Layout({ children }) {
           />
         )}
 
-        {/* Mobile Slide-out Menu */}
         <div
           className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] transform transition-transform duration-300 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -512,9 +353,9 @@ export default function Layout({ children }) {
                           onClick={(e) => {
                             if (isLocked) {
                               e.preventDefault();
-                              toast.info(item.unlockHint || "Complete previous steps to unlock this feature.");
+                              toast.info(item.unlockHint || "Complete previous steps to unlock");
                             } else {
-                              setMobileMenuOpen(false); // Close menu on navigation
+                              setMobileMenuOpen(false);
                             }
                           }}
                           className={`flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors ${
@@ -546,19 +387,7 @@ export default function Layout({ children }) {
             ))}
           </div>
 
-          {/* Settings and account at bottom of mobile menu */}
           <div className="border-t border-gray-200 p-4">
-            <Link
-              to={createPageUrl("Settings")}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 p-3 mb-2 rounded-lg transition-colors hover:bg-gray-100 ${
-                location.pathname === createPageUrl("Settings") ? 'bg-gray-100 font-medium' : ''
-              }`}
-              style={{ minHeight: '48px' }}
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-              <span className="text-lg">Settings</span>
-            </Link>
             {user && (
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
@@ -578,9 +407,7 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        {/* Main Content Area */}
         <main className="flex-1 flex flex-col">
-          {/* Mobile Top Header */}
           <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
             <div className="flex items-center justify-between h-full px-4">
               <button
@@ -607,22 +434,157 @@ export default function Layout({ children }) {
             </div>
           </header>
 
-          {/* Content Area with mobile padding for both top header and bottom nav */}
           <div className="flex-1 overflow-auto pt-[56px] pb-[80px] md:pt-0 md:pb-0">
             {children}
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation - ALWAYS VISIBLE */}
         <BottomNav 
           taskCount={urgentTasks?.length || 0}
           onQuickAdd={() => setShowQuickAddMenu(true)}
           selectedProperty={selectedProperty}
         />
 
-        {/* Floating Cart Drawer */}
         <CartDrawer />
       </div>
+
+      <style>{`
+        :root {
+          --primary: #1B365D;
+          --secondary: #FF6B35;
+          --accent: #28A745;
+          --alert: #DC3545;
+          --background: #FAFAF9;
+        }
+
+        * {
+          -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
+        }
+
+        html {
+          font-size: 16px;
+          -webkit-text-size-adjust: 100%;
+          scroll-behavior: smooth;
+        }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          line-height: 1.5;
+        }
+
+        h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }
+        h2 { font-size: 22px; font-weight: 600; line-height: 1.3; }
+        h3 { font-size: 18px; font-weight: 600; line-height: 1.4; }
+        p, div { font-size: 16px; line-height: 1.5; }
+        small { font-size: 14px; line-height: 1.4; }
+
+        button, a, [role="button"] {
+          min-height: 44px;
+          min-width: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        input, textarea, select {
+          min-height: 48px;
+          font-size: 16px;
+        }
+
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+          select, textarea, input {
+            font-size: 16px;
+          }
+        }
+
+        [data-radix-dialog-overlay] {
+          background-color: rgba(0, 0, 0, 0.75) !important;
+          backdrop-filter: none !important;
+          z-index: 100 !important;
+        }
+
+        [data-radix-dialog-content] {
+          background-color: #FFFFFF !important;
+          opacity: 1 !important;
+          border-radius: 8px !important;
+          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
+          padding: 16px !important;
+          width: calc(100vw - 32px) !important;
+          max-height: 85vh !important;
+          overflow-y: auto !important;
+          z-index: 101 !important;
+        }
+
+        @media (min-width: 768px) {
+          [data-radix-dialog-content] {
+            padding: 24px !important;
+            width: auto !important;
+            max-width: 600px !important;
+          }
+        }
+
+        [data-radix-dialog-title] {
+          color: #1B365D !important;
+          font-size: 22px !important;
+          font-weight: 700 !important;
+        }
+
+        [data-radix-dialog-content] input,
+        [data-radix-dialog-content] textarea,
+        [data-radix-dialog-content] select {
+          background-color: #FFFFFF !important;
+          border: 1px solid #CCCCCC !important;
+          color: #333333 !important;
+          opacity: 1 !important;
+          min-height: 48px !important;
+        }
+
+        [data-radix-dialog-content] input:focus,
+        [data-radix-dialog-content] textarea:focus,
+        [data-radix-dialog-content] select:focus {
+          border-color: #FF6B35 !important;
+          outline: none !important;
+        }
+
+        [data-radix-select-content],
+        [data-radix-popover-content],
+        [data-radix-dropdown-menu-content] {
+          background-color: #FFFFFF !important;
+          opacity: 1 !important;
+          border-radius: 8px !important;
+          box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15) !important;
+          z-index: 102 !important;
+        }
+
+        @media (max-width: 767px) {
+          .mobile-container {
+            padding: 16px;
+          }
+
+          .mobile-section {
+            margin-bottom: 24px;
+          }
+
+          .mobile-card {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+          }
+          
+          body {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+        }
+
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   );
 }
