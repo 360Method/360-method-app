@@ -2,7 +2,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +33,8 @@ import {
   BookOpen,
   Users,
   MapPin,
-  Building2 } from
-"lucide-react";
+  Building2
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import HealthScoreGauge from "../components/dashboard/HealthScoreGauge";
@@ -57,6 +57,7 @@ const Label = ({ children, className = "", ...props }) => (
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const isDemoMode = useDemoMode();
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
@@ -71,28 +72,7 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Redirect new users to welcome demo - FIXED with ref guard
-  const hasCheckedFirstTime = React.useRef(false);
-  React.useEffect(() => {
-    // Only check once on mount
-    if (hasCheckedFirstTime.current) return;
-    hasCheckedFirstTime.current = true;
-
-    const checkFirstTimeUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        const allProps = await base44.entities.Property.list();
-        const realProperties = allProps.filter(p => !p.is_draft);
-        
-        if (realProperties.length === 0 && !user.onboarding_completed && !isDemoMode) {
-          navigate('/welcome', { replace: true });
-        }
-      } catch (error) {
-        console.error('Error checking first-time user:', error);
-      }
-    };
-    checkFirstTimeUser();
-  }, [isDemoMode, navigate]); // Added isDemoMode, navigate to dependencies to satisfy linter, though the ref guard makes it run once.
+  // REMOVED checkFirstTimeUser - was causing redirect loop with Welcome page
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -131,7 +111,7 @@ export default function Dashboard() {
       if (isDemoMode && properties.length === 0) {
         return DEMO_SYSTEMS;
       }
-      
+
       if (selectedPropertyFilter === 'all') {
         const allSystemsList = await base44.entities.SystemBaseline.list();
         return allSystemsList.filter(s => activePropertyIds.includes(s.property_id));
@@ -150,7 +130,7 @@ export default function Dashboard() {
       if (isDemoMode && properties.length === 0) {
         return DEMO_TASKS;
       }
-      
+
       if (selectedPropertyFilter === 'all') {
         const allTasksList = await base44.entities.MaintenanceTask.list('-created_date');
         return allTasksList.filter(t => activePropertyIds.includes(t.property_id));
@@ -169,7 +149,7 @@ export default function Dashboard() {
       if (isDemoMode && properties.length === 0) {
         return []; // No demo inspections for now
       }
-      
+
       if (selectedPropertyFilter === 'all') {
         const allInspectionsList = await base44.entities.Inspection.list('-created_date');
         return allInspectionsList.filter(i => activePropertyIds.includes(i.property_id));
@@ -197,20 +177,20 @@ export default function Dashboard() {
 
   // Calculate metrics based on displayed properties (which now include demo data if applicable)
   const avgHealthScore = displayProperties.length > 0 ?
-  Math.round(displayProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayProperties.length) :
-  0;
+    Math.round(displayProperties.reduce((sum, p) => sum + (p.health_score || 0), 0) / displayProperties.length) :
+    0;
 
   const avgBaselineCompletion = displayProperties.length > 0 ?
-  Math.round(displayProperties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / displayProperties.length) :
-  0;
+    Math.round(displayProperties.reduce((sum, p) => sum + (p.baseline_completion || 0), 0) / displayProperties.length) :
+    0;
 
   const highPriorityTasks = allTasks.filter((t) =>
-  (t.priority === 'High' || t.cascade_risk_score >= 7) &&
-  t.status !== 'Completed'
+    (t.priority === 'High' || t.cascade_risk_score >= 7) &&
+    t.status !== 'Completed'
   );
 
   const scheduledTasks = allTasks.filter((t) =>
-  t.status === 'Scheduled' && t.scheduled_date
+    t.status === 'Scheduled' && t.scheduled_date
   );
 
   const completedTasksThisMonth = allTasks.filter((t) => {
@@ -218,38 +198,38 @@ export default function Dashboard() {
     const completionDate = new Date(t.completion_date);
     const now = new Date();
     return completionDate.getMonth() === now.getMonth() &&
-    completionDate.getFullYear() === now.getFullYear() &&
-    t.status === 'Completed';
+      completionDate.getFullYear() === now.getFullYear() &&
+      t.status === 'Completed';
   }).length;
 
   const totalSpent = displayProperties.reduce((sum, p) => sum + (p.total_maintenance_spent || 0), 0);
   const totalPrevented = displayProperties.reduce((sum, p) => sum + (p.estimated_disasters_prevented || 0), 0);
 
   const upcomingTasks = scheduledTasks.
-  map((t) => ({
-    ...t,
-    daysUntil: t.scheduled_date ? Math.ceil((new Date(t.scheduled_date) - new Date()) / (1000 * 60 * 60 * 24)) : null
-  })).
-  filter((t) => t.daysUntil !== null && t.daysUntil >= 0).
-  sort((a, b) => a.daysUntil - b.daysUntil).
-  slice(0, 3);
+    map((t) => ({
+      ...t,
+      daysUntil: t.scheduled_date ? Math.ceil((new Date(t.scheduled_date) - new Date()) / (1000 * 60 * 60 * 24)) : null
+    })).
+    filter((t) => t.daysUntil !== null && t.daysUntil >= 0).
+    sort((a, b) => a.daysUntil - b.daysUntil).
+    slice(0, 3);
 
   const recentActivity = [
-  ...allTasks.filter((t) => t.created_date).slice(0, 5).map((t) => ({
-    type: 'task',
-    title: t.title,
-    date: t.created_date,
-    icon: CheckCircle2,
-    color: 'blue'
-  })),
-  ...allInspections.filter((i) => i.created_date).slice(0, 3).map((i) => ({
-    type: 'inspection',
-    title: `${i.season} ${i.year} Inspection`,
-    date: i.created_date,
-    icon: ClipboardCheck,
-    color: 'green'
-  }))].
-  sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+    ...allTasks.filter((t) => t.created_date).slice(0, 5).map((t) => ({
+      type: 'task',
+      title: t.title,
+      date: t.created_date,
+      icon: CheckCircle2,
+      color: 'blue'
+    })),
+    ...allInspections.filter((i) => i.created_date).slice(0, 3).map((i) => ({
+      type: 'inspection',
+      title: `${i.season} ${i.year} Inspection`,
+      date: i.created_date,
+      icon: ClipboardCheck,
+      color: 'green'
+    }))].
+    sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
   // Smart recommendations
   const recommendations = [];
@@ -278,15 +258,15 @@ export default function Dashboard() {
 
   const lastInspection = allInspections.length > 0 ? allInspections[0] : null;
   const monthsSinceInspection = lastInspection?.inspection_date ?
-  Math.floor((new Date() - new Date(lastInspection.inspection_date)) / (1000 * 60 * 60 * 24 * 30)) :
-  999;
+    Math.floor((new Date() - new Date(lastInspection.inspection_date)) / (1000 * 60 * 60 * 24 * 30)) :
+    999;
 
   if (monthsSinceInspection >= 3 && avgBaselineCompletion >= 66) {
     recommendations.push({
       title: "Time for Seasonal Inspection",
       description: lastInspection ?
-      `Last inspection was ${monthsSinceInspection} months ago. Stay ahead of issues.` :
-      "Start your first quarterly property inspection to catch issues early.",
+        `Last inspection was ${monthsSinceInspection} months ago. Stay ahead of issues.` :
+        "Start your first quarterly property inspection to catch issues early.",
       action: "Inspect",
       url: createPageUrl("Inspect"),
       icon: ClipboardCheck,
@@ -309,17 +289,7 @@ export default function Dashboard() {
   const hour = currentTime.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  // Show upgrade prompt if free tier with 1 property and high baseline completion - FIXED with ref guard
-  const hasShownUpgradePrompt = React.useRef(false);
-  React.useEffect(() => {
-    if (hasShownUpgradePrompt.current) return;
-    
-    if (isFreeTier && properties.length === 1 && avgBaselineCompletion >= 66) {
-      hasShownUpgradePrompt.current = true;
-      const timer = setTimeout(() => setShowUpgradePrompt(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, []); // Empty deps - only check once
+  // Show upgrade prompt if free tier with 1 property and high baseline completion is removed as per the outline.
 
   const handleRestartOnboarding = async () => {
     try {
@@ -590,7 +560,7 @@ export default function Dashboard() {
 
           {/* Free Tier Notice */}
           {isFreeTier &&
-          <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+            <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -602,10 +572,10 @@ export default function Dashboard() {
                       Limited to 1 property. Upgrade to Pro for 3 properties or get unlimited with HomeCare/PropertyCare service.
                     </p>
                     <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="border-blue-600 text-blue-600 hover:bg-blue-100">
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-100">
 
                       <Link to={createPageUrl("Pricing")}>
                         View Plans & Pricing
@@ -657,19 +627,19 @@ export default function Dashboard() {
               </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
                 {isShowingAllProperties ?
-                `Managing ${displayProperties.length} ${displayProperties.length === 1 ? 'property' : 'properties'}` :
-                `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
+                  `Managing ${displayProperties.length} ${displayProperties.length === 1 ? 'property' : 'properties'}` :
+                  `Viewing: ${filteredProperty?.address || filteredProperty?.street_address || 'Property'}`
                 }
               </p>
             </div>
             <div className="flex items-center gap-2">
               <TierBadge tier={currentTier} />
               {canAddProperty &&
-              <Button
-                asChild
-                size="sm"
-                className="shadow-lg"
-                style={{ backgroundColor: '#FF6B35', minHeight: '40px' }}>
+                <Button
+                  asChild
+                  size="sm"
+                  className="shadow-lg"
+                  style={{ backgroundColor: '#FF6B35', minHeight: '40px' }}>
 
                   <Link to={createPageUrl("Properties")}>
                     <Plus className="w-4 h-4 mr-1" />
@@ -683,7 +653,7 @@ export default function Dashboard() {
 
         {/* Property Selector - Prominent for Multi-Property Users */}
         {properties.length > 1 &&
-        <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
+          <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -745,7 +715,7 @@ export default function Dashboard() {
 
         {/* Onboarding Restart Card - Only show if user skipped */}
         {user?.onboarding_skipped &&
-        <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
+          <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-5">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
@@ -759,19 +729,19 @@ export default function Dashboard() {
                     You previously skipped onboarding. Take 5 minutes to get personalized recommendations.
                   </p>
                   <Button
-                  onClick={handleRestartOnboarding}
-                  disabled={updateUserMutation.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 border-purple-600 text-purple-600 hover:bg-purple-100">
+                    onClick={handleRestartOnboarding}
+                    disabled={updateUserMutation.isPending}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-purple-600 text-purple-600 hover:bg-purple-100">
 
                     {updateUserMutation.isPending ?
-                    <>
+                      <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         Starting...
                       </> :
 
-                    <>
+                      <>
                         <RefreshCw className="w-4 h-4" />
                         Resume Setup
                       </>
@@ -785,25 +755,25 @@ export default function Dashboard() {
 
         {/* Smart Recommendations - Top Priority */}
         {recommendations.length > 0 &&
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
             {recommendations.slice(0, 2).map((rec, idx) =>
-            <Card
-              key={idx}
-              className={`border-2 shadow-lg ${
-              rec.priority === 'urgent' ? 'border-red-300 bg-gradient-to-br from-red-50 to-orange-50' :
-              rec.priority === 'high' ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50' :
-              rec.priority === 'medium' ? 'border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50' :
-              'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50'}`
-              }>
+              <Card
+                key={idx}
+                className={`border-2 shadow-lg ${
+                  rec.priority === 'urgent' ? 'border-red-300 bg-gradient-to-br from-red-50 to-orange-50' :
+                  rec.priority === 'high' ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50' :
+                  rec.priority === 'medium' ? 'border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50' :
+                  'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50'}`
+                }>
 
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md ${
-                rec.priority === 'urgent' ? 'bg-gradient-to-br from-red-600 to-red-700' :
-                rec.priority === 'high' ? 'bg-gradient-to-br from-orange-600 to-orange-700' :
-                rec.priority === 'medium' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
-                'bg-gradient-to-br from-purple-600 to-purple-700'}`
-                }>
+                      rec.priority === 'urgent' ? 'bg-gradient-to-br from-red-600 to-red-700' :
+                      rec.priority === 'high' ? 'bg-gradient-to-br from-orange-600 to-orange-700' :
+                      rec.priority === 'medium' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
+                      'bg-gradient-to-br from-purple-600 to-purple-700'}`
+                    }>
                       <rec.icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -814,14 +784,14 @@ export default function Dashboard() {
                         {rec.description}
                       </p>
                       <Button
-                      asChild
-                      size="sm"
-                      className={`gap-2 ${
-                      rec.priority === 'urgent' ? 'bg-red-600 hover:bg-red-700' :
-                      rec.priority === 'high' ? 'bg-orange-600 hover:bg-orange-700' :
-                      rec.priority === 'medium' ? 'bg-blue-600 hover:bg-blue-700' :
-                      'bg-purple-600 hover:bg-purple-700'}`
-                      }>
+                        asChild
+                        size="sm"
+                        className={`gap-2 ${
+                          rec.priority === 'urgent' ? 'bg-red-600 hover:bg-red-700' :
+                          rec.priority === 'high' ? 'bg-orange-600 hover:bg-orange-700' :
+                          rec.priority === 'medium' ? 'bg-blue-600 hover:bg-blue-700' :
+                          'bg-purple-600 hover:bg-purple-700'}`
+                        }>
 
                         <Link to={rec.url + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}>
                           {rec.action}
@@ -867,7 +837,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <Flame className="w-5 h-5 text-orange-600" />
                   {highPriorityTasks.length > 0 &&
-                  <Badge className="bg-red-600 text-white text-xs animate-pulse">
+                    <Badge className="bg-red-600 text-white text-xs animate-pulse">
                       Urgent
                     </Badge>
                   }
@@ -941,8 +911,8 @@ export default function Dashboard() {
                 </CardTitle>
                 <p className="text-xs text-indigo-700 font-normal">
                   {isShowingAllProperties ?
-                  `Tracking across all ${displayProperties.length} properties` :
-                  `Tracking for ${filteredProperty?.address || 'this property'}`
+                    `Tracking across all ${displayProperties.length} properties` :
+                    `Tracking for ${filteredProperty?.address || 'this property'}`
                   } • Click to learn why this matters
                 </p>
               </div>
@@ -995,7 +965,7 @@ export default function Dashboard() {
                     </span>
                     <span className={avgBaselineCompletion >= 66 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Baseline</span>
                     {avgBaselineCompletion < 100 && avgBaselineCompletion > 0 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{avgBaselineCompletion}%</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{avgBaselineCompletion}%</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1005,7 +975,7 @@ export default function Dashboard() {
                     </span>
                     <span className={allInspections.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Inspect</span>
                     {allInspections.length > 0 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{allInspections.length}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{allInspections.length}</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1045,7 +1015,7 @@ export default function Dashboard() {
                     </span>
                     <span className={allTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Prioritize</span>
                     {allTasks.length > 0 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{allTasks.length}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{allTasks.length}</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1055,7 +1025,7 @@ export default function Dashboard() {
                     </span>
                     <span className={scheduledTasks.length > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Schedule</span>
                     {scheduledTasks.length > 0 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{scheduledTasks.length}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{scheduledTasks.length}</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1065,7 +1035,7 @@ export default function Dashboard() {
                     </span>
                     <span className={completedTasksThisMonth > 0 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Execute</span>
                     {completedTasksThisMonth > 0 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{completedTasksThisMonth}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{completedTasksThisMonth}</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1112,7 +1082,7 @@ export default function Dashboard() {
                     </span>
                     <span className={properties.length > 1 ? 'text-green-700 font-semibold' : 'text-gray-600'}>Scale</span>
                     {properties.length > 1 &&
-                    <span className="text-[10px] text-gray-500 ml-auto">{properties.length}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{properties.length}</span>
                     }
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                   </Link>
@@ -1136,23 +1106,6 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-gray-700">Overall Method Progress:</span>
                 <span className="font-bold text-indigo-600">
                   {[
-                  avgBaselineCompletion >= 66,
-                  allInspections.length > 0,
-                  totalSpent > 0,
-                  allTasks.length > 0,
-                  scheduledTasks.length > 0,
-                  completedTasksThisMonth > 0,
-                  totalPrevented > 0,
-                  false, // Upgrade step
-                  properties.length > 1].
-                  filter(Boolean).length} of 9 steps
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="h-3 rounded-full bg-gradient-to-r from-blue-500 via-orange-500 to-green-500 transition-all"
-                  style={{
-                    width: `${[
                     avgBaselineCompletion >= 66,
                     allInspections.length > 0,
                     totalSpent > 0,
@@ -1160,9 +1113,26 @@ export default function Dashboard() {
                     scheduledTasks.length > 0,
                     completedTasksThisMonth > 0,
                     totalPrevented > 0,
-                    false,
+                    false, // Upgrade step
                     properties.length > 1].
-                    filter(Boolean).length / 9 * 100}%`
+                    filter(Boolean).length} of 9 steps
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="h-3 rounded-full bg-gradient-to-r from-blue-500 via-orange-500 to-green-500 transition-all"
+                  style={{
+                    width: `${[
+                      avgBaselineCompletion >= 66,
+                      allInspections.length > 0,
+                      totalSpent > 0,
+                      allTasks.length > 0,
+                      scheduledTasks.length > 0,
+                      completedTasksThisMonth > 0,
+                      totalPrevented > 0,
+                      false,
+                      properties.length > 1].
+                      filter(Boolean).length / 9 * 100}%`
                   }} />
 
               </div>
@@ -1235,7 +1205,7 @@ export default function Dashboard() {
 
           {/* Upcoming Tasks - Compact */}
           {upcomingTasks.length > 0 &&
-          <Card className="border-none shadow-md">
+            <Card className="border-none shadow-md">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
@@ -1243,10 +1213,10 @@ export default function Dashboard() {
                     Upcoming Tasks
                   </CardTitle>
                   <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs">
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs">
 
                     <Link to={createPageUrl("Schedule")}>
                       View All
@@ -1257,24 +1227,24 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {upcomingTasks.slice(0, 3).map((task) =>
-                <Link
-                  key={task.id}
-                  to={createPageUrl("Execute") + `?property=${task.property_id}`}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 hover:border-blue-300 border border-transparent transition-all">
+                  <Link
+                    key={task.id}
+                    to={createPageUrl("Execute") + `?property=${task.property_id}`}
+                    className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-blue-50 hover:border-blue-300 border border-transparent transition-all">
 
                     <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
-                task.daysUntil === 0 ? 'bg-red-600' :
-                task.daysUntil <= 3 ? 'bg-orange-600' :
-                'bg-blue-600'}`
-                }>
+                      task.daysUntil === 0 ? 'bg-red-600' :
+                      task.daysUntil <= 3 ? 'bg-orange-600' :
+                      'bg-blue-600'}`
+                    }>
                       <Clock className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-gray-900 truncate">{task.title}</p>
                       <p className="text-xs text-gray-500">
                         {task.daysUntil === 0 ? 'Today' :
-                    task.daysUntil === 1 ? 'Tomorrow' :
-                    `In ${task.daysUntil} days`}
+                          task.daysUntil === 1 ? 'Tomorrow' :
+                          `In ${task.daysUntil} days`}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -1317,7 +1287,7 @@ export default function Dashboard() {
 
           {/* Recent Activity - Compact */}
           {recentActivity.length > 0 &&
-          <Card className="border-none shadow-md">
+            <Card className="border-none shadow-md">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
@@ -1325,10 +1295,10 @@ export default function Dashboard() {
                     Recent Activity
                   </CardTitle>
                   <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs">
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs">
 
                     <Link to={createPageUrl("Track")}>
                       View All
@@ -1340,17 +1310,17 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-2">
                   {recentActivity.slice(0, 3).map((activity, idx) =>
-                  <Link
-                    key={idx}
-                    to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track') + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}
-                    className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors group">
+                    <Link
+                      key={idx}
+                      to={createPageUrl(activity.type === 'inspection' ? 'Inspect' : 'Track') + (!isShowingAllProperties && filteredProperty ? `?property=${filteredProperty.id}` : '')}
+                      className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors group">
 
                       <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
-                  activity.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-green-100 group-hover:bg-green-200'}`
-                  }>
+                        activity.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-green-100 group-hover:bg-green-200'}`
+                      }>
                         <activity.icon className={`w-4 h-4 ${
-                    activity.color === 'blue' ? 'text-blue-600' : 'text-green-600'}`
-                    } />
+                          activity.color === 'blue' ? 'text-blue-600' : 'text-green-600'}`
+                        } />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
@@ -1368,16 +1338,16 @@ export default function Dashboard() {
 
           {/* Seasonal Suggestions - Compact */}
           {filteredProperty &&
-          <SeasonalTaskSuggestions
-            propertyId={filteredProperty.id}
-            property={filteredProperty}
-            compact={true} />
+            <SeasonalTaskSuggestions
+              propertyId={filteredProperty.id}
+              property={filteredProperty}
+              compact={true} />
 
           }
 
           {/* Service Member Badge */}
           {isServiceMember && user?.operator_name &&
-          <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
+            <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
@@ -1388,9 +1358,9 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-700">Operator: <strong>{user.operator_name}</strong></p>
                   </div>
                   <Button
-                  asChild
-                  variant="outline"
-                  size="sm">
+                    asChild
+                    variant="outline"
+                    size="sm">
 
                     <Link to={createPageUrl("Services")}>Manage</Link>
                   </Button>
@@ -1402,7 +1372,7 @@ export default function Dashboard() {
 
         {/* Property Limit Warning */}
         {!canAddProperty &&
-        <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
+          <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -1414,9 +1384,9 @@ export default function Dashboard() {
                     You have {properties.length} of {propertyLimit} properties. Upgrade to add more.
                   </p>
                   <Button
-                  asChild
-                  size="sm"
-                  className="bg-orange-600 hover:bg-orange-700">
+                    asChild
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700">
 
                     <Link to={createPageUrl("Pricing")}>
                       View Plans & Pricing
@@ -1430,17 +1400,17 @@ export default function Dashboard() {
 
         {/* Contextual Upgrade Prompt */}
         {showUpgradePrompt && isFreeTier &&
-        <div className="mb-6">
+          <div className="mb-6">
             <UpgradePrompt
-            context="cascade_alerts"
-            onDismiss={() => setShowUpgradePrompt(false)} />
+              context="cascade_alerts"
+              onDismiss={() => setShowUpgradePrompt(false)} />
 
           </div>
         }
 
         {/* Free Tier CTA */}
         {isFreeTier && !showUpgradePrompt && avgBaselineCompletion >= 33 &&
-        <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl">
+          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl">
             <CardContent className="p-6 text-center">
               <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-600" />
               <h3 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '20px' }}>
@@ -1451,9 +1421,9 @@ export default function Dashboard() {
               </p>
               <div className="flex flex-col md:flex-row gap-3 justify-center">
                 <Button
-                asChild
-                className="shadow-lg"
-                style={{ backgroundColor: '#28A745', minHeight: '48px' }}>
+                  asChild
+                  className="shadow-lg"
+                  style={{ backgroundColor: '#28A745', minHeight: '48px' }}>
 
                   <Link to={createPageUrl("Pricing")}>
                     <Award className="w-4 h-4 mr-2" />
@@ -1461,9 +1431,9 @@ export default function Dashboard() {
                   </Link>
                 </Button>
                 <Button
-                asChild
-                variant="outline"
-                style={{ minHeight: '48px' }}>
+                  asChild
+                  variant="outline"
+                  style={{ minHeight: '48px' }}>
 
                   <Link to={createPageUrl("HomeCare")}>
                     <Users className="w-4 h-4 mr-2" />

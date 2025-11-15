@@ -8,6 +8,7 @@ export default function WelcomeDemo() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
+  // Auto-advance first slide only (no navigation, just to next slide)
   useEffect(() => {
     if (currentSlide === 0) {
       const timer = setTimeout(() => {
@@ -105,7 +106,7 @@ export default function WelcomeDemo() {
               
               <Button 
                 variant="ghost"
-                onClick={() => navigate('/dashboard?demo=true')}
+                onClick={() => navigate('/dashboard?demo=true', { replace: true })}
               >
                 Skip Tour
               </Button>
@@ -142,7 +143,7 @@ export default function WelcomeDemo() {
             <div className="flex flex-col gap-3">
               <Button 
                 size="lg"
-                onClick={() => navigate('/dashboard?demo=true')}
+                onClick={() => navigate('/dashboard?demo=true', { replace: true })}
                 className="gap-2"
               >
                 Explore Demo Property <ArrowRight className="w-4 h-4" />
@@ -151,7 +152,7 @@ export default function WelcomeDemo() {
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/dashboard', { replace: true })}
               >
                 Skip to Dashboard
               </Button>
