@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
 import { Info, X } from 'lucide-react';
-import { useDemo } from '../../contexts/DemoContext';
+import { useDemo } from '../shared/DemoContext';
 
 export function DemoBanner({ onAddProperty }) {
   const { demoMode, exitDemoMode } = useDemo();
