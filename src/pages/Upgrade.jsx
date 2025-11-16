@@ -36,6 +36,7 @@ import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/compo
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function Upgrade() {
   const location = useLocation();
@@ -44,7 +45,7 @@ export default function Upgrade() {
   const showNewForm = searchParams.get('new') === 'true';
   const templateIdFromUrl = searchParams.get('template');
   const propertyIdFromUrl = searchParams.get('property');
-  const { demoMode, demoData } = useDemo();
+  const { demoMode, demoData, isInvestor } = useDemo();
 
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);
@@ -65,7 +66,7 @@ export default function Upgrade() {
     queryKey: ['properties'],
     queryFn: () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list();
     }
@@ -78,12 +79,22 @@ export default function Upgrade() {
 
   const { data: templates = [] } = useQuery({
     queryKey: ['upgradeTemplates'],
-    queryFn: () => base44.entities.UpgradeTemplate.list()
+    queryFn: () => base44.entities.UpgradeTemplate.list(),
+    enabled: !demoMode
   });
 
   const { data: realUpgrades = [], refetch: refetchUpgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['upgrades', selectedProperty],
     queryFn: async () => {
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo upgrades by property or show all
+          if (!selectedProperty) return demoData?.upgrades || [];
+          return demoData?.upgrades?.filter(u => u.property_id === selectedProperty) || [];
+        }
+        return demoData?.upgrades || [];
+      }
+      
       let upgrades;
       if (selectedProperty) {
         upgrades = await base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date');
@@ -92,12 +103,10 @@ export default function Upgrade() {
       }
       return upgrades || [];
     },
-    enabled: !demoMode && (!!selectedProperty || properties.length === 0),
+    enabled: !!selectedProperty || properties.length === 0,
   });
 
-  const allUpgrades = demoMode
-    ? (demoData?.upgrades || [])
-    : realUpgrades;
+  const allUpgrades = realUpgrades;
 
   console.log('=== UPGRADE STATE ===');
   console.log('Demo mode:', demoMode);
@@ -193,7 +202,7 @@ export default function Upgrade() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         
         {/* Step Navigation */}
@@ -201,14 +210,12 @@ export default function Upgrade() {
           <StepNavigation currentStep={8} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Demo Banner */}
+        {/* Demo Mode Alert */}
         {demoMode && (
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 4 strategic upgrades including energy efficiency 
-              (attic insulation, smart thermostat) and quality of life (bathroom remodel). 
-              Read-only example.
+              <strong>Demo Mode:</strong> 4 upgrade projects (energy efficiency + quality of life). Read-only example.
             </AlertDescription>
           </Alert>
         )}
@@ -223,11 +230,17 @@ export default function Upgrade() {
               Step 8 of 9
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Upgrade
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Upgrade
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 8: Upgrade"
+              content="Plan improvements that increase value or reduce costs. Track budget, milestones, ROI. Includes energy upgrades AND quality-of-life projects."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
-            Strategic improvements that pay for themselves
+            Strategic improvements that increase value or reduce costs
           </p>
         </div>
 
@@ -387,7 +400,8 @@ export default function Upgrade() {
                     
                     {upgrade.category !== 'Quality of Life' && (
                       <>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4
+                        text-sm">
                           <div>
                             <p className="text-gray-500">Est. Cost</p>
                             <p className="font-semibold">
