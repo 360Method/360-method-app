@@ -37,6 +37,7 @@ import { DemoBanner } from "./components/demo/DemoBanner";
 
 function LayoutContent({ children }) {
   const location = useLocation();
+  const { demoMode } = useDemo();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
     "Phase I: AWARE": true,
@@ -44,6 +45,11 @@ function LayoutContent({ children }) {
     "Phase III: ADVANCE": true
   });
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
+
+  // Determine if we should show the app UI (sidebar, header, etc.)
+  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome';
+  const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
+  const showAppUI = !isLandingPage && !isWaitlistPage;
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -166,291 +172,305 @@ function LayoutContent({ children }) {
       <Toaster position="top-center" richColors closeButton />
       <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />
 
-      <div className="min-h-screen flex w-full" style={{ backgroundColor: 'var(--background)' }}>
-        <ProgressiveEducation
-          user={user}
-          properties={properties}
-          selectedProperty={selectedProperty}
-          systems={systems}
-          tasks={tasks}
-        />
-
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
-          <div className="border-b border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
-                <Home className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
-                <p className="text-xs text-gray-500">Asset Command Center</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-2">
-            {NAVIGATION_STRUCTURE.map((section) => (
-              <div key={section.section} className="mb-4">
-                {section.section !== "Core" && (
-                  <button
-                    onClick={() => toggleSection(section.section)}
-                    className="w-full flex items-center justify-between px-3 py-2 mb-1"
-                  >
-                    <div className="text-left">
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {section.section}
-                      </h3>
-                      {section.sectionSubtitle && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {section.sectionSubtitle}
-                        </p>
-                      )}
-                    </div>
-                    {openSections[section.section] ? (
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    )}
-                  </button>
-                )}
-
-                {(section.section === "Core" || openSections[section.section]) && (
-                  <div className="space-y-1">
-                    {section.items.map((item) => {
-                      const isLocked = isNavItemLocked(item, selectedProperty);
-                      const isActive = location.pathname === item.url;
-                      const Icon = item.icon;
-
-                      return (
-                        <Link
-                          key={item.id}
-                          to={isLocked ? '#' : item.url}
-                          onClick={(e) => {
-                            if (isLocked) {
-                              e.preventDefault();
-                              toast.info(item.unlockHint || "Complete previous steps to unlock");
-                            }
-                          }}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                            isActive ? 'bg-blue-50 text-blue-700' :
-                            isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
-                            'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4 flex-shrink-0" />
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium truncate">
-                                {item.label}
-                              </span>
-                              {item.step && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs flex-shrink-0"
-                                >
-                                  {item.step}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 truncate">
-                              {item.subtitle}
-                            </p>
-                          </div>
-
-                          {isLocked && (
-                            <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-gray-200 p-2 space-y-2">
-            <HelpSystem
-              currentPhase={getCurrentPhase()}
-              nextStep={getNextStep()}
-              selectedProperty={selectedProperty}
-              systems={systems}
-              tasks={tasks}
-            />
-            <div className="px-1">
-              <AccountDropdown isMobile={false} />
-            </div>
-          </div>
-        </aside>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div
-            className="md:hidden fixed inset-0 bg-black/75 z-[60]"
-            onClick={() => setMobileMenuOpen(false)}
+      <div className="min-h-screen flex w-full" style={{ backgroundColor: showAppUI ? 'var(--background)' : '#FFFFFF' }}>
+        {showAppUI && (
+          <ProgressiveEducation
+            user={user}
+            properties={properties}
+            selectedProperty={selectedProperty}
+            systems={systems}
+            tasks={tasks}
           />
         )}
 
-        <div
-          className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] transform transition-transform duration-300 ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <div className="border-b border-gray-200 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
-                <Home className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-gray-900">360° Method</h2>
-                <p className="text-xs text-gray-500">Asset Command Center</p>
+        {/* Desktop Sidebar - Only show if not landing/waitlist */}
+        {showAppUI && (
+          <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
+            <div className="border-b border-gray-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
+                  <Home className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
+                  <p className="text-xs text-gray-500">Asset Command Center</p>
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              <X className="w-6 h-6 text-gray-600" />
-            </button>
-          </div>
 
-          <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 160px)' }}>
-            {NAVIGATION_STRUCTURE.map((section) => (
-              <div key={section.section} className="mb-4">
-                {section.section !== "Core" && (
-                  <button
-                    onClick={() => toggleSection(section.section)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg transition-colors"
-                    style={{ minHeight: '48px' }}
-                  >
-                    <div className="text-left">
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {section.section}
-                      </h3>
-                      {section.sectionSubtitle && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {section.sectionSubtitle}
-                        </p>
+            <div className="flex-1 overflow-y-auto p-2">
+              {NAVIGATION_STRUCTURE.map((section) => (
+                <div key={section.section} className="mb-4">
+                  {section.section !== "Core" && (
+                    <button
+                      onClick={() => toggleSection(section.section)}
+                      className="w-full flex items-center justify-between px-3 py-2 mb-1"
+                    >
+                      <div className="text-left">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          {section.section}
+                        </h3>
+                        {section.sectionSubtitle && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {section.sectionSubtitle}
+                          </p>
+                        )}
+                      </div>
+                      {openSections[section.section] ? (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-500" />
                       )}
-                    </div>
-                    {openSections[section.section] ? (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-500" />
-                    )}
-                  </button>
-                )}
+                    </button>
+                  )}
 
-                {(section.section === "Core" || openSections[section.section]) && (
-                  <div className="space-y-1 mt-2">
-                    {section.items.map((item) => {
-                      const isLocked = isNavItemLocked(item, selectedProperty);
-                      const isActive = location.pathname === item.url;
-                      const Icon = item.icon;
+                  {(section.section === "Core" || openSections[section.section]) && (
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const isLocked = isNavItemLocked(item, selectedProperty);
+                        const isActive = location.pathname === item.url;
+                        const Icon = item.icon;
 
-                      return (
-                        <Link
-                          key={item.id}
-                          to={isLocked ? '#' : item.url}
-                          onClick={(e) => {
-                            if (isLocked) {
-                              e.preventDefault();
-                              toast.info(item.unlockHint || "Complete previous steps to unlock");
-                            } else {
-                              setMobileMenuOpen(false);
-                            }
-                          }}
-                          className={`flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors ${
-                            isActive ? 'bg-gray-100 font-medium' : ''
-                          } ${isLocked ? 'opacity-60' : ''}`}
-                          style={{ minHeight: '48px' }}
-                        >
-                          <Icon className="w-5 h-5 text-gray-500" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{item.label}</span>
-                              {item.step && (
-                                <Badge variant="outline" className="text-xs">
-                                  {item.step}
-                                </Badge>
-                              )}
+                        return (
+                          <Link
+                            key={item.id}
+                            to={isLocked ? '#' : item.url}
+                            onClick={(e) => {
+                              if (isLocked) {
+                                e.preventDefault();
+                                toast.info(item.unlockHint || "Complete previous steps to unlock");
+                              }
+                            }}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                              isActive ? 'bg-blue-50 text-blue-700' :
+                              isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
+                              'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4 flex-shrink-0" />
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium truncate">
+                                  {item.label}
+                                </span>
+                                {item.step && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs flex-shrink-0"
+                                  >
+                                    {item.step}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 truncate">
+                                {item.subtitle}
+                              </p>
                             </div>
-                            <p className="text-xs text-gray-500">
-                              {item.subtitle}
+
+                            {isLocked && (
+                              <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-200 p-2 space-y-2">
+              <HelpSystem
+                currentPhase={getCurrentPhase()}
+                nextStep={getNextStep()}
+                selectedProperty={selectedProperty}
+                systems={systems}
+                tasks={tasks}
+              />
+              <div className="px-1">
+                <AccountDropdown isMobile={false} />
+              </div>
+            </div>
+          </aside>
+        )}
+
+        {/* Mobile Menu - Only show if not landing/waitlist */}
+        {showAppUI && (
+          <>
+            {mobileMenuOpen && (
+              <div
+                className="md:hidden fixed inset-0 bg-black/75 z-[60]"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+            )}
+
+            <div
+              className={`md:hidden fixed top-0 left-0 bottom-0 w-80 bg-white z-[70] transform transition-transform duration-300 ${
+                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              }`}
+            >
+              <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
+                    <Home className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-gray-900">360° Method</h2>
+                    <p className="text-xs text-gray-500">Asset Command Center</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  style={{ minHeight: '44px', minWidth: '44px' }}
+                >
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4" style={{ height: 'calc(100vh - 160px)' }}>
+                {NAVIGATION_STRUCTURE.map((section) => (
+                  <div key={section.section} className="mb-4">
+                    {section.section !== "Core" && (
+                      <button
+                        onClick={() => toggleSection(section.section)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg transition-colors"
+                        style={{ minHeight: '48px' }}
+                      >
+                        <div className="text-left">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            {section.section}
+                          </h3>
+                          {section.sectionSubtitle && (
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {section.sectionSubtitle}
                             </p>
-                          </div>
-                          {isLocked && <Lock className="w-4 h-4 text-gray-400" />}
-                        </Link>
-                      );
-                    })}
+                          )}
+                        </div>
+                        {openSections[section.section] ? (
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-500" />
+                        )}
+                      </button>
+                    )}
+
+                    {(section.section === "Core" || openSections[section.section]) && (
+                      <div className="space-y-1 mt-2">
+                        {section.items.map((item) => {
+                          const isLocked = isNavItemLocked(item, selectedProperty);
+                          const isActive = location.pathname === item.url;
+                          const Icon = item.icon;
+
+                          return (
+                            <Link
+                              key={item.id}
+                              to={isLocked ? '#' : item.url}
+                              onClick={(e) => {
+                                if (isLocked) {
+                                  e.preventDefault();
+                                  toast.info(item.unlockHint || "Complete previous steps to unlock");
+                                } else {
+                                  setMobileMenuOpen(false);
+                                }
+                              }}
+                              className={`flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors ${
+                                isActive ? 'bg-gray-100 font-medium' : ''
+                              } ${isLocked ? 'opacity-60' : ''}`}
+                              style={{ minHeight: '48px' }}
+                            >
+                              <Icon className="w-5 h-5 text-gray-500" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base">{item.label}</span>
+                                  {item.step && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {item.step}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  {item.subtitle}
+                                </p>
+                              </div>
+                              {isLocked && <Lock className="w-4 h-4 text-gray-400" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-200 p-4">
+                {user && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
+                    <p className="text-xs text-gray-600">{user.email}</p>
+                    <Button
+                      onClick={handleLogout}
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3 gap-2"
+                      style={{ minHeight: '44px' }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </Button>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-
-          <div className="border-t border-gray-200 p-4">
-            {user && (
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-semibold text-gray-900">{user.full_name || 'User'}</p>
-                <p className="text-xs text-gray-600">{user.email}</p>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3 gap-2"
-                  style={{ minHeight: '44px' }}
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <main className="flex-1 flex flex-col">
-          <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
-            <div className="flex items-center justify-between h-full px-4">
-              <button
-                onClick={() => setMobileMenuOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                style={{ minHeight: '44px', minWidth: '44px' }}
-              >
-                <Menu className="w-6 h-6 text-gray-900" />
-              </button>
-              <div className="text-center">
-                <h1 className="text-sm font-semibold text-gray-900">360° Method</h1>
-                <p className="text-xs text-gray-500">Asset Command Center</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <HelpSystem
-                  currentPhase={getCurrentPhase()}
-                  nextStep={getNextStep()}
-                  selectedProperty={selectedProperty}
-                  systems={systems}
-                  tasks={tasks}
-                />
-                <AccountDropdown isMobile={true} />
-              </div>
             </div>
-          </header>
+          </>
+        )}
 
-          <div className="flex-1 overflow-auto pt-[56px] pb-[80px] md:pt-0 md:pb-0">
+        <main className={`flex-1 flex flex-col ${showAppUI ? '' : 'w-full'}`}>
+          {/* Mobile Header - Only show if not landing/waitlist */}
+          {showAppUI && (
+            <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
+              <div className="flex items-center justify-between h-full px-4">
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  style={{ minHeight: '44px', minWidth: '44px' }}
+                >
+                  <Menu className="w-6 h-6 text-gray-900" />
+                </button>
+                <div className="text-center">
+                  <h1 className="text-sm font-semibold text-gray-900">360° Method</h1>
+                  <p className="text-xs text-gray-500">Asset Command Center</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <HelpSystem
+                    currentPhase={getCurrentPhase()}
+                    nextStep={getNextStep()}
+                    selectedProperty={selectedProperty}
+                    systems={systems}
+                    tasks={tasks}
+                  />
+                  <AccountDropdown isMobile={true} />
+                </div>
+              </div>
+            </header>
+          )}
+
+          <div className={`flex-1 overflow-auto ${showAppUI ? 'pt-[56px] pb-[80px] md:pt-0 md:pb-0' : ''}`}>
             {children}
           </div>
         </main>
 
-        <BottomNav
-          taskCount={urgentTasks?.length || 0}
-          onQuickAdd={() => setShowQuickAddMenu(true)}
-          selectedProperty={selectedProperty}
-        />
+        {/* Bottom Nav - Only show if not landing/waitlist */}
+        {showAppUI && (
+          <BottomNav
+            taskCount={urgentTasks?.length || 0}
+            onQuickAdd={() => setShowQuickAddMenu(true)}
+            selectedProperty={selectedProperty}
+          />
+        )}
 
-        <CartDrawer />
+        {showAppUI && <CartDrawer />}
       </div>
 
       <style>{`

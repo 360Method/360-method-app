@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import DemoWizard from '../demo/DemoWizard';
 
 const DemoContext = createContext();
@@ -8,6 +10,7 @@ export function DemoProvider({ children }) {
   const [demoMode, setDemoMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
+  const navigate = useNavigate();
   
   const enterDemoMode = () => {
     console.log('🎬 Entering demo mode');
@@ -31,6 +34,9 @@ export function DemoProvider({ children }) {
     setShowWizard(false);
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
+    
+    // Redirect to waitlist page instead of dashboard
+    navigate(createPageUrl('Waitlist'));
   };
   
   const handleWizardComplete = () => {
