@@ -36,7 +36,6 @@ import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/compo
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
-import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function Upgrade() {
   const location = useLocation();
@@ -194,7 +193,7 @@ export default function Upgrade() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         
         {/* Step Navigation */}
@@ -202,12 +201,14 @@ export default function Upgrade() {
           <StepNavigation currentStep={8} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Demo Mode Alert */}
+        {/* Demo Banner */}
         {demoMode && (
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 4 upgrade projects (energy efficiency + quality of life). Read-only example.
+              <strong>Demo Mode:</strong> 4 strategic upgrades including energy efficiency 
+              (attic insulation, smart thermostat) and quality of life (bathroom remodel). 
+              Read-only example.
             </AlertDescription>
           </Alert>
         )}
@@ -222,17 +223,11 @@ export default function Upgrade() {
               Step 8 of 9
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-              Upgrade
-            </h1>
-            <DemoInfoTooltip 
-              title="Step 8: Upgrade"
-              content="Plan improvements that increase value or reduce costs. Track budget, milestones, ROI. Includes energy upgrades AND quality-of-life projects."
-            />
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+            Upgrade
+          </h1>
           <p className="text-gray-600 text-lg">
-            Strategic improvements that increase value or reduce costs
+            Strategic improvements that pay for themselves
           </p>
         </div>
 
