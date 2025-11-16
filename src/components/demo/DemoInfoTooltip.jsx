@@ -1,67 +1,41 @@
-import React, { useState } from 'react';
-import { Info, X } from 'lucide-react';
-import { useDemo } from '../shared/DemoContext';
+import { useState } from 'react';
+import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useDemo } from '@/components/shared/DemoContext';
 
-/**
- * Info bubble tooltip that only shows in demo mode
- * Usage: <DemoInfoTooltip title="Why This Matters" content="..." />
- */
-export function DemoInfoTooltip({ title, content, position = 'right' }) {
+function DemoInfoTooltip({ title, content, placement = 'bottom', className = '' }) {
   const { demoMode } = useDemo();
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   if (!demoMode) return null;
 
-  const positionClasses = {
-    right: 'left-full ml-2 top-0',
-    left: 'right-full mr-2 top-0',
-    top: 'bottom-full mb-2 left-1/2 -translate-x-1/2',
-    bottom: 'top-full mt-2 left-1/2 -translate-x-1/2'
-  };
-
   return (
-    <div className="relative inline-block">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-5 h-5 rounded-full bg-yellow-100 hover:bg-yellow-200 flex items-center justify-center transition-colors cursor-help"
-        aria-label="More info"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={`inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors ${className}`}
+          aria-label="Information"
+        >
+          <Info className="w-4 h-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent 
+        align="start" 
+        side={placement}
+        className="w-80 p-4 bg-white border-2 border-blue-200 shadow-lg"
       >
-        <Info className="w-3 h-3 text-yellow-700" />
-      </button>
-
-      {isOpen && (
-        <>
-          {/* Mobile: Full screen overlay */}
-          <div className="md:hidden fixed inset-0 bg-black/50 z-[150] flex items-end" onClick={() => setIsOpen(false)}>
-            <div className="bg-white rounded-t-2xl p-6 w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="text-sm text-gray-700 space-y-2">
-                {typeof content === 'string' ? <p>{content}</p> : content}
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop: Tooltip popup */}
-          <div className={`hidden md:block absolute ${positionClasses[position]} z-[150] w-80`}>
-            <div className="bg-white rounded-lg shadow-xl border-2 border-yellow-300 p-4">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="text-xs text-gray-700 space-y-2">
-                {typeof content === 'string' ? <p>{content}</p> : content}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+        <div className="space-y-2">
+          <h4 className="font-bold text-blue-900 flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            {title}
+          </h4>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {content}
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
+
+export default DemoInfoTooltip;
