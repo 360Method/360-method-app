@@ -1,3 +1,4 @@
+
 // Investor Demo Data - 3-Property Portfolio
 export const DEMO_PORTFOLIO_INVESTOR = {
   portfolioStats: {
@@ -313,12 +314,11 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       category: 'Energy Efficiency',
       description: 'Replace all single-pane windows with dual-pane low-E windows. Reduces heating costs 25-30% and increases property value.',
       status: 'Planned',
-      estimated_cost_low: 8500,
-      estimated_cost_high: 11200,
+      investment_required: 9800,
       annual_savings: 840,
-      payback_period_years: 12,
-      total_savings_10yr: 8400,
-      why_worth_it: 'Tenant comfort + energy savings + modernization. Will pay for itself in 12 years and adds $6K to building value.'
+      roi_timeline_months: 140,
+      property_value_impact: 6000,
+      priority_score: 7
     },
     {
       id: 'inv-upgrade-2',
@@ -326,35 +326,128 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       title: 'Add In-Unit Washer/Dryer Hookups',
       category: 'Rental Income Boosters',
       description: 'Add W/D hookups to both units. Increases rent $75-100/unit per month.',
-      status: 'Researching',
-      estimated_cost_low: 4200,
-      estimated_cost_high: 5800,
-      rental_boost_per_month: 175,
-      payback_period_years: 2.8,
-      why_worth_it: '$175/mo extra income = $2,100/year. Pays for itself in 2.8 years, then pure profit.'
+      status: 'Identified',
+      investment_required: 5000,
+      annual_savings: 2100,
+      roi_timeline_months: 29,
+      property_value_impact: 8000,
+      priority_score: 9
     },
     {
       id: 'inv-upgrade-3',
       property_id: 'demo-investor-2',
       title: 'Smart Home Package',
-      category: 'Quality of Life',
+      category: 'Rental Income Boosters',
       description: 'Smart thermostat, doorbell camera, smart locks. Premium tenant appeal.',
-      status: 'Wishlist',
-      estimated_cost_low: 850,
-      estimated_cost_high: 1250,
-      why_worth_it: 'Modern tech-savvy tenants willing to pay $50-75/mo more for smart features. Differentiates from competition.'
+      status: 'Identified',
+      investment_required: 1050,
+      annual_savings: 750,
+      roi_timeline_months: 17,
+      property_value_impact: 3000,
+      priority_score: 6
     },
     {
       id: 'inv-upgrade-4',
       property_id: 'demo-investor-3',
       title: 'Landscaping Refresh - Cedar Court',
-      category: 'Quality of Life',
+      category: 'Curb Appeal',
       description: 'New bark, flower beds, pathway lighting. First impression matters for vacancy turnovers.',
       status: 'In Progress',
       progress_percentage: 35,
-      estimated_cost_low: 2400,
-      estimated_cost_high: 3200,
-      why_worth_it: 'Professional curb appeal reduces vacancy days by 30-50%. One month of reduced vacancy ($900) covers most of the cost.'
+      investment_required: 2800,
+      property_value_impact: 4500,
+      priority_score: 5
+    }
+  ],
+
+  preserveSchedules: [
+    {
+      id: 'preserve-inv-1',
+      property_id: 'demo-investor-3',
+      total_investment: 3800,
+      total_replacement_costs_avoided: 21500,
+      average_roi: 5.7,
+      interventions: [
+        {
+          id: 'int-1',
+          system_name: 'Roof System',
+          intervention: 'Professional roof coating + targeted shingle repairs',
+          description: '22-year-old asphalt shingles showing minor wear. Strategic coating extends life 5-7 years and seals minor leaks before they cascade.',
+          investment_cost: 2200,
+          replacement_cost_avoided: 14500,
+          years_extended: 6,
+          roi_multiplier: 6.6,
+          frequency: 'One-time (then monitor)',
+          status: 'Recommended',
+          why_worth_it: '$2,200 now extends roof 6 years = delays $14,500 replacement. Prevents interior water damage across 4 units.',
+          not_routine_because: 'This is NOT a cleaning. Strategic coating intervention extends capital asset life. Routine = gutter cleaning (ACT phase).'
+        },
+        {
+          id: 'int-2',
+          system_name: 'HVAC System',
+          intervention: 'Add zoning controls + smart thermostats',
+          description: 'Building HVAC is 39 years old but still functional. Adding zone controls reduces strain, extends life 3-5 years, cuts energy 20%.',
+          investment_cost: 1200,
+          replacement_cost_avoided: 6500,
+          years_extended: 4,
+          roi_multiplier: 5.4,
+          frequency: 'One-time upgrade',
+          status: 'Planned',
+          why_worth_it: '$1,200 smart upgrade delays $18K HVAC replacement 4 years. Also saves $300/year on energy = extra ROI.',
+          not_routine_because: 'This is capital improvement, not maintenance. Routine = filter changes (ACT phase).'
+        }
+      ]
+    },
+    {
+      id: 'preserve-inv-2',
+      property_id: 'demo-investor-1',
+      total_investment: 1400,
+      total_replacement_costs_avoided: 4800,
+      average_roi: 3.4,
+      interventions: [
+        {
+          id: 'int-3',
+          system_name: 'Water Heater - Unit A',
+          intervention: 'Install anode rod + flush sediment',
+          description: '11-year-old water heater. Strategic anode replacement extends life 3-5 years, prevents emergency winter failure.',
+          investment_cost: 350,
+          replacement_cost_avoided: 1400,
+          years_extended: 4,
+          roi_multiplier: 4.0,
+          frequency: 'Every 4-5 years',
+          status: 'Recommended',
+          why_worth_it: '$350 extends life 4 years. Avoids mid-winter emergency replacement at 2x cost + tenant disruption.',
+          not_routine_because: 'Anode replacement is strategic preservation, not routine flush (that\'s ACT).'
+        },
+        {
+          id: 'int-4',
+          system_name: 'Water Heater - Unit B',
+          intervention: 'Install anode rod + flush sediment',
+          description: '11-year-old water heater. Strategic anode replacement extends life 3-5 years.',
+          investment_cost: 350,
+          replacement_cost_avoided: 1400,
+          years_extended: 4,
+          roi_multiplier: 4.0,
+          frequency: 'Every 4-5 years',
+          status: 'Recommended',
+          why_worth_it: 'Same as Unit A. Do both at once for efficiency.',
+          not_routine_because: 'Strategic preservation intervention.'
+        },
+        {
+          id: 'int-5',
+          system_name: 'Roof System',
+          intervention: 'Preventive flashing repair + seal joints',
+          description: 'Roof is 10 years old. Minor flashing gaps detected. Sealing now prevents major leaks and extends roof life 2-3 years.',
+          investment_cost: 700,
+          replacement_cost_avoided: 2000,
+          years_extended: 3,
+          roi_multiplier: 2.9,
+          frequency: 'One-time',
+          status: 'Optional',
+          why_worth_it: '$700 to seal problem areas prevents $2K in emergency repairs + interior damage.',
+          not_routine_because: 'Strategic sealing intervention, not routine gutter cleaning.'
+        }
+      ]
     }
   ],
 

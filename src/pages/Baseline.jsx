@@ -209,7 +209,7 @@ export default function Baseline() {
   const welcomeNew = urlParams.get('welcome') === 'true';
   const { demoMode, demoData, isInvestor } = useDemo();
   
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
+  const [selectedProperty, setSelectedProperty] => React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
@@ -242,27 +242,31 @@ export default function Baseline() {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list('-created_date');
-    },
-    enabled: !demoMode
+    }
   });
 
   const { data: realSystems = [], isLoading: isLoadingRealSystems } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
     queryFn: () => {
-      if (demoMode && isInvestor) {
-        // Filter investor demo systems by selected property
-        return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo systems by selected property
+          return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+        }
+        return demoData?.systems || [];
       }
       return selectedProperty 
         ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
         : Promise.resolve([]);
     },
-    enabled: !!selectedProperty && !demoMode,
+    enabled: !!selectedProperty
   });
 
   // Use demo systems OR real systems
-  const systems = (demoMode && !isInvestor) 
-    ? (demoData?.systems || []) 
+  const systems = demoMode
+    ? (isInvestor 
+        ? (demoData?.systems?.filter(s => s.property_id === selectedProperty) || [])
+        : (demoData?.systems || []))
     : realSystems;
   const isLoading = demoMode ? false : isLoadingRealSystems;
 

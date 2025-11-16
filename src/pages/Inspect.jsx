@@ -27,6 +27,7 @@ import StepNavigation from "../components/navigation/StepNavigation";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -51,12 +52,13 @@ export default function Inspect() {
 
   const queryClient = useQueryClient();
   const { demoMode, demoData } = useDemo();
+  const isInvestor = demoData?.isInvestor; // Assuming isInvestor is part of demoData
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       const allProps = await base44.entities.Property.list();
       return allProps.filter(p => !p.is_draft);
@@ -65,14 +67,22 @@ export default function Inspect() {
 
   const { data: realInspections = [] } = useQuery({
     queryKey: ['inspections', selectedPropertyId],
-    queryFn: () => base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date'),
-    enabled: !demoMode && !!selectedPropertyId,
+    queryFn: () => {
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo inspections by property
+          if (!selectedPropertyId) return [];
+          return demoData?.inspections?.filter(i => i.property_id === selectedPropertyId) || [];
+        }
+        return demoData?.inspections || [];
+      }
+      return base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date');
+    },
+    enabled: !!selectedPropertyId,
     initialData: [],
   });
 
-  const inspections = demoMode 
-    ? (demoData?.inspections || [])
-    : realInspections;
+  const inspections = realInspections;
 
   console.log('=== INSPECT STATE ===');
   console.log('Demo mode:', demoMode);
@@ -81,14 +91,21 @@ export default function Inspect() {
 
   const { data: realBaselineSystems = [] } = useQuery({
     queryKey: ['baseline-systems', selectedPropertyId],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId }),
-    enabled: !demoMode && !!selectedPropertyId,
+    queryFn: () => {
+      if (demoMode) {
+        if (isInvestor) {
+          if (!selectedPropertyId) return [];
+          return demoData?.systems?.filter(s => s.property_id === selectedPropertyId) || [];
+        }
+        return demoData?.systems || [];
+      }
+      return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId });
+    },
+    enabled: !!selectedPropertyId,
     initialData: [],
   });
 
-  const baselineSystems = demoMode
-    ? (demoData?.systems || [])
-    : realBaselineSystems;
+  const baselineSystems = realBaselineSystems;
 
   const canEdit = !demoMode;
 
@@ -281,9 +298,15 @@ export default function Inspect() {
               Step 2 of 9
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Inspect
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Inspect
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 2: Inspect"
+              content="Seasonal walkthroughs (4x/year) catch small problems before they cascade into expensive failures. This is your early warning system."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
             Seasonal inspections to catch issues before they cascade
           </p>

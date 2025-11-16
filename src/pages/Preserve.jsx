@@ -20,6 +20,7 @@ import PreservationROIChart from "../components/preserve/PreservationROIChart";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 // The Big 7 system categories
 const BIG_7_CATEGORIES = [
@@ -35,15 +36,15 @@ export default function Preserve() {
   const [activeTab, setActiveTab] = useState('forecast');
   // `whyExpanded` state was related to the old "Why Preserve Matters" card.
   // Since that card is being replaced by `StepEducationCard`, this state is no longer needed.
-  // const [whyExpanded, setWhyExpanded] = useState(false); 
-  const { demoMode, demoData } = useDemo();
+  // const [whyExpanded, setWhyExpanded] = useState(false);
+  const { demoMode, demoData, isInvestor } = useDemo();
 
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list();
     }
@@ -56,13 +57,20 @@ export default function Preserve() {
 
   const { data: realSystems = [] } = useQuery({
     queryKey: ['systems', selectedProperty],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: selectedProperty }),
-    enabled: !demoMode && !!selectedProperty
+    queryFn: () => {
+      if (demoMode) {
+        if (isInvestor) {
+          if (!selectedProperty) return [];
+          return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+        }
+        return demoData?.systems || [];
+      }
+      return base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+    },
+    enabled: !!selectedProperty
   });
 
-  const allSystems = demoMode
-    ? (demoData?.systems || [])
-    : realSystems;
+  const allSystems = realSystems;
 
   console.log('=== PRESERVE STATE ===');
   console.log('Demo mode:', demoMode);
@@ -98,7 +106,7 @@ export default function Preserve() {
     : realImpacts;
 
   const preserveSchedules = demoMode
-    ? (demoData?.preserveSchedules || [])
+    ? (isInvestor ? (demoData?.preserveSchedules || []) : (demoData?.preserveSchedules || []))
     : [];
 
   const canEdit = !demoMode;
@@ -128,7 +136,7 @@ export default function Preserve() {
     const age = currentYear - s.installation_year;
     const totalLifespan = s.estimated_lifespan_years + (s.lifespan_extension_total_years || 0);
     const yearsRemaining = totalLifespan - age;
-    
+
     if (yearsRemaining <= 2 || s.condition === 'Poor') {
       acc.urgent++;
     } else if (yearsRemaining <= 5) {
@@ -140,7 +148,7 @@ export default function Preserve() {
   }, { urgent: 0, planAhead: 0, healthy: 0 });
 
   // Calculate total capital at risk
-  const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
+  const totalCapitalAtRisk = systems.reduce((sum, s => sum + (s.replacement_cost_estimate || 0), 0);
 
   // Get demo interventions if in demo mode
   const demoInterventions = demoMode && preserveSchedules[0]?.interventions || [];
@@ -148,7 +156,7 @@ export default function Preserve() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        
+
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={7} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
@@ -159,8 +167,8 @@ export default function Preserve() {
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 4 strategic interventions with 3x+ ROI 
-              (NOT routine maintenance). Total investment: ${preserveSchedules[0]?.total_investment?.toLocaleString()} to avoid ${preserveSchedules[0]?.total_replacement_costs_avoided?.toLocaleString()} in replacements. 
+              <strong>Demo Mode:</strong> 4 strategic interventions with 3x+ ROI
+              (NOT routine maintenance). Total investment: ${preserveSchedules[0]?.total_investment?.toLocaleString()} to avoid ${preserveSchedules[0]?.total_replacement_costs_avoided?.toLocaleString()} in replacements.
               Read-only example.
             </AlertDescription>
           </Alert>
@@ -176,16 +184,22 @@ export default function Preserve() {
               Step 7 of 9
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Preserve
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Preserve
+            </h1>
+            <DemoInfoTooltip
+              title="Step 7: Preserve"
+              content="Strategic interventions that extend system life 3-15 years. NOT routine maintenance (that's ACT). These are high-ROI investments (3×-11× return)."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
             Strategic intelligence for your Big 7 capital systems - extend life, avoid emergencies, protect investment
           </p>
         </div>
 
         {/* NEW: Step Education Card */}
-        <StepEducationCard 
+        <StepEducationCard
           {...STEP_EDUCATION.preserve}
           defaultExpanded={false}
           className="mb-6"
@@ -390,40 +404,40 @@ export default function Preserve() {
         {!demoMode && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-              <TabsTrigger 
-                value="forecast" 
+              <TabsTrigger
+                value="forecast"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <Calendar className="w-5 h-5" />
                 <span className="hidden md:inline">Forecast</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="opportunities" 
+              <TabsTrigger
+                value="opportunities"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <Lightbulb className="w-5 h-5" />
                 <span className="hidden md:inline">Opportunities</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="calculator" 
+              <TabsTrigger
+                value="calculator"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <Calculator className="w-5 h-5" />
                 <span className="hidden md:inline">Calculator</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="priorities" 
+              <TabsTrigger
+                value="priorities"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <TrendingUp className="w-5 h-5" />
                 <span className="hidden md:inline">Priorities</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="roi" 
+              <TabsTrigger
+                value="roi"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
@@ -434,7 +448,7 @@ export default function Preserve() {
 
             {/* Tab 1: Replacement Forecast */}
             <TabsContent value="forecast" className="mt-6 space-y-6">
-              <ReplacementForecastTimeline 
+              <ReplacementForecastTimeline
                 systems={systems}
                 property={properties.find(p => p.id === selectedProperty)}
               />
@@ -442,7 +456,7 @@ export default function Preserve() {
 
             {/* Tab 2: Life-Extension Opportunities */}
             <TabsContent value="opportunities" className="mt-6 space-y-6">
-              
+
               {/* Info Banner */}
               <Card className="border-2 border-blue-200 bg-blue-50">
                 <CardContent className="p-4">
@@ -550,7 +564,7 @@ export default function Preserve() {
 
             {/* Tab 3: Decision Calculator */}
             <TabsContent value="calculator" className="mt-6">
-              <DecisionCalculator 
+              <DecisionCalculator
                 systems={systems}
                 recommendations={recommendations}
                 property={properties.find(p => p.id === selectedProperty)}
@@ -559,7 +573,7 @@ export default function Preserve() {
 
             {/* Tab 4: Investment Priorities */}
             <TabsContent value="priorities" className="mt-6">
-              <InvestmentMatrix 
+              <InvestmentMatrix
                 recommendations={recommendations.filter(r => r.status === 'PENDING')}
                 systems={systems}
               />
@@ -567,7 +581,7 @@ export default function Preserve() {
 
             {/* Tab 5: Preservation ROI */}
             <TabsContent value="roi" className="mt-6 space-y-6">
-              <PreservationROIChart 
+              <PreservationROIChart
                 impacts={impacts}
                 totalInvested={totalInvested}
                 totalValueCreated={totalValueCreated}
