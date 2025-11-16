@@ -1,7 +1,7 @@
 import { TrendingUp, DollarSign, Home, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import DemoBanner from '@/components/demo/DemoBanner';
+import { DemoBanner } from '@/components/demo/DemoBanner';
 
 export default function InvestorDashboard({ data }) {
   const { portfolioStats, properties, tasks } = data;
