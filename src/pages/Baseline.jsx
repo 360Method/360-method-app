@@ -27,7 +27,6 @@ import TermTooltip from "../components/shared/TermTooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
-import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -118,7 +117,7 @@ const SYSTEM_DESCRIPTIONS = {
     lifespan: "15-50 years"
   },
   "Gutters & Downspouts": {
-    what: "System that collects/dirtects rainwater away from home",
+    what: "System that collects/directs rainwater away from home",
     why: "Clogged gutters = foundation damage + basement flooding + siding rot = $10K-30K+ damage.",
     lifespan: "10-100 years"
   },
@@ -631,18 +630,6 @@ export default function Baseline() {
 
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
-        </div>
-
-        <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl md:text-4xl font-bold" style={{ color: '#1B365D' }}>
-              Step 1: Baseline
-            </h1>
-            <DemoInfoTooltip 
-              title="Step 1: Baseline"
-              content="Document all major systems here - HVAC, roof, plumbing, etc. Complete at least 4 systems to unlock the ACT phase and start preventing disasters."
-            />
-          </div>
         </div>
 
         <BaselinePageHeader

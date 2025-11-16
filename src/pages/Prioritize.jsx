@@ -47,8 +47,6 @@ import { useDemo } from "../components/shared/DemoContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
-import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
-import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 
 const Label = ({ children, className = "", ...props }) => (
@@ -323,7 +321,7 @@ export default function PrioritizePage() {
   const highPriorityCount = ticketQueueTasks.filter(t => t.priority === 'High').length;
   const highCascadeCount = ticketQueueTasks.filter(t => (t.cascade_risk_score || 0) >= 7).length;
   const routineCount = ticketQueueTasks.filter(t => t.priority === 'Routine').length + relevantTemplates.length;
-  const totalCurrentCost = ticketQueueTasks.reduce((sum, t => sum + (t.current_fix_cost || 0), 0);
+  const totalCurrentCost = ticketQueueTasks.reduce((sum, t) => sum + (t.current_fix_cost || 0), 0);
   const totalDelayedCost = ticketQueueTasks.reduce((sum, t) => sum + (t.delayed_fix_cost || 0), 0);
   const potentialSavings = totalDelayedCost - totalCurrentCost;
 
@@ -642,7 +640,7 @@ export default function PrioritizePage() {
   // No properties fallback
   if (properties.length === 0 && !demoMode) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 pb-20">
         <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">
           <Card className="border-2 border-red-300 bg-white">
             <CardContent className="p-6 md:p-8 text-center">
@@ -674,50 +672,96 @@ export default function PrioritizePage() {
   const isMultiUnitView = flowType === 'multi_unit' || flowType === 'dual_unit'; // NEW: Check if property is multi-unit (including dual)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        
+        {demoMode && (
+          <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
+            <Info className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              <strong>Demo Mode:</strong> 8 tasks generated from baseline findings. 
+              1 urgent (smoke detectors), 3 high priority. Read-only example.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={4} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Demo Mode Alert */}
-        {demoMode && (
-          <Alert className="mb-6 border-yellow-400 bg-yellow-50">
-            <Info className="w-4 h-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 8 tasks with AI analysis, cascade risk scoring, and cost estimates. Read-only example.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Phase & Step Header */}
+        {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
-              Phase II - ACT
-            </Badge>
-            <Badge variant="outline" className="text-sm px-3 py-1">
-              Step 4 of 9
-            </Badge>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-lg">
+              <Inbox className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+                Step 4: Prioritize - Ticket Queue
+              </h1>
+              <p className="text-gray-600" style={{ fontSize: '16px' }}>
+                Central hub for all maintenance tasks - enrich, decide, then route through ACT
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-              Prioritize
-            </h1>
-            <DemoInfoTooltip 
-              title="Step 4: Prioritize"
-              content="AI analyzes every task for cascade risk and cost impact. Focus on HIGH items first - they're the ones that prevent $5K+ disasters if you delay."
-            />
-          </div>
-          <p className="text-gray-600 text-lg">
-            Your maintenance queue with AI-powered risk analysis
-          </p>
-        </div>
 
-        {/* Don't Want DIY Banner */}
-        <DontWantDIYBanner />
+          {/* NEW: Step Education Card (high-level context) */}
+          <StepEducationCard 
+            {...STEP_EDUCATION.prioritize}
+            defaultExpanded={false}
+            className="mb-6"
+          />
+
+          {/* ACT Phase 3-Step Flow - KEPT (detailed workflow) */}
+          <Card className="border-2 border-red-400 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 shadow-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="w-5 h-5 text-red-700" />
+                <h3 className="font-bold text-red-900">The ACT Phase 3-Step Workflow:</h3>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-3 mb-3">
+                <div className="bg-red-50 rounded-lg p-3 border-2 border-red-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">1</div>
+                    <span className="font-bold text-red-900">Prioritize (RED)</span>
+                  </div>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    Tickets arrive → AI analyzes costs & risks → You decide DIY or Pro → Tag by unit
+                  </p>
+                </div>
+
+                <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-yellow-600 text-white flex items-center justify-center text-xs font-bold">2</div>
+                    <span className="font-bold text-yellow-900">Schedule (YELLOW)</span>
+                  </div>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    Pick calendar dates → Plan timeline → Organize by system area
+                  </p>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-3 border-2 border-green-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</div>
+                    <span className="font-bold text-green-900">Execute (GREEN)</span>
+                  </div>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    Follow AI how-to guides → Complete work → Auto-archives to Track
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-3 border-l-4 border-blue-600">
+                <p className="text-xs text-gray-800 leading-relaxed">
+                  <strong>📚 Auto-Archive to Track:</strong> When you mark tasks complete in Execute (or here in Prioritize), 
+                  they're <strong>automatically logged in Track</strong> with all costs, dates, and outcomes preserved forever. 
+                  No manual logging needed!
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Property Selector */}
         {properties.length > 1 && (

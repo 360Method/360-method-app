@@ -38,12 +38,11 @@ import { createPageUrl } from "@/utils";
 import TierBadge from "../components/upgrade/TierBadge";
 import SeasonalTaskSuggestions from "../components/schedule/SeasonalTaskSuggestions";
 import ManualTaskForm from "../components/tasks/ManualTaskForm";
-import { useDemo } from "../components/shared/DemoContext";
+import { useDemo } from "../components/shared/DemoContext"; // Updated import
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import NextStepCard from "../components/dashboard/NextStepCard";
-import MethodProgressWidget from "../components/dashboard/MethodProgressWidget";
-import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
+import MethodProgressWidget from "../components/dashboard/MethodProgressWidget"; // NEW Import
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -55,32 +54,34 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { demoMode, demoData, enterDemoMode } = useDemo();
+  const { demoMode, demoData, enterDemoMode } = useDemo(); // Updated to use useDemo
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState('all');
   const [showAddTaskDialog, setShowAddTaskDialog] = React.useState(false);
   const [showQuickPropertyAdd, setShowQuickPropertyAdd] = React.useState(false);
-  const [methodExpanded, setMethodExpanded] = React.useState(false);
+  const [methodExpanded, setMethodExpanded] = React.useState(false); // Kept for the empty state's "Learn More"
 
+  // Update time every minute for "good morning" greeting
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const { data: realProperties = [] } = useQuery({
+  const { data: realProperties = [] } = useQuery({ // Renamed to realProperties
     queryKey: ['properties'],
     queryFn: async () => {
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: !demoMode,
+    enabled: !demoMode, // Only fetch real properties if not in demo mode
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
+  // Use demo property OR real properties
   const properties = (demoMode && realProperties.length === 0)
-    ? (demoData?.property ? [demoData.property] : [])
-    : realProperties;
+    ? (demoData?.property ? [demoData.property] : []) // If in demo mode and no real properties, use demo property
+    : realProperties; // Otherwise use real properties
 
   console.log('=== DASHBOARD STATE ===');
   console.log('Demo mode:', demoMode);
@@ -104,10 +105,10 @@ export default function Dashboard() {
   const activePropertyIds = properties.map(p => p.id);
 
   const { data: allSystems = [] } = useQuery({
-    queryKey: ['allSystemBaselines', selectedPropertyFilter, demoMode],
+    queryKey: ['allSystemBaselines', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
-        return demoData?.systems || [];
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.systems || []; // Return demo systems
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -117,16 +118,16 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
   const { data: allTasks = [] } = useQuery({
-    queryKey: ['allMaintenanceTasks', selectedPropertyFilter, demoMode],
+    queryKey: ['allMaintenanceTasks', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
-        return demoData?.tasks || [];
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.tasks || []; // Return demo tasks
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -136,16 +137,16 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
 
   const { data: allInspections = [] } = useQuery({
-    queryKey: ['allInspections', selectedPropertyFilter, demoMode],
+    queryKey: ['allInspections', selectedPropertyFilter, demoMode], // Added demoMode to queryKey
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
-        return demoData?.inspections || [];
+      if (demoMode && realProperties.length === 0) { // If in demo mode AND no real properties
+        return demoData?.inspections || []; // Return demo inspections (empty for now)
       }
 
       if (selectedPropertyFilter === 'all') {
@@ -155,7 +156,7 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: !demoMode || (demoMode && realProperties.length === 0), // Fetch if not demo mode, or if demo mode and showing demo data
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -274,25 +275,30 @@ export default function Dashboard() {
     }
   };
 
+  // Show demo option if user has no real properties and NOT in demo mode
   const showDemoOption = !demoMode && realProperties.length === 0;
 
+  // Helper to determine completed steps for the MethodProgressWidget
   const getCompletedSteps = () => {
     const completed = [];
     if (avgBaselineCompletion >= 66) completed.push(1);
     if (allInspections.length > 0) completed.push(2);
     if (totalSpent > 0) completed.push(3);
-    if (allTasks.length > 0) completed.push(4);
+    if (allTasks.length > 0) completed.push(4); // A general indicator for 'Prioritize'
     if (scheduledTasks.length > 0) completed.push(5);
     if (completedTasksThisMonth > 0) completed.push(6);
     if (totalPrevented > 0) completed.push(7);
+    // Step 8 (Upgrade) is typically active when upgrades are recorded, or user interacts with upgrade path.
+    // Step 9 (Scale) is active if there's more than one property.
     if (properties.length > 1) completed.push(9);
     return completed;
   };
 
-  if (properties.length === 0 && !demoMode) {
+  if (properties.length === 0 && !demoMode) { // This condition is now for when there are NO real properties AND not in demo mode
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="mobile-container md::max-w-5xl md:mx-auto pt-8">
+          {/* Welcome Header with Tier Badge */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="font-bold mb-1" style={{ color: '#1B365D', fontSize: '28px' }}>
@@ -305,6 +311,7 @@ export default function Dashboard() {
             <TierBadge tier={currentTier} />
           </div>
 
+          {/* NEW: Explore Demo Card */}
           {showDemoOption && (
             <Card className="border-2 border-blue-400 shadow-lg mb-6">
               <CardHeader>
@@ -365,6 +372,7 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Simplified Welcome */}
           <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
             <CardHeader>
               <CardTitle style={{ color: '#1B365D', fontSize: '24px' }}>
@@ -412,6 +420,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Expandable 360° Method Education - COLLAPSED BY DEFAULT */}
           {methodExpanded && (
             <Card className="border-2 border-blue-300 bg-white mb-6 shadow-xl">
               <CardHeader>
@@ -423,6 +432,7 @@ export default function Dashboard() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Phase I - AWARE */}
                 <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-lg border-2 border-blue-300">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -463,6 +473,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Phase II - ACT */}
                 <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-300">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -503,6 +514,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Phase III - ADVANCE */}
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-300">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -543,6 +555,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* The Bottom Line */}
                 <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-300">
                   <div className="flex items-start gap-3">
                     <Target className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
@@ -559,6 +572,8 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* This card is now removed from the empty state, as it relies on DEMO_PROPERTY which is replaced by demoData from useDemo */}
+          {/* Free Tier Notice */}
           {isFreeTier && (
             <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
               <CardContent className="p-4">
@@ -587,6 +602,7 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Manual Property Add Option - Bottom of Page */}
           <div className="text-center pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 mb-3">
               Prefer to add your property manually?
@@ -604,6 +620,7 @@ export default function Dashboard() {
             </Button>
           </div>
 
+          {/* QuickPropertyAdd Modal */}
           <QuickPropertyAdd
             open={showQuickPropertyAdd}
             onClose={() => setShowQuickPropertyAdd(false)}
@@ -621,15 +638,9 @@ export default function Dashboard() {
         <div className="mb-6">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold mb-1" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-                  {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
-                </h1>
-                <DemoInfoTooltip
-                  title="Your Command Center"
-                  content="Your command center shows property health, upcoming tasks, and savings from prevention. Navigate using the sidebar to explore each of the 9 steps."
-                />
-              </div>
+              <h1 className="font-bold mb-1" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
+                {greeting}, {user?.full_name?.split(' ')[0] || 'there'}! 👋
+              </h1>
               <p className="text-gray-600" style={{ fontSize: '16px' }}>
                 {demoMode ? 'Exploring demo property' : (
                   isShowingAllProperties ?
@@ -657,6 +668,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Property Selector - Prominent for Multi-Property Users */}
         {properties.length > 1 && (
           <Card className="mb-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50">
             <CardContent className="p-4">
@@ -717,6 +729,7 @@ export default function Dashboard() {
           </Card>
         )}
 
+        {/* Onboarding Restart Card - Only show if user skipped */}
         {user?.onboarding_skipped &&
           <Card className="border-2 border-purple-300 bg-purple-50 mb-6">
             <CardContent className="p-5">
@@ -756,6 +769,7 @@ export default function Dashboard() {
           </Card>
         }
 
+        {/* Next Step Card - NEW */}
         <div className="mb-6">
           <NextStepCard
             selectedProperty={filteredProperty || (isShowingAllProperties && properties.length === 1 ? properties[0] : null)}
@@ -764,6 +778,7 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* NEW: Enhanced Method Progress Widget (Always Visible) */}
         <MethodProgressWidget
           completedSteps={getCompletedSteps()}
           properties={properties}
@@ -781,7 +796,9 @@ export default function Dashboard() {
           totalPrevented={totalPrevented}
         />
 
+        {/* Main Content Grid - Compact & Mobile-First */}
         <div className="space-y-4 mb-6">
+          {/* Quick Action Buttons - NEW */}
           <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
@@ -842,6 +859,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Upcoming Tasks - Compact */}
           {upcomingTasks.length > 0 &&
             <Card className="border-none shadow-md">
               <CardHeader className="pb-2">
@@ -892,7 +910,9 @@ export default function Dashboard() {
             </Card>
           }
 
+          {/* Two-Column Layout for Desktop */}
           <div className="grid md:grid-cols-2 gap-4">
+            {/* Health Score & Baseline */}
             <Card className="border-none shadow-md">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D', fontSize: '16px' }}>
@@ -921,6 +941,7 @@ export default function Dashboard() {
             </Card>
           </div>
 
+          {/* Recent Activity - Compact */}
           {recentActivity.length > 0 &&
             <Card className="border-none shadow-md">
               <CardHeader className="pb-2">
@@ -971,6 +992,7 @@ export default function Dashboard() {
             </Card>
           }
 
+          {/* Seasonal Suggestions - Compact */}
           {filteredProperty &&
             <SeasonalTaskSuggestions
               propertyId={filteredProperty.id}
@@ -979,6 +1001,7 @@ export default function Dashboard() {
 
           }
 
+          {/* Service Member Badge */}
           {isServiceMember && user?.operator_name &&
             <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
               <CardContent className="p-4">
@@ -1003,6 +1026,7 @@ export default function Dashboard() {
           }
         </div>
 
+        {/* Property Limit Warning */}
         {!canAddProperty && (
           <Card className="border-2 border-orange-300 bg-orange-50 mb-6">
             <CardContent className="p-4">
@@ -1031,6 +1055,7 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Add Task Dialog */}
       {showAddTaskDialog && (
         <ManualTaskForm
           propertyId={filteredProperty?.id || (isShowingAllProperties && properties.length === 1 ? properties[0].id : null)}
