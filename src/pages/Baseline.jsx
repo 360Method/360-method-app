@@ -18,7 +18,7 @@ import BaselineWizard from "../components/baseline/BaselineWizard";
 import PhysicalWalkthroughWizard from "../components/baseline/PhysicalWalkthroughWizard";
 import PostOnboardingPrompt from "../components/baseline/PostOnboardingPrompt";
 import StepNavigation from "../components/navigation/StepNavigation";
-import { useDemo } from "../components/shared/DemoContext"; // Updated import
+import { useDemo } from "../components/shared/DemoContext";
 import { DEMO_PROPERTY, DEMO_SYSTEMS } from "../components/shared/demoProperty";
 import PreviewBanner from "../components/shared/PreviewBanner";
 import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
@@ -27,6 +27,7 @@ import TermTooltip from "../components/shared/TermTooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -117,7 +118,7 @@ const SYSTEM_DESCRIPTIONS = {
     lifespan: "15-50 years"
   },
   "Gutters & Downspouts": {
-    what: "System that collects/directs rainwater away from home",
+    what: "System that collects/dirtects rainwater away from home",
     why: "Clogged gutters = foundation damage + basement flooding + siding rot = $10K-30K+ damage.",
     lifespan: "10-100 years"
   },
@@ -206,7 +207,7 @@ export default function Baseline() {
   const propertyIdFromUrl = urlParams.get('property');
   const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
   const welcomeNew = urlParams.get('welcome') === 'true';
-  const { demoMode, demoData } = useDemo(); // Updated: Use useDemo hook
+  const { demoMode, demoData, isInvestor } = useDemo();
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
@@ -226,46 +227,57 @@ export default function Baseline() {
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
-    if (welcomeNew && !fromOnboarding && !demoMode) { // Updated: use demoMode
+    if (welcomeNew && !fromOnboarding && !demoMode) {
       toast.success('🎉 Property added! Let\'s document your systems.', {
         duration: 4000,
         icon: '🏠'
       });
     }
-  }, [welcomeNew, fromOnboarding, demoMode]); // Updated: use demoMode
+  }, [welcomeNew, fromOnboarding, demoMode]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
-    enabled: !demoMode // Updated: Disable if in demo mode
+    queryFn: () => {
+      if (demoMode) {
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
+      }
+      return base44.entities.Property.list('-created_date');
+    },
+    enabled: !demoMode
   });
 
   const { data: realSystems = [], isLoading: isLoadingRealSystems } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
     queryFn: () => {
+      if (demoMode && isInvestor) {
+        // Filter investor demo systems by selected property
+        return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+      }
       return selectedProperty 
         ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
         : Promise.resolve([]);
     },
-    enabled: !!selectedProperty && !demoMode, // Updated: Only fetch if selectedProperty exists and not in demo mode
+    enabled: !!selectedProperty && !demoMode,
   });
 
   // Use demo systems OR real systems
-  const systems = (demoMode && properties.length === 0) ? (demoData?.systems || []) : realSystems;
+  const systems = (demoMode && !isInvestor) 
+    ? (demoData?.systems || []) 
+    : realSystems;
   const isLoading = demoMode ? false : isLoadingRealSystems;
 
   console.log('=== BASELINE STATE ===');
   console.log('Demo mode:', demoMode);
+  console.log('Is investor:', isInvestor);
+  console.log('Selected property:', selectedProperty);
   console.log('Systems:', systems);
   console.log('Systems count:', systems?.length);
 
   React.useEffect(() => {
-    if (!selectedProperty && properties.length > 0 && !demoMode) { // Updated: use demoMode
+    if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
-    } else if (demoMode && properties.length === 0) { // Updated: use demoMode
-      setSelectedProperty(DEMO_PROPERTY.id);
     }
-  }, [properties, selectedProperty, demoMode]); // Updated: use demoMode
+  }, [properties, selectedProperty]);
 
   const systemsByType = systems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
@@ -401,7 +413,7 @@ export default function Baseline() {
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallProgress && !demoMode) { // Updated: use demoMode
+      if (property && property.baseline_completion !== overallProgress && !demoMode) {
         base44.entities.Property.update(selectedProperty, {
           baseline_completion: overallProgress
         }).then(() => {
@@ -409,10 +421,10 @@ export default function Baseline() {
         });
       }
     }
-  }, [overallProgress, selectedProperty, properties, queryClient, demoMode]); // Updated: use demoMode
+  }, [overallProgress, selectedProperty, properties, queryClient, demoMode]);
 
   const handleEditSystem = (system) => {
-    if (demoMode) { // Updated: use demoMode
+    if (demoMode) {
       toast.info('Add your property to edit systems');
       return;
     }
@@ -427,7 +439,7 @@ export default function Baseline() {
   };
 
   const handleAddSystem = (systemType) => {
-    if (demoMode) { // Updated: use demoMode
+    if (demoMode) {
       toast.info('Add your property to document systems');
       return;
     }
@@ -458,14 +470,14 @@ export default function Baseline() {
   };
 
   const handleRequestProService = () => {
-    if (demoMode) { // Updated: use demoMode
+    if (demoMode) {
       toast.info('Add your property to request services');
       return;
     }
     setShowCartDialog(true);
   };
 
-  const currentProperty = demoMode && properties.length === 0 ? DEMO_PROPERTY : properties.find(p => p.id === selectedProperty);
+  const currentProperty = demoMode && !isInvestor && properties.length === 0 ? DEMO_PROPERTY : properties.find(p => p.id === selectedProperty);
 
   const renderSystemGroup = (systemType, instances, isRequired) => {
     const allowsMultiple = MULTI_INSTANCE_SYSTEMS.includes(systemType);
@@ -555,7 +567,7 @@ export default function Baseline() {
                     size="sm"
                     onClick={() => handleDeleteSystem(instance)}
                     className="text-red-600 hover:text-red-700"
-                    disabled={demoMode} // Updated: use demoMode
+                    disabled={demoMode}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -612,13 +624,13 @@ export default function Baseline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        {demoMode && ( // Updated: use demoMode
+        {demoMode && (
           <div className="mb-6 mt-4">
             <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
           </div>
         )}
 
-        {demoMode && ( // Updated: Demo mode alert
+        {demoMode && (
           <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
@@ -630,6 +642,18 @@ export default function Baseline() {
 
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={1} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold" style={{ color: '#1B365D' }}>
+              Step 1: Baseline
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 1: Baseline"
+              content="Document all major systems here - HVAC, roof, plumbing, etc. Complete at least 4 systems to unlock the ACT phase and start preventing disasters."
+            />
+          </div>
         </div>
 
         <BaselinePageHeader
@@ -656,7 +680,7 @@ export default function Baseline() {
           />
         )}
 
-        {properties.length > 0 && !demoMode && ( // Updated: use demoMode
+        {properties.length > 0 && !demoMode && (
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
@@ -681,7 +705,7 @@ export default function Baseline() {
             <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl mb-6">
               <CardHeader className="pb-4">
                 <div className="text-center">
-                  <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                  <CardTitle className="text-2xl md:text-3xl font-bold" style={{ color: '#1B365D' }}>
                     Choose Your Documentation Method
                   </CardTitle>
                   <p className="text-gray-700">Pick the approach that works best for you</p>
@@ -690,8 +714,8 @@ export default function Baseline() {
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card 
-                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} // Updated: use demoMode
-                    onClick={() => !demoMode && setShowWizard(true)} // Updated: use demoMode
+                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => !demoMode && setShowWizard(true)}
                   >
                     <CardContent className="p-6">
                       <div className="text-center space-y-4">
@@ -722,7 +746,7 @@ export default function Baseline() {
                         <Button 
                           className="w-full gap-2 text-lg py-6"
                           style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
-                          disabled={demoMode} // Updated: use demoMode
+                          disabled={demoMode}
                         >
                           <Sparkles className="w-5 h-5" />
                           Start Quick Setup
@@ -733,8 +757,8 @@ export default function Baseline() {
                   </Card>
 
                   <Card 
-                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} // Updated: use demoMode
-                    onClick={() => !demoMode && setShowPhysicalWalkthrough(true)} // Updated: use demoMode
+                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => !demoMode && setShowPhysicalWalkthrough(true)}
                   >
                     <CardContent className="p-6">
                       <div className="text-center space-y-4">
@@ -764,7 +788,7 @@ export default function Baseline() {
                         <Button 
                           className="w-full gap-2 text-lg py-6"
                           style={{ backgroundColor: '#28A745', minHeight: '56px' }}
-                          disabled={demoMode} // Updated: use demoMode
+                          disabled={demoMode}
                         >
                           <Navigation className="w-5 h-5" />
                           Start Walkthrough

@@ -40,7 +40,7 @@ export default function Properties() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const searchParams = new URLSearchParams(location.search);
-  const { demoMode, demoData, exitDemoMode } = useDemo();
+  const { demoMode, demoData, exitDemoMode, isInvestor, isHomeowner } = useDemo();
 
   // URL params
   const newParam = searchParams.get('new');
@@ -67,16 +67,15 @@ export default function Properties() {
     enabled: !demoMode
   });
 
-  // Use demo property OR real properties (never mix)
-  const properties = demoMode 
-    ? (demoData?.property ? [demoData.property] : [])
+  // Use demo properties OR real properties
+  const properties = demoMode
+    ? (isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []))
     : realProperties;
 
   console.log('=== PROPERTIES PAGE STATE ===');
   console.log('Demo mode:', demoMode);
-  console.log('Real properties:', realProperties);
-  console.log('Properties (final):', properties);
-  console.log('Can edit:', !demoMode);
+  console.log('Is investor:', isInvestor);
+  console.log('Properties:', properties);
 
   const canEdit = !demoMode;
 
@@ -405,22 +404,57 @@ export default function Properties() {
         {/* Demo Property Display */}
         {demoMode && properties.length > 0 && (
           <div className="space-y-6">
+            {isInvestor && (
+              <Card className="border-2 border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg mb-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Badge className="bg-green-600 text-white text-lg px-4 py-2">
+                      🏢 Investor Portfolio Demo
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-4">
+                    You're viewing a 3-property portfolio: Duplex, Single-Family Home, and 4-Plex. 
+                    Navigate through the app to see portfolio-level analytics and multi-property management.
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded-lg border border-green-300">
+                      <p className="font-bold text-green-900">Total Value</p>
+                      <p className="text-2xl font-bold text-green-600">$785K</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-300">
+                      <p className="font-bold text-green-900">Cash Flow</p>
+                      <p className="text-2xl font-bold text-green-600">$2,710/mo</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-300">
+                      <p className="font-bold text-green-900">Portfolio ROI</p>
+                      <p className="text-2xl font-bold text-green-600">18.2%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {properties.map(property => (
               <Card 
                 key={property.id}
-                className="border-2 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-50 to-amber-50"
+                className={`border-2 shadow-lg ${isInvestor ? 'border-green-400 bg-gradient-to-br from-white to-green-50' : 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50'}`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-2xl font-bold" style={{ color: '#1B365D' }}>
-                          {property.address}
+                          {property.nickname || property.address}
                         </h3>
-                        <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-400">
+                        <Badge variant="outline" className={`${isInvestor ? 'bg-green-100 text-green-700 border-green-400' : 'bg-yellow-100 text-yellow-700 border-yellow-400'}`}>
                           <Lock className="w-3 h-3 mr-1" />
                           Demo Property
                         </Badge>
+                        {property.door_count > 1 && (
+                          <Badge className="bg-purple-600 text-white">
+                            {property.door_count} units
+                          </Badge>
+                        )}
                       </div>
                       
                       <p className="text-sm text-gray-600 mb-4">
@@ -430,7 +464,7 @@ export default function Properties() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500 text-xs mb-1">Type</p>
-                          <p className="font-semibold">{property.property_type || 'Single-Family Home'}</p>
+                          <p className="font-semibold">{property.property_type}</p>
                         </div>
                         <div>
                           <p className="text-gray-500 text-xs mb-1">Year Built</p>
@@ -448,37 +482,64 @@ export default function Properties() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-yellow-300">
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Bedrooms</p>
-                          <p className="font-semibold">{property.bedrooms}</p>
+                      {isInvestor && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-gray-300">
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Value</p>
+                            <p className="font-semibold">${(property.current_value / 1000).toFixed(0)}K</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Equity</p>
+                            <p className="font-semibold text-green-600">${(property.equity / 1000).toFixed(0)}K</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Cash Flow</p>
+                            <p className="font-semibold">
+                              ${(property.monthly_rent - property.monthly_mortgage).toLocaleString()}/mo
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Occupancy</p>
+                            <p className="font-semibold text-sm">{property.occupancy_status}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Bathrooms</p>
-                          <p className="font-semibold">{property.bathrooms}</p>
+                      )}
+
+                      {!isInvestor && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-yellow-300">
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Bedrooms</p>
+                            <p className="font-semibold">{property.bedrooms}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Bathrooms</p>
+                            <p className="font-semibold">{property.bathrooms}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs mb-1">Baseline</p>
+                            <p className="font-semibold text-blue-600">
+                              {property.baseline_completion}% Complete
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Baseline</p>
-                          <p className="font-semibold text-blue-600">
-                            {property.baseline_completion}% Complete
-                          </p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mt-4">
-                    <p className="text-sm font-semibold text-blue-900 mb-2">
-                      📊 Demo Property Highlights:
-                    </p>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• 16 systems documented (Baseline 100% complete)</li>
-                      <li>• 8 prioritized tasks (1 urgent, 3 high priority)</li>
-                      <li>• $7,200 in prevented costs from proactive maintenance</li>
-                      <li>• 2 seasonal inspections completed (Fall & Spring 2024)</li>
-                      <li>• 4 strategic upgrades planned (incl. bathroom remodel)</li>
-                    </ul>
-                  </div>
+                  {!isInvestor && (
+                    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mt-4">
+                      <p className="text-sm font-semibold text-blue-900 mb-2">
+                        📊 Demo Property Highlights:
+                      </p>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• 16 systems documented (Baseline 100% complete)</li>
+                        <li>• 8 prioritized tasks (1 urgent, 3 high priority)</li>
+                        <li>• $7,200 in prevented costs from proactive maintenance</li>
+                        <li>• 2 seasonal inspections completed (Fall & Spring 2024)</li>
+                        <li>• 4 strategic upgrades planned (incl. bathroom remodel)</li>
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -488,11 +549,13 @@ export default function Properties() {
               <CardContent className="p-8 text-center">
                 <Lock className="w-16 h-16 mx-auto mb-4 text-blue-600" />
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ready to Add Your Real Property?
+                  Ready to {isInvestor ? 'Add Your Real Portfolio' : 'Add Your Real Property'}?
                 </h3>
                 <p className="text-gray-700 mb-6 max-w-md mx-auto">
-                  Exit demo mode to add and manage your properties with the complete 360° Method. 
-                  Document your systems, track maintenance, and prevent costly failures.
+                  {isInvestor 
+                    ? 'Exit demo mode to add and manage your properties with complete portfolio intelligence.'
+                    : 'Exit demo mode to add and manage your properties with the complete 360° Method.'
+                  }
                 </p>
                 <Button 
                   onClick={handleExitDemoAndAddProperty}
@@ -500,7 +563,7 @@ export default function Properties() {
                   style={{ minHeight: '56px' }}
                 >
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Exit Demo & Add My Property
+                  Exit Demo & Add {isInvestor ? 'My Portfolio' : 'My Property'}
                 </Button>
               </CardContent>
             </Card>
