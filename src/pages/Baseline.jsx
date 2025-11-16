@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -209,7 +208,7 @@ export default function Baseline() {
   const welcomeNew = urlParams.get('welcome') === 'true';
   const { demoMode, demoData, isInvestor } = useDemo();
   
-  const [selectedProperty, setSelectedProperty] => React.useState(propertyIdFromUrl || '');
+  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
@@ -250,7 +249,6 @@ export default function Baseline() {
     queryFn: () => {
       if (demoMode) {
         if (isInvestor) {
-          // Filter investor demo systems by selected property
           return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
         }
         return demoData?.systems || [];
@@ -262,7 +260,6 @@ export default function Baseline() {
     enabled: !!selectedProperty
   });
 
-  // Use demo systems OR real systems
   const systems = demoMode
     ? (isInvestor 
         ? (demoData?.systems?.filter(s => s.property_id === selectedProperty) || [])
@@ -638,7 +635,7 @@ export default function Baseline() {
           <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> This property has 16 systems already documented. 
+              <strong>Demo Mode:</strong> This property has {systems.length} systems already documented. 
               This is a read-only example. Add your own property to start editing.
             </AlertDescription>
           </Alert>
@@ -666,7 +663,6 @@ export default function Baseline() {
           totalRequired={6}
         />
 
-        {/* NEW: Step Education Card */}
         <StepEducationCard 
           {...STEP_EDUCATION.baseline}
           defaultExpanded={false}
@@ -684,7 +680,7 @@ export default function Baseline() {
           />
         )}
 
-        {properties.length > 0 && !demoMode && (
+        {properties.length > 1 && (
           <Card className="border-2 border-blue-300 shadow-lg mb-6">
             <CardContent className="p-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Select Property</label>
