@@ -26,6 +26,7 @@ import StepEducationCard from '../components/shared/StepEducationCard';
 import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
 import StepNavigation from '../components/navigation/StepNavigation';
 import { Badge } from '@/components/ui/badge';
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -543,9 +544,15 @@ Provide comprehensive analysis with this structure:
           </div>
 
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Your Wins 🎉
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Your Wins 🎉
+              </h1>
+              <DemoInfoTooltip 
+                title="Step 3: Track"
+                content="All completed maintenance automatically logs here with costs, photos, and dates. Your permanent record of care - great for insurance claims and resale."
+              />
+            </div>
             
             <div className="flex items-center gap-2">
               <ExportMenu
