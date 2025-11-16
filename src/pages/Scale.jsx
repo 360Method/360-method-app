@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ChevronDown,
   Lightbulb,
-  Info
+  Info,
+  Building2 // Added Building2 for the locked view
 } from "lucide-react";
 import StepNavigation from "../components/navigation/StepNavigation";
 import EquityPositionCard from "../components/scale/EquityPositionCard";
@@ -24,22 +25,27 @@ import StrategicAnalysisCard from "../components/scale/StrategicAnalysisCard";
 import WealthProjectionChart from "../components/scale/WealthProjectionChart";
 import CapitalAllocationRanker from "../components/scale/CapitalAllocationRanker";
 import BenchmarkComparison from "../components/scale/BenchmarkComparison";
+import ScaleInvestorView from '../components/scale/ScaleInvestorView'; // Added ScaleInvestorView import
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('equity-position');
   // const [whyExpanded, setWhyExpanded] = useState(false); // This state is no longer needed for the new StepEducationCard
-  const { demoMode, demoData } = useDemo();
+  const { demoMode, demoData, isInvestor, isHomeowner } = useDemo(); // Updated useDemo destructuring
 
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        if (isInvestor) {
+          return demoData?.properties || []; // For investor demo, use multiple properties if available
+        }
+        return demoData?.property ? [demoData.property] : []; // For homeowner/single property demo
       }
       return base44.entities.Property.list();
     }
@@ -52,7 +58,7 @@ export default function Scale() {
 
   const { data: realEquityData = [] } = useQuery({
     queryKey: ['portfolio-equity', selectedProperty],
-    queryFn: () => selectedProperty === 'all' 
+    queryFn: () => selectedProperty === 'all'
       ? base44.entities.PortfolioEquity.list()
       : base44.entities.PortfolioEquity.filter({ property_id: selectedProperty }),
     enabled: !demoMode && !!selectedProperty
@@ -115,10 +121,78 @@ export default function Scale() {
   const totalEquity = totalValue - totalDebt;
   const avgEquityPct = totalValue > 0 ? (totalEquity / totalValue * 100) : 0;
 
+  // Show investor view if in investor demo mode
+  if (isInvestor && demoMode && demoData?.scaleData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 pb-20">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+          <div className="mb-4 md:mb-6">
+            <StepNavigation currentStep={9} propertyId={null} />
+          </div>
+
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge className="bg-green-600 text-white text-sm px-3 py-1">
+                Phase III - ADVANCE
+              </Badge>
+              <Badge variant="outline" className="text-sm px-3 py-1">
+                Step 9 of 9
+              </Badge>
+              <Badge className="bg-purple-600 text-white text-sm px-3 py-1">
+                🍒 UNLOCKED - Portfolio View
+              </Badge>
+            </div>
+          </div>
+
+          <ScaleInvestorView data={demoData.scaleData} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show locked view for homeowners with 1 property
+  if (isHomeowner && demoMode && properties.length === 1) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 pb-20">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+          <div className="mb-4 md:mb-6">
+            <StepNavigation currentStep={9} propertyId={properties[0]?.id} />
+          </div>
+
+          <Card className="border-2 border-blue-400 bg-blue-50 max-w-3xl mx-auto mt-12">
+            <CardContent className="p-8 text-center">
+              <Building2 className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-900 mb-4">
+                🔒 SCALE Unlocks with 2+ Properties
+              </h2>
+              <p className="text-blue-800 mb-6">
+                This demo shows a single property. The SCALE module provides portfolio CFO intelligence
+                including equity tracking, wealth projections, and strategic recommendations across multiple properties.
+              </p>
+              <div className="bg-white rounded-lg p-4 text-left text-sm text-gray-700 mb-6">
+                <p className="font-semibold mb-2">With SCALE, you get:</p>
+                <ul className="space-y-1">
+                  <li>• Portfolio-wide equity and value tracking</li>
+                  <li>• 10-year wealth projections</li>
+                  <li>• Hold/sell/refinance recommendations</li>
+                  <li>• Capital allocation optimization</li>
+                  <li>• Performance benchmarking</li>
+                </ul>
+              </div>
+              <Badge className="bg-blue-600 text-white text-lg px-6 py-2">
+                Add a 2nd property to unlock
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        
+
         {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={9} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
@@ -129,8 +203,8 @@ export default function Scale() {
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> Single property portfolio showing $250K current equity, 
-              $520K projected in 10 years. Full SCALE features unlock with 2+ properties. 
+              <strong>Demo Mode:</strong> Single property portfolio showing $250K current equity,
+              $520K projected in 10 years. Full SCALE features unlock with 2+ properties.
               Read-only example.
             </AlertDescription>
           </Alert>
@@ -149,16 +223,22 @@ export default function Scale() {
               🍒 FINAL STEP
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Scale
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Scale
+            </h1>
+            <DemoInfoTooltip
+              title="Step 9: SCALE"
+              content="Your portfolio CFO - equity tracking, wealth projections, hold/sell/refinance recommendations. Unlocks with 2+ properties."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
             Portfolio CFO Intelligence - strategic wealth command center for your real estate
           </p>
         </div>
 
         {/* NEW: Step Education Card */}
-        <StepEducationCard 
+        <StepEducationCard
           {...STEP_EDUCATION.scale}
           defaultExpanded={false}
           className="mb-6"
@@ -318,40 +398,40 @@ export default function Scale() {
         {!demoMode && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-              <TabsTrigger 
-                value="equity-position" 
+              <TabsTrigger
+                value="equity-position"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <DollarSign className="w-5 h-5" />
                 <span className="hidden md:inline">Equity</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="strategic-analysis" 
+              <TabsTrigger
+                value="strategic-analysis"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <Target className="w-5 h-5" />
                 <span className="hidden md:inline">Strategy</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="wealth-projections" 
+              <TabsTrigger
+                value="wealth-projections"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <TrendingUp className="w-5 h-5" />
                 <span className="hidden md:inline">Projections</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="capital-optimizer" 
+              <TabsTrigger
+                value="capital-optimizer"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
                 <Calculator className="w-5 h-5" />
                 <span className="hidden md:inline">Capital</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="performance" 
+              <TabsTrigger
+                value="performance"
                 className="flex items-center gap-2 py-3"
                 style={{ minHeight: '56px' }}
               >
@@ -361,7 +441,7 @@ export default function Scale() {
             </TabsList>
 
             <TabsContent value="equity-position" className="mt-6 space-y-6">
-              <EquityPositionCard 
+              <EquityPositionCard
                 equityData={equityData}
                 properties={properties}
                 selectedProperty={selectedProperty}
@@ -369,7 +449,7 @@ export default function Scale() {
             </TabsContent>
 
             <TabsContent value="strategic-analysis" className="mt-6 space-y-6">
-              <StrategicAnalysisCard 
+              <StrategicAnalysisCard
                 recommendations={recommendations}
                 equityData={equityData}
                 properties={properties}
@@ -378,7 +458,7 @@ export default function Scale() {
             </TabsContent>
 
             <TabsContent value="wealth-projections" className="mt-6 space-y-6">
-              <WealthProjectionChart 
+              <WealthProjectionChart
                 projections={projections}
                 equityData={equityData}
                 properties={properties}
@@ -386,14 +466,14 @@ export default function Scale() {
             </TabsContent>
 
             <TabsContent value="capital-optimizer" className="mt-6 space-y-6">
-              <CapitalAllocationRanker 
+              <CapitalAllocationRanker
                 capitalAllocations={capitalAllocations}
                 properties={properties}
               />
             </TabsContent>
 
             <TabsContent value="performance" className="mt-6 space-y-6">
-              <BenchmarkComparison 
+              <BenchmarkComparison
                 benchmarks={benchmarks}
                 equityData={equityData}
                 properties={properties}
