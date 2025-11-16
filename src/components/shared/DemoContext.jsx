@@ -4,6 +4,7 @@ import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import DemoWizard from '../demo/DemoWizard';
+import InvestorDemoWizard from '../demo/InvestorDemoWizard';
 
 const DemoContext = createContext();
 
@@ -101,6 +102,12 @@ export function DemoProvider({ children }) {
       {children}
       {showWizard && demoMode === 'homeowner' && (
         <DemoWizard 
+          onComplete={handleWizardComplete}
+          onSkip={handleWizardSkip}
+        />
+      )}
+      {showWizard && demoMode === 'investor' && (
+        <InvestorDemoWizard 
           onComplete={handleWizardComplete}
           onSkip={handleWizardSkip}
         />

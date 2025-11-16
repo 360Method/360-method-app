@@ -176,6 +176,16 @@ export default function PrioritizePage() {
     staleTime: 1 * 60 * 1000,
   });
 
+  const { data: templates = [] } = useQuery({
+    queryKey: ['maintenanceTemplates'],
+    queryFn: () => {
+      if (demoMode) {
+        return [];
+      }
+      return base44.entities.MaintenanceTemplate.list();
+    }
+  });
+
   // Use demo tasks OR real tasks
   const allTasks = realTasks;
 
@@ -245,7 +255,7 @@ export default function PrioritizePage() {
   const currentSeason = getCurrentSeason();
   const climateZones = getPropertyClimateZones();
   
-  const relevantTemplates = allTemplates.filter(template => {
+  const relevantTemplates = templates.filter(template => {
     if (isInspectionTask(template)) return false;
     const seasonMatch = template.season === currentSeason || template.season === 'Year-Round';
     const climateMatch = template.climate_zone === 'All Climates' || 

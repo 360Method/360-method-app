@@ -154,7 +154,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       cascade_risk_score: 6,
       cascade_risk_reason: 'Each day delayed = $30 lost revenue',
       system_type: 'General',
-      source: 'MANUAL'
+      source: 'MANUAL',
+      unit_tag: '4D'
     },
     {
       id: 'inv-task-2',
@@ -169,7 +170,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       cascade_risk_score: 9,
       cascade_risk_reason: 'Delaying 1 year could cause $8K-$15K in interior water damage across 4 units',
       system_type: 'Roof',
-      source: 'PRESERVATION_RECOMMENDATION'
+      source: 'PRESERVATION_RECOMMENDATION',
+      scope: 'building_wide'
     },
     {
       id: 'inv-task-3',
@@ -183,7 +185,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       cascade_risk_score: 3,
       cascade_risk_reason: 'Non-compliance = $500-$2000 fines',
       system_type: 'General',
-      source: 'SEASONAL_CHECKLIST'
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide'
     },
     {
       id: 'inv-task-4',
@@ -198,7 +201,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       cascade_risk_score: 6,
       cascade_risk_reason: 'Emergency replacement costs 40% more + tenant satisfaction risk',
       system_type: 'Plumbing',
-      source: 'PRESERVATION_RECOMMENDATION'
+      source: 'PRESERVATION_RECOMMENDATION',
+      unit_tag: 'A'
     },
     {
       id: 'inv-task-5',
@@ -211,7 +215,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       current_fix_cost: 185,
       cascade_risk_score: 2,
       system_type: 'HVAC',
-      source: 'SEASONAL_CHECKLIST'
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide'
     },
     {
       id: 'inv-task-6',
@@ -223,7 +228,8 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       current_fix_cost: 850,
       cascade_risk_score: 4,
       system_type: 'Appliances',
-      source: 'INSPECTION'
+      source: 'INSPECTION',
+      unit_tag: '3B'
     }
   ],
 
@@ -296,6 +302,59 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       actual_cost: 850,
       execution_type: 'Professional',
       status: 'Completed'
+    }
+  ],
+
+  upgrades: [
+    {
+      id: 'inv-upgrade-1',
+      property_id: 'demo-investor-3',
+      title: 'Energy Efficient Windows - All 4 Units',
+      category: 'Energy Efficiency',
+      description: 'Replace all single-pane windows with dual-pane low-E windows. Reduces heating costs 25-30% and increases property value.',
+      status: 'Planned',
+      estimated_cost_low: 8500,
+      estimated_cost_high: 11200,
+      annual_savings: 840,
+      payback_period_years: 12,
+      total_savings_10yr: 8400,
+      why_worth_it: 'Tenant comfort + energy savings + modernization. Will pay for itself in 12 years and adds $6K to building value.'
+    },
+    {
+      id: 'inv-upgrade-2',
+      property_id: 'demo-investor-1',
+      title: 'Add In-Unit Washer/Dryer Hookups',
+      category: 'Rental Income Boosters',
+      description: 'Add W/D hookups to both units. Increases rent $75-100/unit per month.',
+      status: 'Researching',
+      estimated_cost_low: 4200,
+      estimated_cost_high: 5800,
+      rental_boost_per_month: 175,
+      payback_period_years: 2.8,
+      why_worth_it: '$175/mo extra income = $2,100/year. Pays for itself in 2.8 years, then pure profit.'
+    },
+    {
+      id: 'inv-upgrade-3',
+      property_id: 'demo-investor-2',
+      title: 'Smart Home Package',
+      category: 'Quality of Life',
+      description: 'Smart thermostat, doorbell camera, smart locks. Premium tenant appeal.',
+      status: 'Wishlist',
+      estimated_cost_low: 850,
+      estimated_cost_high: 1250,
+      why_worth_it: 'Modern tech-savvy tenants willing to pay $50-75/mo more for smart features. Differentiates from competition.'
+    },
+    {
+      id: 'inv-upgrade-4',
+      property_id: 'demo-investor-3',
+      title: 'Landscaping Refresh - Cedar Court',
+      category: 'Quality of Life',
+      description: 'New bark, flower beds, pathway lighting. First impression matters for vacancy turnovers.',
+      status: 'In Progress',
+      progress_percentage: 35,
+      estimated_cost_low: 2400,
+      estimated_cost_high: 3200,
+      why_worth_it: 'Professional curb appeal reduces vacancy days by 30-50%. One month of reduced vacancy ($900) covers most of the cost.'
     }
   ],
 
