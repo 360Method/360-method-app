@@ -41,13 +41,15 @@ import { shouldShowSeasonalReminder, getSeasonalEmoji } from "../components/sche
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function SchedulePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
-  const { demoMode, demoData } = useDemo();
+  const { demoMode, demoData, isInvestor } = useDemo();
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
   const [viewMode, setViewMode] = React.useState('unscheduled');
@@ -77,7 +79,7 @@ export default function SchedulePage() {
     queryKey: ['properties'],
     queryFn: async () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
@@ -98,6 +100,17 @@ export default function SchedulePage() {
   const { data: realTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty],
     queryFn: async () => {
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo tasks by property or show all
+          if (selectedProperty === 'all') {
+            return demoData?.tasks || [];
+          }
+          return demoData?.tasks?.filter(t => t.property_id === selectedProperty) || [];
+        }
+        return demoData?.tasks || [];
+      }
+      
       if (selectedProperty === 'all') {
         return await base44.entities.MaintenanceTask.list('-created_date');
       } else {
@@ -107,9 +120,7 @@ export default function SchedulePage() {
     enabled: !demoMode && properties.length > 0 && selectedProperty !== null
   });
 
-  const allTasks = demoMode
-    ? (demoData?.tasks || [])
-    : realTasks;
+  const allTasks = realTasks;
 
   console.log('=== SCHEDULE STATE ===');
   console.log('Demo mode:', demoMode);
@@ -319,94 +330,51 @@ export default function SchedulePage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         
+        {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={5} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Demo Banner */}
+        {/* Demo Mode Alert */}
         {demoMode && (
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 1 task scheduled (HVAC Fall Service on Oct 28, 2024). 
-              Read-only example.
+              <strong>Demo Mode:</strong> Tasks scheduled across fall and winter. Read-only example.
             </AlertDescription>
           </Alert>
         )}
 
+        {/* Phase & Step Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center shadow-lg">
-              <CalendarIcon className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <h1 className="font-bold" style={{ color: '#1B365D', fontSize: '28px', lineHeight: '1.2' }}>
-                Step 5: Schedule - Timeline Planner
-              </h1>
-              <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                Drag tasks to any date on any view
-              </p>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
+              Phase II - ACT
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 5 of 9
+            </Badge>
           </div>
-
-          {/* NEW: Step Education Card */}
-          <StepEducationCard 
-            {...STEP_EDUCATION.schedule}
-            defaultExpanded={false}
-            className="mb-6"
-          />
-
-          <Card className="border-2 border-yellow-400 bg-gradient-to-r from-red-100 via-yellow-100 to-green-100 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="w-5 h-5 text-yellow-700" />
-                <h3 className="font-bold text-yellow-900">ACT Phase - Step 2 of 3:</h3>
-              </div>
-              
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge className="bg-red-600 text-white">✓ 1. Prioritize</Badge>
-                <ArrowRight className="w-4 h-4 text-gray-600" />
-                <Badge className="bg-yellow-600 text-white">→ 2. Schedule (YOU ARE HERE)</Badge>
-                <ArrowRight className="w-4 h-4 text-gray-600" />
-                <Badge variant="outline" className="border-green-600 text-green-600">3. Execute</Badge>
-              </div>
-
-              <p className="text-xs text-gray-800 leading-relaxed">
-                <strong>Your Job:</strong> Drag tasks from sidebar to any date on season/month/week/day views
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Schedule
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 5: Schedule"
+              content="Plan maintenance strategically to avoid rush fees and emergency prices. Group similar tasks together to save on contractor trips."
+            />
+          </div>
+          <p className="text-gray-600 text-lg">
+            Strategic planning to save time and money
+          </p>
         </div>
 
-        {properties.length > 1 && (
-          <Card className="mb-6 border-2 border-yellow-200 bg-white">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-yellow-600" />
-                  <label className="text-base font-bold text-yellow-900">Filter by Property:</label>
-                </div>
-                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                  <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
-                    <SelectValue placeholder="Select property" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Properties ({properties.length})</SelectItem>
-                    {properties.map(prop => (
-                      <SelectItem key={prop.id} value={prop.id}>
-                        {prop.address || prop.street_address || 'Unnamed Property'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Don't Want DIY Banner */}
+        <DontWantDIYBanner />
+        
         {seasonalReminders.length > 0 && (
           <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
             <CardHeader>
@@ -452,6 +420,32 @@ export default function SchedulePage() {
                   💡 <strong>Tip:</strong> These are existing tasks from your maintenance plan. 
                   Schedule them now or snooze to be reminded later.
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {properties.length > 1 && (
+          <Card className="mb-6 border-2 border-yellow-200 bg-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-yellow-600" />
+                  <label className="text-base font-bold text-yellow-900">Filter by Property:</label>
+                </div>
+                <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+                  <SelectTrigger className="flex-1 md:w-96 bg-white" style={{ minHeight: '48px' }}>
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Properties ({properties.length})</SelectItem>
+                    {properties.map(prop => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        {prop.address || prop.street_address || 'Unnamed Property'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

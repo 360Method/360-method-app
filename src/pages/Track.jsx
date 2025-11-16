@@ -26,11 +26,12 @@ import StepEducationCard from '../components/shared/StepEducationCard';
 import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
 import StepNavigation from '../components/navigation/StepNavigation';
 import { Badge } from '@/components/ui/badge';
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const queryClient = useQueryClient();
-  const { demoMode, demoData } = useDemo();
+  const { demoMode, demoData, isInvestor } = useDemo();
   
   const [selectedProperty, setSelectedProperty] = useState(urlParams.get('property') || 'first');
   const [activeTab, setActiveTab] = useState('wins');
@@ -43,7 +44,7 @@ export default function TrackPage() {
     queryKey: ['properties'],
     queryFn: async () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return await base44.entities.Property.list('-created_date');
     }
@@ -60,18 +61,25 @@ export default function TrackPage() {
   const { data: realCompletedTasks = [] } = useQuery({
     queryKey: ['completed-tasks', selectedProperty],
     queryFn: async () => {
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo history by property
+          if (!selectedProperty || selectedProperty === 'first') return [];
+          return demoData?.maintenanceHistory?.filter(t => t.property_id === selectedProperty) || [];
+        }
+        return demoData?.maintenanceHistory || [];
+      }
+      
       if (!selectedProperty || selectedProperty === 'first') return [];
       return await base44.entities.MaintenanceTask.filter({ 
         property_id: selectedProperty, 
         status: 'Completed' 
       }, '-completion_date');
     },
-    enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
+    enabled: !!selectedProperty && selectedProperty !== 'first'
   });
 
-  const completedTasks = demoMode 
-    ? (demoData?.maintenanceHistory || [])
-    : realCompletedTasks;
+  const completedTasks = realCompletedTasks;
 
   console.log('=== TRACK STATE ===');
   console.log('Demo mode:', demoMode);
@@ -523,7 +531,7 @@ Provide comprehensive analysis with this structure:
             <Alert className="mb-4 border-yellow-400 bg-yellow-50">
               <Info className="w-4 h-4 text-yellow-600" />
               <AlertDescription className="text-yellow-900">
-                <strong>Demo Mode:</strong> 5 maintenance records showing ${totalInvested.toLocaleString()} invested, 
+                <strong>Demo Mode:</strong> {completedTasks.length} maintenance records showing ${totalInvested.toLocaleString()} invested, 
                 ${totalPrevented.toLocaleString()}+ in costs prevented. Read-only example.
               </AlertDescription>
             </Alert>
@@ -543,9 +551,15 @@ Provide comprehensive analysis with this structure:
           </div>
 
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Your Wins 🎉
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Your Wins 🎉
+              </h1>
+              <DemoInfoTooltip 
+                title="Step 3: Track"
+                content="All completed maintenance automatically logs here with costs, photos, and dates. Your permanent record of care - great for insurance claims and resale."
+              />
+            </div>
             
             <div className="flex items-center gap-2">
               <ExportMenu

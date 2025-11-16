@@ -20,12 +20,14 @@ import StepNavigation from "../components/navigation/StepNavigation";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function ExecutePage() {
   const location = useLocation();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
-  const { demoMode, demoData } = useDemo();
+  const { demoMode, demoData, isInvestor } = useDemo();
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
 
@@ -33,7 +35,7 @@ export default function ExecutePage() {
     queryKey: ['properties'],
     queryFn: async () => {
       if (demoMode) {
-        return demoData?.property ? [demoData.property] : [];
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       const allProps = await base44.entities.Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
@@ -54,6 +56,17 @@ export default function ExecutePage() {
   const { data: realTasks = [] } = useQuery({
     queryKey: ['tasks', 'execute', selectedProperty],
     queryFn: async () => {
+      if (demoMode) {
+        if (isInvestor) {
+          // Filter investor demo tasks by property or show all
+          if (selectedProperty === 'all') {
+            return demoData?.tasks || [];
+          }
+          return demoData?.tasks?.filter(t => t.property_id === selectedProperty) || [];
+        }
+        return demoData?.tasks || [];
+      }
+      
       if (selectedProperty === 'all') {
         return await base44.entities.MaintenanceTask.list('-scheduled_date');
       } else {
@@ -63,9 +76,7 @@ export default function ExecutePage() {
     enabled: !demoMode && properties.length > 0 && selectedProperty !== null
   });
 
-  const allTasks = demoMode
-    ? (demoData?.tasks || [])
-    : realTasks;
+  const allTasks = realTasks;
 
   console.log('=== EXECUTE STATE ===');
   console.log('Demo mode:', demoMode);
@@ -115,7 +126,7 @@ export default function ExecutePage() {
   const diyTasks = sortedTasks.filter(t => t.execution_method === 'DIY');
   const contractorTasks = sortedTasks.filter(t => t.execution_method === 'Contractor');
 
-  // Progress calculation
+  // Progress calculation - these variables are still used for the "All Caught Up!" message.
   const completedToday = allTasks.filter(task => {
     if (task.status !== 'Completed') return false;
     if (!task.completion_date) return false;
@@ -128,7 +139,7 @@ export default function ExecutePage() {
   }).length;
 
   const totalToday = tasksForDisplay.length + completedToday;
-  const completionPercentage = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
+  // const completionPercentage = totalToday > 0 ? (completedToday / totalToday) * 100 : 0; // No longer rendered in the header.
 
   if (properties.length === 0) {
     return (
@@ -157,94 +168,50 @@ export default function ExecutePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-20">
-      <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
         
+        {/* Step Navigation */}
         <div className="mb-4 md:mb-6">
           <StepNavigation currentStep={6} propertyId={selectedProperty !== 'all' ? selectedProperty : null} />
         </div>
 
-        {/* Demo Banner */}
+        {/* Demo Mode Alert */}
         {demoMode && (
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 8 tasks total (1 scheduled, 7 pending), 
-              5 completed maintenance records. Read-only example.
+              <strong>Demo Mode:</strong> Task execution with AI guides and completion tracking. Read-only example.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Simplified Header with Progress Ring */}
+        {/* Phase & Step Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
-              <PlayCircle className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h1 className="font-bold text-gray-900" style={{ fontSize: '28px', lineHeight: '1.2' }}>
-                Today's Tasks
-              </h1>
-              <p className="text-gray-600" style={{ fontSize: '16px' }}>
-                {format(new Date(), 'EEEE, MMMM d, yyyy')}
-              </p>
-            </div>
-            
-            {/* Progress Ring */}
-            {totalToday > 0 && (
-              <div className="relative w-16 h-16 flex-shrink-0">
-                <svg className="w-16 h-16 transform -rotate-90">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="#e5e7eb"
-                    strokeWidth="6"
-                    fill="none"
-                  />
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="#10b981"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray={`${completionPercentage * 1.76} 176`}
-                    strokeLinecap="round"
-                    className="transition-all duration-500"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900">
-                  {completedToday}/{totalToday}
-                </div>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Badge className="bg-orange-600 text-white text-sm px-3 py-1">
+              Phase II - ACT
+            </Badge>
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Step 6 of 9
+            </Badge>
           </div>
-
-          {/* NEW: Step Education Card */}
-          <StepEducationCard 
-            {...STEP_EDUCATION.execute}
-            defaultExpanded={false}
-            className="mb-6"
-          />
-
-          <div className="bg-white rounded-lg p-3 border-2 border-green-300 shadow-sm">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <Badge className="bg-green-600 text-white">ACT Phase - Step 3 of 3</Badge>
-              <div className="flex items-center gap-1 text-xs text-gray-600 flex-wrap">
-                <span className="text-gray-400">Prioritize</span>
-                <ArrowRight className="w-3 h-3" />
-                <span className="text-gray-400">Schedule</span>
-                <ArrowRight className="w-3 h-3" />
-                <span className="font-bold text-green-600">→ Execute</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              <strong>Complete tasks →</strong> Follow AI guides, track time, upload photos → 
-              Auto-archives to Track with full cost/outcome data
-            </p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Execute
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 6: Execute"
+              content="Get AI-powered how-to guides, track DIY work, or route to contractors. Everything logs to Track automatically when marked complete."
+            />
           </div>
+          <p className="text-gray-600 text-lg">
+            Complete tasks with AI guidance
+          </p>
         </div>
+
+        {/* Don't Want DIY Banner */}
+        <DontWantDIYBanner />
 
         {properties.length > 1 && (
           <Card className="mb-6 border-2 border-green-200 bg-white">
