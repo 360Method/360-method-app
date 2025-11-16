@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Sparkles } from 'lucide-react';
+import { Shield, CheckCircle, Sparkles, Home, Building2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function Welcome() {
@@ -13,18 +12,67 @@ export default function Welcome() {
       <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
         
         {/* Logo & Brand */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-12">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Shield className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Stop $50 Problems From Becoming
-            <span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent"> $5,000 Disasters</span>
+            Stop Reacting to Problems.<br />
+            Start Preventing Disasters.
           </h1>
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
-            The 360° Method helps homeowners prevent expensive failures through 
-            systematic maintenance. Most save <strong>$27,000-$72,000</strong> over 10-15 years.
+          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12">
+            The 360° Method transforms reactive chaos into proactive control. 
+            Small problems stay small. Big savings compound over time.
           </p>
+          
+          {/* Dual CTAs - Homeowner vs Investor */}
+          <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch max-w-4xl mx-auto mb-8">
+            {/* Homeowner CTA */}
+            <div className="flex-1 bg-blue-50 border-2 border-blue-300 rounded-2xl p-6 hover:border-blue-500 transition-all">
+              <div className="mb-4">
+                <div className="text-5xl mb-3">🏡</div>
+                <h3 className="text-2xl font-bold text-blue-900 mb-2">I'm a Homeowner</h3>
+                <p className="text-blue-800 text-sm mb-4">
+                  Protect your largest asset. Sleep soundly knowing small problems 
+                  won't become expensive disasters.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate(createPageUrl('DemoEntry') + '?type=homeowner')}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-lg transition-colors"
+              >
+                Explore Homeowner Demo →
+              </button>
+            </div>
+            
+            {/* Investor CTA */}
+            <div className="flex-1 bg-green-50 border-2 border-green-300 rounded-2xl p-6 hover:border-green-500 transition-all">
+              <div className="mb-4">
+                <div className="text-5xl mb-3">🏢</div>
+                <h3 className="text-2xl font-bold text-green-900 mb-2">I'm an Investor</h3>
+                <p className="text-green-800 text-sm mb-4">
+                  Maximize ROI across your portfolio. Turn maintenance from a cost 
+                  center into a wealth-building strategy.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate(createPageUrl('DemoEntry') + '?type=investor')}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold text-lg transition-colors"
+              >
+                Explore Investor Demo →
+              </button>
+            </div>
+          </div>
+          
+          {/* Secondary CTA - Skip to Waitlist */}
+          <div className="text-center">
+            <button
+              onClick={() => navigate(createPageUrl('Waitlist'))}
+              className="text-gray-600 hover:text-gray-900 underline text-sm"
+            >
+              Skip demo, join waitlist →
+            </button>
+          </div>
         </div>
 
         {/* Visual Problem → Solution */}
@@ -37,7 +85,7 @@ export default function Welcome() {
                 😰 The Old Way (Reactive)
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Most Homeowners Are One Surprise Away From Crisis
+                One Surprise Away From Crisis
               </h3>
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-2">
@@ -65,7 +113,7 @@ export default function Welcome() {
                 😌 The 360° Way (Proactive)
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Systematic Prevention = Financial Peace of Mind
+                Systematic Prevention = Peace of Mind
               </h3>
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-2">
@@ -172,102 +220,14 @@ export default function Welcome() {
           </div>
         </div>
 
-        {/* Two Paths Forward */}
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-8">
-            Choose Your Path
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Path 1: Try Demo */}
-            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 md:p-8 text-center">
-              <Sparkles className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
-                🎮 Explore Demo First
-              </h3>
-              <p className="text-sm md:text-base text-gray-700 mb-6">
-                See a fully documented property with all 9 steps in action. 
-                No signup required.
-              </p>
-              <ul className="text-left text-xs md:text-sm text-gray-700 mb-6 space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <span>16 systems documented</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <span>8 prioritized tasks with AI cost analysis</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <span>Full maintenance history + projections</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <span>See $7,200 in prevented disasters</span>
-                </li>
-              </ul>
-              <button
-                onClick={() => navigate(createPageUrl('DemoEntry'))}
-                className="w-full px-6 md:px-8 py-3 md:py-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-xl text-base md:text-lg transition-colors shadow-lg"
-              >
-                Explore Demo Property →
-              </button>
-              <p className="text-xs text-gray-600 mt-3">
-                No login • No commitment • Full access
-              </p>
-            </div>
-
-            {/* Path 2: Join Waitlist */}
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 md:p-8 text-center">
-              <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
-                🏠 Join Waitlist
-              </h3>
-              <p className="text-sm md:text-base text-gray-700 mb-6">
-                Be first to know when you can track your own property. 
-                Get exclusive early access content.
-              </p>
-              <ul className="text-left text-xs md:text-sm text-gray-700 mb-6 space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Early access notification</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>4-part educational email series</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Exclusive launch discount</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Priority access to features</span>
-                </li>
-              </ul>
-              <button
-                onClick={() => navigate(createPageUrl('Waitlist'))}
-                className="w-full px-6 md:px-8 py-3 md:py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-base md:text-lg transition-colors shadow-lg"
-              >
-                Join Waitlist →
-              </button>
-              <p className="text-xs text-gray-600 mt-3">
-                No credit card • Free updates • Unsubscribe anytime
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Trust Signals */}
         <div className="text-center mt-12 max-w-3xl mx-auto">
           <p className="text-sm md:text-base text-gray-600 mb-4">
-            Join thousands of homeowners who sleep soundly knowing their 
-            largest asset is systematically protected.
+            Join thousands of homeowners and investors who protect their properties systematically.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 text-xs md:text-sm text-gray-500">
             <div>✓ No credit card required</div>
-            <div>✓ Free forever (1 property)</div>
+            <div>✓ Try full demo first</div>
             <div>✓ Your data is private</div>
           </div>
         </div>
