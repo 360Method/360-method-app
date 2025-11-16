@@ -20,6 +20,7 @@ import PreservationROIChart from "../components/preserve/PreservationROIChart";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 // The Big 7 system categories
 const BIG_7_CATEGORIES = [
@@ -176,9 +177,15 @@ export default function Preserve() {
               Step 7 of 9
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Preserve
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Preserve
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 7: Preserve"
+              content="Strategic interventions that extend system life 3-15 years. NOT routine maintenance (that's ACT). These are high-ROI investments (3×-11× return)."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
             Strategic intelligence for your Big 7 capital systems - extend life, avoid emergencies, protect investment
           </p>
@@ -351,7 +358,7 @@ export default function Preserve() {
                     )}
                     {systemsByUrgency.planAhead > 0 && (
                       <Badge className="bg-yellow-600 text-white">
-                        🟡 PLAN AHEAD: {systemsByUrgency.planAhead} system{systemsByUrgency.planAhead !== 1 ? 's' : ''}
+                        🟡 PLAN AHEAD: {systemsByUrency.planAhead} system{systemsByUrgency.planAhead !== 1 ? 's' : ''}
                       </Badge>
                     )}
                     {systemsByUrgency.healthy > 0 && (

@@ -27,6 +27,7 @@ import BenchmarkComparison from "../components/scale/BenchmarkComparison";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
+import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 
 export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -149,9 +150,15 @@ export default function Scale() {
               🍒 FINAL STEP
             </Badge>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-            Scale
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Scale
+            </h1>
+            <DemoInfoTooltip 
+              title="Step 9: SCALE"
+              content="Your portfolio CFO - equity tracking, wealth projections, hold/sell/refinance recommendations. Unlocks with 2+ properties."
+            />
+          </div>
           <p className="text-gray-600 text-lg">
             Portfolio CFO Intelligence - strategic wealth command center for your real estate
           </p>

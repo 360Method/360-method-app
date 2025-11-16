@@ -1,9 +1,13 @@
+
 import React, { useState } from 'react';
 import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 
 export default function Waitlist() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const source = urlParams.get('source');
+  
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -12,7 +16,7 @@ export default function Waitlist() {
     zip_code: '',
     property_type: 'homecare',
     notes: '',
-    source: 'waitlist_page'
+    source: source || 'waitlist_page'
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -145,14 +149,29 @@ export default function Waitlist() {
             Early Access • Founding Members Only
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Master the 360° Method<br />Before Launch
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Join the waitlist for the 360° Asset Command Center and start learning 
-            the framework that prevents cascade failures and protects your property value.
-          </p>
+          {source === 'full-service' ? (
+            <>
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                We'll Handle Everything<br />For You
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Join the waitlist for our full-service concierge option. 
+                You focus on your life—we'll protect your property.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                Master the 360° Method<br />Before Launch
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Join the waitlist for the 360° Asset Command Center and start learning 
+                the framework that prevents cascade failures and protects your property value.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12">
