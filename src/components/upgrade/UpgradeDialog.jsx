@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -16,19 +15,6 @@ import {
 import { getMilestonesForUpgrade } from './upgradeMilestones';
 import AICostDisclaimer from '../shared/AICostDisclaimer';
 import AICostEstimator from './AICostEstimator';
-
-const CATEGORIES = [
-  "High ROI Renovations",
-  "Energy Efficiency",
-  "Rental Income Boosters",
-  "Preventive Replacements",
-  "Curb Appeal",
-  "Interior Updates",
-  "Safety",
-  "Comfort",
-  "Property Value",
-  "Rental Appeal"
-];
 
 export default function UpgradeDialog({
   properties,
@@ -320,6 +306,19 @@ export default function UpgradeDialog({
       </Dialog>
     );
   }
+
+  const CATEGORIES = [
+    "High ROI Renovations",
+    "Energy Efficiency",
+    "Rental Income Boosters",
+    "Preventive Replacements",
+    "Curb Appeal",
+    "Interior Updates",
+    "Safety",
+    "Comfort",
+    "Property Value",
+    "Rental Appeal"
+  ];
 
   return (
     <Dialog open={true} onOpenChange={onCancel}>
