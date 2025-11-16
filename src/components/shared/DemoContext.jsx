@@ -1,17 +1,26 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
+import DemoWizard from '../demo/DemoWizard';
 
 const DemoContext = createContext();
 
 export function DemoProvider({ children }) {
   const [demoMode, setDemoMode] = useState(false);
   const [demoData, setDemoData] = useState(null);
+  const [showWizard, setShowWizard] = useState(false);
   
   const enterDemoMode = () => {
     console.log('🎬 Entering demo mode');
     setDemoMode(true);
     setDemoData(DEMO_PROPERTY_HOMEOWNER);
     sessionStorage.setItem('demoMode', 'true');
+    
+    // Check if wizard has been seen this session
+    const hasSeenWizard = sessionStorage.getItem('demoWizardSeen');
+    if (!hasSeenWizard) {
+      setShowWizard(true);
+    }
+    
     console.log('Demo data loaded:', DEMO_PROPERTY_HOMEOWNER);
   };
   
@@ -19,7 +28,19 @@ export function DemoProvider({ children }) {
     console.log('🚪 Exiting demo mode');
     setDemoMode(false);
     setDemoData(null);
+    setShowWizard(false);
     sessionStorage.removeItem('demoMode');
+    sessionStorage.removeItem('demoWizardSeen');
+  };
+  
+  const handleWizardComplete = () => {
+    sessionStorage.setItem('demoWizardSeen', 'true');
+    setShowWizard(false);
+  };
+  
+  const handleWizardSkip = () => {
+    sessionStorage.setItem('demoWizardSeen', 'true');
+    setShowWizard(false);
   };
   
   // Restore from sessionStorage on mount
@@ -50,6 +71,12 @@ export function DemoProvider({ children }) {
       exitDemoMode
     }}>
       {children}
+      {showWizard && (
+        <DemoWizard 
+          onComplete={handleWizardComplete}
+          onSkip={handleWizardSkip}
+        />
+      )}
     </DemoContext.Provider>
   );
 }

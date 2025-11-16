@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, Sparkles } from 'lucide-react';
@@ -217,42 +218,42 @@ export default function Welcome() {
               </p>
             </div>
 
-            {/* Path 2: Start Your Property */}
+            {/* Path 2: Join Waitlist */}
             <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 md:p-8 text-center">
               <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
               <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
-                🏠 Track Your Property
+                🏠 Join Waitlist
               </h3>
               <p className="text-sm md:text-base text-gray-700 mb-6">
-                Start protecting your home today. Free forever for 1 property 
-                with full 9-step framework.
+                Be first to know when you can track your own property. 
+                Get exclusive early access content.
               </p>
               <ul className="text-left text-xs md:text-sm text-gray-700 mb-6 space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>All 9 steps of the 360° Method</span>
+                  <span>Early access notification</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Unlimited systems & maintenance tracking</span>
+                  <span>4-part educational email series</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Seasonal inspection checklists</span>
+                  <span>Exclusive launch discount</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span>Free forever (no credit card)</span>
+                  <span>Priority access to features</span>
                 </li>
               </ul>
               <button
-                onClick={() => navigate(createPageUrl('Dashboard'))}
+                onClick={() => navigate(createPageUrl('Waitlist'))}
                 className="w-full px-6 md:px-8 py-3 md:py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-base md:text-lg transition-colors shadow-lg"
               >
-                Start Free Account →
+                Join Waitlist →
               </button>
               <p className="text-xs text-gray-600 mt-3">
-                30 seconds • No credit card • Cancel anytime
+                No credit card • Free updates • Unsubscribe anytime
               </p>
             </div>
           </div>
