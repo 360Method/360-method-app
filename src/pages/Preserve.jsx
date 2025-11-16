@@ -72,11 +72,6 @@ export default function Preserve() {
 
   const allSystems = realSystems;
 
-  console.log('=== PRESERVE STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('All systems:', allSystems);
-  console.log('Systems count:', allSystems?.length);
-
   // Filter to Big 7 systems only with min replacement cost
   const systems = allSystems.filter(s => {
     const systemCategory = s.system_type?.split(' - ')[0] || s.system_type;
@@ -148,7 +143,7 @@ export default function Preserve() {
   }, { urgent: 0, planAhead: 0, healthy: 0 });
 
   // Calculate total capital at risk
-  const totalCapitalAtRisk = systems.reduce((sum, s => sum + (s.replacement_cost_estimate || 0), 0);
+  const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
 
   // Get demo interventions if in demo mode
   const demoInterventions = demoMode && preserveSchedules[0]?.interventions || [];

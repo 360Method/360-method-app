@@ -48,11 +48,8 @@ export default function Inspect() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [viewingInspection, setViewingInspection] = React.useState(null);
 
-  // Removed: [whyExpanded, setWhyExpanded] = React.useState(false); - Managed internally by StepEducationCard now
-
   const queryClient = useQueryClient();
-  const { demoMode, demoData } = useDemo();
-  const isInvestor = demoData?.isInvestor; // Assuming isInvestor is part of demoData
+  const { demoMode, demoData, isInvestor } = useDemo();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -70,7 +67,6 @@ export default function Inspect() {
     queryFn: () => {
       if (demoMode) {
         if (isInvestor) {
-          // Filter investor demo inspections by property
           if (!selectedPropertyId) return [];
           return demoData?.inspections?.filter(i => i.property_id === selectedPropertyId) || [];
         }
@@ -78,8 +74,7 @@ export default function Inspect() {
       }
       return base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date');
     },
-    enabled: !!selectedPropertyId,
-    initialData: [],
+    enabled: !!selectedPropertyId
   });
 
   const inspections = realInspections;
@@ -101,8 +96,7 @@ export default function Inspect() {
       }
       return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId });
     },
-    enabled: !!selectedPropertyId,
-    initialData: [],
+    enabled: !!selectedPropertyId
   });
 
   const baselineSystems = realBaselineSystems;
@@ -638,7 +632,7 @@ export default function Inspect() {
                       style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
                     >
                       <PlayCircle className="w-4 h-4 mr-2" />
-                      Continue Inspection
+                      Continue
                     </Button>
                     <Button
                       onClick={() => handleViewReport(inProgressInspection)}
