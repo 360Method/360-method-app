@@ -428,14 +428,11 @@ export default function UpgradeDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="High ROI Renovations">🏆 High ROI</SelectItem>
-                    <SelectItem value="Energy Efficiency">🍃 Energy</SelectItem>
-                    <SelectItem value="Curb Appeal">🏠 Curb Appeal</SelectItem>
-                    <SelectItem value="Preventive Replacements">🛡️ Preventive</SelectItem>
-                    <SelectItem value="Safety">🔒 Safety</SelectItem>
-                    <SelectItem value="Comfort">☁️ Comfort</SelectItem>
-                    <SelectItem value="Rental Income Boosters">💰 Rental Income</SelectItem>
-                    <SelectItem value="Interior Updates">🎨 Interior</SelectItem>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
