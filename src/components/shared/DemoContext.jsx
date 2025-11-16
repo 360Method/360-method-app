@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
+import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import DemoWizard from '../demo/DemoWizard';
@@ -7,16 +8,23 @@ import DemoWizard from '../demo/DemoWizard';
 const DemoContext = createContext();
 
 export function DemoProvider({ children }) {
-  const [demoMode, setDemoMode] = useState(false);
+  const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', or 'investor'
   const [demoData, setDemoData] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const navigate = useNavigate();
   
-  const enterDemoMode = () => {
-    console.log('🎬 Entering demo mode');
-    setDemoMode(true);
-    setDemoData(DEMO_PROPERTY_HOMEOWNER);
-    sessionStorage.setItem('demoMode', 'true');
+  const enterDemoMode = (userType = 'homeowner') => {
+    console.log(`🎬 Entering demo mode: ${userType}`);
+    
+    if (userType === 'investor') {
+      setDemoMode('investor');
+      setDemoData(DEMO_PORTFOLIO_INVESTOR);
+      sessionStorage.setItem('demoMode', 'investor');
+    } else {
+      setDemoMode('homeowner');
+      setDemoData(DEMO_PROPERTY_HOMEOWNER);
+      sessionStorage.setItem('demoMode', 'homeowner');
+    }
     
     // Check if wizard has been seen this session
     const hasSeenWizard = sessionStorage.getItem('demoWizardSeen');
@@ -24,18 +32,18 @@ export function DemoProvider({ children }) {
       setShowWizard(true);
     }
     
-    console.log('Demo data loaded:', DEMO_PROPERTY_HOMEOWNER);
+    console.log('Demo data loaded for:', userType);
   };
   
   const exitDemoMode = () => {
     console.log('🚪 Exiting demo mode');
-    setDemoMode(false);
+    setDemoMode(null);
     setDemoData(null);
     setShowWizard(false);
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
     
-    // Redirect to waitlist page instead of dashboard
+    // Redirect to waitlist page
     navigate(createPageUrl('Waitlist'));
   };
   
@@ -53,9 +61,14 @@ export function DemoProvider({ children }) {
   useEffect(() => {
     const stored = sessionStorage.getItem('demoMode');
     console.log('Checking stored demo mode:', stored);
-    if (stored === 'true') {
-      console.log('Restoring demo mode from sessionStorage');
-      enterDemoMode();
+    if (stored === 'homeowner') {
+      console.log('Restoring homeowner demo mode');
+      setDemoMode('homeowner');
+      setDemoData(DEMO_PROPERTY_HOMEOWNER);
+    } else if (stored === 'investor') {
+      console.log('Restoring investor demo mode');
+      setDemoMode('investor');
+      setDemoData(DEMO_PORTFOLIO_INVESTOR);
     }
   }, []);
   
@@ -64,20 +77,29 @@ export function DemoProvider({ children }) {
     console.log('=== DEMO CONTEXT STATE ===');
     console.log('Demo mode:', demoMode);
     console.log('Demo data exists:', !!demoData);
-    console.log('Demo property:', demoData?.property);
-    console.log('Demo systems count:', demoData?.systems?.length);
-    console.log('Demo tasks count:', demoData?.tasks?.length);
+    if (demoMode === 'investor') {
+      console.log('Investor portfolio properties:', demoData?.properties?.length);
+      console.log('Portfolio stats:', demoData?.portfolioStats);
+    } else if (demoMode === 'homeowner') {
+      console.log('Homeowner property:', demoData?.property);
+      console.log('Systems count:', demoData?.systems?.length);
+    }
   }, [demoMode, demoData]);
+  
+  const isHomeowner = demoMode === 'homeowner';
+  const isInvestor = demoMode === 'investor';
   
   return (
     <DemoContext.Provider value={{
       demoMode,
       demoData,
       enterDemoMode,
-      exitDemoMode
+      exitDemoMode,
+      isHomeowner,
+      isInvestor
     }}>
       {children}
-      {showWizard && (
+      {showWizard && demoMode === 'homeowner' && (
         <DemoWizard 
           onComplete={handleWizardComplete}
           onSkip={handleWizardSkip}
