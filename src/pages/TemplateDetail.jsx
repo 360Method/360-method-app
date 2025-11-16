@@ -16,14 +16,13 @@ export default function TemplateDetail() {
   const searchParams = new URLSearchParams(location.search);
   const templateId = searchParams.get('id');
 
-  const { data: template } = useQuery({
-    queryKey: ['upgrade-template', templateId],
-    queryFn: async () => {
-      const templates = await base44.entities.UpgradeTemplate.list();
-      return templates.find(t => t.id === templateId);
-    },
-    enabled: !!templateId,
+  // Modified: Fetch all templates and then find the specific one
+  const { data: templates = [] } = useQuery({
+    queryKey: ['upgrade-templates'],
+    queryFn: () => base44.entities.UpgradeTemplate.list(),
   });
+
+  const template = templates.find(t => t.id === templateId);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
