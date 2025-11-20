@@ -260,10 +260,13 @@ export default function Inspect() {
   }
 
   if (inspectionView === 'report' && currentInspection) {
+    // Find the property for this inspection - either from selectedProperty or by property_id
+    const reportProperty = selectedProperty || properties.find(p => p.id === currentInspection.property_id);
+    
     return (
       <InspectionReport
         inspection={currentInspection}
-        property={selectedProperty}
+        property={reportProperty}
         baselineSystems={baselineSystems}
         onBack={handleBackToMain}
         onEdit={() => handleEditInspection(currentInspection)}
