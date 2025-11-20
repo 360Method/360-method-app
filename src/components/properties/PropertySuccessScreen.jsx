@@ -137,13 +137,14 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
               </div>
 
               {/* Complete Full Profile */}
-              <Button
-                variant="ghost"
-                onClick={() => navigate(createPageUrl('Properties') + `?edit=${property.id}&mode=complete`)}
-                className="w-full"
-              >
-                Or complete full property profile →
-              </Button>
+              <div className="text-center pt-2">
+                <button
+                  onClick={() => navigate(createPageUrl('Properties') + `?complete=${property.id}`)}
+                  className="text-gray-600 hover:text-gray-900 text-sm underline"
+                >
+                  Or complete full property profile →
+                </button>
+              </div>
             </div>
           </div>
 
