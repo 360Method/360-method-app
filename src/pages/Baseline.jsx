@@ -635,8 +635,8 @@ export default function Baseline() {
           <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> This property has {systems.length} systems already documented. 
-              This is a read-only example. Add your own property to start editing.
+              <strong>Demo Mode:</strong> {isInvestor ? `${properties.length} properties with complete system documentation.` : 'This property has 16 systems already documented.'} 
+              {isInvestor && ' Use the property dropdown below to switch between properties.'} This is a read-only example. Add your own property to start editing.
             </AlertDescription>
           </Alert>
         )}

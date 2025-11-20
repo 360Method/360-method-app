@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -61,6 +60,13 @@ export default function Inspect() {
       return allProps.filter(p => !p.is_draft);
     },
   });
+
+  console.log('=== INSPECT STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Is investor:', isInvestor);
+  console.log('Properties:', properties);
+  console.log('Selected property:', selectedPropertyId);
+  console.log('Inspections:', inspections);
 
   const { data: realInspections = [] } = useQuery({
     queryKey: ['inspections', selectedPropertyId],

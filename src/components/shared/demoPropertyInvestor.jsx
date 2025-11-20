@@ -187,23 +187,183 @@ export const DEMO_PORTFOLIO_INVESTOR = {
   ],
 
   tasks: [
+    // PROPERTY 1: MAPLE STREET DUPLEX - Tasks
     {
       id: 'inv-task-1',
-      property_id: 'demo-investor-3',
-      title: 'Turnover Unit 4D at Cedar Court',
-      description: 'Complete turnover within 7 days to minimize vacancy loss. Includes deep clean, carpet shampoo, paint touch-ups, HVAC filter, appliance check.',
+      property_id: 'demo-investor-1',
+      title: 'Annual Safety Inspections - Maple Street',
+      description: 'State law requires annual CO/smoke detector testing for rentals.',
       priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: '2024-11-25',
+      current_fix_cost: 150,
+      cascade_risk_score: 3,
+      cascade_risk_reason: 'Non-compliance = $500-$2000 fines',
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      contractor_cost: 150,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-2',
+      property_id: 'demo-investor-1',
+      title: 'Water Heater Replacement - Unit A',
+      description: 'Unit A water heater is 11 years old. Proactive replacement prevents emergency scenario mid-winter.',
+      priority: 'Medium',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-30',
+      current_fix_cost: 1200,
+      delayed_fix_cost: 1700,
+      cascade_risk_score: 6,
+      cascade_risk_reason: 'Emergency replacement costs 40% more + tenant satisfaction risk',
+      system_type: 'Plumbing',
+      source: 'PRESERVATION_RECOMMENDATION',
+      unit_tag: 'A',
+      contractor_cost: 1200,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-3',
+      property_id: 'demo-investor-1',
+      title: 'Gutter Cleaning - Fall Service',
+      description: 'Clean gutters before rainy season to prevent overflow and foundation damage.',
+      priority: 'Medium',
+      status: 'Scheduled',
+      scheduled_date: '2024-11-28',
+      current_fix_cost: 150,
+      cascade_risk_score: 5,
+      system_type: 'Gutters',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      contractor_cost: 150,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-4',
+      property_id: 'demo-investor-1',
+      title: 'Furnace Filter Change - Both Units',
+      description: 'Replace HVAC filters for heating season.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-01',
+      current_fix_cost: 40,
+      cascade_risk_score: 2,
+      system_type: 'HVAC',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 40,
+      execution_method: 'DIY'
+    },
+    {
+      id: 'inv-task-5',
+      property_id: 'demo-investor-1',
+      title: 'Window Seal Repair - Unit B',
+      description: 'Failed window seal causing fogging. Replace before winter.',
+      priority: 'Low',
       status: 'Identified',
+      current_fix_cost: 400,
+      cascade_risk_score: 3,
+      system_type: 'Windows/Doors',
+      source: 'INSPECTION',
+      unit_tag: 'B'
+    },
+    
+    // PROPERTY 2: OAK RIDGE - Tasks
+    {
+      id: 'inv-task-6',
+      property_id: 'demo-investor-2',
+      title: 'HVAC Tune-Up Before Heating Season',
+      description: 'Annual preventive maintenance extends HVAC life 5-7 years and maintains efficiency.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-11-25',
+      current_fix_cost: 185,
+      cascade_risk_score: 2,
+      system_type: 'HVAC',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      contractor_cost: 185,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-7',
+      property_id: 'demo-investor-2',
+      title: 'Garage Door Spring Replacement',
+      description: 'Torsion spring showing wear. Proactive replacement prevents door failure.',
+      priority: 'Medium',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-10',
+      current_fix_cost: 250,
+      cascade_risk_score: 5,
+      cascade_risk_reason: 'Failed spring = door drops = vehicle damage + emergency repair',
+      system_type: 'Garage',
+      source: 'INSPECTION',
+      contractor_cost: 250,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-8',
+      property_id: 'demo-investor-2',
+      title: 'Gutter Cleaning - Fall',
+      description: 'Annual gutter cleaning before heavy rains.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-05',
+      current_fix_cost: 125,
+      cascade_risk_score: 4,
+      system_type: 'Gutters',
+      source: 'SEASONAL_CHECKLIST',
+      contractor_cost: 125,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-9',
+      property_id: 'demo-investor-2',
+      title: 'Smoke Detector Battery Replacement',
+      description: 'Replace batteries in all smoke detectors.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-15',
+      current_fix_cost: 30,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 30,
+      execution_method: 'DIY'
+    },
+    {
+      id: 'inv-task-10',
+      property_id: 'demo-investor-2',
+      title: 'Deck Inspection & Reseal',
+      description: 'Inspect deck structure and reseal to prevent wood rot.',
+      priority: 'Medium',
+      status: 'Identified',
+      current_fix_cost: 850,
+      cascade_risk_score: 5,
+      system_type: 'Exterior',
+      source: 'SEASONAL_CHECKLIST'
+    },
+    
+    // PROPERTY 3: CEDAR COURT 4-PLEX - Tasks
+    {
+      id: 'inv-task-11',
+      property_id: 'demo-investor-3',
+      title: 'Turnover Unit 4D - Deep Clean',
+      description: 'Complete turnover within 7 days to minimize vacancy loss. Deep clean, carpet shampoo, paint touch-ups, HVAC filter, appliance check.',
+      priority: 'High',
+      status: 'Scheduled',
       scheduled_date: '2024-11-22',
       current_fix_cost: 1850,
       cascade_risk_score: 6,
       cascade_risk_reason: 'Each day delayed = $30 lost revenue',
       system_type: 'General',
       source: 'MANUAL',
-      unit_tag: '4D'
+      unit_tag: '4D',
+      contractor_cost: 1850,
+      execution_method: 'Contractor'
     },
     {
-      id: 'inv-task-2',
+      id: 'inv-task-12',
       property_id: 'demo-investor-3',
       title: 'Cedar Court Roof Replacement (Plan for 2025)',
       description: 'Asphalt shingles are 22 years old. Minor leaks starting in Unit 2C. Replace before rainy season 2025.',
@@ -219,66 +379,103 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       scope: 'building_wide'
     },
     {
-      id: 'inv-task-3',
-      property_id: 'demo-investor-1',
-      title: 'Annual Safety Inspections - Maple Street',
-      description: 'State law requires annual CO/smoke detector testing for rentals.',
-      priority: 'High',
-      status: 'Identified',
-      scheduled_date: '2024-12-15',
-      current_fix_cost: 150,
-      cascade_risk_score: 3,
-      cascade_risk_reason: 'Non-compliance = $500-$2000 fines',
-      system_type: 'General',
-      source: 'SEASONAL_CHECKLIST',
-      scope: 'building_wide'
-    },
-    {
-      id: 'inv-task-4',
-      property_id: 'demo-investor-1',
-      title: 'Water Heater Replacement - Unit A',
-      description: 'Unit A water heater is 11 years old. Proactive replacement prevents emergency scenario mid-winter.',
-      priority: 'Medium',
-      status: 'Scheduled',
-      scheduled_date: '2024-12-30',
-      current_fix_cost: 1200,
-      delayed_fix_cost: 1700,
-      cascade_risk_score: 6,
-      cascade_risk_reason: 'Emergency replacement costs 40% more + tenant satisfaction risk',
-      system_type: 'Plumbing',
-      source: 'PRESERVATION_RECOMMENDATION',
-      unit_tag: 'A'
-    },
-    {
-      id: 'inv-task-5',
-      property_id: 'demo-investor-2',
-      title: 'HVAC Tune-Up Before Heating Season',
-      description: 'Annual preventive maintenance extends HVAC life 5-7 years and maintains efficiency.',
-      priority: 'Routine',
-      status: 'Scheduled',
-      scheduled_date: '2024-11-25',
-      current_fix_cost: 185,
-      cascade_risk_score: 2,
-      system_type: 'HVAC',
-      source: 'SEASONAL_CHECKLIST',
-      scope: 'building_wide'
-    },
-    {
-      id: 'inv-task-6',
+      id: 'inv-task-13',
       property_id: 'demo-investor-3',
       title: 'Refrigerator Repair - Unit 3B',
       description: 'Compressor making noise, likely needs replacement soon.',
       priority: 'Medium',
-      status: 'Identified',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-08',
       current_fix_cost: 850,
       cascade_risk_score: 4,
       system_type: 'Appliances',
       source: 'INSPECTION',
-      unit_tag: '3B'
+      unit_tag: '3B',
+      contractor_cost: 850,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-14',
+      property_id: 'demo-investor-3',
+      title: 'Parking Lot Sealcoating',
+      description: 'Asphalt parking lot needs resealing to prevent cracking and water damage.',
+      priority: 'Medium',
+      status: 'Scheduled',
+      scheduled_date: '2025-03-15',
+      current_fix_cost: 1200,
+      cascade_risk_score: 4,
+      system_type: 'Driveways',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      contractor_cost: 1200,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-15',
+      property_id: 'demo-investor-3',
+      title: 'HVAC Filter Change - All Units',
+      description: 'Quarterly filter changes for all 4 units.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-01',
+      current_fix_cost: 60,
+      cascade_risk_score: 2,
+      system_type: 'HVAC',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      diy_cost: 60,
+      execution_method: 'DIY'
+    },
+    {
+      id: 'inv-task-16',
+      property_id: 'demo-investor-3',
+      title: 'Landscaping Winter Prep',
+      description: 'Trim trees, remove debris, prepare drainage for winter rains.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-11-30',
+      current_fix_cost: 350,
+      cascade_risk_score: 3,
+      system_type: 'Landscaping',
+      source: 'SEASONAL_CHECKLIST',
+      contractor_cost: 350,
+      execution_method: 'Contractor'
+    },
+    {
+      id: 'inv-task-17',
+      property_id: 'demo-investor-3',
+      title: 'Smoke Detector Testing - All Units',
+      description: 'Test all smoke/CO detectors per code requirements.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: '2024-12-20',
+      current_fix_cost: 0,
+      cascade_risk_score: 3,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY'
+    },
+    {
+      id: 'inv-task-18',
+      property_id: 'demo-investor-2',
+      title: 'Winterize Exterior Faucets',
+      description: 'Drain and shut off exterior water to prevent freeze damage.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: '2024-11-27',
+      current_fix_cost: 0,
+      cascade_risk_score: 4,
+      cascade_risk_reason: 'Frozen pipes = burst = water damage',
+      system_type: 'Plumbing',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY'
     }
   ],
 
   inspections: [
+    // PROPERTY 1: MAPLE STREET DUPLEX - Inspections
     {
       id: 'insp-1',
       property_id: 'demo-investor-1',
@@ -291,6 +488,28 @@ export const DEMO_PORTFOLIO_INVESTOR = {
     },
     {
       id: 'insp-2',
+      property_id: 'demo-investor-1',
+      season: 'Spring',
+      year: 2024,
+      inspection_date: '2024-04-20',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 1
+    },
+    {
+      id: 'insp-3',
+      property_id: 'demo-investor-1',
+      season: 'Winter',
+      year: 2024,
+      inspection_date: '2024-01-10',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 2
+    },
+    
+    // PROPERTY 2: OAK RIDGE - Inspections
+    {
+      id: 'insp-4',
       property_id: 'demo-investor-2',
       season: 'Fall',
       year: 2024,
@@ -300,7 +519,29 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       issues_found: 0
     },
     {
-      id: 'insp-3',
+      id: 'insp-5',
+      property_id: 'demo-investor-2',
+      season: 'Spring',
+      year: 2024,
+      inspection_date: '2024-04-15',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 1
+    },
+    {
+      id: 'insp-6',
+      property_id: 'demo-investor-2',
+      season: 'Winter',
+      year: 2024,
+      inspection_date: '2024-01-08',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 0
+    },
+    
+    // PROPERTY 3: CEDAR COURT 4-PLEX - Inspections
+    {
+      id: 'insp-7',
       property_id: 'demo-investor-3',
       season: 'Fall',
       year: 2024,
@@ -308,90 +549,384 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       status: 'Completed',
       completion_percentage: 100,
       issues_found: 5
+    },
+    {
+      id: 'insp-8',
+      property_id: 'demo-investor-3',
+      season: 'Spring',
+      year: 2024,
+      inspection_date: '2024-04-25',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 4
+    },
+    {
+      id: 'insp-9',
+      property_id: 'demo-investor-3',
+      season: 'Winter',
+      year: 2024,
+      inspection_date: '2024-01-15',
+      status: 'Completed',
+      completion_percentage: 100,
+      issues_found: 3
     }
   ],
 
   maintenanceHistory: [
+    // PROPERTY 1: MAPLE STREET DUPLEX - History
     {
       id: 'maint-1',
-      property_id: 'demo-investor-3',
-      title: 'Emergency plumbing repair - Unit 3B',
-      completion_date: '2024-11-05',
-      actual_cost: 385,
-      execution_type: 'Professional',
-      status: 'Completed'
-    },
-    {
-      id: 'maint-2',
       property_id: 'demo-investor-1',
       title: 'Gutter cleaning (both units)',
       completion_date: '2024-10-20',
       actual_cost: 150,
       execution_type: 'Professional',
-      status: 'Completed'
+      status: 'Completed',
+      prevented_cost: 4200,
+      system_type: 'Gutters'
+    },
+    {
+      id: 'maint-2',
+      property_id: 'demo-investor-1',
+      title: 'HVAC tune-up - Unit A',
+      completion_date: '2024-09-15',
+      actual_cost: 185,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 1200,
+      system_type: 'HVAC'
     },
     {
       id: 'maint-3',
+      property_id: 'demo-investor-1',
+      title: 'HVAC tune-up - Unit B',
+      completion_date: '2024-09-15',
+      actual_cost: 185,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 1200,
+      system_type: 'HVAC'
+    },
+    {
+      id: 'maint-4',
+      property_id: 'demo-investor-1',
+      title: 'Siding power wash',
+      completion_date: '2024-08-05',
+      actual_cost: 300,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 800,
+      system_type: 'Exterior'
+    },
+    {
+      id: 'maint-5',
+      property_id: 'demo-investor-1',
+      title: 'Garage door spring adjustment',
+      completion_date: '2024-07-10',
+      actual_cost: 125,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 600,
+      system_type: 'Garage'
+    },
+    {
+      id: 'maint-6',
+      property_id: 'demo-investor-1',
+      title: 'Unit A dishwasher repair',
+      completion_date: '2024-06-12',
+      actual_cost: 180,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 700,
+      system_type: 'Appliances'
+    },
+    {
+      id: 'maint-7',
+      property_id: 'demo-investor-1',
+      title: 'Landscape trimming',
+      completion_date: '2024-05-20',
+      actual_cost: 200,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Landscaping'
+    },
+    {
+      id: 'maint-8',
+      property_id: 'demo-investor-1',
+      title: 'Spring HVAC service - both units',
+      completion_date: '2024-04-10',
+      actual_cost: 370,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 2400,
+      system_type: 'HVAC'
+    },
+    
+    // PROPERTY 2: OAK RIDGE - History
+    {
+      id: 'maint-9',
       property_id: 'demo-investor-2',
       title: 'HVAC annual service',
       completion_date: '2024-09-15',
       actual_cost: 185,
       execution_type: 'Professional',
-      status: 'Completed'
+      status: 'Completed',
+      prevented_cost: 1500,
+      system_type: 'HVAC'
     },
     {
-      id: 'maint-4',
+      id: 'maint-10',
+      property_id: 'demo-investor-2',
+      title: 'Gutter cleaning',
+      completion_date: '2024-10-12',
+      actual_cost: 125,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 3200,
+      system_type: 'Gutters'
+    },
+    {
+      id: 'maint-11',
+      property_id: 'demo-investor-2',
+      title: 'Roof inspection after windstorm',
+      completion_date: '2024-10-05',
+      actual_cost: 125,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Roof'
+    },
+    {
+      id: 'maint-12',
+      property_id: 'demo-investor-2',
+      title: 'Water heater flush',
+      completion_date: '2024-08-22',
+      actual_cost: 140,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 1400,
+      system_type: 'Plumbing'
+    },
+    {
+      id: 'maint-13',
+      property_id: 'demo-investor-2',
+      title: 'Exterior paint touch-up',
+      completion_date: '2024-07-15',
+      actual_cost: 450,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 2000,
+      system_type: 'Exterior'
+    },
+    {
+      id: 'maint-14',
+      property_id: 'demo-investor-2',
+      title: 'Dryer vent cleaning',
+      completion_date: '2024-06-01',
+      actual_cost: 95,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 500,
+      system_type: 'Appliances'
+    },
+    {
+      id: 'maint-15',
+      property_id: 'demo-investor-2',
+      title: 'Spring landscaping cleanup',
+      completion_date: '2024-04-18',
+      actual_cost: 275,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Landscaping'
+    },
+    
+    // PROPERTY 3: CEDAR COURT 4-PLEX - History
+    {
+      id: 'maint-16',
+      property_id: 'demo-investor-3',
+      title: 'Emergency plumbing repair - Unit 3B',
+      completion_date: '2024-11-05',
+      actual_cost: 385,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Plumbing'
+    },
+    {
+      id: 'maint-17',
       property_id: 'demo-investor-3',
       title: 'Repaint Unit 1A after move-out',
       completion_date: '2024-08-12',
       actual_cost: 850,
       execution_type: 'Professional',
-      status: 'Completed'
+      status: 'Completed',
+      system_type: 'General'
+    },
+    {
+      id: 'maint-18',
+      property_id: 'demo-investor-3',
+      title: 'Gutter cleaning - all units',
+      completion_date: '2024-10-15',
+      actual_cost: 220,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 5500,
+      system_type: 'Gutters'
+    },
+    {
+      id: 'maint-19',
+      property_id: 'demo-investor-3',
+      title: 'Parking lot pothole repair',
+      completion_date: '2024-09-20',
+      actual_cost: 650,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 1800,
+      system_type: 'Driveways'
+    },
+    {
+      id: 'maint-20',
+      property_id: 'demo-investor-3',
+      title: 'Unit 2C toilet repair',
+      completion_date: '2024-09-01',
+      actual_cost: 175,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Plumbing'
+    },
+    {
+      id: 'maint-21',
+      property_id: 'demo-investor-3',
+      title: 'Broken window replacement - Unit 1A',
+      completion_date: '2024-07-22',
+      actual_cost: 280,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Windows/Doors'
+    },
+    {
+      id: 'maint-22',
+      property_id: 'demo-investor-3',
+      title: 'Unit 4D turnover - Spring',
+      completion_date: '2024-05-15',
+      actual_cost: 1650,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'General'
+    },
+    {
+      id: 'maint-23',
+      property_id: 'demo-investor-3',
+      title: 'Tree removal - storm damage',
+      completion_date: '2024-03-18',
+      actual_cost: 1200,
+      execution_type: 'Professional',
+      status: 'Completed',
+      prevented_cost: 8000,
+      system_type: 'Landscaping'
+    },
+    {
+      id: 'maint-24',
+      property_id: 'demo-investor-3',
+      title: 'Electrical outlet repair - Unit 2C',
+      completion_date: '2024-02-28',
+      actual_cost: 145,
+      execution_type: 'Professional',
+      status: 'Completed',
+      system_type: 'Electrical'
     }
   ],
 
   upgrades: [
+    // PROPERTY 1: MAPLE STREET DUPLEX - Upgrades
     {
       id: 'inv-upgrade-1',
-      property_id: 'demo-investor-3',
-      title: 'Energy Efficient Windows - All 4 Units',
-      category: 'Energy Efficiency',
-      description: 'Replace all single-pane windows with dual-pane low-E windows. Reduces heating costs 25-30% and increases property value.',
-      status: 'Planned',
-      investment_required: 9800,
-      annual_savings: 840,
-      roi_timeline_months: 140,
-      property_value_impact: 6000,
-      priority_score: 7
-    },
-    {
-      id: 'inv-upgrade-2',
       property_id: 'demo-investor-1',
       title: 'Add In-Unit Washer/Dryer Hookups',
       category: 'Rental Income Boosters',
       description: 'Add W/D hookups to both units. Increases rent $75-100/unit per month.',
-      status: 'Identified',
+      status: 'Planned',
       investment_required: 5000,
       annual_savings: 2100,
       roi_timeline_months: 29,
       property_value_impact: 8000,
-      priority_score: 9
+      priority_score: 9,
+      planned_date: '2025-02-01'
+    },
+    {
+      id: 'inv-upgrade-2',
+      property_id: 'demo-investor-1',
+      title: 'Smart Thermostat - Both Units',
+      category: 'Energy Efficiency',
+      description: 'Nest thermostats for both units. Remote control + energy savings.',
+      status: 'Completed',
+      investment_required: 550,
+      actual_cost: 520,
+      annual_savings: 280,
+      roi_timeline_months: 22,
+      property_value_impact: 1500,
+      priority_score: 7,
+      completion_date: '2024-08-15'
     },
     {
       id: 'inv-upgrade-3',
+      property_id: 'demo-investor-1',
+      title: 'LED Lighting Conversion',
+      category: 'Energy Efficiency',
+      description: 'Replace all bulbs with LED in both units.',
+      status: 'Completed',
+      investment_required: 280,
+      actual_cost: 265,
+      annual_savings: 240,
+      roi_timeline_months: 13,
+      property_value_impact: 500,
+      priority_score: 6,
+      completion_date: '2024-06-20'
+    },
+    
+    // PROPERTY 2: OAK RIDGE - Upgrades
+    {
+      id: 'inv-upgrade-4',
       property_id: 'demo-investor-2',
-      title: 'Smart Home Package',
+      title: 'Smart Home Security Package',
       category: 'Rental Income Boosters',
-      description: 'Smart thermostat, doorbell camera, smart locks. Premium tenant appeal.',
-      status: 'Identified',
+      description: 'Smart doorbell, locks, thermostat. Premium tenant appeal.',
+      status: 'In Progress',
       investment_required: 1050,
       annual_savings: 750,
       roi_timeline_months: 17,
       property_value_impact: 3000,
-      priority_score: 6
+      priority_score: 8,
+      progress_percentage: 65
     },
     {
-      id: 'inv-upgrade-4',
+      id: 'inv-upgrade-5',
+      property_id: 'demo-investor-2',
+      title: 'Attic Insulation Upgrade',
+      category: 'Energy Efficiency',
+      description: 'Increase R-value from R-30 to R-49. Reduces HVAC costs 15-20%.',
+      status: 'Planned',
+      investment_required: 2200,
+      annual_savings: 450,
+      roi_timeline_months: 59,
+      property_value_impact: 3500,
+      priority_score: 7,
+      planned_date: '2025-03-01'
+    },
+    {
+      id: 'inv-upgrade-6',
+      property_id: 'demo-investor-2',
+      title: 'Deck Rebuild',
+      category: 'Curb Appeal',
+      description: 'Replace aging deck with composite material. Low-maintenance + tenant appeal.',
+      status: 'Identified',
+      investment_required: 8500,
+      annual_savings: 0,
+      property_value_impact: 9000,
+      priority_score: 5
+    },
+    
+    // PROPERTY 3: CEDAR COURT 4-PLEX - Upgrades
+    {
+      id: 'inv-upgrade-7',
       property_id: 'demo-investor-3',
       title: 'Landscaping Refresh - Cedar Court',
       category: 'Curb Appeal',
@@ -401,6 +936,48 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       investment_required: 2800,
       property_value_impact: 4500,
       priority_score: 5
+    },
+    {
+      id: 'inv-upgrade-8',
+      property_id: 'demo-investor-3',
+      title: 'Energy Efficient Windows - All 4 Units',
+      category: 'Energy Efficiency',
+      description: 'Replace all single-pane windows with dual-pane low-E windows. Reduces heating costs 25-30% and increases property value.',
+      status: 'Planned',
+      investment_required: 9800,
+      annual_savings: 840,
+      roi_timeline_months: 140,
+      property_value_impact: 6000,
+      priority_score: 7,
+      planned_date: '2025-05-01'
+    },
+    {
+      id: 'inv-upgrade-9',
+      property_id: 'demo-investor-3',
+      title: 'Unit Refresh Package - 1A & 2C',
+      category: 'Rental Income Boosters',
+      description: 'New flooring, paint, fixtures for 2 units. Target $150/mo rent increase each.',
+      status: 'Completed',
+      investment_required: 8500,
+      actual_cost: 8200,
+      annual_savings: 3600,
+      roi_timeline_months: 27,
+      property_value_impact: 12000,
+      priority_score: 9,
+      completion_date: '2024-09-30'
+    },
+    {
+      id: 'inv-upgrade-10',
+      property_id: 'demo-investor-3',
+      title: 'Parking Lot Striping & Lighting',
+      category: 'Curb Appeal',
+      description: 'Re-stripe parking lot and add LED security lighting.',
+      status: 'Completed',
+      investment_required: 1600,
+      actual_cost: 1550,
+      property_value_impact: 2500,
+      priority_score: 4,
+      completion_date: '2024-07-10'
     }
   ],
 
