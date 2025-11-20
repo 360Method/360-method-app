@@ -652,96 +652,257 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     }
   ],
 
-  upgrades: [
+  upgradeProjects: [
     {
       id: 'demo-h-upg-001',
       property_id: 'demo-homeowner-001',
-      title: 'Attic Insulation Upgrade',
+      title: 'Smart Thermostat Installation',
       category: 'Energy Efficiency',
-      description: 'Add blown-in insulation to increase R-value from R-30 to R-49',
-      priority: 'High',
-      status: 'Planned',
-      target_date: '2025-06-01',
-      estimated_cost_low: 1500,
-      estimated_cost_high: 2500,
-      estimated_roi_years: 5,
-      annual_savings: 400,
-      total_savings_10yr: 4000,
-      payback_period_years: 5,
-      rebates_available: [
-        { source: 'Energy Trust of Oregon', amount: 200, details: 'Insulation rebate' }
+      description: 'Replace manual thermostats with Nest Learning Thermostats (2 units)',
+      status: 'In Progress',
+      priority: 8,
+      
+      budget: 600,
+      spent: 350,
+      remaining: 250,
+      
+      startDate: '2024-10-15',
+      targetCompletion: '2024-11-30',
+      actualCompletion: null,
+      daysElapsed: 35,
+      daysRemaining: 10,
+      
+      estimatedAnnualSavings: 320,
+      paybackPeriod: 1.9,
+      roi5Year: '167%',
+      
+      milestones: [
+        {
+          id: 'milestone-1',
+          title: 'Research & purchase thermostats',
+          status: 'completed',
+          completedDate: '2024-10-18',
+          cost: 350
+        },
+        {
+          id: 'milestone-2',
+          title: 'Install living room thermostat',
+          status: 'completed',
+          completedDate: '2024-10-22',
+          cost: 0
+        },
+        {
+          id: 'milestone-3',
+          title: 'Install bedroom thermostat',
+          status: 'in-progress',
+          targetDate: '2024-11-25',
+          cost: 0
+        },
+        {
+          id: 'milestone-4',
+          title: 'Configure scheduling & automation',
+          status: 'pending',
+          targetDate: '2024-11-30',
+          cost: 0
+        }
       ],
-      why_worth_it: 'Reduces heating/cooling costs by 15-20%. Improves comfort. Increases home value.',
-      notes: 'Get quotes in spring. Complete before summer heat.',
-      research_links: []
+      
+      impactMetrics: {
+        hvacRuntime: '-18%',
+        monthlyEnergyCost: '-$27',
+        comfort: 'Improved',
+        resaleValue: '+$500'
+      },
+      
+      notes: 'Nest thermostats purchased. Living room installed and working great. Bedroom installation scheduled for next weekend.'
     },
     {
       id: 'demo-h-upg-002',
       property_id: 'demo-homeowner-001',
-      title: 'Smart Thermostat Installation',
-      category: 'Smart Home',
-      description: 'Replace manual thermostat with Ecobee Smart Thermostat Premium',
-      priority: 'Medium',
-      status: 'Researching',
-      target_date: '2025-03-01',
-      estimated_cost_low: 200,
-      estimated_cost_high: 300,
-      estimated_roi_years: 2,
-      annual_savings: 150,
-      total_savings_10yr: 1500,
-      payback_period_years: 1.7,
-      rebates_available: [
-        { source: 'Local Utility', amount: 50, details: 'Smart thermostat rebate' }
+      title: 'Attic Insulation Upgrade',
+      category: 'Energy Efficiency',
+      description: 'Add blown-in insulation to increase R-value from R-30 to R-49',
+      status: 'Completed',
+      priority: 9,
+      
+      budget: 2200,
+      spent: 2150,
+      remaining: 50,
+      
+      startDate: '2024-06-01',
+      targetCompletion: '2024-06-15',
+      actualCompletion: '2024-06-12',
+      
+      estimatedAnnualSavings: 450,
+      paybackPeriod: 4.8,
+      roi5Year: '104%',
+      
+      milestones: [
+        {
+          id: 'milestone-5',
+          title: 'Get 3 contractor quotes',
+          status: 'completed',
+          completedDate: '2024-05-20',
+          cost: 0
+        },
+        {
+          id: 'milestone-6',
+          title: 'Schedule installation',
+          status: 'completed',
+          completedDate: '2024-05-28',
+          cost: 0
+        },
+        {
+          id: 'milestone-7',
+          title: 'Insulation installed (R-49)',
+          status: 'completed',
+          completedDate: '2024-06-12',
+          cost: 2150
+        },
+        {
+          id: 'milestone-8',
+          title: 'Post-install inspection',
+          status: 'completed',
+          completedDate: '2024-06-12',
+          cost: 0
+        }
       ],
-      why_worth_it: 'Save 23% on heating/cooling. Remote control. Auto-scheduling. Easy DIY install.',
-      notes: 'Wait for Black Friday sale. Check utility rebates.',
-      research_links: []
+      
+      impactMetrics: {
+        coolingCosts: '-22%',
+        heatingCosts: '-28%',
+        monthlyEnergyCost: '-$38',
+        comfort: 'Significantly improved',
+        resaleValue: '+$1,500'
+      },
+      
+      notes: 'Completed under budget and ahead of schedule. Already noticing lower AC bills in summer.'
     },
     {
       id: 'demo-h-upg-003',
       property_id: 'demo-homeowner-001',
-      title: 'LED Light Bulb Conversion',
+      title: 'LED Lighting Conversion',
       category: 'Energy Efficiency',
-      description: 'Replace all incandescent and CFL bulbs with LED',
-      priority: 'Low',
-      status: 'In Progress',
-      target_date: '2024-12-31',
-      estimated_cost_low: 150,
-      estimated_cost_high: 200,
-      estimated_roi_years: 1,
-      annual_savings: 180,
-      total_savings_10yr: 1800,
-      payback_period_years: 1,
-      rebates_available: [],
-      why_worth_it: 'Last 25x longer. Use 75% less energy. Better light quality.',
-      notes: '60% complete. Replace as bulbs burn out.',
-      progress_percentage: 60
+      description: 'Convert all 26 light fixtures to LED bulbs',
+      status: 'Planned',
+      priority: 6,
+      
+      budget: 450,
+      spent: 0,
+      remaining: 450,
+      
+      startDate: null,
+      targetCompletion: '2025-02-28',
+      
+      estimatedAnnualSavings: 180,
+      paybackPeriod: 2.5,
+      roi5Year: '100%',
+      
+      milestones: [
+        {
+          id: 'milestone-9',
+          title: 'Inventory all fixtures (26 bulbs)',
+          status: 'completed',
+          completedDate: '2024-11-10',
+          cost: 0
+        },
+        {
+          id: 'milestone-10',
+          title: 'Purchase LED bulbs',
+          status: 'pending',
+          targetDate: '2025-01-15',
+          cost: 350
+        },
+        {
+          id: 'milestone-11',
+          title: 'Replace all bulbs',
+          status: 'pending',
+          targetDate: '2025-02-01',
+          cost: 0
+        },
+        {
+          id: 'milestone-12',
+          title: 'Update electrical panel labels',
+          status: 'pending',
+          targetDate: '2025-02-28',
+          cost: 0
+        }
+      ],
+      
+      impactMetrics: {
+        energyUsage: '-75%',
+        bulbLifespan: '+10× longer',
+        monthlyEnergyCost: '-$15',
+        maintenanceFrequency: '-90%'
+      },
+      
+      notes: 'Waiting for post-holiday sales on LED bulbs. Target: $12-15 per bulb.'
     },
     {
       id: 'demo-h-upg-004',
       property_id: 'demo-homeowner-001',
-      title: 'Master Bathroom Remodel',
+      title: 'Kitchen Backsplash Refresh',
       category: 'Quality of Life',
-      description: 'Update master bath: new vanity, tile shower, modern fixtures, improved lighting',
-      priority: 'Medium',
-      status: 'Wishlist',
-      target_date: '2026-03-01',
-      estimated_cost_low: 12000,
-      estimated_cost_high: 18000,
-      estimated_roi_years: null,
-      annual_savings: 0,
-      total_savings_10yr: 0,
-      payback_period_years: null,
-      rebates_available: [],
-      property_value_increase: 10000,
-      quality_of_life_score: 10,
+      description: 'Install subway tile backsplash to modernize kitchen',
+      status: 'Planned',
+      priority: 4,
+      
+      budget: 1800,
+      spent: 0,
+      remaining: 1800,
+      
+      startDate: null,
+      targetCompletion: '2025-05-30',
+      
+      estimatedAnnualSavings: 0,
+      resaleValueIncrease: 3500,
+      roi: '94%',
+      
+      milestones: [
+        {
+          id: 'milestone-13',
+          title: 'Design selection & material sourcing',
+          status: 'pending',
+          targetDate: '2025-03-15',
+          cost: 0
+        },
+        {
+          id: 'milestone-14',
+          title: 'Purchase tiles & materials',
+          status: 'pending',
+          targetDate: '2025-04-01',
+          cost: 1200
+        },
+        {
+          id: 'milestone-15',
+          title: 'DIY installation (weekend project)',
+          status: 'pending',
+          targetDate: '2025-05-15',
+          cost: 0
+        },
+        {
+          id: 'milestone-16',
+          title: 'Grout & seal',
+          status: 'pending',
+          targetDate: '2025-05-30',
+          cost: 150
+        }
+      ],
+      
+      impactMetrics: {
+        aesthetics: 'Modern upgrade',
+        maintenance: 'Easier to clean',
+        resaleValue: '+$3,500',
+        personalEnjoyment: 'High'
+      },
+      
       why_worth_it: `
         This isn't about ROI - it's about joy! Quality of life upgrades matter.
         
         Benefits:
-        • Start/end every day in a space you love
-        • Improved functionality (better storage, lighting)
-        • Increased home value (~$10K)
+        • Start every day in a space you love
+        • Improved functionality (easier to clean)
+        • Increased home value (~$3,500)
         • Makes your home feel new again
         
         💡 The 360° Method Philosophy:
@@ -749,9 +910,8 @@ export const DEMO_PROPERTY_HOMEOWNER = {
         you daily joy are investments in your happiness. Budget for them guilt-free 
         after you've handled critical maintenance.
       `,
-      notes: 'Save $500/month for 2 years. Start planning design in 2025.',
-      inspiration_links: [],
-      contractor_quotes: []
+      
+      notes: 'Subway tile with dark grout - timeless look. DIY to save $1,200 in labor.'
     }
   ],
 

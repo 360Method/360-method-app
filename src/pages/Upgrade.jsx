@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -32,6 +31,8 @@ import UpgradeProjectCard from "../components/upgrade/UpgradeProjectCard";
 import UpgradeDialog from "../components/upgrade/UpgradeDialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import ServiceAvailabilityBanner from "../components/shared/ServiceAvailabilityBanner";
+import MyProjectsTab from "../components/upgrade/MyProjectsTab";
+import BrowseIdeasTab from "../components/upgrade/BrowseIdeasTab";
 import { shouldShowMemberBenefits, isServiceAvailableForProperty } from "@/components/shared/serviceAreas";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
@@ -92,7 +93,7 @@ export default function Upgrade() {
           if (!selectedProperty) return demoData?.upgrades || [];
           return demoData?.upgrades?.filter(u => u.property_id === selectedProperty) || [];
         }
-        return demoData?.upgrades || [];
+        return demoData?.upgradeProjects || demoData?.upgrades || [];
       }
       
       let upgrades;
