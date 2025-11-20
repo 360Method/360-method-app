@@ -39,7 +39,8 @@ export default function InspectionReport({ inspection, property, baselineSystems
   }
 
   // Support both formats: checklist_items (real) and findings (demo)
-  const allIssues = inspection?.findings || inspection?.checklist_items || [];
+  const allIssues = Array.isArray(inspection?.findings) ? inspection.findings : 
+                    Array.isArray(inspection?.checklist_items) ? inspection.checklist_items : [];
   const urgentIssues = allIssues.filter(i => i.severity === 'Critical' || i.severity === 'Urgent' || i.severity === 'Moderate');
   const flagIssues = allIssues.filter(i => i.severity === 'Flag' || i.severity === 'Minor');
   const monitorIssues = allIssues.filter(i => i.severity === 'Monitor' || i.severity === 'Pass' || i.severity === 'Documentation');
