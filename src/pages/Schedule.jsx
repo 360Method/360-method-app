@@ -42,7 +42,6 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
-import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function SchedulePage() {
   const location = useLocation();
