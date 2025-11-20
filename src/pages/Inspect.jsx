@@ -61,13 +61,6 @@ export default function Inspect() {
     },
   });
 
-  console.log('=== INSPECT STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('Is investor:', isInvestor);
-  console.log('Properties:', properties);
-  console.log('Selected property:', selectedPropertyId);
-  console.log('Inspections:', inspections);
-
   const { data: realInspections = [] } = useQuery({
     queryKey: ['inspections', selectedPropertyId],
     queryFn: () => {
