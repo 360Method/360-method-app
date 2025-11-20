@@ -326,18 +326,11 @@ export default function Inspect() {
           </p>
         </div>
 
-        {/* NEW: Step Education Card */}
-        <StepEducationCard 
-          {...STEP_EDUCATION.inspect}
-          defaultExpanded={false}
-          className="mb-6"
-        />
-
         {/* Property Selector */}
         {properties.length > 0 && (
-          <Card className="border-2 border-blue-300 shadow-lg mb-8">
-            <CardContent className="p-6">
-              <Label className="mb-2 block">Select Property</Label>
+          <Card className="border-2 border-gray-200 shadow-sm mb-6">
+            <CardContent className="p-4">
+              <Label className="mb-2 block text-sm">Select Property</Label>
               <Select value={selectedPropertyId || ""} onValueChange={setSelectedPropertyId}>
                 <SelectTrigger className="w-full md:w-96">
                   <SelectValue placeholder="Select a property" />
@@ -354,177 +347,123 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* PROMINENT INSPECTION METHOD SELECTOR - Always visible when property selected and baseline complete */}
+        {/* MAIN METHOD SELECTOR - Clean, focused view */}
         {selectedPropertyId && hasBaselineSystems && !inProgressInspection && canEdit && (
-          <Card className="border-4 border-blue-400 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 shadow-2xl mb-8">
-            <CardHeader className="pb-4">
-              <div className="text-center">
-                <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                  Choose Your Documentation Method
-                </CardTitle>
-                <p className="text-gray-700">Pick the approach that works best for you</p>
-              </div>
+          <Card className="border-2 border-purple-200 shadow-2xl mb-8">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                Choose Your Documentation Method
+              </CardTitle>
+              <p className="text-gray-600 text-lg">Pick the approach that works best for you</p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Three Main Options */}
-              <div className="grid md:grid-cols-3 gap-6">
+            <CardContent className="pb-8">
+              <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
                 {/* Quick Start Wizard */}
                 <Card 
-                  className="border-3 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl"
+                  className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group hover:shadow-xl bg-white"
                   onClick={() => setShowWizard(true)}
                 >
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <CardContent className="p-8">
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                         <Lightbulb className="w-10 h-10 text-white" />
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          ✨ Quick Start Wizard
-                        </h3>
-                        <Badge className="bg-green-600 text-white mb-3">
-                          <Clock className="w-3 h-3 mr-1" />
-                          5-10 minutes
-                        </Badge>
-                        <p className="text-sm text-gray-700 mb-4">
-                          Fastest way to get started. Answer a few questions and we'll guide you through the essential checks.
-                        </p>
-                      </div>
-                      <div className="bg-green-100 rounded-lg p-4 text-left">
-                        <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
-                        <ul className="text-xs text-green-800 space-y-1">
-                          <li>• First inspection</li>
-                          <li>• Limited time</li>
-                          <li>• Guided experience</li>
-                          <li>• Getting started quickly</li>
-                        </ul>
-                      </div>
-                      <Button 
-                        className="w-full gap-2 text-lg py-6 group-hover:bg-green-700"
-                        style={{ backgroundColor: '#22C55E', minHeight: '56px' }}
-                      >
-                        <Lightbulb className="w-5 h-5" />
-                        Start Wizard
-                      </Button>
+                      <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
+                        ⚡ Quick Start Wizard
+                      </h3>
+                      <Badge className="bg-purple-600 text-white mb-4 text-sm px-3 py-1">
+                        <Clock className="w-3 h-3 mr-1" />
+                        10-15 minutes
+                      </Badge>
+                      <p className="text-gray-700 mb-6">
+                        Guided step-by-step documentation of your 4 most critical systems.
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                    
+                    <div className="bg-purple-50 rounded-lg p-4 mb-6 text-left">
+                      <p className="text-sm font-semibold text-purple-900 mb-3">✓ Perfect for:</p>
+                      <ul className="text-sm text-purple-800 space-y-2">
+                        <li>• First-time users</li>
+                        <li>• Digital-first approach</li>
+                        <li>• Quick essential coverage</li>
+                        <li>• Unlock ACT phase fast</li>
+                      </ul>
+                    </div>
 
-                {/* Traditional Area-by-Area */}
-                <Card 
-                  className="border-3 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group hover:shadow-xl"
-                  onClick={handleStartTraditionalInspection}
-                >
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <BookOpen className="w-10 h-10 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          📋 Traditional Inspection
-                        </h3>
-                        <Badge className="bg-blue-600 text-white mb-3">
-                          <Clock className="w-3 h-3 mr-1" />
-                          20-30 minutes
-                        </Badge>
-                        <p className="text-sm text-gray-700 mb-4">
-                          Checklist-based inspection organized by area. Select which areas to inspect and work through them systematically.
-                        </p>
-                      </div>
-                      <div className="bg-blue-100 rounded-lg p-4 text-left">
-                        <p className="text-xs font-semibold text-blue-900 mb-2">✓ Perfect for:</p>
-                        <ul className="text-xs text-blue-800 space-y-1">
-                          <li>• Focused inspections</li>
-                          <li>• Desktop/tablet use</li>
-                          <li>• Checklist-driven mindset</li>
-                          <li>• Selective area checking</li>
-                        </ul>
-                      </div>
-                      <Button 
-                        className="w-full gap-2 text-lg py-6 group-hover:bg-blue-700"
-                        style={{ backgroundColor: '#3B82F6', minHeight: '56px' }}
-                      >
-                        <BookOpen className="w-5 h-5" />
-                        Start Traditional
-                      </Button>
-                    </div>
+                    <Button 
+                      className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
+                      style={{ backgroundColor: '#9333EA', minHeight: '56px' }}
+                    >
+                      <Lightbulb className="w-5 h-5" />
+                      Start Quick Setup →
+                    </Button>
                   </CardContent>
                 </Card>
 
                 {/* Physical Walkthrough */}
                 <Card 
-                  className="border-3 border-teal-300 hover:border-teal-500 transition-all cursor-pointer group hover:shadow-xl"
+                  className="border-2 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl bg-white"
                   onClick={handleStartPhysicalInspection}
                 >
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <CardContent className="p-8">
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                         <PlayCircle className="w-10 h-10 text-white" />
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          🏠 Physical Walkthrough
-                        </h3>
-                        <Badge className="bg-teal-600 text-white mb-3">
-                          <Clock className="w-3 h-3 mr-1" />
-                          30-40 minutes
-                        </Badge>
-                        <p className="text-sm text-gray-700 mb-4">
-                          Room-by-room route through property. Optimal zone-based path minimizes backtracking and ensures complete coverage.
-                        </p>
-                      </div>
-                      <div className="bg-teal-100 rounded-lg p-4 text-left">
-                        <p className="text-xs font-semibold text-teal-900 mb-2">✓ Perfect for:</p>
-                        <ul className="text-xs text-teal-800 space-y-1">
-                          <li>• Complete inspections</li>
-                          <li>• Mobile on-site use</li>
-                          <li>• Physical movement mindset</li>
-                          <li>• Maximum efficiency</li>
-                        </ul>
-                      </div>
-                      <Button 
-                        className="w-full gap-2 text-lg py-6 group-hover:bg-teal-700"
-                        style={{ backgroundColor: '#14B8A6', minHeight: '56px' }}
-                      >
-                        <PlayCircle className="w-5 h-5" />
-                        Start Walkthrough
-                      </Button>
+                      <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
+                        🏠 Physical Walkthrough
+                      </h3>
+                      <Badge className="bg-green-600 text-white mb-4 text-sm px-3 py-1">
+                        <Clock className="w-3 h-3 mr-1" />
+                        30-45 minutes
+                      </Badge>
+                      <p className="text-gray-700 mb-6">
+                        Room-by-room route through your property.
+                      </p>
                     </div>
+                    
+                    <div className="bg-green-50 rounded-lg p-4 mb-6 text-left">
+                      <p className="text-sm font-semibold text-green-900 mb-3">✓ Perfect for:</p>
+                      <ul className="text-sm text-green-800 space-y-2">
+                        <li>• Complete documentation</li>
+                        <li>• Physical inspection mindset</li>
+                        <li>• Mobile on-site use</li>
+                      </ul>
+                    </div>
+
+                    <Button 
+                      className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
+                      style={{ backgroundColor: '#16A34A', minHeight: '56px' }}
+                    >
+                      <PlayCircle className="w-5 h-5" />
+                      Start Walkthrough →
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Professional Option - Below */}
-              <div className="border-t pt-4">
-                <div className="bg-white rounded-lg p-4 border-2 border-gray-300">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold flex-shrink-0">
-                        💼
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">Need Professional Help?</p>
-                        <p className="text-xs text-gray-600">Certified inspector comes to your property</p>
-                      </div>
-                    </div>
-                    {canEdit && (
-                      <Button
-                        onClick={() => setServiceRequestOpen(true)}
-                        variant="outline"
-                        className="whitespace-nowrap"
-                        style={{ minHeight: '48px' }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Request Pro
-                      </Button>
-                    )}
-                  </div>
-                </div>
+              {/* Bottom option */}
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">Or document systems individually as you go →</p>
+                <Button
+                  onClick={handleStartTraditionalInspection}
+                  variant="outline"
+                  className="text-gray-700 border-gray-300 hover:border-gray-400"
+                  style={{ minHeight: '48px' }}
+                >
+                  Scroll down to browse all system categories
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* NEW: Step Education Card - Collapsed by default */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.inspect}
+          defaultExpanded={false}
+          className="mb-6"
+        />
 
         {/* Why Inspections Matter - Educational Section */}
         <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-8">
