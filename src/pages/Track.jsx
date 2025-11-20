@@ -33,8 +33,9 @@ export default function TrackPage() {
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
 
   React.useEffect(() => {
+    window.scrollTo(0, 0);
     if (demoMode) markStepVisited(3);
-  }, [demoMode]);
+  }, [demoMode, markStepVisited]);
   
   const [selectedProperty, setSelectedProperty] = useState(urlParams.get('property') || 'first');
   const [activeTab, setActiveTab] = useState('wins');

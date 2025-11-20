@@ -14,6 +14,7 @@ export default function DashboardHomeowner() {
   const { demoMode, demoData, markStepVisited } = useDemo();
 
   React.useEffect(() => {
+    window.scrollTo(0, 0);
     if (demoMode) markStepVisited(0);
   }, [demoMode, markStepVisited]);
 

@@ -39,6 +39,7 @@ export default function Preserve() {
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
 
   React.useEffect(() => {
+    window.scrollTo(0, 0);
     if (demoMode) markStepVisited(7);
   }, [demoMode, markStepVisited]);
 

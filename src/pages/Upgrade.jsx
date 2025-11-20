@@ -49,6 +49,7 @@ export default function Upgrade() {
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
 
   React.useEffect(() => {
+    window.scrollTo(0, 0);
     if (demoMode) markStepVisited(8);
   }, [demoMode, markStepVisited]);
 

@@ -38,6 +38,7 @@ export default function Scale() {
   const { demoMode, demoData, isInvestor, isHomeowner, markStepVisited } = useDemo();
 
   React.useEffect(() => {
+    window.scrollTo(0, 0);
     if (demoMode) markStepVisited(9);
   }, [demoMode, markStepVisited]);
 
