@@ -681,7 +681,7 @@ export default function Baseline() {
           className="mb-6"
         />
 
-        {showPostOnboardingPrompt && currentProperty && (
+        {showPostOnboardingPrompt && currentProperty && !demoMode && (
           <PostOnboardingPrompt
             property={currentProperty}
             onDismiss={() => {
