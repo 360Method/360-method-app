@@ -39,16 +39,32 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🟢 WIZARD: Saving property profile');
       console.log('🟢 WIZARD: Property ID:', property.id);
-      console.log('🟢 WIZARD: Data to save:', data);
+      console.log('🟢 WIZARD: Data to save:', JSON.stringify(data, null, 2));
       const result = await base44.entities.Property.update(property.id, data);
-      console.log('🟢 WIZARD: Save result:', result);
+      console.log('🟢 WIZARD: Save result:', JSON.stringify(result, null, 2));
       console.log('🟢 WIZARD: Property saved successfully!');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return result;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
-      onComplete(data);
+    onSuccess: async (data) => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🟢 WIZARD: onSuccess called with data:', JSON.stringify(data, null, 2));
+      console.log('🟢 WIZARD: Invalidating queries...');
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      console.log('🟢 WIZARD: Queries invalidated, waiting for refetch...');
+      
+      // Wait a moment for the query to refetch
+      setTimeout(async () => {
+        const freshData = queryClient.getQueryData(['properties']);
+        console.log('🟢 WIZARD: Fresh property data after refetch:', JSON.stringify(freshData, null, 2));
+        
+        const updatedProperty = freshData?.find(p => p.id === property.id);
+        console.log('🟢 WIZARD: Updated property from cache:', JSON.stringify(updatedProperty, null, 2));
+        console.log('🟢 WIZARD: financial_profile_complete value:', updatedProperty?.financial_profile_complete);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        onComplete(data);
+      }, 500);
     },
     onError: (error) => {
       console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -630,6 +646,7 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
     };
 
     console.log('🟢 WIZARD: Complete data to save:', completeData);
+    console.log('🟢 WIZARD: CRITICAL - financial_profile_complete set to:', completeData.financial_profile_complete);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     updatePropertyMutation.mutate(completeData);
