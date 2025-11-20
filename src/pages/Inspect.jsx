@@ -50,7 +50,12 @@ export default function Inspect() {
   const [showWizard, setShowWizard] = React.useState(false);
 
   const queryClient = useQueryClient();
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    if (demoMode) markStepVisited(2);
+  }, [demoMode, markStepVisited]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
