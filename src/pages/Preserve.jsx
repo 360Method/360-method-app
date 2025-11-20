@@ -36,7 +36,11 @@ export default function Preserve() {
   // `whyExpanded` state was related to the old "Why Preserve Matters" card.
   // Since that card is being replaced by `StepEducationCard`, this state is no longer needed.
   // const [whyExpanded, setWhyExpanded] = useState(false);
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(7);
+  }, [demoMode, markStepVisited]);
 
   // Fetch data
   const { data: properties = [] } = useQuery({

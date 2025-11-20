@@ -46,7 +46,11 @@ export default function Upgrade() {
   const showNewForm = searchParams.get('new') === 'true';
   const templateIdFromUrl = searchParams.get('template');
   const propertyIdFromUrl = searchParams.get('property');
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(8);
+  }, [demoMode, markStepVisited]);
 
   const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
   const [editingProject, setEditingProject] = React.useState(null);

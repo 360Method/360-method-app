@@ -35,7 +35,11 @@ export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('equity-position');
   // const [whyExpanded, setWhyExpanded] = useState(false); // This state is no longer needed for the new StepEducationCard
-  const { demoMode, demoData, isInvestor, isHomeowner } = useDemo(); // Updated useDemo destructuring
+  const { demoMode, demoData, isInvestor, isHomeowner, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(9);
+  }, [demoMode, markStepVisited]);
 
   // Fetch data
   const { data: properties = [] } = useQuery({
