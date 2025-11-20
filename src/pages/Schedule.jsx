@@ -24,7 +24,8 @@ import {
   Sparkles,
   Filter,
   X,
-  Info
+  Info,
+  Send
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -374,6 +375,46 @@ export default function SchedulePage() {
 
         {/* Don't Want DIY Banner */}
         <DontWantDIYBanner />
+
+        {/* Decision Points Guide - Demo Mode Only */}
+        {demoMode && (
+          <Card className="mb-6 border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <ArrowRight className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-bold text-yellow-900 mb-3">Decision Points - What Happens Next:</h3>
+                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                    <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
+                      <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
+                        <PlayCircle className="w-4 h-4" />
+                        Send to Execute
+                      </p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Once scheduled, tasks move to <strong>Execute (Green)</strong> tab where you do the work, track time/costs, and mark complete
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-400">
+                      <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        Auto-Archives to Track
+                      </p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        When you mark tasks complete in Execute, they automatically appear in <strong>Track</strong> - your permanent maintenance history
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 bg-white rounded-lg p-3 border-l-4 border-yellow-600">
+                    <p className="text-xs text-gray-800 leading-relaxed">
+                      <strong>💡 Pro Tip:</strong> Group similar tasks on the same day/week to save contractor trip fees. Schedule seasonally-critical tasks during ideal weather windows.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {seasonalReminders.length > 0 && (
           <Card className="mb-6 border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50">
