@@ -6,244 +6,255 @@ import { Button } from '../ui/button';
 const UPGRADE_IDEAS = [
   {
     id: 'idea-1',
-    title: 'Solar Panel Installation',
-    category: 'Energy Efficiency',
-    icon: Zap,
-    color: 'yellow',
+    title: 'In-Unit Washer/Dryer Hookups',
+    category: 'Rental Income Boosters',
+    icon: Sparkles,
+    color: 'purple',
     
-    typicalCost: { min: 15000, max: 25000 },
-    annualSavings: { min: 1200, max: 2000 },
-    paybackPeriod: { min: 7.5, max: 12.5 },
-    roi10Year: '160-220%',
+    typicalCost: { min: 2500, max: 3500 },
+    rentIncrease: { min: 75, max: 125 },
+    annualIncome: { min: 900, max: 1500 },
+    paybackPeriod: { min: 1.7, max: 3.9 },
+    roi10Year: '257-600%',
     
     benefits: [
-      'Eliminate or drastically reduce electric bills',
-      'Federal tax credit: 30% of installation cost',
-      'Increase home value $15K-$30K',
-      'Environmental impact: -7 tons CO2/year'
+      'Increase rent $75-$125/month per unit',
+      'Appeal to premium tenants (families, professionals)',
+      'Reduce tenant turnover',
+      'Competitive advantage in rental market',
+      'Tenants cover water/electricity for W/D'
     ],
     
     considerations: [
-      'Requires good roof condition (replace roof first if needed)',
-      'Best with south-facing roof',
-      'Check local incentives and net metering policies',
-      'Typical installation: 2-3 days'
+      'Requires 120V outlet + water supply + drain',
+      'May need electrical panel upgrade',
+      'Cost per unit: $2,500-$3,500',
+      'Consider stackable units for small spaces'
     ],
     
     difficulty: 'Professional Required',
-    timeframe: '3-5 days installation',
-    tags: ['High ROI', 'Tax Credit', 'Eco-Friendly']
+    timeframe: '1-2 days per unit',
+    tags: ['Rent Boost', 'Tenant Retention', 'High ROI']
   },
   {
     id: 'idea-2',
-    title: 'Low-Flow Fixtures',
-    category: 'Water Efficiency',
-    icon: Droplet,
-    color: 'blue',
+    title: 'Unit Refresh Package',
+    category: 'Rental Income Boosters',
+    icon: Home,
+    color: 'green',
     
-    typicalCost: { min: 400, max: 1200 },
-    annualSavings: { min: 150, max: 300 },
-    paybackPeriod: { min: 1.3, max: 4 },
-    roi10Year: '125-375%',
+    typicalCost: { min: 3500, max: 5500 },
+    rentIncrease: { min: 100, max: 200 },
+    annualIncome: { min: 1200, max: 2400 },
+    paybackPeriod: { min: 1.5, max: 4.6 },
+    roi10Year: '218-686%',
     
     benefits: [
-      'Reduce water usage 20-40%',
-      'Lower water & sewer bills',
-      'Qualify for utility rebates ($50-$200)',
-      'Easy DIY installation'
+      'Justify $100-$200/month rent increase',
+      'New flooring, paint, fixtures, hardware',
+      'Attract quality tenants faster',
+      'Reduce vacancy time by 7-14 days',
+      'Compete with new construction rentals'
     ],
     
     considerations: [
-      'WaterSense certified products recommended',
-      'Check local rebate programs',
-      'Minimal disruption to daily routine'
+      'Schedule during turnover (no tenant disruption)',
+      'LVP flooring is durable + renter-friendly',
+      'Fresh paint = instant transformation',
+      'Modern fixtures signal "well-maintained"'
     ],
     
-    difficulty: 'Easy DIY',
-    timeframe: '2-4 hours',
-    tags: ['Quick Win', 'DIY-Friendly', 'Rebates']
+    difficulty: 'Professional Recommended',
+    timeframe: '3-5 days',
+    tags: ['Rent Boost', 'Fast Lease', 'Premium Tenants']
   },
   {
     id: 'idea-3',
     title: 'Energy-Efficient Windows',
     category: 'Energy Efficiency',
     icon: Home,
-    color: 'purple',
+    color: 'blue',
     
-    typicalCost: { min: 5000, max: 15000 },
-    annualSavings: { min: 300, max: 600 },
-    paybackPeriod: { min: 8.3, max: 25 },
-    roi10Year: '40-120%',
+    typicalCost: { min: 2500, max: 3500 },
+    annualSavings: { min: 150, max: 300 },
+    paybackPeriod: { min: 8.3, max: 23.3 },
+    roi10Year: '43-120%',
     
     benefits: [
-      'Reduce heating/cooling costs 15-25%',
-      'Increase home value $5K-$10K',
-      'Improve comfort (eliminate drafts)',
-      'Noise reduction',
-      'Federal tax credit available'
+      'Reduce tenant utility complaints',
+      'Cut heating/cooling costs 15-25%',
+      'Justify premium rent ($30-50/mo)',
+      'Improve tenant comfort = retention',
+      'Reduce maintenance calls (no drafts)'
     ],
     
     considerations: [
-      'Focus on worst-performing windows first',
-      'Look for ENERGY STAR certified',
-      'Consider climate zone ratings',
-      'Professional installation recommended'
-    ],
-    
-    difficulty: 'Professional Recommended',
-    timeframe: '1-3 days',
-    tags: ['High Impact', 'Tax Credit', 'Comfort']
-  },
-  {
-    id: 'idea-4',
-    title: 'Smart Security System',
-    category: 'Security',
-    icon: Shield,
-    color: 'red',
-    
-    typicalCost: { min: 400, max: 1500 },
-    annualSavings: { min: 100, max: 300 },
-    paybackPeriod: { min: 1.3, max: 7.5 },
-    roi10Year: '67-375%',
-    
-    benefits: [
-      'Homeowners insurance discount (5-20%)',
-      'Deter break-ins (visible cameras)',
-      'Remote monitoring from phone',
-      'Increase home value $1K-$2K'
-    ],
-    
-    considerations: [
-      'Monthly monitoring fee: $10-$50/month',
-      'Wi-Fi required for smart features',
-      'DIY systems (Ring, SimpliSafe) vs professional (ADT)',
-      'Check insurance discount eligibility'
-    ],
-    
-    difficulty: 'Easy DIY',
-    timeframe: '2-6 hours',
-    tags: ['Insurance Discount', 'DIY-Friendly', 'Peace of Mind']
-  },
-  {
-    id: 'idea-5',
-    title: 'Tankless Water Heater',
-    category: 'Energy Efficiency',
-    icon: Droplet,
-    color: 'orange',
-    
-    typicalCost: { min: 1500, max: 3500 },
-    annualSavings: { min: 100, max: 200 },
-    paybackPeriod: { min: 7.5, max: 17.5 },
-    roi10Year: '57-133%',
-    
-    benefits: [
-      'Endless hot water (no running out)',
-      '20-30% energy savings vs tank',
-      'Lasts 20+ years (vs 10-15 for tank)',
-      'Space-saving (wall-mounted)',
-      'Federal tax credit available'
-    ],
-    
-    considerations: [
-      'Higher upfront cost than tank',
-      'May require electrical/gas upgrades',
-      'Size carefully for household demand',
-      'Professional installation required'
+      'Cost per unit: $2,500-$3,500 for typical rental',
+      'Double-pane minimum for rental market',
+      'Schedule during turnover if possible',
+      'Tenants appreciate lower utility bills'
     ],
     
     difficulty: 'Professional Required',
-    timeframe: '4-8 hours',
-    tags: ['Long Lifespan', 'Tax Credit', 'Comfort']
+    timeframe: '1-2 days per unit',
+    tags: ['Tenant Comfort', 'Energy Savings', 'Rent Boost']
   },
   {
-    id: 'idea-6',
-    title: 'Landscaping for Curb Appeal',
-    category: 'Quality of Life',
-    icon: Leaf,
-    color: 'green',
+    id: 'idea-4',
+    title: 'Smart Home Package',
+    category: 'Rental Income Boosters',
+    icon: Shield,
+    color: 'purple',
     
-    typicalCost: { min: 2000, max: 8000 },
-    annualSavings: { min: 0, max: 0 },
-    resaleValueIncrease: { min: 5000, max: 15000 },
-    roi: '150-250%',
+    typicalCost: { min: 800, max: 1500 },
+    rentIncrease: { min: 50, max: 75 },
+    annualIncome: { min: 600, max: 900 },
+    paybackPeriod: { min: 0.9, max: 2.5 },
+    roi10Year: '400-1125%',
     
     benefits: [
-      'Increase home value $5K-$15K',
-      'Improve neighborhood standing',
-      'Personal enjoyment',
-      'Potential HOA compliance'
+      'Justify $50-$75/month rent premium',
+      'Smart locks = remote access (no keys)',
+      'Smart thermostat = energy monitoring',
+      'Video doorbell = tenant safety',
+      'Appeal to tech-savvy renters'
     ],
     
     considerations: [
-      'Native plants = lower water usage',
-      'Professional design vs DIY',
-      'Consider maintenance requirements',
-      'Phased approach can spread cost'
-    ],
-    
-    difficulty: 'Moderate DIY or Professional',
-    timeframe: '1-5 days',
-    tags: ['High ROI', 'Curb Appeal', 'Personal Joy']
-  },
-  {
-    id: 'idea-7',
-    title: 'Cabinet Refresh (Paint/Hardware)',
-    category: 'Quality of Life',
-    icon: Sparkles,
-    color: 'pink',
-    
-    typicalCost: { min: 800, max: 2500 },
-    annualSavings: { min: 0, max: 0 },
-    resaleValueIncrease: { min: 3000, max: 8000 },
-    roi: '200-400%',
-    
-    benefits: [
-      'Dramatic visual impact for low cost',
-      'Increase home value $3K-$8K',
-      'Avoid full remodel ($15K-$40K)',
-      'DIY-friendly project'
-    ],
-    
-    considerations: [
-      'Quality prep work is critical',
-      'Use cabinet-specific paint/primer',
-      'New hardware: $3-$15 per knob/pull',
-      'Weekend project (2-4 days)'
+      'One-time purchase, no monthly fees',
+      'Remote property access for emergencies',
+      'Energy monitoring helps catch HVAC abuse',
+      'Market as "Smart Home Rental"'
     ],
     
     difficulty: 'Moderate DIY',
-    timeframe: '2-4 days',
-    tags: ['High ROI', 'DIY-Friendly', 'Visual Impact']
+    timeframe: '4-6 hours',
+    tags: ['Rent Boost', 'Remote Access', 'Premium Appeal']
   },
   {
-    id: 'idea-8',
-    title: 'Smart Irrigation System',
-    category: 'Water Efficiency',
-    icon: Droplet,
-    color: 'blue',
+    id: 'idea-5',
+    title: 'Landscaping & Curb Appeal',
+    category: 'Curb Appeal',
+    icon: Leaf,
+    color: 'green',
     
-    typicalCost: { min: 600, max: 2000 },
-    annualSavings: { min: 150, max: 400 },
-    paybackPeriod: { min: 1.5, max: 6.7 },
-    roi10Year: '75-333%',
+    typicalCost: { min: 1500, max: 3500 },
+    annualIncome: { min: 0, max: 0 },
+    resaleValueIncrease: { min: 3000, max: 6000 },
+    roi: '133-400%',
     
     benefits: [
-      'Reduce water usage 20-50%',
-      'Healthier lawn/plants (optimal watering)',
-      'Convenience (weather-based adjustments)',
-      'Utility rebates available ($100-$500)'
+      'Reduce vacancy time 5-10 days',
+      'First impressions = faster lease',
+      'Justify higher rent tier',
+      'Fewer tenant complaints about "curb appeal"',
+      'Property value boost: $3K-$6K'
     ],
     
     considerations: [
-      'Smart controllers: $150-$400',
-      'Professional installation vs DIY',
-      'Check for local rebates',
-      'Zone system = better efficiency'
+      'Low-maintenance landscaping = less cost',
+      'Native plants reduce water usage',
+      'Bark mulch + clean beds = instant upgrade',
+      'Good lighting = safety + visual appeal'
     ],
     
-    difficulty: 'Moderate DIY or Professional',
-    timeframe: '1-2 days',
-    tags: ['Water Savings', 'Rebates', 'Convenience']
+    difficulty: 'DIY or Professional',
+    timeframe: '2-3 days',
+    tags: ['Fast Lease', 'Property Value', 'Tenant Appeal']
+  },
+  {
+    id: 'idea-6',
+    title: 'Durable Flooring (LVP)',
+    category: 'Rental Income Boosters',
+    icon: Home,
+    color: 'orange',
+    
+    typicalCost: { min: 2500, max: 4500 },
+    rentIncrease: { min: 50, max: 100 },
+    annualIncome: { min: 600, max: 1200 },
+    paybackPeriod: { min: 2.1, max: 7.5 },
+    roi10Year: '133-480%',
+    
+    benefits: [
+      'Luxury Vinyl Plank = waterproof + durable',
+      'Withstands tenant wear (pets, kids)',
+      'Looks like hardwood, costs less',
+      'Easy to clean = lower turnover costs',
+      'Justify $50-$100/mo rent increase'
+    ],
+    
+    considerations: [
+      'LVP > carpet for rentals (longevity)',
+      'Cost per sqft: $2.50-$4.50 installed',
+      'Schedule during turnover',
+      'Saves on carpet replacement every 3-5 years'
+    ],
+    
+    difficulty: 'Professional Recommended',
+    timeframe: '2-3 days',
+    tags: ['Durable', 'Rent Boost', 'Low Maintenance']
+  },
+  {
+    id: 'idea-7',
+    title: 'LED Lighting Conversion',
+    category: 'Energy Efficiency',
+    icon: Zap,
+    color: 'yellow',
+    
+    typicalCost: { min: 200, max: 500 },
+    annualSavings: { min: 120, max: 300 },
+    paybackPeriod: { min: 0.7, max: 4.2 },
+    roi10Year: '240-1500%',
+    
+    benefits: [
+      'Reduce electric bill 50-75%',
+      'LEDs last 10+ years (no bulb replacements)',
+      'Brighter, better tenant experience',
+      'Minimal investment, fast payback',
+      'Landlord or tenant pays less on utilities'
+    ],
+    
+    considerations: [
+      'Cost per unit: $200-$500 for full conversion',
+      'DIY-friendly installation',
+      'Instant upgrade feel',
+      'Great for turnover prep'
+    ],
+    
+    difficulty: 'Easy DIY',
+    timeframe: '2-4 hours per unit',
+    tags: ['Quick Win', 'Energy Savings', 'DIY-Friendly']
+  },
+  {
+    id: 'idea-8',
+    title: 'Parking Lot Improvements',
+    category: 'Curb Appeal',
+    icon: Home,
+    color: 'red',
+    
+    typicalCost: { min: 1500, max: 3500 },
+    annualIncome: { min: 0, max: 0 },
+    resaleValueIncrease: { min: 2500, max: 5000 },
+    roi: '100-333%',
+    
+    benefits: [
+      'Defined spaces = fewer tenant disputes',
+      'LED security lighting = safety perception',
+      'Seal coating extends asphalt life 5+ years',
+      'Professional appearance = tenant retention',
+      'Property value boost'
+    ],
+    
+    considerations: [
+      'Multi-unit properties only',
+      'Striping: $500-$1,200',
+      'LED lighting: $800-$1,500',
+      'Seal coating: $600-$1,200'
+    ],
+    
+    difficulty: 'Professional Required',
+    timeframe: '2-3 days',
+    tags: ['Safety', 'Tenant Satisfaction', 'Property Value']
   }
 ];
 
@@ -251,7 +262,7 @@ export default function BrowseIdeasTab() {
   const [filter, setFilter] = useState('all');
   const [selectedIdea, setSelectedIdea] = useState(null);
 
-  const categories = ['all', 'Energy Efficiency', 'Water Efficiency', 'Security', 'Quality of Life'];
+  const categories = ['all', 'Rental Income Boosters', 'Energy Efficiency', 'Curb Appeal'];
 
   const filteredIdeas = filter === 'all' 
     ? UPGRADE_IDEAS 
@@ -342,7 +353,16 @@ function IdeaCard({ idea, onClick }) {
             </span>
           </div>
 
-          {idea.annualSavings.max > 0 && (
+          {idea.rentIncrease && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Rent Increase:</span>
+              <span className="font-semibold text-green-600">
+                +${idea.rentIncrease.min}-${idea.rentIncrease.max}/mo
+              </span>
+            </div>
+          )}
+
+          {idea.annualSavings && idea.annualSavings.max > 0 && (
             <>
               <div className="flex justify-between">
                 <span className="text-gray-600">Annual Savings:</span>
@@ -359,11 +379,20 @@ function IdeaCard({ idea, onClick }) {
             </>
           )}
 
+          {idea.annualIncome && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Annual Income:</span>
+              <span className="font-semibold text-green-600">
+                +${idea.annualIncome.min}-${idea.annualIncome.max}
+              </span>
+            </div>
+          )}
+
           {idea.resaleValueIncrease && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Resale Value:</span>
+              <span className="text-gray-600">Value Added:</span>
               <span className="font-semibold text-purple-600">
-                +${(idea.resaleValueIncrease.min / 1000).toFixed(0)}K-${(idea.resaleValueIncrease.max / 1000).toFixed(0)}K
+                +${(idea.resaleValueIncrease.min / 1000).toFixed(1)}K-${(idea.resaleValueIncrease.max / 1000).toFixed(1)}K
               </span>
             </div>
           )}
@@ -414,7 +443,25 @@ function IdeaDetailModal({ idea, onClose }) {
               </div>
             </div>
 
-            {idea.annualSavings.max > 0 && (
+            {idea.rentIncrease && (
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="text-sm text-green-700 mb-1">Monthly Rent Boost</div>
+                <div className="text-2xl font-bold text-green-900">
+                  +${idea.rentIncrease.min}-${idea.rentIncrease.max}
+                </div>
+              </div>
+            )}
+
+            {idea.annualIncome && (
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="text-sm text-blue-700 mb-1">Annual Income</div>
+                <div className="text-2xl font-bold text-blue-900">
+                  +${idea.annualIncome.min.toLocaleString()}-${idea.annualIncome.max.toLocaleString()}
+                </div>
+              </div>
+            )}
+
+            {idea.annualSavings && idea.annualSavings.max > 0 && (
               <>
                 <div className="bg-green-50 rounded-lg p-4">
                   <div className="text-sm text-green-700 mb-1">Annual Savings</div>
@@ -433,9 +480,9 @@ function IdeaDetailModal({ idea, onClose }) {
 
             {idea.resaleValueIncrease && (
               <div className="bg-purple-50 rounded-lg p-4">
-                <div className="text-sm text-purple-700 mb-1">Resale Value</div>
+                <div className="text-sm text-purple-700 mb-1">Property Value</div>
                 <div className="text-2xl font-bold text-purple-900">
-                  +${(idea.resaleValueIncrease.min / 1000).toFixed(0)}K-${(idea.resaleValueIncrease.max / 1000).toFixed(0)}K
+                  +${(idea.resaleValueIncrease.min / 1000).toFixed(1)}K-${(idea.resaleValueIncrease.max / 1000).toFixed(1)}K
                 </div>
               </div>
             )}
