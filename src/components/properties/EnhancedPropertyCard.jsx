@@ -284,6 +284,9 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
             <p className="text-xs text-yellow-800 mb-3">
               Add financial data to unlock equity, ROI, and portfolio CFO features
             </p>
+            <p className="text-xs text-gray-600 mb-2">
+              Debug: financial_profile_complete = {String(property.financial_profile_complete)}
+            </p>
             <Link to={createPageUrl('Properties') + `?complete=${property.id}`}>
               <Button 
                 size="sm" 
