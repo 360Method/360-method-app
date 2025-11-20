@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +44,7 @@ import NextStepCard from "../components/dashboard/NextStepCard";
 import MethodProgressWidget from "../components/dashboard/MethodProgressWidget";
 import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
 import InvestorDashboard from '../components/dashboard/InvestorDashboard';
+import HomeownerDashboard from '../components/dashboard/HomeownerDashboard';
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -293,6 +293,30 @@ export default function Dashboard() {
   // Route to investor dashboard if in investor demo mode
   if (isInvestor && demoMode) {
     return <InvestorDashboard data={demoData} />;
+  }
+
+  // Route to homeowner dashboard if in homeowner demo mode
+  if (isHomeowner && demoMode && properties.length > 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pt-6">
+          <div className="mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}! 👋
+            </h1>
+            <p className="text-gray-600 text-lg">
+              {properties[0]?.address || 'Your Property'} Dashboard
+            </p>
+          </div>
+          <HomeownerDashboard
+            property={properties[0]}
+            systems={allSystems}
+            tasks={allTasks}
+            inspections={allInspections}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (properties.length === 0 && !demoMode) {
