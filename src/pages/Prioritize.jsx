@@ -150,7 +150,7 @@ export default function PrioritizePage() {
 
   // Fetch tasks based on selected property - only for user's properties
   const { data: realTasks = [], isLoading: isLoadingTasks, refetch: refetchTasks } = useQuery({
-    queryKey: ['maintenanceTasks', selectedProperty],
+    queryKey: ['maintenanceTasks', selectedProperty, demoMode],
     queryFn: async () => {
       if (demoMode) {
         if (isInvestor) {
@@ -160,6 +160,7 @@ export default function PrioritizePage() {
           }
           return demoData?.tasks?.filter(t => t.property_id === selectedProperty) || [];
         }
+        // Homeowner demo mode - return all demo tasks
         return demoData?.tasks || [];
       }
       
@@ -170,7 +171,7 @@ export default function PrioritizePage() {
       }
       return [];
     },
-    enabled: !!selectedProperty,
+    enabled: demoMode ? true : !!selectedProperty,
     staleTime: 1 * 60 * 1000,
   });
 
