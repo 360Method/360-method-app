@@ -1,28 +1,63 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, ClipboardList, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle, ClipboardList, ArrowRight, ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export default function InspectionWizard({ onComplete, onCancel, properties }) {
+export default function InspectionWizard({ onComplete, onCancel, properties, selectedProperty }) {
   const [step, setStep] = useState(1);
+  const queryClient = useQueryClient();
+  
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  // Determine season based on current month
+  const determineSeason = () => {
+    if (currentMonth >= 2 && currentMonth <= 4) return 'Spring';
+    if (currentMonth >= 5 && currentMonth <= 7) return 'Summer';
+    if (currentMonth >= 8 && currentMonth <= 10) return 'Fall';
+    return 'Winter';
+  };
+  
   const [inspectionData, setInspectionData] = useState({
-    property_id: properties?.[0]?.id || null,
-    type: 'Quarterly',
-    inspector: 'Self',
-    date: new Date().toISOString().split('T')[0],
-    findings: []
+    property_id: selectedProperty?.id || properties?.[0]?.id || null,
+    season: determineSeason(),
+    year: currentYear,
+    inspection_date: currentDate.toISOString().split('T')[0],
+    method: 'wizard', // wizard, traditional, or physical
+    status: 'In Progress',
+    completion_percentage: 0,
+    checklist_items: [],
+    issues_found: 0
   });
 
-  const totalSteps = 4;
+  const createInspectionMutation = useMutation({
+    mutationFn: async (data) => {
+      return await base44.entities.Inspection.create(data);
+    },
+    onSuccess: (newInspection) => {
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      onComplete(newInspection);
+    }
+  });
+
+  const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
+
+  const handleFinish = () => {
+    createInspectionMutation.mutate(inspectionData);
+  };
 
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Inspection Details</h3>
-        <p className="text-gray-600 text-sm">Set up your inspection parameters</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Inspection Setup</h3>
+        <p className="text-gray-600 text-sm">Configure your seasonal inspection</p>
       </div>
       
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <MapPin className="w-4 h-4 inline mr-1" />
           Property
         </label>
         <select
@@ -32,7 +67,7 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
         >
           {properties?.map(p => (
             <option key={p.id} value={p.id}>
-              {p.nickname || p.address}
+              {p.address}
             </option>
           ))}
         </select>
@@ -40,39 +75,29 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
 
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Inspection Type
+          <Calendar className="w-4 h-4 inline mr-1" />
+          Season & Year
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {['Quarterly', 'Move-In', 'Move-Out', 'Seasonal', 'Special'].map(type => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setInspectionData({...inspectionData, type})}
-              className={`px-4 py-3 rounded-lg border-2 font-semibold transition-colors ${
-                inspectionData.type === type
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+          <select
+            value={inspectionData.season}
+            onChange={(e) => setInspectionData({...inspectionData, season: e.target.value})}
+            className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+          >
+            <option value="Spring">Spring</option>
+            <option value="Summer">Summer</option>
+            <option value="Fall">Fall</option>
+            <option value="Winter">Winter</option>
+          </select>
+          <input
+            type="number"
+            value={inspectionData.year}
+            onChange={(e) => setInspectionData({...inspectionData, year: parseInt(e.target.value)})}
+            className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+            min="2020"
+            max="2030"
+          />
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Performed By
-        </label>
-        <select
-          value={inspectionData.inspector}
-          onChange={(e) => setInspectionData({...inspectionData, inspector: e.target.value})}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-        >
-          <option value="Self">Self (DIY)</option>
-          <option value="Professional">Professional Inspector</option>
-          <option value="Property Manager">Property Manager</option>
-        </select>
       </div>
 
       <div>
@@ -81,10 +106,16 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
         </label>
         <input
           type="date"
-          value={inspectionData.date}
-          onChange={(e) => setInspectionData({...inspectionData, date: e.target.value})}
+          value={inspectionData.inspection_date}
+          onChange={(e) => setInspectionData({...inspectionData, inspection_date: e.target.value})}
           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
         />
+      </div>
+
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-900">
+          <strong>💡 Tip:</strong> Seasonal inspections help catch issues early. We recommend inspecting 4 times per year - once per season.
+        </p>
       </div>
     </div>
   );
@@ -92,29 +123,62 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Inspection Checklist</h3>
-        <p className="text-gray-600 text-sm">Walk through key areas - check off as you inspect</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Choose Inspection Method</h3>
+        <p className="text-gray-600 text-sm">Pick the approach that works best for you</p>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {[
-          'Roof & Gutters',
-          'Exterior Walls & Siding',
-          'Foundation & Crawlspace',
-          'HVAC System',
-          'Plumbing (all fixtures)',
-          'Electrical (outlets, panels)',
-          'Windows & Doors',
-          'Interior Walls & Ceilings',
-          'Flooring',
-          'Appliances',
-          'Safety Devices (smoke/CO detectors)'
-        ].map((area, idx) => (
-          <label key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
-            <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" />
-            <span className="text-gray-700 font-medium">{area}</span>
-          </label>
-        ))}
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setInspectionData({...inspectionData, method: 'traditional'})}
+          className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+            inspectionData.method === 'traditional'
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-blue-300'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              inspectionData.method === 'traditional' ? 'bg-blue-600' : 'bg-gray-300'
+            }`}>
+              <ClipboardList className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-gray-900 mb-1">📋 Traditional Inspection</h4>
+              <p className="text-sm text-gray-600">Checklist-based, organized by area (Kitchen, Basement, etc.)</p>
+              <p className="text-xs text-gray-500 mt-1">⏱️ 20-30 minutes • Best for selective checks</p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setInspectionData({...inspectionData, method: 'physical'})}
+          className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+            inspectionData.method === 'physical'
+              ? 'border-teal-500 bg-teal-50'
+              : 'border-gray-300 hover:border-teal-300'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              inspectionData.method === 'physical' ? 'bg-teal-600' : 'bg-gray-300'
+            }`}>
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-gray-900 mb-1">🏠 Physical Walkthrough</h4>
+              <p className="text-sm text-gray-600">Room-by-room route optimized to minimize backtracking</p>
+              <p className="text-xs text-gray-500 mt-1">⏱️ 30-40 minutes • Best for complete property coverage</p>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+        <p className="text-sm text-green-900">
+          <strong>✨ New to inspections?</strong> We recommend starting with the Traditional method - it's easier to follow and you can select specific areas.
+        </p>
       </div>
     </div>
   );
@@ -122,71 +186,52 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Document Findings</h3>
-        <p className="text-gray-600 text-sm">Note any issues discovered during inspection</p>
-      </div>
-
-      <button 
-        type="button"
-        className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 transition-colors"
-      >
-        <ClipboardList className="w-5 h-5" />
-        Add Finding
-      </button>
-
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <div className="text-gray-400 mb-2">
-          <ClipboardList className="w-12 h-12 mx-auto" />
-        </div>
-        <p className="text-gray-500 font-medium">No findings added yet</p>
-        <p className="text-sm text-gray-400 mt-1">Use the button above to document any issues</p>
-      </div>
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Review & Complete</h3>
-        <p className="text-gray-600 text-sm">Confirm your inspection details</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to Begin!</h3>
+        <p className="text-gray-600 text-sm">Review your setup and start inspecting</p>
       </div>
       
-      <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-        <div className="flex items-start gap-3">
-          <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-          <div>
-            <h4 className="font-bold text-green-900 mb-2">Inspection Complete!</h4>
-            <p className="text-green-800 text-sm">
-              Your {inspectionData.type} inspection has been documented. 
-              All findings will be converted to action items automatically.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 space-y-3">
+      <div className="bg-white border-2 border-gray-200 rounded-lg p-5 space-y-3">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Property:</span>
           <span className="font-semibold text-gray-900">
-            {properties?.find(p => p.id === inspectionData.property_id)?.nickname || 
-             properties?.find(p => p.id === inspectionData.property_id)?.address}
+            {properties?.find(p => p.id === inspectionData.property_id)?.address || 'Not selected'}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Type:</span>
-          <span className="font-semibold text-gray-900">{inspectionData.type}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Inspector:</span>
-          <span className="font-semibold text-gray-900">{inspectionData.inspector}</span>
+          <span className="text-gray-600">Season:</span>
+          <span className="font-semibold text-gray-900">{inspectionData.season} {inspectionData.year}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Date:</span>
-          <span className="font-semibold text-gray-900">{inspectionData.date}</span>
+          <span className="font-semibold text-gray-900">
+            {new Date(inspectionData.inspection_date).toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            })}
+          </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Findings:</span>
-          <span className="font-semibold text-gray-900">{inspectionData.findings.length}</span>
+          <span className="text-gray-600">Method:</span>
+          <span className="font-semibold text-gray-900">
+            {inspectionData.method === 'traditional' ? '📋 Traditional' : '🏠 Physical Walkthrough'}
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+          <div>
+            <h4 className="font-bold text-blue-900 mb-2">What Happens Next?</h4>
+            <ul className="space-y-1 text-sm text-blue-800">
+              <li>• Work through the inspection checklist</li>
+              <li>• Document any issues you find</li>
+              <li>• Take photos of problems</li>
+              <li>• Issues automatically become action items in Prioritize</li>
+              <li>• Your progress saves automatically</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -196,9 +241,9 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">New Inspection</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Quick Start Wizard</h2>
             <p className="text-sm text-gray-600">Step {step} of {totalSteps}</p>
           </div>
           <button
@@ -224,7 +269,6 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
           {step === 3 && renderStep3()}
-          {step === 4 && renderStep4()}
         </div>
 
         {/* Footer */}
@@ -232,6 +276,7 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
           <button
             onClick={() => step > 1 ? setStep(step - 1) : onCancel()}
             className="px-4 py-2 text-gray-700 hover:text-gray-900 font-semibold flex items-center gap-2 transition-colors"
+            disabled={createInspectionMutation.isPending}
           >
             {step > 1 && <ArrowLeft className="w-4 h-4" />}
             {step === 1 ? 'Cancel' : 'Back'}
@@ -247,11 +292,12 @@ export default function InspectionWizard({ onComplete, onCancel, properties }) {
             </button>
           ) : (
             <button
-              onClick={() => onComplete(inspectionData)}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2 transition-colors"
+              onClick={handleFinish}
+              disabled={createInspectionMutation.isPending}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
-              Complete Inspection
+              {createInspectionMutation.isPending ? 'Creating...' : 'Start Inspection'}
             </button>
           )}
         </div>
