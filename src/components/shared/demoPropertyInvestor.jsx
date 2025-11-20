@@ -1,4 +1,6 @@
 // Investor Demo Data - 3-Property Portfolio
+import { getDemoDate, getDemoPastDate, getDemoFutureDate } from './demoDates';
+
 export const DEMO_PORTFOLIO_INVESTOR = {
   portfolioStats: {
     totalProperties: 3,
@@ -187,7 +189,267 @@ export const DEMO_PORTFOLIO_INVESTOR = {
   ],
 
   tasks: [
-    // PROPERTY 1: MAPLE STREET DUPLEX - Tasks
+    // ==========================================
+    // TASKS FOR TODAY - FOR EXECUTE PAGE
+    // ==========================================
+    
+    // PROPERTY 1: MAPLE STREET - TODAY
+    {
+      id: 'exec-today-1',
+      property_id: 'demo-investor-1',
+      title: 'Check thermostat settings - Both Units',
+      description: 'Verify heating mode is set correctly for winter season.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 1,
+      system_type: 'HVAC',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-2',
+      property_id: 'demo-investor-1',
+      title: 'Test all smoke detectors - Unit A',
+      description: 'Monthly smoke/CO detector testing.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-3',
+      property_id: 'demo-investor-1',
+      title: 'Test all smoke detectors - Unit B',
+      description: 'Monthly smoke/CO detector testing.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-4',
+      property_id: 'demo-investor-1',
+      title: 'Inspect weather stripping - Unit A',
+      description: 'Check door weather stripping before cold snap.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 1,
+      system_type: 'Windows/Doors',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    {
+      id: 'exec-today-5',
+      property_id: 'demo-investor-1',
+      title: 'Check for drafts - Unit B',
+      description: 'Inspect windows and doors for cold air leaks.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 1,
+      system_type: 'Windows/Doors',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    
+    // PROPERTY 2: OAK RIDGE - TODAY
+    {
+      id: 'exec-today-6',
+      property_id: 'demo-investor-2',
+      title: 'Test all smoke/CO detectors',
+      description: 'Monthly safety check.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    {
+      id: 'exec-today-7',
+      property_id: 'demo-investor-2',
+      title: 'Inspect basement for moisture',
+      description: 'Check for any water intrusion or dampness.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 3,
+      system_type: 'Foundation',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    {
+      id: 'exec-today-8',
+      property_id: 'demo-investor-2',
+      title: 'Check furnace operation',
+      description: 'Verify furnace is running efficiently.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'HVAC',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-9',
+      property_id: 'demo-investor-2',
+      title: 'Exterior walkthrough - storm prep',
+      description: 'Check for loose items before winter storms.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'Exterior',
+      source: 'SEASONAL_CHECKLIST',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    
+    // PROPERTY 3: CEDAR COURT - TODAY
+    {
+      id: 'exec-today-10',
+      property_id: 'demo-investor-3',
+      title: 'Common area inspection - Cedar Court',
+      description: 'Check hallways, stairwells, exterior lighting.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    {
+      id: 'exec-today-11',
+      property_id: 'demo-investor-3',
+      title: 'Smoke detector test - Unit 1A',
+      description: 'Monthly safety check.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      unit_tag: '1A',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-12',
+      property_id: 'demo-investor-3',
+      title: 'Smoke detector test - Unit 2C',
+      description: 'Monthly safety check.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      unit_tag: '2C',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-13',
+      property_id: 'demo-investor-3',
+      title: 'Smoke detector test - Unit 3B',
+      description: 'Monthly safety check.',
+      priority: 'High',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      unit_tag: '3B',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    {
+      id: 'exec-today-14',
+      property_id: 'demo-investor-3',
+      title: 'Check parking lot lighting',
+      description: 'Replace any burnt-out security lights.',
+      priority: 'Medium',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 40,
+      cascade_risk_score: 2,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      diy_cost: 40,
+      execution_method: 'DIY',
+      estimated_hours: 0.5
+    },
+    {
+      id: 'exec-today-15',
+      property_id: 'demo-investor-3',
+      title: 'Mailbox area cleanup',
+      description: 'Clean and organize common mailbox area.',
+      priority: 'Routine',
+      status: 'Scheduled',
+      scheduled_date: getDemoDate(0), // TODAY
+      current_fix_cost: 0,
+      cascade_risk_score: 1,
+      system_type: 'General',
+      source: 'SEASONAL_CHECKLIST',
+      scope: 'building_wide',
+      diy_cost: 0,
+      execution_method: 'DIY',
+      estimated_hours: 0.25
+    },
+    
+    // ==========================================
+    // SCHEDULED TASKS - FUTURE DATES (CALENDAR)
+    // ==========================================
+    
+    // PROPERTY 1: MAPLE STREET DUPLEX - Scheduled
     {
       id: 'inv-task-1',
       property_id: 'demo-investor-1',
@@ -195,7 +457,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       description: 'State law requires annual CO/smoke detector testing for rentals.',
       priority: 'High',
       status: 'Scheduled',
-      scheduled_date: '2024-11-25',
+      scheduled_date: getDemoFutureDate(5),
       current_fix_cost: 150,
       cascade_risk_score: 3,
       cascade_risk_reason: 'Non-compliance = $500-$2000 fines',
@@ -212,7 +474,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       description: 'Unit A water heater is 11 years old. Proactive replacement prevents emergency scenario mid-winter.',
       priority: 'Medium',
       status: 'Scheduled',
-      scheduled_date: '2024-12-30',
+      scheduled_date: getDemoFutureDate(40),
       current_fix_cost: 1200,
       delayed_fix_cost: 1700,
       cascade_risk_score: 6,
@@ -230,7 +492,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       description: 'Clean gutters before rainy season to prevent overflow and foundation damage.',
       priority: 'Medium',
       status: 'Scheduled',
-      scheduled_date: '2024-11-28',
+      scheduled_date: getDemoFutureDate(8),
       current_fix_cost: 150,
       cascade_risk_score: 5,
       system_type: 'Gutters',
@@ -246,7 +508,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       description: 'Replace HVAC filters for heating season.',
       priority: 'Routine',
       status: 'Scheduled',
-      scheduled_date: '2024-12-01',
+      scheduled_date: getDemoFutureDate(11),
       current_fix_cost: 40,
       cascade_risk_score: 2,
       system_type: 'HVAC',
