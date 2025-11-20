@@ -477,8 +477,8 @@ export default function Upgrade() {
                   </div>
                 </CardContent>
               </Card>
-
-
+          </>
+        )}
 
       </div>
     </div>
