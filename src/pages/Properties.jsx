@@ -39,10 +39,10 @@ export default function Properties() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const searchParams = new URLSearchParams(location.search);
   const { demoMode, demoData, exitDemoMode, isInvestor, isHomeowner } = useDemo();
 
-  // URL params
+  // URL params - read fresh each render
+  const searchParams = new URLSearchParams(location.search);
   const newParam = searchParams.get('new');
   const editId = searchParams.get('edit');
   const completeId = searchParams.get('complete');
@@ -129,14 +129,14 @@ export default function Properties() {
   useEffect(() => {
     if (demoMode) return;
     
-    if (completeId) {
+    if (completeId && !showProfileWizard) {
       const property = properties.find(p => p.id === completeId);
       if (property) {
         setCompletingProperty(property);
         setShowProfileWizard(true);
       }
     }
-  }, [completeId, properties, demoMode]);
+  }, [completeId, properties, demoMode, showProfileWizard]);
 
   const handleAddProperty = (mode = 'quick') => {
     if (demoMode) return; // Don't allow adding in demo mode
@@ -664,14 +664,16 @@ export default function Properties() {
           <PropertyProfileWizard
             property={completingProperty}
             onComplete={() => {
+              // Clear state and URL immediately
+              window.history.replaceState({}, '', createPageUrl('Properties'));
               setShowProfileWizard(false);
               setCompletingProperty(null);
-              window.history.replaceState({}, '', createPageUrl('Properties'));
+              queryClient.invalidateQueries({ queryKey: ['properties'] });
             }}
             onCancel={() => {
+              window.history.replaceState({}, '', createPageUrl('Properties'));
               setShowProfileWizard(false);
               setCompletingProperty(null);
-              window.history.replaceState({}, '', createPageUrl('Properties'));
             }}
           />
         )}
