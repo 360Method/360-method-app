@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, addDays, subDays, startOfDay, getMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, addWeeks, subWeeks, addDays, subDays, startOfDay, getMonth, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ function getTasksForDate(tasks, date) {
   return tasks.filter(task => {
     if (!task.scheduled_date) return false;
     try {
-      const taskDate = startOfDay(new Date(task.scheduled_date));
+      // Use parseISO for timezone-safe parsing
+      const taskDate = startOfDay(parseISO(task.scheduled_date));
       const compareDate = startOfDay(date);
       return isSameDay(taskDate, compareDate);
     } catch {

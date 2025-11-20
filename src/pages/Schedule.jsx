@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, parseISO } from "date-fns";
 import CalendarView from "../components/schedule/CalendarView";
 import QuickDatePicker from "../components/schedule/QuickDatePicker";
 import ScheduleTaskCard from "../components/schedule/ScheduleTaskCard";
@@ -187,7 +187,8 @@ export default function SchedulePage() {
   const next7Days = scheduledTasks.filter(t => {
     if (!t.scheduled_date) return false;
     try {
-      const taskDate = startOfDay(new Date(t.scheduled_date));
+      // Use parseISO for timezone-safe parsing
+      const taskDate = startOfDay(parseISO(t.scheduled_date));
       const daysDiff = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
       return daysDiff >= 0 && daysDiff <= 7;
     } catch {
