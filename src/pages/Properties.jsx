@@ -128,15 +128,17 @@ export default function Properties() {
   // Handle complete profile mode
   useEffect(() => {
     if (demoMode) return;
+    if (!completeId) return;
     
-    if (completeId && !showProfileWizard) {
+    // Only open if not already showing and we have a valid property
+    if (!showProfileWizard && !completingProperty) {
       const property = properties.find(p => p.id === completeId);
       if (property) {
         setCompletingProperty(property);
         setShowProfileWizard(true);
       }
     }
-  }, [completeId, properties, demoMode, showProfileWizard]);
+  }, [completeId, properties, demoMode]);
 
   const handleAddProperty = (mode = 'quick') => {
     if (demoMode) return; // Don't allow adding in demo mode
@@ -664,16 +666,17 @@ export default function Properties() {
           <PropertyProfileWizard
             property={completingProperty}
             onComplete={() => {
-              // Clear state and URL immediately
-              window.history.replaceState({}, '', createPageUrl('Properties'));
               setShowProfileWizard(false);
               setCompletingProperty(null);
-              queryClient.invalidateQueries({ queryKey: ['properties'] });
+              navigate(createPageUrl('Properties'), { replace: true });
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ['properties'] });
+              }, 100);
             }}
             onCancel={() => {
-              window.history.replaceState({}, '', createPageUrl('Properties'));
               setShowProfileWizard(false);
               setCompletingProperty(null);
+              navigate(createPageUrl('Properties'), { replace: true });
             }}
           />
         )}

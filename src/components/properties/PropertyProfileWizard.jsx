@@ -579,7 +579,7 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const equity = formData.current_value - formData.mortgage_balance;
     const ltv = formData.current_value ? (formData.mortgage_balance / formData.current_value) * 100 : 0;
     const totalExpenses = parseFloat(formData.monthly_mortgage_payment || 0) + 
@@ -591,6 +591,19 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
 
     const completeData = {
       ...formData,
+      purchase_price: parseFloat(formData.purchase_price) || 0,
+      current_value: parseFloat(formData.current_value) || 0,
+      mortgage_balance: parseFloat(formData.mortgage_balance) || 0,
+      monthly_mortgage_payment: parseFloat(formData.monthly_mortgage_payment) || 0,
+      interest_rate: parseFloat(formData.interest_rate) || 0,
+      monthly_rent: parseFloat(formData.monthly_rent) || 0,
+      monthly_insurance: parseFloat(formData.monthly_insurance) || 0,
+      monthly_taxes: parseFloat(formData.monthly_taxes) || 0,
+      monthly_hoa: parseFloat(formData.monthly_hoa) || 0,
+      estimated_maintenance: parseFloat(formData.estimated_maintenance) || 0,
+      closing_costs: parseFloat(formData.closing_costs) || 0,
+      down_payment_percent: parseFloat(formData.down_payment_percent) || 20,
+      loan_term_years: parseFloat(formData.loan_term_years) || 30,
       equity_calculated: equity,
       ltv_calculated: ltv,
       net_cash_flow_calculated: netCashFlow,
