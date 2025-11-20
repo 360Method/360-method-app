@@ -1261,7 +1261,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
   ],
 
   inspections: [
-    // PROPERTY 1: MAPLE STREET DUPLEX - Inspections
+    // PROPERTY 1: MAPLE STREET DUPLEX - DETAILED INSPECTIONS
     {
       id: 'insp-1',
       property_id: 'demo-investor-1',
@@ -1270,8 +1270,74 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-10-15',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 3
+      issues_found: 3,
+      type: 'Quarterly Professional Inspection',
+      inspector: 'PNW Property Inspections',
+      inspector_contact: '(360) 555-0123',
+      cost: 275,
+      duration: '2.5 hours',
+      weather_conditions: 'Clear, 58°F',
+      
+      findings: [
+        {
+          id: 'find-1',
+          severity: 'Minor',
+          location: 'Unit A - Master Bathroom',
+          issue: 'Caulk cracking around bathtub',
+          description: 'Silicone caulk along bathtub edge showing age cracks (3-4 small gaps). No active water damage visible.',
+          recommendation: 'Re-caulk within 60 days to prevent water intrusion behind tub.',
+          estimated_cost: 85,
+          cascade_risk: 'Medium - Could lead to subfloor rot if ignored ($2,000+ repair)',
+          action_created: true
+        },
+        {
+          id: 'find-2',
+          severity: 'Minor',
+          location: 'Exterior - North side',
+          issue: 'Gutter downspout detached',
+          description: 'Downspout disconnected from elbow joint, dumping water against foundation.',
+          recommendation: 'Reattach immediately before rainy season.',
+          estimated_cost: 45,
+          cascade_risk: 'High - Foundation water intrusion risk ($5,000-$15,000 potential damage)',
+          action_created: true
+        },
+        {
+          id: 'find-3',
+          severity: 'Moderate',
+          location: 'Shared - Rear deck',
+          issue: 'Deck boards showing UV damage',
+          description: 'Wood surface weathered, minor splintering on 4 boards. Structural integrity still sound.',
+          recommendation: 'Sand and reseal deck in next 3-6 months to prevent further degradation.',
+          estimated_cost: 450,
+          cascade_risk: 'Medium - Accelerated wood rot if not sealed ($2,500 board replacement)',
+          action_created: true
+        },
+        {
+          id: 'find-4',
+          severity: 'Pass',
+          location: 'Both Units - Safety',
+          issue: 'Smoke detectors functional',
+          description: 'All smoke detectors tested and responsive. Batteries replaced in Unit A.',
+          recommendation: 'Continue annual testing.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 4,
+      critical_issues: 0,
+      moderate_issues: 1,
+      minor_issues: 2,
+      passed_items: 1,
+      action_items_created: 3,
+      estimated_repair_costs: 580,
+      prevented_cascade_costs: 9500,
+      property_health_score: 84,
+      inspector_notes: 'Property is well-maintained overall. All critical systems functional. Recommend addressing gutter issue immediately due to foundation risk. Other items are routine maintenance.',
+      next_inspection_due: '2025-01-15'
     },
+    
     {
       id: 'insp-2',
       property_id: 'demo-investor-1',
@@ -1280,8 +1346,43 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-04-20',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 1
+      issues_found: 1,
+      type: 'Quarterly Professional Inspection',
+      inspector: 'PNW Property Inspections',
+      cost: 275,
+      
+      findings: [
+        {
+          id: 'find-spring-1',
+          severity: 'Minor',
+          location: 'Unit B - Kitchen',
+          issue: 'Dishwasher door seal worn',
+          description: 'Rubber door seal showing wear at bottom edge. No active leaks observed.',
+          recommendation: 'Monitor for 6 months, replace if leaking develops.',
+          estimated_cost: 120,
+          cascade_risk: 'Low - Potential water damage to cabinets ($800 repair)',
+          action_created: false
+        },
+        {
+          id: 'find-spring-2',
+          severity: 'Pass',
+          location: 'Exterior - Roof',
+          issue: 'Roof inspection',
+          description: 'Asphalt shingles in good condition, no missing or damaged shingles. Estimated 8-10 years remaining life.',
+          recommendation: 'No action needed at this time.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 2,
+      minor_issues: 1,
+      passed_items: 1,
+      property_health_score: 87,
+      inspector_notes: 'Excellent property condition. No urgent issues identified.'
     },
+    
     {
       id: 'insp-3',
       property_id: 'demo-investor-1',
@@ -1290,10 +1391,31 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-01-10',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 2
+      issues_found: 2,
+      type: 'Self Inspection',
+      inspector: 'Self',
+      cost: 0,
+      
+      findings: [
+        {
+          id: 'find-winter-1',
+          severity: 'Pass',
+          location: 'Exterior',
+          issue: 'Winter walkthrough complete',
+          description: 'Checked heating systems, insulation, weather stripping. All in good condition.',
+          recommendation: 'Continue monitoring heating efficiency.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 1,
+      passed_items: 1,
+      property_health_score: 86
     },
     
-    // PROPERTY 2: OAK RIDGE - Inspections
+    // PROPERTY 2: OAK RIDGE - DETAILED INSPECTIONS
     {
       id: 'insp-4',
       property_id: 'demo-investor-2',
@@ -1302,8 +1424,43 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-09-28',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 0
+      issues_found: 0,
+      type: 'Move-In Inspection (with tenant)',
+      inspector: 'Self-conducted with tenant',
+      cost: 0,
+      duration: '1 hour',
+      
+      findings: [
+        {
+          id: 'find-7',
+          severity: 'Documentation',
+          location: 'Throughout property',
+          issue: 'Pre-existing conditions documented',
+          description: 'Walked through entire property with new tenant. All pre-existing wear documented with photos and tenant signature.',
+          recommendation: 'File inspection report with lease documents.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        },
+        {
+          id: 'find-8',
+          severity: 'Pass',
+          location: 'All systems',
+          issue: 'All appliances functional',
+          description: 'Tested all appliances with tenant present. Refrigerator, range, dishwasher, washer/dryer all operational.',
+          recommendation: 'No action needed.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 2,
+      passed_items: 2,
+      property_health_score: 88,
+      inspector_notes: 'Property in excellent condition for tenant move-in. All systems operational, no immediate concerns.'
     },
+    
     {
       id: 'insp-5',
       property_id: 'demo-investor-2',
@@ -1312,8 +1469,30 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-04-15',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 1
+      issues_found: 1,
+      type: 'Self Seasonal',
+      inspector: 'Self',
+      cost: 0,
+      
+      findings: [
+        {
+          id: 'find-summer-1',
+          severity: 'Minor',
+          location: 'Deck',
+          issue: 'Deck needs cleaning',
+          description: 'Deck surface showing mildew growth from shade.',
+          recommendation: 'Pressure wash and reseal deck.',
+          estimated_cost: 450,
+          cascade_risk: 'Low',
+          action_created: true
+        }
+      ],
+      
+      total_findings: 1,
+      minor_issues: 1,
+      property_health_score: 85
     },
+    
     {
       id: 'insp-6',
       property_id: 'demo-investor-2',
@@ -1322,10 +1501,31 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-01-08',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 0
+      issues_found: 0,
+      type: 'Self Seasonal',
+      inspector: 'Self',
+      cost: 0,
+      
+      findings: [
+        {
+          id: 'find-winter-2',
+          severity: 'Pass',
+          location: 'All systems',
+          issue: 'No issues found',
+          description: 'All systems operating normally.',
+          recommendation: 'Continue seasonal monitoring.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 1,
+      passed_items: 1,
+      property_health_score: 88
     },
     
-    // PROPERTY 3: CEDAR COURT 4-PLEX - Inspections
+    // PROPERTY 3: CEDAR COURT 4-PLEX - DETAILED INSPECTIONS
     {
       id: 'insp-7',
       property_id: 'demo-investor-3',
@@ -1334,8 +1534,80 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-11-01',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 5
+      issues_found: 5,
+      type: 'Quarterly Professional + Vacancy',
+      inspector: 'PNW Property Inspections',
+      cost: 425,
+      duration: '4 hours',
+      
+      findings: [
+        {
+          id: 'find-10',
+          severity: 'Moderate',
+          location: 'Unit 2C - Living room ceiling',
+          issue: 'Water stain on ceiling',
+          description: 'Brown water stain approximately 18" diameter. Roof leak confirmed during inspection.',
+          recommendation: 'URGENT - Roof repair needed before winter rains. Interior ceiling repair after roof fixed.',
+          estimated_cost: 850,
+          cascade_risk: 'High - Active roof leak will cause extensive interior damage ($5,000-$8,000)',
+          action_created: true
+        },
+        {
+          id: 'find-11',
+          severity: 'Moderate',
+          location: 'Unit 3B - Kitchen',
+          issue: 'Refrigerator making unusual noise',
+          description: 'Compressor running loudly, cycling frequently. Likely compressor failure imminent.',
+          recommendation: 'Budget for refrigerator replacement within 3-6 months.',
+          estimated_cost: 850,
+          cascade_risk: 'Medium - Food spoilage claim from tenant ($300-$500)',
+          action_created: true
+        },
+        {
+          id: 'find-12',
+          severity: 'Minor',
+          location: 'Unit 4D - Vacant',
+          issue: 'Turnover needed',
+          description: 'Unit vacant post-tenant move-out. Moderate carpet wear, minor paint scuffs, appliances functional.',
+          recommendation: 'Standard turnover: carpet shampoo, paint touch-ups, deep clean.',
+          estimated_cost: 1850,
+          cascade_risk: 'Low - Vacancy loss ($900/month)',
+          action_created: true
+        },
+        {
+          id: 'find-13',
+          severity: 'Moderate',
+          location: 'Shared laundry room',
+          issue: 'Dryer vent needs cleaning',
+          description: 'Dryer vent heavily clogged with lint (estimated 60% blockage). Fire hazard.',
+          recommendation: 'URGENT - Professional dryer vent cleaning within 7 days.',
+          estimated_cost: 125,
+          cascade_risk: 'High - Fire hazard (insurance/liability risk)',
+          action_created: true
+        },
+        {
+          id: 'find-14',
+          severity: 'Minor',
+          location: 'Exterior - All gutters',
+          issue: 'Gutter cleaning needed',
+          description: 'Heavy leaf accumulation in all gutters. Downspouts partially blocked.',
+          recommendation: 'Gutter cleaning before winter rains.',
+          estimated_cost: 250,
+          cascade_risk: 'Medium - Foundation water damage risk ($3,000+)',
+          action_created: true
+        }
+      ],
+      
+      total_findings: 5,
+      critical_issues: 0,
+      moderate_issues: 4,
+      minor_issues: 1,
+      property_health_score: 72,
+      estimated_repair_costs: 3925,
+      prevented_cascade_costs: 17300,
+      inspector_notes: 'Older property showing age-related issues. Roof leak is top priority - must address before rainy season. Dryer vent is safety hazard. Unit 4D turnover should complete within 7 days to minimize vacancy loss.'
     },
+    
     {
       id: 'insp-8',
       property_id: 'demo-investor-3',
@@ -1344,8 +1616,41 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-04-25',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 4
+      issues_found: 4,
+      type: 'Quarterly Professional',
+      inspector: 'PNW Property Inspections',
+      cost: 425,
+      
+      findings: [
+        {
+          id: 'find-spring-3',
+          severity: 'Minor',
+          location: 'Parking lot',
+          issue: 'Asphalt cracks developing',
+          description: 'Multiple small cracks forming in parking lot surface.',
+          recommendation: 'Schedule seal coating next spring.',
+          estimated_cost: 1200,
+          cascade_risk: 'Low - Future pothole repair cost',
+          action_created: true
+        },
+        {
+          id: 'find-spring-4',
+          severity: 'Minor',
+          location: 'Common areas',
+          issue: 'Exterior paint peeling',
+          description: 'Minor paint peeling on north-facing trim.',
+          recommendation: 'Touch-up painting this summer.',
+          estimated_cost: 350,
+          cascade_risk: 'Low - Wood rot if left for years',
+          action_created: true
+        }
+      ],
+      
+      total_findings: 2,
+      minor_issues: 2,
+      property_health_score: 78
     },
+    
     {
       id: 'insp-9',
       property_id: 'demo-investor-3',
@@ -1354,7 +1659,28 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       inspection_date: '2024-01-15',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 3
+      issues_found: 3,
+      type: 'Self Inspection',
+      inspector: 'Self',
+      cost: 0,
+      
+      findings: [
+        {
+          id: 'find-winter-3',
+          severity: 'Pass',
+          location: 'All units',
+          issue: 'Heating systems operational',
+          description: 'All heating systems functioning properly.',
+          recommendation: 'Continue monitoring.',
+          estimated_cost: 0,
+          cascade_risk: 'None',
+          action_created: false
+        }
+      ],
+      
+      total_findings: 1,
+      passed_items: 1,
+      property_health_score: 76
     }
   ],
 
