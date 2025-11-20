@@ -18,7 +18,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     demo_type: 'homeowner',
     baseline_completion: 100,
     health_score: 78,
-    last_inspection_date: '2024-10-15',
+    last_inspection_date: '2025-10-15',
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
     created_date: '2024-01-01T00:00:00Z'
@@ -290,7 +290,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 350,
       status: 'Identified',
       source: 'INSPECTION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-002',
@@ -308,7 +308,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 1800,
       status: 'Identified',
       source: 'INSPECTION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-003',
@@ -325,7 +325,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 1200,
       status: 'Identified',
       source: 'INSPECTION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-004',
@@ -346,7 +346,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 1000,
       status: 'Identified',
       source: 'PRESERVATION_RECOMMENDATION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-005',
@@ -369,7 +369,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       source: 'SEASONAL_CHECKLIST',
       seasonal: true,
       recommended_completion_window: 'Before Nov 15',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-006',
@@ -385,7 +385,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 400,
       status: 'Identified',
       source: 'INSPECTION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-04-20T00:00:00Z'
     },
     {
       id: 'demo-h-task-007',
@@ -403,7 +403,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 5500,
       status: 'Identified',
       source: 'INSPECTION',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     },
     {
       id: 'demo-h-task-008',
@@ -416,11 +416,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       delayed_fix_cost: 150,
       contractor_cost: 150,
       status: 'Scheduled',
-      scheduled_date: '2024-10-28',
+      scheduled_date: '2025-10-28',
       source: 'SEASONAL_CHECKLIST',
       seasonal: true,
       contractor_name: 'ABC Heating & Cooling',
-      created_date: '2024-10-15T00:00:00Z'
+      created_date: '2025-10-15T00:00:00Z'
     }
   ],
 
@@ -430,8 +430,8 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       property_id: 'demo-homeowner-001',
       inspection_type: 'Fall Winterization',
       season: 'Fall',
-      year: 2024,
-      inspection_date: '2024-10-15',
+      year: 2025,
+      inspection_date: '2025-10-15',
       duration_minutes: 42,
       completed_by: 'Self',
       status: 'Completed',
@@ -510,17 +510,17 @@ export const DEMO_PROPERTY_HOMEOWNER = {
           photo_urls: []
         }
       ],
-      next_inspection_due: '2025-01-15',
+      next_inspection_due: '2026-01-15',
       notes: 'Property ready for winter. Smoke detectors are the urgent priority - life safety issue.',
-      created_date: '2024-10-15T14:30:00Z'
+      created_date: '2025-10-15T14:30:00Z'
     },
     {
       id: 'demo-h-insp-002',
       property_id: 'demo-homeowner-001',
       inspection_type: 'Spring Opening',
       season: 'Spring',
-      year: 2024,
-      inspection_date: '2024-04-20',
+      year: 2025,
+      inspection_date: '2025-04-20',
       duration_minutes: 38,
       completed_by: 'Self',
       status: 'Completed',
@@ -557,9 +557,9 @@ export const DEMO_PROPERTY_HOMEOWNER = {
           photo_urls: []
         }
       ],
-      next_inspection_due: '2024-07-20',
+      next_inspection_due: '2025-07-20',
       notes: 'Excellent spring condition. All major systems operating normally.',
-      created_date: '2024-04-20T10:15:00Z'
+      created_date: '2025-04-20T10:15:00Z'
     }
   ],
 
