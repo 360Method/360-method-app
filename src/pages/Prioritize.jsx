@@ -1021,6 +1021,57 @@ export default function PrioritizePage() {
           </div>
         )}
 
+        {/* Decision Points Guide - Moved above queue for demo */}
+        {demoMode && (
+          <Card className="mb-6 border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <ArrowRight className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-bold text-red-900 mb-3">Decision Points - What Happens Next:</h3>
+                  <div className="grid md:grid-cols-3 gap-3 text-sm">
+                    <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-400">
+                      <p className="font-semibold text-yellow-900 mb-1 flex items-center gap-2">
+                        <Send className="w-4 h-4" />
+                        Send to Schedule
+                      </p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Routes ticket to <strong>Schedule (Yellow)</strong> tab where you pick calendar dates and 
+                        plan timeline → Then moves to Execute
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-400">
+                      <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4" />
+                        Add to Cart
+                      </p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Bundle multiple service requests for professional quotes - stays in queue until submitted
+                      </p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
+                      <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Mark Complete
+                      </p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Skip Schedule/Execute - archives directly to <strong>Track</strong> with completion date & costs logged
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 bg-white rounded-lg p-3 border-l-4 border-green-600">
+                    <p className="text-xs text-gray-800 leading-relaxed">
+                      <strong>📚 Remember:</strong> ALL completed work from ACT phase automatically appears in Track. 
+                      Track is your permanent historical record - no manual entry needed. Just mark complete and it's logged!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tasks Display - UPDATED with Grouped/Individual Views */}
         {sortedTasks.length > 0 ? (
           <div className="space-y-4">
@@ -1091,54 +1142,7 @@ export default function PrioritizePage() {
           </Card>
         )}
 
-        {/* Next Steps Guide */}
-        <Card className="mt-6 border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <ArrowRight className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-red-900 mb-3">Decision Points - What Happens Next:</h3>
-                <div className="grid md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-400">
-                    <p className="font-semibold text-yellow-900 mb-1 flex items-center gap-2">
-                      <Send className="w-4 h-4" />
-                      Send to Schedule
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Routes ticket to <strong>Schedule (Yellow)</strong> tab where you pick calendar dates and 
-                      plan timeline → Then moves to Execute
-                    </p>
-                  </div>
-                  <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-400">
-                    <p className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4" />
-                      Add to Cart
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Bundle multiple service requests for professional quotes - stays in queue until submitted
-                    </p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3 border-2 border-green-400">
-                    <p className="font-semibold text-green-900 mb-1 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" />
-                      Mark Complete
-                    </p>
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      Skip Schedule/Execute - archives directly to <strong>Track</strong> with completion date & costs logged
-                    </p>
-                  </div>
-                </div>
 
-                <div className="mt-3 bg-white rounded-lg p-3 border-l-4 border-green-600">
-                  <p className="text-xs text-gray-800 leading-relaxed">
-                    <strong>📚 Remember:</strong> ALL completed work from ACT phase automatically appears in Track. 
-                    Track is your permanent historical record - no manual entry needed. Just mark complete and it's logged!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Manual Task Form */}
