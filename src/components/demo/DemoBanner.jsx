@@ -19,6 +19,13 @@ export function DemoBanner({ onAddProperty }) {
     navigate('/');
   };
 
+  const handleExitDemo = () => {
+    // Clear demo mode from sessionStorage
+    sessionStorage.removeItem('demoMode');
+    sessionStorage.removeItem('demoWizardSeen');
+    exitDemoMode();
+  };
+
   return (
     <div className="bg-yellow-50 border-b-2 border-yellow-300 sticky top-0 z-50">
       <div className="px-4 py-3">
@@ -60,7 +67,7 @@ export function DemoBanner({ onAddProperty }) {
               <span className="sm:hidden">Waitlist</span>
             </Button>
             <Button
-              onClick={exitDemoMode}
+              onClick={handleExitDemo}
               variant="ghost"
               size="sm"
               className="text-yellow-700 hover:text-yellow-900 flex-shrink-0"
