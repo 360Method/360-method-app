@@ -492,6 +492,8 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       contractor_cost: 75,
       execution_method: 'DIY',
       status: 'Scheduled',
+      scheduled_date: '2025-11-25',
+      time_range: 'morning',
       source: 'SEASONAL_CHECKLIST',
       seasonal: true,
       recommended_completion_window: 'Every 3 months',
