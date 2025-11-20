@@ -41,13 +41,19 @@ export default function Preserve() {
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => {
+    queryFn: async () => {
+      console.log('🔵 PRESERVE: Fetching properties, demoMode:', demoMode);
       if (demoMode) {
-        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
+        const demoProps = isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
+        console.log('🔵 PRESERVE: Demo properties:', demoProps);
+        return demoProps;
       }
-      return base44.entities.Property.list();
+      const realProps = await base44.entities.Property.list();
+      console.log('🔵 PRESERVE: Real properties:', realProps);
+      return realProps;
     },
-    enabled: true // Always fetch, even when not in demo mode
+    enabled: true,
+    staleTime: 0 // Force fresh data
   });
 
   const { data: user } = useQuery({
@@ -57,17 +63,25 @@ export default function Preserve() {
 
   const { data: realSystems = [] } = useQuery({
     queryKey: ['systems', selectedProperty],
-    queryFn: () => {
+    queryFn: async () => {
+      console.log('🔵 PRESERVE: Fetching systems for property:', selectedProperty, 'demoMode:', demoMode);
       if (demoMode) {
         if (isInvestor) {
           if (!selectedProperty) return [];
-          return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+          const filtered = demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+          console.log('🔵 PRESERVE: Demo investor systems:', filtered);
+          return filtered;
         }
-        return demoData?.systems || [];
+        const demoSystems = demoData?.systems || [];
+        console.log('🔵 PRESERVE: Demo homeowner systems:', demoSystems);
+        return demoSystems;
       }
-      return base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+      const realSystems = await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+      console.log('🔵 PRESERVE: Real systems:', realSystems);
+      return realSystems;
     },
-    enabled: !!selectedProperty
+    enabled: !!selectedProperty,
+    staleTime: 0
   });
 
   const allSystems = realSystems;

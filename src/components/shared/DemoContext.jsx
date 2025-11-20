@@ -43,9 +43,9 @@ export function DemoProvider({ children }) {
     setShowWizard(false);
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
-    
-    // Redirect to waitlist page
-    navigate(createPageUrl('Waitlist'));
+
+    // Force reload to clear all cached data
+    window.location.href = createPageUrl('Waitlist');
   };
   
   const handleWizardComplete = () => {

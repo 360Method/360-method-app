@@ -39,16 +39,21 @@ export default function Scale() {
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => {
+    queryFn: async () => {
+      console.log('🔵 SCALE: Fetching properties, demoMode:', demoMode);
       if (demoMode) {
-        if (isInvestor) {
-          return demoData?.properties || []; // For investor demo, use multiple properties if available
-        }
-        return demoData?.property ? [demoData.property] : []; // For homeowner/single property demo
+        const demoProps = isInvestor 
+          ? (demoData?.properties || [])
+          : (demoData?.property ? [demoData.property] : []);
+        console.log('🔵 SCALE: Demo properties:', demoProps);
+        return demoProps;
       }
-      return base44.entities.Property.list();
+      const realProps = await base44.entities.Property.list();
+      console.log('🔵 SCALE: Real properties:', realProps);
+      return realProps;
     },
-    enabled: true // Always fetch
+    enabled: true,
+    staleTime: 0
   });
 
   const { data: user } = useQuery({
@@ -58,10 +63,16 @@ export default function Scale() {
 
   const { data: realEquityData = [] } = useQuery({
     queryKey: ['portfolio-equity', selectedProperty],
-    queryFn: () => selectedProperty === 'all'
-      ? base44.entities.PortfolioEquity.list()
-      : base44.entities.PortfolioEquity.filter({ property_id: selectedProperty }),
-    enabled: !demoMode && !!selectedProperty
+    queryFn: async () => {
+      console.log('🔵 SCALE: Fetching equity for property:', selectedProperty);
+      const equity = selectedProperty === 'all'
+        ? await base44.entities.PortfolioEquity.list()
+        : await base44.entities.PortfolioEquity.filter({ property_id: selectedProperty });
+      console.log('🔵 SCALE: Equity data:', equity);
+      return equity;
+    },
+    enabled: !demoMode && !!selectedProperty,
+    staleTime: 0
   });
 
   const equityData = demoMode
