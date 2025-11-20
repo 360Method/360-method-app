@@ -1,4 +1,3 @@
-
 // Investor Demo Data - 3-Property Portfolio
 export const DEMO_PORTFOLIO_INVESTOR = {
   portfolioStats: {
@@ -126,20 +125,65 @@ export const DEMO_PORTFOLIO_INVESTOR = {
   ],
 
   systems: [
-    // Maple Street Duplex Systems
-    { id: 'sys-1', property_id: 'demo-investor-1', system_type: 'HVAC System', nickname: 'Unit A Furnace', installation_year: 2010, condition: 'Good', last_service_date: '2024-09-15' },
-    { id: 'sys-2', property_id: 'demo-investor-1', system_type: 'HVAC System', nickname: 'Unit B Furnace', installation_year: 2010, condition: 'Good', last_service_date: '2024-09-15' },
-    { id: 'sys-3', property_id: 'demo-investor-1', system_type: 'Water & Sewer/Septic', nickname: 'Main Water Line', installation_year: 1998, condition: 'Good' },
-    { id: 'sys-4', property_id: 'demo-investor-1', system_type: 'Roof System', nickname: 'Main Roof', installation_year: 2014, condition: 'Good', next_replacement_forecast: '2027' },
+    // ==========================================
+    // PROPERTY 1: MAPLE STREET DUPLEX (1998) - 16 SYSTEMS
+    // ==========================================
+    { id: 'sys-1', property_id: 'demo-investor-1', system_type: 'HVAC System', nickname: 'Unit A Furnace', brand_model: 'Carrier 80% Gas Furnace', installation_year: 2010, condition: 'Good', last_service_date: '2024-09-15', estimated_lifespan_years: 18, replacement_cost_estimate: 3500 },
+    { id: 'sys-2', property_id: 'demo-investor-1', system_type: 'HVAC System', nickname: 'Unit B Furnace', brand_model: 'Carrier 80% Gas Furnace', installation_year: 2010, condition: 'Good', last_service_date: '2024-09-15', estimated_lifespan_years: 18, replacement_cost_estimate: 3500 },
+    { id: 'sys-3', property_id: 'demo-investor-1', system_type: 'Roof System', nickname: 'Main Roof', brand_model: 'Asphalt Shingles', installation_year: 2014, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 8500 },
+    { id: 'sys-4', property_id: 'demo-investor-1', system_type: 'Water & Sewer/Septic', nickname: 'Main Water Line', brand_model: 'Copper Supply', installation_year: 1998, condition: 'Good', estimated_lifespan_years: 50, replacement_cost_estimate: 4000 },
+    { id: 'sys-5', property_id: 'demo-investor-1', system_type: 'Plumbing System', nickname: 'Unit A Water Heater', brand_model: 'Rheem 40-Gal Gas', installation_year: 2013, condition: 'Fair', estimated_lifespan_years: 10, replacement_cost_estimate: 1200 },
+    { id: 'sys-6', property_id: 'demo-investor-1', system_type: 'Plumbing System', nickname: 'Unit B Water Heater', brand_model: 'Rheem 40-Gal Gas', installation_year: 2013, condition: 'Fair', estimated_lifespan_years: 10, replacement_cost_estimate: 1200 },
+    { id: 'sys-7', property_id: 'demo-investor-1', system_type: 'Electrical System', nickname: 'Main Panel', brand_model: '200A Panel', installation_year: 1998, condition: 'Good', estimated_lifespan_years: 40, replacement_cost_estimate: 3000 },
+    { id: 'sys-8', property_id: 'demo-investor-1', system_type: 'Foundation & Structure', nickname: 'Foundation', installation_year: 1998, condition: 'Good', estimated_lifespan_years: 100, replacement_cost_estimate: 40000 },
+    { id: 'sys-9', property_id: 'demo-investor-1', system_type: 'Gutters & Downspouts', nickname: 'Gutters', installation_year: 1998, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 1500 },
+    { id: 'sys-10', property_id: 'demo-investor-1', system_type: 'Windows & Doors', nickname: 'All Windows', installation_year: 1998, condition: 'Fair', estimated_lifespan_years: 25, replacement_cost_estimate: 6000 },
+    { id: 'sys-11', property_id: 'demo-investor-1', system_type: 'Exterior Siding & Envelope', nickname: 'Siding', installation_year: 1998, condition: 'Good', estimated_lifespan_years: 30, replacement_cost_estimate: 12000 },
+    { id: 'sys-12', property_id: 'demo-investor-1', system_type: 'Garage & Overhead Door', nickname: 'Garage Door', installation_year: 2008, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 1200 },
+    { id: 'sys-13', property_id: 'demo-investor-1', system_type: 'Refrigerator', nickname: 'Unit A Fridge', installation_year: 2015, condition: 'Good', estimated_lifespan_years: 13, replacement_cost_estimate: 1200 },
+    { id: 'sys-14', property_id: 'demo-investor-1', system_type: 'Refrigerator', nickname: 'Unit B Fridge', installation_year: 2016, condition: 'Good', estimated_lifespan_years: 13, replacement_cost_estimate: 1200 },
+    { id: 'sys-15', property_id: 'demo-investor-1', system_type: 'Dishwasher', nickname: 'Unit A Dishwasher', installation_year: 2018, condition: 'Good', estimated_lifespan_years: 10, replacement_cost_estimate: 700 },
+    { id: 'sys-16', property_id: 'demo-investor-1', system_type: 'Dishwasher', nickname: 'Unit B Dishwasher', installation_year: 2018, condition: 'Good', estimated_lifespan_years: 10, replacement_cost_estimate: 700 },
     
-    // Oak Ridge Systems
-    { id: 'sys-5', property_id: 'demo-investor-2', system_type: 'HVAC System', nickname: 'Main System', installation_year: 2005, condition: 'Excellent', last_service_date: '2024-09-15' },
-    { id: 'sys-6', property_id: 'demo-investor-2', system_type: 'Roof System', nickname: 'Composition Shingle', installation_year: 2005, condition: 'Good' },
-    { id: 'sys-7', property_id: 'demo-investor-2', system_type: 'Water & Sewer/Septic', nickname: 'Main Plumbing', installation_year: 2005, condition: 'Excellent' },
+    // ==========================================
+    // PROPERTY 2: OAK RIDGE SINGLE FAMILY (2005) - 16 SYSTEMS
+    // ==========================================
+    { id: 'sys-17', property_id: 'demo-investor-2', system_type: 'HVAC System', nickname: 'Main System', brand_model: 'Trane XV20i Heat Pump', installation_year: 2005, condition: 'Excellent', last_service_date: '2024-09-15', estimated_lifespan_years: 20, replacement_cost_estimate: 6200 },
+    { id: 'sys-18', property_id: 'demo-investor-2', system_type: 'Roof System', nickname: 'Composition Shingle', brand_model: 'GAF Timberline HD', installation_year: 2005, condition: 'Good', estimated_lifespan_years: 25, replacement_cost_estimate: 9500 },
+    { id: 'sys-19', property_id: 'demo-investor-2', system_type: 'Water & Sewer/Septic', nickname: 'Main Plumbing', installation_year: 2005, condition: 'Excellent', estimated_lifespan_years: 50, replacement_cost_estimate: 5000 },
+    { id: 'sys-20', property_id: 'demo-investor-2', system_type: 'Plumbing System', nickname: 'Water Heater', brand_model: 'AO Smith 50-Gal', installation_year: 2016, condition: 'Good', estimated_lifespan_years: 10, replacement_cost_estimate: 1400 },
+    { id: 'sys-21', property_id: 'demo-investor-2', system_type: 'Electrical System', nickname: 'Main Panel', installation_year: 2005, condition: 'Excellent', estimated_lifespan_years: 40, replacement_cost_estimate: 3500 },
+    { id: 'sys-22', property_id: 'demo-investor-2', system_type: 'Foundation & Structure', nickname: 'Foundation', installation_year: 2005, condition: 'Excellent', estimated_lifespan_years: 100, replacement_cost_estimate: 45000 },
+    { id: 'sys-23', property_id: 'demo-investor-2', system_type: 'Windows & Doors', nickname: 'All Windows', installation_year: 2005, condition: 'Good', estimated_lifespan_years: 25, replacement_cost_estimate: 5500 },
+    { id: 'sys-24', property_id: 'demo-investor-2', system_type: 'Exterior Siding & Envelope', nickname: 'Fiber Cement Siding', installation_year: 2005, condition: 'Excellent', estimated_lifespan_years: 50, replacement_cost_estimate: 15000 },
+    { id: 'sys-25', property_id: 'demo-investor-2', system_type: 'Gutters & Downspouts', nickname: 'Gutters', installation_year: 2005, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 1600 },
+    { id: 'sys-26', property_id: 'demo-investor-2', system_type: 'Garage & Overhead Door', nickname: 'Garage Door', installation_year: 2005, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 1400 },
+    { id: 'sys-27', property_id: 'demo-investor-2', system_type: 'Refrigerator', nickname: 'Kitchen Fridge', installation_year: 2019, condition: 'Excellent', estimated_lifespan_years: 13, replacement_cost_estimate: 2000 },
+    { id: 'sys-28', property_id: 'demo-investor-2', system_type: 'Dishwasher', nickname: 'Kitchen Dishwasher', installation_year: 2020, condition: 'Excellent', estimated_lifespan_years: 10, replacement_cost_estimate: 900 },
+    { id: 'sys-29', property_id: 'demo-investor-2', system_type: 'Range/Oven', nickname: 'Kitchen Range', installation_year: 2005, condition: 'Good', estimated_lifespan_years: 15, replacement_cost_estimate: 1300 },
+    { id: 'sys-30', property_id: 'demo-investor-2', system_type: 'Washing Machine', nickname: 'Washer', installation_year: 2018, condition: 'Good', estimated_lifespan_years: 11, replacement_cost_estimate: 800 },
+    { id: 'sys-31', property_id: 'demo-investor-2', system_type: 'Dryer', nickname: 'Dryer', installation_year: 2018, condition: 'Good', estimated_lifespan_years: 13, replacement_cost_estimate: 700 },
+    { id: 'sys-32', property_id: 'demo-investor-2', system_type: 'Smoke Detector', nickname: 'Smoke Detectors (5)', installation_year: 2020, condition: 'Good', estimated_lifespan_years: 10, replacement_cost_estimate: 200 },
     
-    // Cedar Court Systems
-    { id: 'sys-8', property_id: 'demo-investor-3', system_type: 'Roof System', nickname: 'Main Roof', installation_year: 2003, condition: 'Fair', warning_signs_present: ['Minor leaks in Unit 2C'] },
-    { id: 'sys-9', property_id: 'demo-investor-3', system_type: 'HVAC System', nickname: 'Building HVAC', installation_year: 1985, condition: 'Fair' }
+    // ==========================================
+    // PROPERTY 3: CEDAR COURT 4-PLEX (1985) - 16 SYSTEMS
+    // ==========================================
+    { id: 'sys-33', property_id: 'demo-investor-3', system_type: 'HVAC System', nickname: 'Building HVAC', brand_model: 'Carrier Gas Furnace', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 20, replacement_cost_estimate: 18000, warning_signs_present: ['Age - 39 years old', 'Higher utility bills'] },
+    { id: 'sys-34', property_id: 'demo-investor-3', system_type: 'Roof System', nickname: 'Main Roof', brand_model: 'Asphalt Shingles', installation_year: 2003, condition: 'Fair', estimated_lifespan_years: 20, replacement_cost_estimate: 14500, warning_signs_present: ['Minor leaks in Unit 2C', 'Age - 22 years'] },
+    { id: 'sys-35', property_id: 'demo-investor-3', system_type: 'Water & Sewer/Septic', nickname: 'Main Water Line', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 50, replacement_cost_estimate: 6000 },
+    { id: 'sys-36', property_id: 'demo-investor-3', system_type: 'Plumbing System', nickname: 'Building Plumbing', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 50, replacement_cost_estimate: 12000 },
+    { id: 'sys-37', property_id: 'demo-investor-3', system_type: 'Electrical System', nickname: 'Main Panel', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 40, replacement_cost_estimate: 4500 },
+    { id: 'sys-38', property_id: 'demo-investor-3', system_type: 'Foundation & Structure', nickname: 'Foundation', installation_year: 1985, condition: 'Good', estimated_lifespan_years: 100, replacement_cost_estimate: 50000 },
+    { id: 'sys-39', property_id: 'demo-investor-3', system_type: 'Windows & Doors', nickname: 'Building Windows', installation_year: 1998, condition: 'Fair', estimated_lifespan_years: 25, replacement_cost_estimate: 9800, warning_signs_present: ['Single-pane in some units'] },
+    { id: 'sys-40', property_id: 'demo-investor-3', system_type: 'Exterior Siding & Envelope', nickname: 'Vinyl Siding', installation_year: 1995, condition: 'Fair', estimated_lifespan_years: 40, replacement_cost_estimate: 16000 },
+    { id: 'sys-41', property_id: 'demo-investor-3', system_type: 'Gutters & Downspouts', nickname: 'Gutters', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 20, replacement_cost_estimate: 2200 },
+    { id: 'sys-42', property_id: 'demo-investor-3', system_type: 'Garage & Overhead Door', nickname: 'Garage Door', installation_year: 2010, condition: 'Good', estimated_lifespan_years: 20, replacement_cost_estimate: 1500 },
+    { id: 'sys-43', property_id: 'demo-investor-3', system_type: 'Refrigerator', nickname: 'Unit 1A Fridge', installation_year: 2016, condition: 'Good', estimated_lifespan_years: 13, replacement_cost_estimate: 1000 },
+    { id: 'sys-44', property_id: 'demo-investor-3', system_type: 'Refrigerator', nickname: 'Unit 2C Fridge', installation_year: 2018, condition: 'Good', estimated_lifespan_years: 13, replacement_cost_estimate: 1000 },
+    { id: 'sys-45', property_id: 'demo-investor-3', system_type: 'Refrigerator', nickname: 'Unit 3B Fridge', installation_year: 2015, condition: 'Fair', estimated_lifespan_years: 13, replacement_cost_estimate: 1000, warning_signs_present: ['Compressor noise'] },
+    { id: 'sys-46', property_id: 'demo-investor-3', system_type: 'Driveways & Hardscaping', nickname: 'Parking Lot', installation_year: 2005, condition: 'Fair', estimated_lifespan_years: 20, replacement_cost_estimate: 8500 },
+    { id: 'sys-47', property_id: 'demo-investor-3', system_type: 'Landscaping & Grading', nickname: 'Drainage System', installation_year: 1985, condition: 'Fair', estimated_lifespan_years: 30, replacement_cost_estimate: 4000 },
+    { id: 'sys-48', property_id: 'demo-investor-3', system_type: 'Smoke Detector', nickname: 'Smoke Detectors (12)', installation_year: 2015, condition: 'Good', estimated_lifespan_years: 10, replacement_cost_estimate: 400 }
   ],
 
   tasks: [

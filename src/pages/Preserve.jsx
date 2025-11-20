@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -146,7 +145,7 @@ export default function Preserve() {
   const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
 
   // Get demo interventions if in demo mode
-  const demoInterventions = demoMode && preserveSchedules[0]?.interventions || [];
+  const demoInterventions = (demoMode && preserveSchedules[0]?.interventions) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">

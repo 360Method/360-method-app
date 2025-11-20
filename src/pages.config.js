@@ -29,7 +29,7 @@ import Onboarding from './pages/Onboarding';
 import UpgradeProjectDetail from './pages/UpgradeProjectDetail';
 import WelcomeDemo from './pages/WelcomeDemo';
 import DemoEntry from './pages/DemoEntry';
-import Layout from './Layout.jsx';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -69,5 +69,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Welcome",
     Pages: PAGES,
-    Layout: Layout,
+    Layout: __Layout,
 };
