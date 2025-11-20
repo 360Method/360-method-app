@@ -46,7 +46,8 @@ export default function Preserve() {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list();
-    }
+    },
+    enabled: true // Always fetch, even when not in demo mode
   });
 
   const { data: user } = useQuery({

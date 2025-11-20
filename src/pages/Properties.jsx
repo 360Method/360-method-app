@@ -63,11 +63,13 @@ export default function Properties() {
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [completingProperty, setCompletingProperty] = useState(null);
 
-  // Fetch data - only fetch real properties if not in demo mode
+  // Fetch data - fetch both demo and real properties
   const { data: realProperties = [], isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.list('-updated_date'),
-    enabled: !demoMode
+    enabled: !demoMode,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0 // Don't cache - always get latest
   });
 
   // Use demo properties OR real properties

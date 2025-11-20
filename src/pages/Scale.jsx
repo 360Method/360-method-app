@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -48,7 +47,8 @@ export default function Scale() {
         return demoData?.property ? [demoData.property] : []; // For homeowner/single property demo
       }
       return base44.entities.Property.list();
-    }
+    },
+    enabled: true // Always fetch
   });
 
   const { data: user } = useQuery({
