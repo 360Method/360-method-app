@@ -118,7 +118,7 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: demoMode || properties.length > 0,
+    enabled: !!demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -137,7 +137,7 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: demoMode || properties.length > 0,
+    enabled: !!demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -156,7 +156,7 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: demoMode || properties.length > 0,
+    enabled: !!demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
