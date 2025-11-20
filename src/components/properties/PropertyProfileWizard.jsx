@@ -644,7 +644,7 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
     const ltv = formData.current_value ? (formData.mortgage_balance / formData.current_value) * 100 : 0;
     const totalExpenses = parseFloat(formData.monthly_mortgage_payment || 0) + 
                           parseFloat(formData.monthly_insurance || 0) + 
-                          parseFloat(formData.monthly_taxes) || 0) + 
+                          parseFloat(formData.monthly_taxes || 0) + 
                           parseFloat(formData.monthly_hoa || 0) + 
                           parseFloat(formData.estimated_maintenance || 0);
     const netCashFlow = parseFloat(formData.monthly_rent || 0) - totalExpenses;
