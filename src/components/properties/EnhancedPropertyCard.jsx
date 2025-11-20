@@ -100,7 +100,12 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>✏️ Edit Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={onEdit}>✏️ Edit Basic Details</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to={createPageUrl('Properties') + `?complete=${property.id}`}>
+                  💰 Edit Financial Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to={createPageUrl('Baseline') + `?property=${property.id}`}>
                   📊 View Systems (AWARE)
@@ -269,6 +274,27 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
             <p className="font-bold text-gray-900">{property.baseline_completion || 0}%</p>
           </div>
         </div>
+
+        {/* Incomplete Financial Profile Warning */}
+        {!property.financial_profile_complete && property.baseline_completion >= 42 && (
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-3">
+            <p className="text-xs font-semibold text-yellow-900 mb-2">
+              ⚠️ Incomplete Financial Profile
+            </p>
+            <p className="text-xs text-yellow-800 mb-3">
+              Add financial data to unlock equity, ROI, and portfolio CFO features
+            </p>
+            <Link to={createPageUrl('Properties') + `?complete=${property.id}`}>
+              <Button 
+                size="sm" 
+                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                style={{ minHeight: '40px' }}
+              >
+                Complete Financial Profile
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Primary CTA */}
         <Link to={createPageUrl('Baseline') + `?property=${property.id}`}>
