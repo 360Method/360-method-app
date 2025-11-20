@@ -206,7 +206,12 @@ export default function Baseline() {
   const propertyIdFromUrl = urlParams.get('property');
   const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
   const welcomeNew = urlParams.get('welcome') === 'true';
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    if (demoMode) markStepVisited(1);
+  }, [demoMode, markStepVisited]);
   
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
   const [showDialog, setShowDialog] = React.useState(false);
