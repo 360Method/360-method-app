@@ -107,7 +107,7 @@ export default function Dashboard() {
   const { data: allSystems = [] } = useQuery({
     queryKey: ['allSystemBaselines', selectedPropertyFilter, demoMode],
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
+      if (demoMode) {
         return demoData?.systems || [];
       }
 
@@ -118,7 +118,7 @@ export default function Dashboard() {
         return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyFilter });
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -126,7 +126,7 @@ export default function Dashboard() {
   const { data: allTasks = [] } = useQuery({
     queryKey: ['allMaintenanceTasks', selectedPropertyFilter, demoMode],
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
+      if (demoMode) {
         return demoData?.tasks || [];
       }
 
@@ -137,7 +137,7 @@ export default function Dashboard() {
         return base44.entities.MaintenanceTask.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });
@@ -145,7 +145,7 @@ export default function Dashboard() {
   const { data: allInspections = [] } = useQuery({
     queryKey: ['allInspections', selectedPropertyFilter, demoMode],
     queryFn: async () => {
-      if (demoMode && realProperties.length === 0) {
+      if (demoMode) {
         return demoData?.inspections || [];
       }
 
@@ -156,7 +156,7 @@ export default function Dashboard() {
         return base44.entities.Inspection.filter({ property_id: selectedPropertyFilter }, '-created_date');
       }
     },
-    enabled: !demoMode || (demoMode && realProperties.length === 0),
+    enabled: demoMode || properties.length > 0,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false
   });

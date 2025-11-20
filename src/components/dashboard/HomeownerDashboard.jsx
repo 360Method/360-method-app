@@ -233,88 +233,88 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
   const progressPercent = (completedStepCount / steps.length) * 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Progress Overview */}
       <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl" style={{ color: '#1B365D' }}>
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex-1">
+              <CardTitle className="text-xl md:text-2xl" style={{ color: '#1B365D' }}>
                 Your 360° Method Progress
               </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-xs md:text-sm text-gray-600 mt-1">
                 {completedStepCount} of 9 steps completed
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-4xl font-bold text-indigo-600">{Math.round(progressPercent)}%</p>
+            <div className="text-left sm:text-right">
+              <p className="text-3xl md:text-4xl font-bold text-indigo-600">{Math.round(progressPercent)}%</p>
             </div>
           </div>
-          <Progress value={progressPercent} className="mt-3 h-3" />
+          <Progress value={progressPercent} className="mt-3 h-2 md:h-3" />
         </CardHeader>
       </Card>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Home className="w-5 h-5 text-blue-600" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-1 md:mb-2">
+              <Home className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-blue-700">{systems.length}</p>
-            <p className="text-xs text-gray-600">Systems Tracked</p>
+            <p className="text-xl md:text-2xl font-bold text-blue-700">{systems.length}</p>
+            <p className="text-xs text-gray-600 leading-tight">Systems Tracked</p>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-gradient-to-br from-red-50 to-red-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Flame className="w-5 h-5 text-red-600" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-1 md:mb-2">
+              <Flame className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
               {highPriorityTasks.length > 0 && (
                 <Badge className="bg-red-600 text-white text-xs animate-pulse">!</Badge>
               )}
             </div>
-            <p className="text-2xl font-bold text-red-700">{highPriorityTasks.length}</p>
-            <p className="text-xs text-gray-600">High Priority</p>
+            <p className="text-xl md:text-2xl font-bold text-red-700">{highPriorityTasks.length}</p>
+            <p className="text-xs text-gray-600 leading-tight">High Priority</p>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-gradient-to-br from-yellow-50 to-yellow-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Calendar className="w-5 h-5 text-yellow-600" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-1 md:mb-2">
+              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-yellow-700">{scheduledTasks.length}</p>
-            <p className="text-xs text-gray-600">On Calendar</p>
+            <p className="text-xl md:text-2xl font-bold text-yellow-700">{scheduledTasks.length}</p>
+            <p className="text-xs text-gray-600 leading-tight">On Calendar</p>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Award className="w-5 h-5 text-green-600" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-1 md:mb-2">
+              <Award className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-green-700">{property?.health_score || 0}</p>
-            <p className="text-xs text-gray-600">Health Score</p>
+            <p className="text-xl md:text-2xl font-bold text-green-700">{property?.health_score || 0}</p>
+            <p className="text-xs text-gray-600 leading-tight">Health Score</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Current Step Focus */}
       <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
-        <CardHeader>
+        <CardHeader className="p-4 md:p-6">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <CardTitle className="text-lg" style={{ color: '#1B365D' }}>
+            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
+            <CardTitle className="text-base md:text-lg" style={{ color: '#1B365D' }}>
               Current Focus: {currentStep.name}
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-700 mb-4">{currentStep.description}</p>
+        <CardContent className="p-4 md:p-6 pt-0">
+          <p className="text-sm text-gray-700 mb-4 leading-relaxed">{currentStep.description}</p>
           <Button
             asChild
-            className="w-full bg-purple-600 hover:bg-purple-700"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-sm md:text-base"
             style={{ minHeight: '48px' }}
           >
             <Link to={currentStep.link}>
@@ -325,15 +325,15 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3 md:gap-4">
         {/* 9 Steps Progress */}
         <Card className="border-2 border-gray-300 bg-white shadow-md">
-          <CardHeader>
-            <CardTitle className="text-base" style={{ color: '#1B365D' }}>
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm md:text-base" style={{ color: '#1B365D' }}>
               All 9 Steps
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="p-4 pt-0 space-y-2">
             {steps.map((step) => (
               <StepCard
                 key={step.id}
@@ -347,12 +347,12 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
         </Card>
 
         {/* Calendar + Alerts */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {/* Mini Calendar */}
           <Card className="border-2 border-blue-300 bg-white shadow-md">
-            <CardHeader>
+            <CardHeader className="p-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2" style={{ color: '#1B365D' }}>
+                <CardTitle className="text-sm md:text-base flex items-center gap-2" style={{ color: '#1B365D' }}>
                   <Calendar className="w-4 h-4" />
                   This Week
                 </CardTitle>
@@ -364,7 +364,7 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               <MiniCalendar tasks={scheduledTasks} />
               {scheduledTasks.length > 0 && (
                 <div className="mt-4 space-y-2">
@@ -393,13 +393,13 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
           {/* Urgent Alerts */}
           {highPriorityTasks.length > 0 && (
             <Card className="border-2 border-red-300 bg-gradient-to-br from-red-50 to-orange-50 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2 text-red-900">
-                  <AlertTriangle className="w-5 h-5" />
+              <CardHeader className="p-4">
+                <CardTitle className="text-sm md:text-base flex items-center gap-2 text-red-900">
+                  <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
                   Urgent Attention Needed
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="p-4 pt-0 space-y-2">
                 {highPriorityTasks.slice(0, 3).map(task => (
                   <div key={task.id} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-red-200">
                     <Flame className="w-4 h-4 text-red-600 flex-shrink-0" />
@@ -430,13 +430,13 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
 
           {/* Savings Impact */}
           <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2 text-green-900">
-                <DollarSign className="w-5 h-5" />
+            <CardHeader className="p-4">
+              <CardTitle className="text-sm md:text-base flex items-center gap-2 text-green-900">
+                <DollarSign className="w-4 h-4 md:w-5 md:h-5" />
                 Your Impact
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Maintenance Invested</p>
@@ -464,13 +464,13 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
 
       {/* Quick Actions */}
       <Card className="border-2 border-blue-300 bg-white shadow-md">
-        <CardHeader>
-          <CardTitle className="text-base" style={{ color: '#1B365D' }}>
+        <CardHeader className="p-4">
+          <CardTitle className="text-sm md:text-base" style={{ color: '#1B365D' }}>
             Quick Actions
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3">
+        <CardContent className="p-4 pt-0">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             <Button asChild variant="outline" className="h-auto py-3 flex-col gap-1">
               <Link to={createPageUrl('Baseline')}>
                 <Home className="w-5 h-5 mb-1" />
