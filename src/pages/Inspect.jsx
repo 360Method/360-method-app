@@ -360,7 +360,7 @@ export default function Inspect() {
             <CardHeader className="pb-4">
               <div className="text-center">
                 <CardTitle className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                  Choose Your Inspection Method
+                  Choose Your Documentation Method
                 </CardTitle>
                 <p className="text-gray-700">Pick the approach that works best for you</p>
               </div>
