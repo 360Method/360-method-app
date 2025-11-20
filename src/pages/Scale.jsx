@@ -24,7 +24,8 @@ import StrategicAnalysisCard from "../components/scale/StrategicAnalysisCard";
 import WealthProjectionChart from "../components/scale/WealthProjectionChart";
 import CapitalAllocationRanker from "../components/scale/CapitalAllocationRanker";
 import BenchmarkComparison from "../components/scale/BenchmarkComparison";
-import ScaleInvestorView from '../components/scale/ScaleInvestorView'; // Added ScaleInvestorView import
+import ScaleInvestorView from '../components/scale/ScaleInvestorView';
+import ScaleSingleProperty from '../components/scale/ScaleSingleProperty';
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
@@ -175,40 +176,55 @@ export default function Scale() {
     );
   }
 
-  // Show locked view for homeowners with 1 property
+  // Show wealth builder for homeowners with 1 property
   if (isHomeowner && demoMode && properties.length === 1) {
+    const demoProperty = properties[0];
+    const demoSystems = demoData?.systems || [];
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 pb-20">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="mb-4 md:mb-6">
-            <StepNavigation currentStep={9} propertyId={properties[0]?.id} />
+            <StepNavigation currentStep={9} propertyId={demoProperty?.id} />
           </div>
 
-          <Card className="border-2 border-blue-400 bg-blue-50 max-w-3xl mx-auto mt-12">
-            <CardContent className="p-8 text-center">
-              <Building2 className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-900 mb-4">
-                🔒 SCALE Unlocks with 2+ Properties
-              </h2>
-              <p className="text-blue-800 mb-6">
-                This demo shows a single property. The SCALE module provides portfolio CFO intelligence
-                including equity tracking, wealth projections, and strategic recommendations across multiple properties.
-              </p>
-              <div className="bg-white rounded-lg p-4 text-left text-sm text-gray-700 mb-6">
-                <p className="font-semibold mb-2">With SCALE, you get:</p>
-                <ul className="space-y-1">
-                  <li>• Portfolio-wide equity and value tracking</li>
-                  <li>• 10-year wealth projections</li>
-                  <li>• Hold/sell/refinance recommendations</li>
-                  <li>• Capital allocation optimization</li>
-                  <li>• Performance benchmarking</li>
-                </ul>
-              </div>
-              <Badge className="bg-blue-600 text-white text-lg px-6 py-2">
-                Add a 2nd property to unlock
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge className="bg-green-600 text-white text-sm px-3 py-1">
+                Phase III - ADVANCE
               </Badge>
-            </CardContent>
-          </Card>
+              <Badge variant="outline" className="text-sm px-3 py-1">
+                Step 9 of 9
+              </Badge>
+              <Badge className="bg-purple-600 text-white text-sm px-3 py-1">
+                🍒 FINAL STEP
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                Scale
+              </h1>
+              <DemoInfoTooltip
+                title="Step 9: SCALE"
+                content="See how your home builds wealth over 10 years. Add a 2nd property to unlock full portfolio CFO features."
+              />
+            </div>
+            <p className="text-gray-600 text-lg">
+              Your personal wealth command center
+            </p>
+          </div>
+
+          <StepEducationCard
+            {...STEP_EDUCATION.scale}
+            defaultExpanded={false}
+            className="mb-6"
+          />
+
+          <ScaleSingleProperty 
+            property={demoProperty} 
+            systems={demoSystems}
+            demoMode={true}
+          />
         </div>
       </div>
     );
