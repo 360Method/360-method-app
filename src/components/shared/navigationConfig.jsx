@@ -151,11 +151,11 @@ export function isNavItemLocked(item, selectedProperty) {
   if (!selectedProperty) return false;
   
   if (item.requiresBaselineComplete) {
-    return selectedProperty.baseline_completion < 66;
+    return selectedProperty.baseline_completion < 42;
   }
   
   if (item.requiresActComplete) {
-    return selectedProperty.baseline_completion < 100;
+    return selectedProperty.baseline_completion < 42;
   }
   
   return false;
