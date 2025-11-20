@@ -134,7 +134,7 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
   
   const baselineComplete = (property?.baseline_completion || 0) >= 66;
   const hasInspections = inspections.length > 0;
-  const hasTasks = tasks.length > 0;
+  const hasTasks = completedTasks.length > 0;
   const hasScheduled = scheduledTasks.length > 0;
   const hasCompleted = completedTasks.length > 0;
   
