@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +31,7 @@ import QuickPropertyAdd from "../components/properties/QuickPropertyAdd";
 import PropertyDashboard from "../components/properties/PropertyDashboard";
 import EnhancedPropertyCard from "../components/properties/EnhancedPropertyCard";
 import PropertyWizard from "../components/properties/PropertyWizard";
+import PropertyProfileWizard from "../components/properties/PropertyProfileWizard";
 import { createPageUrl } from "@/utils";
 import { useDemo } from "../components/shared/DemoContext";
 
@@ -45,6 +45,7 @@ export default function Properties() {
   // URL params
   const newParam = searchParams.get('new');
   const editId = searchParams.get('edit');
+  const completeId = searchParams.get('complete');
   const modeParam = searchParams.get('mode');
 
   // State
@@ -59,6 +60,8 @@ export default function Properties() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState(null);
   const [showMethodInfo, setShowMethodInfo] = useState(false);
+  const [showProfileWizard, setShowProfileWizard] = useState(false);
+  const [completingProperty, setCompletingProperty] = useState(null);
 
   // Fetch data - only fetch real properties if not in demo mode
   const { data: realProperties = [], isLoading } = useQuery({
@@ -119,6 +122,19 @@ export default function Properties() {
       }
     }
   }, [editId, modeParam, demoMode]);
+
+  // Handle complete profile mode
+  useEffect(() => {
+    if (demoMode) return;
+    
+    if (completeId) {
+      const property = properties.find(p => p.id === completeId);
+      if (property) {
+        setCompletingProperty(property);
+        setShowProfileWizard(true);
+      }
+    }
+  }, [completeId, properties, demoMode]);
 
   const handleAddProperty = (mode = 'quick') => {
     if (demoMode) return; // Don't allow adding in demo mode
@@ -638,6 +654,23 @@ export default function Properties() {
             description="This will permanently delete this property and all associated data (systems, tasks, inspections, upgrades). This action cannot be undone."
             confirmText="Delete Property"
             confirmVariant="destructive"
+          />
+        )}
+
+        {/* Property Profile Wizard */}
+        {canEdit && showProfileWizard && completingProperty && (
+          <PropertyProfileWizard
+            property={completingProperty}
+            onComplete={() => {
+              setShowProfileWizard(false);
+              setCompletingProperty(null);
+              window.history.replaceState({}, '', createPageUrl('Properties'));
+            }}
+            onCancel={() => {
+              setShowProfileWizard(false);
+              setCompletingProperty(null);
+              window.history.replaceState({}, '', createPageUrl('Properties'));
+            }}
           />
         )}
 
