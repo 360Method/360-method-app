@@ -366,8 +366,50 @@ export default function Inspect() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Two Big Options */}
-              <div className="grid md:grid-cols-2 gap-6">
+              {/* Three Main Options */}
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Quick Start Wizard */}
+                <Card 
+                  className="border-3 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl"
+                  onClick={() => setShowWizard(true)}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Lightbulb className="w-10 h-10 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                          ✨ Quick Start Wizard
+                        </h3>
+                        <Badge className="bg-green-600 text-white mb-3">
+                          <Clock className="w-3 h-3 mr-1" />
+                          5-10 minutes
+                        </Badge>
+                        <p className="text-sm text-gray-700 mb-4">
+                          Fastest way to get started. Answer a few questions and we'll guide you through the essential checks.
+                        </p>
+                      </div>
+                      <div className="bg-green-100 rounded-lg p-4 text-left">
+                        <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
+                        <ul className="text-xs text-green-800 space-y-1">
+                          <li>• First inspection</li>
+                          <li>• Limited time</li>
+                          <li>• Guided experience</li>
+                          <li>• Getting started quickly</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        className="w-full gap-2 text-lg py-6 group-hover:bg-green-700"
+                        style={{ backgroundColor: '#22C55E', minHeight: '56px' }}
+                      >
+                        <Lightbulb className="w-5 h-5" />
+                        Start Wizard
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Traditional Area-by-Area */}
                 <Card 
                   className="border-3 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group hover:shadow-xl"
