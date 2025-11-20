@@ -133,8 +133,7 @@ export default function PrioritizePage() {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list('-created_date');
-    },
-    enabled: !demoMode
+    }
   });
 
   // Set initial selected property
