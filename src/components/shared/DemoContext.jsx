@@ -12,6 +12,7 @@ export function DemoProvider({ children }) {
   const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', or 'investor'
   const [demoData, setDemoData] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [visitedSteps, setVisitedSteps] = useState([]);
   const navigate = useNavigate();
   
   const enterDemoMode = (userType = 'homeowner') => {
@@ -36,6 +37,14 @@ export function DemoProvider({ children }) {
     console.log('Demo data loaded for:', userType);
   };
   
+  const markStepVisited = (stepNumber) => {
+    if (!visitedSteps.includes(stepNumber)) {
+      const updated = [...visitedSteps, stepNumber];
+      setVisitedSteps(updated);
+      sessionStorage.setItem('demoVisitedSteps', JSON.stringify(updated));
+    }
+  };
+  
   const exitDemoMode = () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🔴 DEMO CONTEXT: Exiting demo mode');
@@ -43,9 +52,11 @@ export function DemoProvider({ children }) {
     setDemoMode(null);
     setDemoData(null);
     setShowWizard(false);
+    setVisitedSteps([]);
     console.log('🔴 DEMO CONTEXT: Clearing sessionStorage');
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
+    sessionStorage.removeItem('demoVisitedSteps');
     console.log('🔴 DEMO CONTEXT: Redirecting to Waitlist');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     // Force reload to clear all cached data
@@ -65,6 +76,7 @@ export function DemoProvider({ children }) {
   // Restore from sessionStorage on mount
   useEffect(() => {
     const stored = sessionStorage.getItem('demoMode');
+    const storedSteps = sessionStorage.getItem('demoVisitedSteps');
     console.log('Checking stored demo mode:', stored);
     if (stored === 'homeowner') {
       console.log('Restoring homeowner demo mode');
@@ -74,6 +86,9 @@ export function DemoProvider({ children }) {
       console.log('Restoring investor demo mode');
       setDemoMode('investor');
       setDemoData(DEMO_PORTFOLIO_INVESTOR);
+    }
+    if (storedSteps) {
+      setVisitedSteps(JSON.parse(storedSteps));
     }
   }, []);
   
@@ -98,8 +113,10 @@ export function DemoProvider({ children }) {
     <DemoContext.Provider value={{
       demoMode,
       demoData,
+      visitedSteps,
       enterDemoMode,
       exitDemoMode,
+      markStepVisited,
       isHomeowner,
       isInvestor
     }}>
