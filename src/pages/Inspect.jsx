@@ -351,7 +351,7 @@ export default function Inspect() {
         )}
 
         {/* MAIN METHOD SELECTOR - Clean, focused view */}
-        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && canEdit && (
+        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
           <Card className="border-2 border-purple-200 shadow-2xl mb-8">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -363,8 +363,10 @@ export default function Inspect() {
               <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
                 {/* Quick Start Wizard */}
                 <Card 
-                  className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group hover:shadow-xl bg-white"
-                  onClick={() => setShowWizard(true)}
+                  className={`border-2 border-purple-300 transition-all group hover:shadow-xl bg-white ${
+                    canEdit ? 'hover:border-purple-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                  }`}
+                  onClick={() => canEdit && setShowWizard(true)}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
@@ -396,6 +398,7 @@ export default function Inspect() {
                     <Button 
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
                       style={{ backgroundColor: '#9333EA', minHeight: '56px' }}
+                      disabled={!canEdit}
                     >
                       <Lightbulb className="w-5 h-5" />
                       Start Quick Setup →
@@ -405,8 +408,10 @@ export default function Inspect() {
 
                 {/* Physical Walkthrough */}
                 <Card 
-                  className="border-2 border-green-300 hover:border-green-500 transition-all cursor-pointer group hover:shadow-xl bg-white"
-                  onClick={handleStartPhysicalInspection}
+                  className={`border-2 border-green-300 transition-all group hover:shadow-xl bg-white ${
+                    canEdit ? 'hover:border-green-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                  }`}
+                  onClick={() => canEdit && handleStartPhysicalInspection()}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
@@ -437,6 +442,7 @@ export default function Inspect() {
                     <Button 
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
                       style={{ backgroundColor: '#16A34A', minHeight: '56px' }}
+                      disabled={!canEdit}
                     >
                       <PlayCircle className="w-5 h-5" />
                       Start Walkthrough →
@@ -453,6 +459,7 @@ export default function Inspect() {
                   variant="outline"
                   className="text-gray-700 border-gray-300 hover:border-gray-400"
                   style={{ minHeight: '48px' }}
+                  disabled={!canEdit}
                 >
                   Scroll down to browse all system categories
                 </Button>
