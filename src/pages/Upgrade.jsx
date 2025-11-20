@@ -53,7 +53,7 @@ export default function Upgrade() {
   const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
   const [whyExpanded, setWhyExpanded] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('browse');
+  const [activeTab, setActiveTab] = React.useState('projects');
   const [showDeferred, setShowDeferred] = React.useState(false);
 
   React.useEffect(() => {
@@ -460,29 +460,7 @@ export default function Upgrade() {
           </div>
         )}
 
-        {/* Tabs for non-demo mode */}
-        {!demoMode && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid w-full grid-cols-2 h-auto">
-              <TabsTrigger 
-                value="browse" 
-                className="flex items-center gap-2 py-3"
-                style={{ minHeight: '56px' }}
-              >
-                <Search className="w-5 h-5" />
-                <span>Browse Ideas</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="projects" 
-                className="flex items-center gap-2 py-3"
-                style={{ minHeight: '56px' }}
-              >
-                <Trophy className="w-5 h-5" />
-                <span>Your Projects {visibleProjectCount > 0 && `(${visibleProjectCount})`}</span>
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="browse" className="mt-6 space-y-6">
               
               {showMemberPricing && (
                 <Card className="border-2 border-purple-300 bg-purple-50">
@@ -585,169 +563,7 @@ export default function Upgrade() {
                 </CardContent>
               </Card>
 
-            </TabsContent>
 
-            <TabsContent value="projects" className="mt-6 space-y-6">
-              
-              {upgradesLoading && (
-                <div className="text-center py-12">
-                  <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-600">Loading your projects...</p>
-                </div>
-              )}
-
-              {!upgradesLoading && completedProjects.length > 0 && (
-                <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2" style={{ color: '#1B365D' }}>
-                      <Trophy className="w-6 h-6 text-green-600" />
-                      Your Upgrade Impact
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Total Invested</p>
-                        <p className="text-2xl font-bold text-blue-700">
-                          ${totalInvestment.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Value Added</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          ${totalEquityGained.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Net Wealth Gain</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          +${netEquityGrowth.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Lifetime ROI</p>
-                        <p className="text-2xl font-bold text-purple-700">
-                          {totalInvestment > 0 ? Math.round((totalEquityGained / totalInvestment) * 100) : 0}%
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {!upgradesLoading && activeProjects.length > 0 && (
-                <div>
-                  <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
-                    <Clock className="w-6 h-6 text-orange-600" />
-                    Active Projects ({activeProjects.length})
-                  </h2>
-                  <div className="space-y-4">
-                    {activeProjects.map((project) => (
-                      <UpgradeProjectCard
-                        key={project.id}
-                        project={project}
-                        properties={properties}
-                        memberDiscount={memberDiscountTier}
-                        onEdit={canEdit ? () => setEditingProject(project) : undefined}
-                        canEdit={canEdit}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!upgradesLoading && completedProjects.length > 0 && (
-                <div>
-                  <h2 className="font-bold mb-4 text-xl flex items-center gap-2" style={{ color: '#1B365D' }}>
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    Completed Projects ({completedProjects.length})
-                  </h2>
-                  <div className="space-y-4">
-                    {completedProjects.map((project) => (
-                      <UpgradeProjectCard
-                        key={project.id}
-                        project={project}
-                        properties={properties}
-                        memberDiscount={memberDiscountTier}
-                        onEdit={canEdit ? () => setEditingProject(project) : undefined}
-                        canEdit={canEdit}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!upgradesLoading && deferredProjects.length > 0 && (
-                <div className="border-t pt-6">
-                  <button
-                    onClick={() => setShowDeferred(!showDeferred)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
-                    style={{ minHeight: '40px' }}
-                  >
-                    <PauseCircle className="w-5 h-5" />
-                    <span className="font-semibold">
-                      Deferred Projects ({deferredProjects.length})
-                    </span>
-                    {showDeferred ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </button>
-                  {showDeferred && (
-                    <div className="space-y-4 opacity-60">
-                      {deferredProjects.map((project) => (
-                        <UpgradeProjectCard
-                          key={project.id}
-                          project={project}
-                          properties={properties}
-                          memberDiscount={memberDiscountTier}
-                          onEdit={canEdit ? () => setEditingProject(project) : undefined}
-                          canEdit={canEdit}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!upgradesLoading && visibleProjectCount === 0 && (
-                <Card className="border-none shadow-sm">
-                  <CardContent className="p-12 text-center">
-                    <LightbulbIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                    <h3 className="text-xl font-semibold mb-2">No Projects Yet</h3>
-                    <p className="text-gray-600 mb-2">
-                      Start building equity and increasing property value
-                    </p>
-                    <p className="text-sm text-gray-500 mb-6">
-                      Browse inspiring upgrade ideas with proven ROI data
-                    </p>
-                    <div className="flex flex-col md:flex-row gap-3 justify-center">
-                      <Button
-                        onClick={() => setActiveTab('browse')}
-                        style={{ backgroundColor: '#3B82F6', minHeight: '48px' }}
-                      >
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Explore Upgrade Ideas
-                      </Button>
-                      {canEdit && (
-                        <Button
-                          onClick={() => setShowNewProjectForm(true)}
-                          variant="outline"
-                          style={{ minHeight: '48px' }}
-                        >
-                          <Plus className="w-5 h-5 mr-2" />
-                          Create Custom Project
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-            </TabsContent>
-          </Tabs>
-        )}
 
       </div>
     </div>
