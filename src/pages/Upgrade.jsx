@@ -341,128 +341,41 @@ export default function Upgrade() {
           </Card>
         )}
 
-        {/* Demo Upgrades Display */}
-        {demoMode && allUpgrades.length > 0 && (
-          <div className="space-y-6 mb-8">
-            <h2 className="text-2xl font-bold" style={{ color: '#1B365D' }}>
-              Your Upgrade Projects ({allUpgrades.length})
-            </h2>
+        {/* Tabbed Interface for All Modes */}
+        {selectedProperty && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsTrigger 
+                value="projects" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <Trophy className="w-5 h-5" />
+                <span>My Projects ({allUpgrades.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="browse" 
+                className="flex items-center gap-2 py-3"
+                style={{ minHeight: '56px' }}
+              >
+                <LightbulbIcon className="w-5 h-5" />
+                <span>Browse Ideas</span>
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-4">
-              {allUpgrades.map((upgrade) => (
-                <Card 
-                  key={upgrade.id} 
-                  className={`border-2 hover:shadow-lg transition-shadow ${
-                    upgrade.category === 'Quality of Life' ? 'border-purple-400 bg-purple-50' : 'border-gray-200'
-                  }`}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                          {upgrade.title}
-                        </h3>
-                        <Badge 
-                          variant="outline" 
-                          className={
-                            upgrade.category === 'Quality of Life' 
-                              ? 'bg-purple-100 text-purple-700 border-purple-300' 
-                              : 'bg-blue-50 text-blue-700'
-                          }
-                        >
-                          {upgrade.category}
-                        </Badge>
-                      </div>
-                      <Badge 
-                        className={
-                          upgrade.status === 'Planned' ? 'bg-blue-600' :
-                          upgrade.status === 'In Progress' ? 'bg-yellow-600' :
-                          upgrade.status === 'Researching' ? 'bg-gray-600' :
-                          upgrade.status === 'Wishlist' ? 'bg-purple-600' :
-                          'bg-green-600'
-                        }
-                      >
-                        {upgrade.status}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-gray-700 mb-4">{upgrade.description}</p>
-                    
-                    {upgrade.category === 'Quality of Life' && (
-                      <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
-                        <p className="text-sm font-semibold text-purple-900 mb-2">
-                          💜 The Joy Factor
-                        </p>
-                        <div className="text-sm text-purple-800 whitespace-pre-line leading-relaxed">
-                          {upgrade.why_worth_it}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {upgrade.category !== 'Quality of Life' && (
-                      <>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4
-                        text-sm">
-                          <div>
-                            <p className="text-gray-500">Est. Cost</p>
-                            <p className="font-semibold">
-                              ${upgrade.estimated_cost_low?.toLocaleString()} - 
-                              ${upgrade.estimated_cost_high?.toLocaleString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Annual Savings</p>
-                            <p className="font-semibold text-green-600">
-                              ${upgrade.annual_savings?.toLocaleString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Payback Period</p>
-                            <p className="font-semibold">
-                              {upgrade.payback_period_years} years
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">10-Year Savings</p>
-                            <p className="font-semibold text-green-600">
-                              ${upgrade.total_savings_10yr?.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        {upgrade.why_worth_it && (
-                          <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-600">
-                            <p className="text-sm text-green-900">
-                              <strong>Why Worth It:</strong> {upgrade.why_worth_it}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    
-                    {upgrade.status === 'In Progress' && upgrade.progress_percentage !== undefined && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-semibold">{upgrade.progress_percentage}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${upgrade.progress_percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+            <TabsContent value="projects" className="mt-6">
+              <MyProjectsTab projects={allUpgrades} demoMode={demoMode} />
+            </TabsContent>
+
+            <TabsContent value="browse" className="mt-6">
+              <BrowseIdeasTab />
+            </TabsContent>
+          </Tabs>
         )}
 
 
-              
-              {showMemberPricing && (
+        {/* Member Pricing Banner */}
+        {!demoMode && showMemberPricing && (
                 <Card className="border-2 border-purple-300 bg-purple-50">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -485,9 +398,11 @@ export default function Upgrade() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+        )}
 
-              <Card className="border-2 border-blue-300">
+        {!demoMode && (
+          <>
+            <Card className="border-2 border-blue-300">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
