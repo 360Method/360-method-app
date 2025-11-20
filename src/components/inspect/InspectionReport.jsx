@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,13 +38,13 @@ export default function InspectionReport({ inspection, property, baselineSystems
     );
   }
 
-  // Safely access checklist_items now that inspection is guaranteed to exist
-  const allIssues = inspection?.checklist_items || [];
-  const urgentIssues = allIssues.filter(i => i.severity === 'Urgent');
-  const flagIssues = allIssues.filter(i => i.severity === 'Flag');
-  const monitorIssues = allIssues.filter(i => i.severity === 'Monitor');
+  // Support both formats: checklist_items (real) and findings (demo)
+  const allIssues = inspection?.findings || inspection?.checklist_items || [];
+  const urgentIssues = allIssues.filter(i => i.severity === 'Critical' || i.severity === 'Urgent' || i.severity === 'Moderate');
+  const flagIssues = allIssues.filter(i => i.severity === 'Flag' || i.severity === 'Minor');
+  const monitorIssues = allIssues.filter(i => i.severity === 'Monitor' || i.severity === 'Pass' || i.severity === 'Documentation');
   const completedQuickFixes = allIssues.filter(i => i.is_quick_fix && i.status === 'Completed');
-  const issuesWithPhotos = allIssues.filter(i => i.photo_urls && i.photo_urls.length > 0);
+  const issuesWithPhotos = allIssues.filter(i => (i.photo_urls && i.photo_urls.length > 0) || (i.photos && i.photos.length > 0));
 
   // Calculate costs
   const totalEstimatedCost = allIssues.reduce((sum, issue) => {
@@ -229,9 +228,9 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       URGENT ISSUES ({urgentIssues.length})
                     </h3>
                     <div className="space-y-4">
-                      {urgentIssues.map((issue, idx) => (
-                        <IssueDetailCard key={idx} issue={issue} number={idx + 1} />
-                      ))}
+                     {urgentIssues.map((issue, idx) => (
+                       <FindingCard key={idx} finding={issue} number={idx + 1} />
+                     ))}
                     </div>
                   </div>
                 )}
@@ -244,9 +243,9 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       FLAG ISSUES ({flagIssues.length})
                     </h3>
                     <div className="space-y-4">
-                      {flagIssues.map((issue, idx) => (
-                        <IssueDetailCard key={idx} issue={issue} number={urgentIssues.length + idx + 1} />
-                      ))}
+                     {flagIssues.map((issue, idx) => (
+                       <FindingCard key={idx} finding={issue} number={urgentIssues.length + idx + 1} />
+                     ))}
                     </div>
                   </div>
                 )}
@@ -259,13 +258,13 @@ export default function InspectionReport({ inspection, property, baselineSystems
                       MONITOR ITEMS ({monitorIssues.length})
                     </h3>
                     <div className="space-y-4">
-                      {monitorIssues.map((issue, idx) => (
-                        <IssueDetailCard 
-                          key={idx} 
-                          issue={issue} 
-                          number={urgentIssues.length + flagIssues.length + idx + 1} 
-                        />
-                      ))}
+                     {monitorIssues.map((issue, idx) => (
+                       <FindingCard 
+                         key={idx} 
+                         finding={issue} 
+                         number={urgentIssues.length + flagIssues.length + idx + 1} 
+                       />
+                     ))}
                     </div>
                   </div>
                 )}
@@ -472,6 +471,95 @@ function IssueDetailCard({ issue, number }) {
                   key={idx}
                   src={url}
                   alt={`Issue ${number} photo ${idx + 1}`}
+                  className="w-24 h-24 object-cover rounded border-2 border-gray-200"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// New component for demo data findings
+function FindingCard({ finding, number }) {
+  const severityColors = {
+    'Critical': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-800' },
+    'Urgent': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-800' },
+    'Moderate': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-800' },
+    'Minor': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-800' },
+    'Flag': { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-800' },
+    'Pass': { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-800' },
+    'Monitor': { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-800' },
+    'Documentation': { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-800' }
+  };
+
+  const colors = severityColors[finding.severity] || severityColors['Monitor'];
+
+  return (
+    <Card className={`border-2 ${colors.border} ${colors.bg}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className={`${colors.text} bg-white border-2 ${colors.border}`}>
+                Finding #{number}
+              </Badge>
+              <Badge variant="outline">
+                {finding.location}
+              </Badge>
+              <Badge className={`${colors.text}`}>
+                {finding.severity}
+              </Badge>
+            </div>
+            <p className="font-semibold text-gray-900 text-lg mb-1">
+              {finding.issue}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-gray-800 mb-2">{finding.description}</p>
+
+        {/* Recommendation */}
+        {finding.recommendation && (
+          <div className="bg-white rounded p-3 mb-3 border border-gray-200">
+            <p className="text-sm font-semibold text-gray-700 mb-1">Recommendation:</p>
+            <p className="text-sm text-gray-800">{finding.recommendation}</p>
+          </div>
+        )}
+
+        {/* Cost and Risk */}
+        <div className="flex flex-wrap gap-3 mb-3 text-sm">
+          {finding.estimated_cost > 0 && (
+            <div className="flex items-center gap-1">
+              <DollarSign className="w-4 h-4 text-gray-600" />
+              <span className="font-semibold">Est. Cost:</span>
+              <span className="text-gray-800">${finding.estimated_cost}</span>
+            </div>
+          )}
+          {finding.cascade_risk && finding.cascade_risk !== 'None' && (
+            <div className="flex items-center gap-1 text-orange-700">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-semibold">Risk:</span>
+              <span>{finding.cascade_risk}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Photos */}
+        {finding.photos && finding.photos.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-600 mb-2 flex items-center gap-1">
+              <Camera className="w-3 h-3" />
+              Documentation Photos:
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {finding.photos.map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  alt={`Finding ${number} photo ${idx + 1}`}
                   className="w-24 h-24 object-cover rounded border-2 border-gray-200"
                 />
               ))}
