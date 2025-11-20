@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Droplet, Home, Shield, Leaf, Sparkles, X, CheckCircle } from 'lucide-react';
+import { Zap, Home, Leaf, Sparkles, X, CheckCircle, Shield } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 
