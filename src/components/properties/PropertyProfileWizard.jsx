@@ -594,6 +594,10 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
   };
 
   const handleComplete = async () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🟢 WIZARD: handleComplete called');
+    console.log('🟢 WIZARD: Raw form data:', formData);
+    
     const equity = formData.current_value - formData.mortgage_balance;
     const ltv = formData.current_value ? (formData.mortgage_balance / formData.current_value) * 100 : 0;
     const totalExpenses = parseFloat(formData.monthly_mortgage_payment || 0) + 
@@ -625,6 +629,9 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       financial_profile_complete: true
     };
 
+    console.log('🟢 WIZARD: Complete data to save:', completeData);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     updatePropertyMutation.mutate(completeData);
   };
 

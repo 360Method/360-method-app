@@ -83,9 +83,23 @@ export default function Scale() {
     ? demoData?.portfolioMetrics
     : null;
 
-  console.log('=== SCALE STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('Portfolio metrics:', portfolioMetrics);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔵 SCALE: Component rendering');
+  console.log('🔵 SCALE: Demo mode:', demoMode);
+  console.log('🔵 SCALE: Properties loaded:', properties?.length);
+  properties?.forEach((p, i) => {
+    console.log(`🔵 SCALE: Property ${i + 1}:`, {
+      id: p.id,
+      address: p.address,
+      purchase_price: p.purchase_price,
+      current_value: p.current_value,
+      mortgage_balance: p.mortgage_balance,
+      financial_profile_complete: p.financial_profile_complete
+    });
+  });
+  console.log('🔵 SCALE: Equity data:', equityData?.length);
+  console.log('🔵 SCALE: Portfolio metrics:', portfolioMetrics);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   const canEdit = !demoMode;
 
