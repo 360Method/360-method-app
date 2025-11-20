@@ -29,6 +29,8 @@ import Onboarding from './pages/Onboarding';
 import UpgradeProjectDetail from './pages/UpgradeProjectDetail';
 import WelcomeDemo from './pages/WelcomeDemo';
 import DemoEntry from './pages/DemoEntry';
+import DashboardHomeowner from './pages/DashboardHomeowner';
+import DashboardInvestor from './pages/DashboardInvestor';
 import __Layout from './Layout.jsx';
 
 
@@ -64,6 +66,8 @@ export const PAGES = {
     "UpgradeProjectDetail": UpgradeProjectDetail,
     "WelcomeDemo": WelcomeDemo,
     "DemoEntry": DemoEntry,
+    "DashboardHomeowner": DashboardHomeowner,
+    "DashboardInvestor": DashboardInvestor,
 }
 
 export const pagesConfig = {
