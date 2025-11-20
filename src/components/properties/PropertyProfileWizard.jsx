@@ -40,31 +40,61 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       console.log('🟢 WIZARD: Saving property profile');
       console.log('🟢 WIZARD: Property ID:', property.id);
       console.log('🟢 WIZARD: Data to save:', JSON.stringify(data, null, 2));
-      const result = await base44.entities.Property.update(property.id, data);
-      console.log('🟢 WIZARD: Save result:', JSON.stringify(result, null, 2));
-      console.log('🟢 WIZARD: Property saved successfully!');
+      
+      // Step 1: Update property with financial data
+      const propertyResult = await base44.entities.Property.update(property.id, data);
+      console.log('🟢 WIZARD: Property save result:', JSON.stringify(propertyResult, null, 2));
+      
+      // Step 2: Create or update PortfolioEquity record
+      console.log('🟢 WIZARD: Checking for existing PortfolioEquity...');
+      const existingEquity = await base44.entities.PortfolioEquity.filter({ property_id: property.id });
+      console.log('🟢 WIZARD: Existing equity records:', existingEquity);
+      
+      const equityData = {
+        property_id: property.id,
+        current_market_value: data.current_value,
+        valuation_date: new Date().toISOString().split('T')[0],
+        valuation_source: 'User Estimate',
+        purchase_price: data.purchase_price,
+        purchase_date: data.purchase_date,
+        mortgage_balance: data.mortgage_balance,
+        mortgage_interest_rate: data.interest_rate,
+        mortgage_payment_monthly: data.monthly_mortgage_payment,
+        total_debt: data.mortgage_balance,
+        equity_dollars: data.current_value - data.mortgage_balance,
+        equity_percentage: ((data.current_value - data.mortgage_balance) / data.current_value) * 100,
+        is_rental: data.is_rental,
+        monthly_rent_income: data.monthly_rent || 0,
+        monthly_operating_expenses: (parseFloat(data.monthly_insurance) || 0) + (parseFloat(data.monthly_taxes) || 0) + (parseFloat(data.monthly_hoa) || 0) + (parseFloat(data.estimated_maintenance) || 0),
+        monthly_noi: (data.monthly_rent || 0) - ((parseFloat(data.monthly_insurance) || 0) + (parseFloat(data.monthly_taxes) || 0) + (parseFloat(data.monthly_hoa) || 0) + (parseFloat(data.estimated_maintenance) || 0)),
+        last_updated: new Date().toISOString().split('T')[0]
+      };
+      
+      let equityResult;
+      if (existingEquity && existingEquity.length > 0) {
+        console.log('🟢 WIZARD: Updating existing PortfolioEquity:', existingEquity[0].id);
+        equityResult = await base44.entities.PortfolioEquity.update(existingEquity[0].id, equityData);
+      } else {
+        console.log('🟢 WIZARD: Creating new PortfolioEquity');
+        equityResult = await base44.entities.PortfolioEquity.create(equityData);
+      }
+      console.log('🟢 WIZARD: PortfolioEquity result:', JSON.stringify(equityResult, null, 2));
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      return result;
+      
+      return propertyResult;
     },
     onSuccess: async (data) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🟢 WIZARD: onSuccess called with data:', JSON.stringify(data, null, 2));
-      console.log('🟢 WIZARD: Invalidating queries...');
+      console.log('🟢 WIZARD: onSuccess called');
+      console.log('🟢 WIZARD: Invalidating all queries...');
       await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      console.log('🟢 WIZARD: Queries invalidated, waiting for refetch...');
+      await queryClient.invalidateQueries({ queryKey: ['portfolio-equity'] });
+      console.log('🟢 WIZARD: Queries invalidated');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
-      // Wait a moment for the query to refetch
-      setTimeout(async () => {
-        const freshData = queryClient.getQueryData(['properties']);
-        console.log('🟢 WIZARD: Fresh property data after refetch:', JSON.stringify(freshData, null, 2));
-        
-        const updatedProperty = freshData?.find(p => p.id === property.id);
-        console.log('🟢 WIZARD: Updated property from cache:', JSON.stringify(updatedProperty, null, 2));
-        console.log('🟢 WIZARD: financial_profile_complete value:', updatedProperty?.financial_profile_complete);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
+      setTimeout(() => {
         onComplete(data);
-      }, 500);
+      }, 300);
     },
     onError: (error) => {
       console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -610,22 +640,21 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
   };
 
   const handleComplete = async () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🟢 WIZARD: handleComplete called');
-    console.log('🟢 WIZARD: Raw form data:', formData);
-    
     const equity = formData.current_value - formData.mortgage_balance;
     const ltv = formData.current_value ? (formData.mortgage_balance / formData.current_value) * 100 : 0;
     const totalExpenses = parseFloat(formData.monthly_mortgage_payment || 0) + 
                           parseFloat(formData.monthly_insurance || 0) + 
-                          parseFloat(formData.monthly_taxes || 0) + 
+                          parseFloat(formData.monthly_taxes) || 0) + 
                           parseFloat(formData.monthly_hoa || 0) + 
                           parseFloat(formData.estimated_maintenance || 0);
     const netCashFlow = parseFloat(formData.monthly_rent || 0) - totalExpenses;
 
     const completeData = {
-      ...formData,
       purchase_price: parseFloat(formData.purchase_price) || 0,
+      purchase_date: formData.purchase_date,
+      closing_costs: parseFloat(formData.closing_costs) || 0,
+      down_payment_percent: parseFloat(formData.down_payment_percent) || 20,
+      loan_term_years: parseInt(formData.loan_term_years) || 30,
       current_value: parseFloat(formData.current_value) || 0,
       mortgage_balance: parseFloat(formData.mortgage_balance) || 0,
       monthly_mortgage_payment: parseFloat(formData.monthly_mortgage_payment) || 0,
@@ -635,20 +664,9 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       monthly_taxes: parseFloat(formData.monthly_taxes) || 0,
       monthly_hoa: parseFloat(formData.monthly_hoa) || 0,
       estimated_maintenance: parseFloat(formData.estimated_maintenance) || 0,
-      closing_costs: parseFloat(formData.closing_costs) || 0,
-      down_payment_percent: parseFloat(formData.down_payment_percent) || 20,
-      loan_term_years: parseFloat(formData.loan_term_years) || 30,
-      equity_calculated: equity,
-      ltv_calculated: ltv,
-      net_cash_flow_calculated: netCashFlow,
-      total_monthly_expenses: totalExpenses,
       financial_profile_complete: true
     };
 
-    console.log('🟢 WIZARD: Complete data to save:', completeData);
-    console.log('🟢 WIZARD: CRITICAL - financial_profile_complete set to:', completeData.financial_profile_complete);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
     updatePropertyMutation.mutate(completeData);
   };
 
