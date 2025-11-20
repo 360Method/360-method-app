@@ -48,7 +48,11 @@ export default function SchedulePage() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(5);
+  }, [demoMode]);
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
   const [viewMode, setViewMode] = React.useState('unscheduled');

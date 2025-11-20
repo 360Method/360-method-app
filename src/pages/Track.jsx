@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -31,7 +30,11 @@ import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const queryClient = useQueryClient();
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(3);
+  }, [demoMode]);
   
   const [selectedProperty, setSelectedProperty] = useState(urlParams.get('property') || 'first');
   const [activeTab, setActiveTab] = useState('wins');

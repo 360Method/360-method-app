@@ -103,7 +103,11 @@ export default function PrioritizePage() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdParam = urlParams.get('property');
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(4);
+  }, [demoMode]);
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdParam || 'all');
   const [showTaskForm, setShowTaskForm] = React.useState(false);

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +26,11 @@ export default function ExecutePage() {
   const location = useLocation();
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
-  const { demoMode, demoData, isInvestor } = useDemo();
+  const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+
+  React.useEffect(() => {
+    if (demoMode) markStepVisited(6);
+  }, [demoMode]);
 
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
 
