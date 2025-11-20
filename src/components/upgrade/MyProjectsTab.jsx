@@ -20,13 +20,13 @@ export default function MyProjectsTab({ projects }) {
         <div className="bg-blue-50 rounded-xl p-4">
           <div className="text-sm text-blue-700 mb-1">Total Budget</div>
           <div className="text-2xl font-bold text-blue-900">
-            ${projects.reduce((sum, p) => sum + (p.budget || 0), 0).toLocaleString()}
+            ${projects.reduce((sum, p) => sum + (p.investment_required || p.budget || 0), 0).toLocaleString()}
           </div>
         </div>
         <div className="bg-green-50 rounded-xl p-4">
           <div className="text-sm text-green-700 mb-1">Annual Savings</div>
           <div className="text-2xl font-bold text-green-900">
-            ${projects.reduce((sum, p) => sum + (p.estimatedAnnualSavings || 0), 0).toLocaleString()}
+            ${projects.reduce((sum, p) => sum + (p.annual_savings || p.estimatedAnnualSavings || 0), 0).toLocaleString()}
           </div>
         </div>
         <div className="bg-purple-50 rounded-xl p-4">
@@ -52,9 +52,14 @@ export default function MyProjectsTab({ projects }) {
 }
 
 function ProjectCard({ project }) {
-  const progressPercent = project.budget > 0 ? (project.spent / project.budget) * 100 : 0;
-  const milestonesComplete = project.milestones?.filter(m => m.status === 'completed').length || 0;
+  const budget = project.investment_required || project.budget || 0;
+  const spent = project.actual_cost || project.spent || 0;
+  const progressPercent = budget > 0 ? (spent / budget) * 100 : 0;
+  const milestonesComplete = project.milestones?.filter(m => m.status === 'Completed').length || 0;
   const milestonesTotal = project.milestones?.length || 0;
+  const annualSavings = project.annual_savings || project.estimatedAnnualSavings || 0;
+  const valueIncrease = project.property_value_impact || project.resaleValueIncrease || 0;
+  const payback = project.payback_period_years || project.paybackPeriod || 0;
 
   const statusColors = {
     'Completed': 'bg-green-100 text-green-800 border-green-300',
@@ -101,10 +106,10 @@ function ProjectCard({ project }) {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-xs text-gray-600 mb-1">Budget</div>
             <div className="text-lg font-bold text-gray-900">
-              ${project.budget.toLocaleString()}
+              ${budget.toLocaleString()}
             </div>
             <div className="text-xs text-gray-600 mt-2">
-              Spent: ${project.spent.toLocaleString()} ({progressPercent.toFixed(0)}%)
+              Spent: ${spent.toLocaleString()} ({progressPercent.toFixed(0)}%)
             </div>
             <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
               <div 
@@ -114,26 +119,26 @@ function ProjectCard({ project }) {
             </div>
           </div>
 
-          {project.estimatedAnnualSavings > 0 && (
+          {annualSavings > 0 && (
             <div className="bg-green-50 rounded-lg p-4">
               <div className="text-xs text-green-700 mb-1">Annual Savings</div>
               <div className="text-lg font-bold text-green-900">
-                ${project.estimatedAnnualSavings.toLocaleString()}
+                ${annualSavings.toLocaleString()}
               </div>
               <div className="text-xs text-green-700 mt-2">
-                Payback: {project.paybackPeriod} years
+                Payback: {payback} years
               </div>
             </div>
           )}
 
-          {project.resaleValueIncrease && (
+          {valueIncrease > 0 && (
             <div className="bg-purple-50 rounded-lg p-4">
               <div className="text-xs text-purple-700 mb-1">Resale Value</div>
               <div className="text-lg font-bold text-purple-900">
-                +${project.resaleValueIncrease.toLocaleString()}
+                +${valueIncrease.toLocaleString()}
               </div>
               <div className="text-xs text-purple-700 mt-2">
-                ROI: {project.roi}
+                ROI: {((valueIncrease / budget) * 100).toFixed(0)}%
               </div>
             </div>
           )}
@@ -154,30 +159,34 @@ function ProjectCard({ project }) {
           <div className="mb-6">
             <h4 className="font-semibold text-gray-900 mb-3">Milestones</h4>
             <div className="space-y-2">
-              {project.milestones.map((milestone) => (
-                <div key={milestone.id} className="flex items-center gap-3 text-sm">
-                  {milestone.status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : milestone.status === 'in-progress' ? (
-                    <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className={milestone.status === 'completed' ? 'text-gray-500 line-through' : 'text-gray-900'}>
-                    {milestone.title}
-                  </span>
-                  {milestone.status === 'completed' && milestone.completedDate && (
-                    <span className="text-xs text-gray-500 ml-auto">
-                      {new Date(milestone.completedDate).toLocaleDateString()}
+              {project.milestones.map((milestone) => {
+                const isCompleted = milestone.status === 'Completed' || milestone.status === 'completed';
+                const isInProgress = milestone.status === 'In Progress' || milestone.status === 'in-progress';
+                return (
+                  <div key={milestone.id} className="flex items-center gap-3 text-sm">
+                    {isCompleted ? (
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : isInProgress ? (
+                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className={isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}>
+                      {milestone.title}
                     </span>
-                  )}
-                  {milestone.status === 'pending' && milestone.targetDate && (
-                    <span className="text-xs text-gray-500 ml-auto">
-                      Target: {new Date(milestone.targetDate).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              ))}
+                    {isCompleted && milestone.completedDate && (
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {new Date(milestone.completedDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    {!isCompleted && milestone.targetDate && (
+                      <span className="text-xs text-gray-500 ml-auto">
+                        Target: {new Date(milestone.targetDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
