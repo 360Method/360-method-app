@@ -66,21 +66,33 @@ export default function Properties() {
   // Fetch data - fetch both demo and real properties
   const { data: realProperties = [], isLoading } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-updated_date'),
+    queryFn: async () => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔵 PROPERTIES: Fetching properties from database');
+      const allProps = await base44.entities.Property.list('-updated_date');
+      console.log('🔵 PROPERTIES: Properties fetched:', allProps?.length);
+      allProps?.forEach((p, i) => {
+        console.log(`🔵 PROPERTIES: Property ${i + 1}:`, {
+          id: p.id,
+          address: p.address,
+          purchase_price: p.purchase_price,
+          current_value: p.current_value,
+          mortgage_balance: p.mortgage_balance,
+          financial_profile_complete: p.financial_profile_complete
+        });
+      });
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return allProps;
+    },
     enabled: !demoMode,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0 // Don't cache - always get latest
+    staleTime: 0,
+    cacheTime: 0
   });
 
   // Use demo properties OR real properties
   const properties = demoMode
     ? (isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []))
     : realProperties;
-
-  console.log('=== PROPERTIES PAGE STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('Is investor:', isInvestor);
-  console.log('Properties:', properties);
 
   const canEdit = !demoMode;
 
