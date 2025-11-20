@@ -20,6 +20,7 @@ import InspectionSetup from "../components/inspect/InspectionSetup";
 import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
 import InspectionComplete from "../components/inspect/InspectionComplete";
 import InspectionReport from "../components/inspect/InspectionReport";
+import InspectionWizard from "../components/inspect/InspectionWizard";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import ConfirmDialog from "../components/ui/confirm-dialog";
 import StepNavigation from "../components/navigation/StepNavigation";
@@ -46,6 +47,7 @@ export default function Inspect() {
   const [inspectionToDelete, setInspectionToDelete] = React.useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [viewingInspection, setViewingInspection] = React.useState(null);
+  const [showWizard, setShowWizard] = React.useState(false);
 
   const queryClient = useQueryClient();
   const { demoMode, demoData, isInvestor } = useDemo();
@@ -165,8 +167,15 @@ export default function Inspect() {
   };
 
   const handleViewReport = (inspection) => {
+    setViewingInspection(inspection);
     setCurrentInspection(inspection || currentInspection);
     setInspectionView('report');
+  };
+
+  const handleWizardComplete = (inspectionData) => {
+    console.log('Inspection wizard completed:', inspectionData);
+    setShowWizard(false);
+    // In real app: save inspection data
   };
 
   const handleBackToMain = () => {
@@ -274,9 +283,8 @@ export default function Inspect() {
           <Alert className="mb-6 border-yellow-400 bg-yellow-50">
             <Info className="w-4 h-4 text-yellow-600" />
             <AlertDescription className="text-yellow-900">
-              <strong>Demo Mode:</strong> 2 seasonal inspections completed 
-              (Fall 2024: 5/6 items passed, Spring 2024: 6/6 items passed). 
-              Read-only example.
+              <strong>Demo Mode:</strong> View detailed inspection reports with findings below. 
+              Click "View" on any inspection to see the full report. Read-only example.
             </AlertDescription>
           </Alert>
         )}
@@ -291,14 +299,25 @@ export default function Inspect() {
               Step 2 of 9
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-              Inspect
-            </h1>
-            <DemoInfoTooltip 
-              title="Step 2: Inspect"
-              content="Seasonal walkthroughs (4x/year) catch small problems before they cascade into expensive failures. This is your early warning system."
-            />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                Inspect
+              </h1>
+              <DemoInfoTooltip 
+                title="Step 2: Inspect"
+                content="Seasonal walkthroughs (4x/year) catch small problems before they cascade into expensive failures. This is your early warning system."
+              />
+            </div>
+            {canEdit && selectedPropertyId && hasBaselineSystems && (
+              <Button
+                onClick={() => setShowWizard(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                New Inspection
+              </Button>
+            )}
           </div>
           <p className="text-gray-600 text-lg">
             Seasonal inspections to catch issues before they cascade
@@ -847,6 +866,14 @@ export default function Inspect() {
           confirmText="Yes, Delete"
           cancelText="Cancel"
           variant="destructive"
+        />
+      )}
+
+      {showWizard && (
+        <InspectionWizard
+          onComplete={handleWizardComplete}
+          onCancel={() => setShowWizard(false)}
+          properties={properties}
         />
       )}
     </div>
