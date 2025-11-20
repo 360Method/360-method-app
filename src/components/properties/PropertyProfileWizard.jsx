@@ -36,11 +36,25 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
 
   const updatePropertyMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.Property.update(property.id, data);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🟢 WIZARD: Saving property profile');
+      console.log('🟢 WIZARD: Property ID:', property.id);
+      console.log('🟢 WIZARD: Data to save:', data);
+      const result = await base44.entities.Property.update(property.id, data);
+      console.log('🟢 WIZARD: Save result:', result);
+      console.log('🟢 WIZARD: Property saved successfully!');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
-      onComplete();
+      onComplete(data);
+    },
+    onError: (error) => {
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ WIZARD: Failed to save property profile');
+      console.error('❌ WIZARD: Error:', error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
   });
 

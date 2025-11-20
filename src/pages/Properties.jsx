@@ -665,7 +665,12 @@ export default function Properties() {
         {canEdit && showProfileWizard && completingProperty && (
           <PropertyProfileWizard
             property={completingProperty}
-            onComplete={() => {
+            onComplete={(profileData) => {
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+              console.log('🟢 PROPERTIES: Profile wizard completed');
+              console.log('🟢 PROPERTIES: Profile data:', profileData);
+              console.log('🟢 PROPERTIES: Property ID:', completingProperty?.id);
+              console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
               setShowProfileWizard(false);
               setCompletingProperty(null);
               navigate(createPageUrl('Properties'), { replace: true });

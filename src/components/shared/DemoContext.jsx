@@ -37,13 +37,17 @@ export function DemoProvider({ children }) {
   };
   
   const exitDemoMode = () => {
-    console.log('🚪 Exiting demo mode');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔴 DEMO CONTEXT: Exiting demo mode');
+    console.log('🔴 DEMO CONTEXT: Setting demoMode to null');
     setDemoMode(null);
     setDemoData(null);
     setShowWizard(false);
+    console.log('🔴 DEMO CONTEXT: Clearing sessionStorage');
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
-
+    console.log('🔴 DEMO CONTEXT: Redirecting to Waitlist');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     // Force reload to clear all cached data
     window.location.href = createPageUrl('Waitlist');
   };

@@ -267,12 +267,14 @@ export default function Baseline() {
     : realSystems;
   const isLoading = demoMode ? false : isLoadingRealSystems;
 
-  console.log('=== BASELINE STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('Is investor:', isInvestor);
-  console.log('Selected property:', selectedProperty);
-  console.log('Systems:', systems);
-  console.log('Systems count:', systems?.length);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔵 BASELINE: Component rendering');
+  console.log('🔵 BASELINE: Demo mode:', demoMode);
+  console.log('🔵 BASELINE: Is investor:', isInvestor);
+  console.log('🔵 BASELINE: Selected property:', selectedProperty);
+  console.log('🔵 BASELINE: Systems:', systems);
+  console.log('🔵 BASELINE: Systems count:', systems?.length);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   React.useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
@@ -458,6 +460,10 @@ export default function Baseline() {
   };
 
   const handleCloseDialog = () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🟢 BASELINE: System dialog closed');
+    console.log('🟢 BASELINE: Invalidating queries for property:', selectedProperty);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     setShowDialog(false);
     setEditingSystem(null);
     queryClient.invalidateQueries({ queryKey: ['systemBaselines', selectedProperty] });
