@@ -249,6 +249,13 @@ export default function Baseline() {
     }
   });
 
+  // Set selected property immediately when properties are available
+  React.useEffect(() => {
+    if (!selectedProperty && properties.length > 0) {
+      setSelectedProperty(properties[0].id);
+    }
+  }, [properties]);
+
   const { data: realSystems = [], isLoading: isLoadingRealSystems } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
     queryFn: () => {
@@ -280,12 +287,6 @@ export default function Baseline() {
   console.log('🔵 BASELINE: Systems:', systems);
   console.log('🔵 BASELINE: Systems count:', systems?.length);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-  React.useEffect(() => {
-    if (!selectedProperty && properties.length > 0) {
-      setSelectedProperty(properties[0].id);
-    }
-  }, [properties, selectedProperty]);
 
   const systemsByType = systems.reduce((acc, system) => {
     if (!acc[system.system_type]) {
