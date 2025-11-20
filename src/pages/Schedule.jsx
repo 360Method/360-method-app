@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,6 +41,7 @@ import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function SchedulePage() {
