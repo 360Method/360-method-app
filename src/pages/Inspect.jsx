@@ -110,6 +110,8 @@ export default function Inspect() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      setDeleteConfirmOpen(false);
+      setInspectionToDelete(null);
     },
   });
 

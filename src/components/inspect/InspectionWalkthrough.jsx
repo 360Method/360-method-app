@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, AlertTriangle, Trash2, Save } from "lucide-react";
 import AreaInspection from "./AreaInspection";
+import ConfirmDialog from "../ui/confirm-dialog";
 import { format } from 'date-fns';
 
 // Physical zone-based routing for efficient inspection
@@ -162,6 +163,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
   const [routeMode, setRouteMode] = React.useState('physical');
   const [completedZones, setCompletedZones] = React.useState([]);
   const [isCompleting, setIsCompleting] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -188,6 +190,16 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
   const updateSystemMutation = useMutation({
     mutationFn: async ({ systemId, updates }) => {
       return base44.entities.SystemBaseline.update(systemId, updates);
+    },
+  });
+
+  const deleteInspectionMutation = useMutation({
+    mutationFn: async () => {
+      return base44.entities.Inspection.delete(inspection.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      onCancel();
     },
   });
 
@@ -249,7 +261,7 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     setCurrentAreaIndex(null);
   };
 
-  const handleFinishInspection = async () => {
+  const handleSaveAndComplete = async () => {
     setIsCompleting(true);
 
     try {
@@ -264,6 +276,88 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         status: 'Completed',
         inspection_date: new Date().toISOString().split('T')[0]
       });
+
+      const tasksToCreate = allIssues.filter(issue => issue.is_quick_fix === false);
+
+      for (const issue of tasksToCreate) {
+        const seasonalMeta = determineSeasonalMetadata(
+          issue.system || 'General',
+          inspection.season,
+          issue.description || issue.notes
+        );
+
+        const taskData = {
+          property_id: property.id,
+          title: issue.item_name || issue.description?.substring(0, 50) || 'Inspection Issue',
+          description: `Issue found during ${inspection.season} ${inspection.year} inspection in ${INSPECTION_AREAS.find(a => a.id === issue.area_id)?.name || 'unknown area'}.\n\n${issue.description || issue.notes || ''}`,
+          system_type: issue.system || 'General',
+          priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
+          status: 'Identified',
+          photo_urls: issue.photo_urls || [],
+          current_fix_cost: issue.current_fix_cost || 0,
+          delayed_fix_cost: issue.delayed_fix_cost || 0,
+          cascade_risk_score: issue.cascade_risk_score || 0,
+          cascade_risk_reason: issue.cascade_risk_reason || '',
+          cost_impact_reason: issue.cost_impact_reason || '',
+          has_cascade_alert: (issue.cascade_risk_score || 0) >= 7,
+          execution_type: issue.who_will_fix === 'diy' ? 'DIY' : issue.who_will_fix === 'professional' ? 'Professional' : 'Not Decided',
+          estimated_hours: issue.max_hours || null,
+          seasonal: seasonalMeta.seasonal,
+          recommended_completion_window: seasonalMeta.recommended_completion_window
+        };
+
+        await createTaskMutation.mutateAsync(taskData);
+
+        if (issue.system && issue.system !== 'General') {
+          const systemsToUpdate = baselineSystems.filter(s => s.system_type === issue.system);
+          for (const system of systemsToUpdate) {
+            const conditionUpdates = {};
+
+            if (issue.severity === 'Urgent') {
+              conditionUpdates.condition = 'Urgent';
+            } else if (issue.severity === 'Flag' && ['Good', 'Excellent'].includes(system.condition)) {
+              conditionUpdates.condition = 'Fair';
+            }
+
+            const existingWarnings = system.warning_signs_present || [];
+            const newWarning = issue.description?.substring(0, 100) || issue.notes?.substring(0, 100) || '';
+            if (newWarning && !existingWarnings.includes(newWarning)) {
+              conditionUpdates.warning_signs_present = [...existingWarnings, newWarning];
+            }
+
+            const timestamp = new Date().toLocaleDateString();
+            const existingNotes = system.condition_notes || '';
+            const newNote = `\n[${timestamp}] ${inspection.season} ${inspection.year} Inspection: ${issue.description || issue.notes || ''}`;
+            if (!existingNotes.includes(newNote)) {
+              conditionUpdates.condition_notes = existingNotes + newNote;
+            }
+
+            if (Object.keys(conditionUpdates).length > 0) {
+              await updateSystemMutation.mutateAsync({
+                systemId: system.id,
+                updates: conditionUpdates
+              });
+            }
+          }
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
+
+      onComplete();
+    } catch (error) {
+      console.error('Error completing inspection:', error);
+      alert('Failed to complete inspection. Please try again.');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleFinishInspection = async () => {
+    await handleSaveAndComplete();
 
       const tasksToCreate = allIssues.filter(issue => issue.is_quick_fix === false);
 
@@ -525,9 +619,9 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
               </Card>
             )}
 
-            {progress.percent >= 50 && (
+            {progress.completed > 0 && (
               <Button
-                onClick={handleFinishInspection}
+                onClick={handleSaveAndComplete}
                 className="w-full gap-2"
                 style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
                 disabled={isCompleting}
@@ -539,13 +633,41 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    Complete Inspection & Add Issues to Priority Queue
+                    <Save className="w-5 h-5" />
+                    Save & Complete Inspection Now
                   </>
                 )}
               </Button>
             )}
+
+            {progress.completed > 0 && (
+              <Button
+                onClick={() => setShowDeleteConfirm(true)}
+                variant="outline"
+                className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                style={{ minHeight: '48px' }}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Current Inspection
+              </Button>
+            )}
           </div>
+
+          {showDeleteConfirm && (
+            <ConfirmDialog
+              open={showDeleteConfirm}
+              onClose={() => setShowDeleteConfirm(false)}
+              onConfirm={() => {
+                deleteInspectionMutation.mutate();
+                setShowDeleteConfirm(false);
+              }}
+              title="Delete Inspection?"
+              message={`Are you sure you want to delete this ${inspection.season} ${inspection.year} inspection? All progress (${progress.percent}% complete) will be permanently lost. This cannot be undone.`}
+              confirmText="Yes, Delete"
+              cancelText="Cancel"
+              variant="destructive"
+            />
+          )}
         </div>
       </div>
     );
@@ -659,9 +781,9 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             </Card>
           )}
 
-          {progress.percent >= 50 && (
+          {progress.completed > 0 && (
             <Button
-              onClick={handleFinishInspection}
+              onClick={handleSaveAndComplete}
               className="w-full gap-2"
               style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
               disabled={isCompleting}
@@ -673,13 +795,41 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  Complete Inspection & Add Issues to Priority Queue
+                  <Save className="w-5 h-5" />
+                  Save & Complete Inspection Now
                 </>
               )}
             </Button>
           )}
+
+          {progress.completed > 0 && (
+            <Button
+              onClick={() => setShowDeleteConfirm(true)}
+              variant="outline"
+              className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              style={{ minHeight: '48px' }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Current Inspection
+            </Button>
+          )}
         </div>
+
+        {showDeleteConfirm && (
+          <ConfirmDialog
+            open={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            onConfirm={() => {
+              deleteInspectionMutation.mutate();
+              setShowDeleteConfirm(false);
+            }}
+            title="Delete Inspection?"
+            message={`Are you sure you want to delete this ${inspection.season} ${inspection.year} inspection? All progress (${progress.percent}% complete) will be permanently lost. This cannot be undone.`}
+            confirmText="Yes, Delete"
+            cancelText="Cancel"
+            variant="destructive"
+          />
+        )}
       </div>
     </div>
   );
