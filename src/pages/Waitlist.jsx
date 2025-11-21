@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check } from 'lucide-react';
+import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check, Home } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 

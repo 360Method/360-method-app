@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Sparkles, ArrowLeft } from 'lucide-react';
+import { Info, Sparkles, ArrowLeft, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '../shared/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
