@@ -277,26 +277,7 @@ export default function Properties() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
 
-        {/* Demo Banner */}
-        {demoMode && (
-          <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
-            <Info className="w-4 h-4 text-yellow-600" />
-            <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <span className="text-yellow-900">
-                <strong>Demo Mode:</strong> Viewing demo property. 
-                Exit demo to manage your real properties.
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={exitDemoMode}
-                className="border-yellow-600 text-yellow-900 hover:bg-yellow-100"
-              >
-                Exit Demo
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+
 
         {/* Foundation Layer Header */}
         <div className="mb-6 mt-4">
