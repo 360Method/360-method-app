@@ -346,7 +346,7 @@ function LayoutContent({ children }) {
                   />
                   <div>
                     <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
-                    <p className="text-xs text-gray-500">Own. Build. Wealth.</p>
+                    <p className="text-xs text-gray-500">Own. Build. Grow.</p>
                   </div>
                 </div>
                 <button
