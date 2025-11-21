@@ -12,6 +12,7 @@ export function DemoBanner({ onAddProperty }) {
   if (!demoMode) return null;
 
   const handleJoinWaitlist = () => {
+    sessionStorage.setItem('navigatedFromDemo', 'true');
     navigate(createPageUrl('Waitlist'));
   };
 
