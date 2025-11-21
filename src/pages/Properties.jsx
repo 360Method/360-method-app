@@ -470,107 +470,61 @@ export default function Properties() {
         {/* Investor Demo Property Display */}
         {demoMode && properties.length > 0 && isInvestor && (
           <div className="space-y-6">
-            <Card className="border-2 border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg mb-6">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Badge className="bg-green-600 text-white text-lg px-4 py-2">
-                    🏢 Investor Portfolio Demo
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-700 mb-4">
-                  You're viewing a 3-property portfolio: Duplex, Single-Family Home, and 4-Plex. 
-                  Navigate through the app to see portfolio-level analytics and multi-property management.
-                </p>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="bg-white p-3 rounded-lg border border-green-300">
-                    <p className="font-bold text-green-900">Total Value</p>
-                    <p className="text-2xl font-bold text-green-600">$785K</p>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-green-300">
-                    <p className="font-bold text-green-900">Cash Flow</p>
-                    <p className="text-2xl font-bold text-green-600">$2,710/mo</p>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-green-300">
-                    <p className="font-bold text-green-900">Portfolio ROI</p>
-                    <p className="text-2xl font-bold text-green-600">18.2%</p>
+            {/* Portfolio Summary Banner */}
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900 mb-1">Portfolio View: Foundation of the 360° Method</h3>
+                    <p className="text-sm text-blue-800">
+                      Each property in your portfolio flows through the 9-step system (AWARE → ACT → ADVANCE). Navigate through the tabs to explore how multi-property management creates portfolio-level intelligence.
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {properties.map(property => (
-              <Card 
-                key={property.id}
-                className="border-2 shadow-lg border-green-400 bg-gradient-to-br from-white to-green-50"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-2xl font-bold" style={{ color: '#1B365D' }}>
-                          {property.nickname || property.address}
-                        </h3>
-                        <Badge variant="outline" className="bg-green-100 text-green-700 border-green-400">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Demo Property
-                        </Badge>
-                        {property.door_count > 1 && (
-                          <Badge className="bg-purple-600 text-white">
-                            {property.door_count} units
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mb-4">
-                        {property.city}, {property.state} {property.zip_code}
-                      </p>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Type</p>
-                          <p className="font-semibold">{property.property_type}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Year Built</p>
-                          <p className="font-semibold">{property.year_built}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Square Feet</p>
-                          <p className="font-semibold">{property.square_footage?.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Health Score</p>
-                          <p className="font-semibold text-green-600 text-xl">
-                            {property.health_score}/100
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-gray-300">
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Value</p>
-                          <p className="font-semibold">${(property.current_value / 1000).toFixed(0)}K</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Equity</p>
-                          <p className="font-semibold text-green-600">${(property.equity / 1000).toFixed(0)}K</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Cash Flow</p>
-                          <p className="font-semibold">
-                            ${(property.monthly_rent - property.monthly_mortgage).toLocaleString()}/mo
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-xs mb-1">Occupancy</p>
-                          <p className="font-semibold text-sm">{property.occupancy_status}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Portfolio Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-green-100">
+                <CardContent className="p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Value</p>
+                  <p className="text-2xl font-bold text-green-700">$785K</p>
                 </CardContent>
               </Card>
-            ))}
+              <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
+                <CardContent className="p-4">
+                  <p className="text-xs text-gray-600 mb-1">Total Equity</p>
+                  <p className="text-2xl font-bold text-blue-700">$412K</p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-md bg-gradient-to-br from-purple-50 to-purple-100">
+                <CardContent className="p-4">
+                  <p className="text-xs text-gray-600 mb-1">Cash Flow</p>
+                  <p className="text-2xl font-bold text-purple-700">$2,710/mo</p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-md bg-gradient-to-br from-orange-50 to-orange-100">
+                <CardContent className="p-4">
+                  <p className="text-xs text-gray-600 mb-1">Avg Health</p>
+                  <p className="text-2xl font-bold text-orange-700">81/100</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Properties List */}
+            <div className="space-y-4">
+              {properties.map(property => (
+                <EnhancedPropertyCard
+                  key={property.id}
+                  property={property}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                  demoData={demoData}
+                />
+              ))}
+            </div>
 
             {/* Exit Demo CTA */}
             <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
