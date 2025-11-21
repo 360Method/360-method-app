@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock } from 'lucide-react';
+import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 
@@ -15,9 +15,12 @@ export default function Waitlist() {
     zip_code: '',
     property_type: 'homecare',
     notes: '',
-    source: source || 'waitlist_page'
+    source: source || 'waitlist_page',
+    marketing_consent: false,
+    consent_ip: null
   });
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // Scroll to top on mount
   React.useEffect(() => {
@@ -33,6 +36,18 @@ export default function Waitlist() {
     }
   }, []);
 
+  // Get user IP for consent record
+  React.useEffect(() => {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        setFormData(prev => ({ ...prev, consent_ip: data.ip }));
+      })
+      .catch(() => {
+        setFormData(prev => ({ ...prev, consent_ip: 'unavailable' }));
+      });
+  }, []);
+
   const submitWaitlistMutation = useMutation({
     mutationFn: (data) => base44.entities.Waitlist.create(data),
     onSuccess: () => {
@@ -42,7 +57,27 @@ export default function Waitlist() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitWaitlistMutation.mutate(formData);
+    
+    // Validate marketing consent
+    if (!formData.marketing_consent) {
+      setErrors({ marketing_consent: 'You must consent to marketing communications to join the waitlist' });
+      const consentSection = document.getElementById('consent-section');
+      if (consentSection) {
+        consentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    setErrors({});
+    
+    // Add consent metadata
+    const submissionData = {
+      ...formData,
+      consent_timestamp: new Date().toISOString(),
+      consent_user_agent: navigator.userAgent
+    };
+    
+    submitWaitlistMutation.mutate(submissionData);
   };
 
   if (submitted) {
@@ -312,19 +347,124 @@ export default function Waitlist() {
               />
               <p className="text-xs text-gray-500 mt-1">Your feedback helps shape our roadmap</p>
             </div>
+
+            {/* MARKETING CONSENT SECTION */}
+            <div id="consent-section" className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Mail className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                <h3 className="text-lg font-bold text-gray-900">
+                  Marketing Communications
+                </h3>
+              </div>
+
+              <label className="flex items-start gap-4 cursor-pointer group">
+                <div className="relative flex-shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={formData.marketing_consent}
+                    onChange={(e) => {
+                      setFormData({ ...formData, marketing_consent: e.target.checked });
+                      if (e.target.checked) setErrors({});
+                    }}
+                    className="w-6 h-6 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  {formData.marketing_consent && (
+                    <Check className="w-4 h-4 text-white absolute top-1 left-1 pointer-events-none" />
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-base font-semibold text-gray-900 leading-relaxed">
+                    I consent to receive marketing communications from 360° Method
+                  </p>
+
+                  <div className="mt-3 space-y-2 text-sm text-gray-700">
+                    <p>By checking this box, you agree to receive:</p>
+                    <ul className="ml-4 space-y-1 list-disc">
+                      <li>Product updates and launch announcements</li>
+                      <li>Educational content about property maintenance</li>
+                      <li>Exclusive offers and early access opportunities</li>
+                      <li>Periodic newsletters (no more than 2 per month)</li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-3 text-xs text-gray-600 bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-start gap-2">
+                      <Shield className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-700 mb-1">Your Rights:</p>
+                        <ul className="space-y-0.5">
+                          <li>• You can unsubscribe at any time via the link in every email</li>
+                          <li>• We will never sell or share your data with third parties</li>
+                          <li>• You can request data deletion at any time</li>
+                          <li>• Your consent is required to join the waitlist</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </label>
+
+              {errors.marketing_consent && (
+                <div className="mt-3 flex items-center gap-2 text-red-700 bg-red-50 border border-red-300 rounded-lg p-3">
+                  <span className="text-sm font-semibold">{errors.marketing_consent}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Privacy Notice */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-start gap-2">
+                <Lock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-gray-600 leading-relaxed">
+                  <p className="mb-2">
+                    <strong>Privacy Notice:</strong> Your information will be stored securely and used 
+                    only for the purposes described above. We comply with GDPR, CAN-SPAM, CCPA, and 
+                    other applicable data protection regulations.
+                  </p>
+                  <p>
+                    By submitting this form, you acknowledge that 360° Method will process your personal 
+                    information in accordance with our Privacy Policy.
+                  </p>
+                </div>
+              </div>
+            </div>
             
             <button
               type="submit"
-              disabled={submitWaitlistMutation.isPending}
-              className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+              disabled={submitWaitlistMutation.isPending || !formData.marketing_consent}
+              className={`w-full px-8 py-4 font-bold rounded-xl text-lg transition-all shadow-lg flex items-center justify-center gap-2 ${
+                !formData.marketing_consent
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+              }`}
             >
-              {submitWaitlistMutation.isPending ? 'Joining...' : 'Join Waitlist & Start Learning'}
-              {!submitWaitlistMutation.isPending && <ArrowRight className="w-5 h-5" />}
+              {submitWaitlistMutation.isPending ? (
+                'Joining...'
+              ) : !formData.marketing_consent ? (
+                'Please Consent to Marketing Above'
+              ) : (
+                <>
+                  Join Waitlist & Start Learning
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
             
-            <p className="text-xs text-center text-gray-500">
-              We respect your privacy. Unsubscribe anytime. No spam, ever.
-            </p>
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-600 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span>GDPR Compliant</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                <span>Data Encrypted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>CAN-SPAM Compliant</span>
+              </div>
+            </div>
           </form>
         </div>
 
