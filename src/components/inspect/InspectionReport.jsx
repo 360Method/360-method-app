@@ -5,6 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, Mail, Printer, CheckCircle, AlertTriangle, Edit, Camera, DollarSign } from "lucide-react";
 
 export default function InspectionReport({ inspection, property, baselineSystems, onBack, onEdit }) {
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Handle null inspection or property at the earliest point
   if (!inspection) {
     return (
@@ -368,6 +373,25 @@ export default function InspectionReport({ inspection, property, baselineSystems
                   </Card>
                 )}
               </div>
+            </div>
+
+            <hr className="border-gray-300" />
+
+            {/* Operator CTA */}
+            <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-200 text-center">
+              <p className="text-gray-800 mb-2">
+                <strong>Don't want to DIY?</strong>
+              </p>
+              <p className="text-sm text-gray-700 mb-3">
+                A 360° Operator can handle all maintenance for you
+              </p>
+              <Button
+                onClick={() => window.location.href = '/waitlist?source=inspection_report'}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                style={{ minHeight: '48px' }}
+              >
+                Learn About Full-Service Care →
+              </Button>
             </div>
 
             <hr className="border-gray-300" />
