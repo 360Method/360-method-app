@@ -1,9 +1,259 @@
 import React, { useState } from 'react';
-import { Zap, Home, Leaf, Sparkles, X, CheckCircle, Shield } from 'lucide-react';
+import { Zap, Home, Leaf, Sparkles, X, CheckCircle, Shield, Droplet, Wind, Lightbulb, Palette } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import { useDemo } from '../shared/DemoContext';
 
-const UPGRADE_IDEAS = [
+const HOMEOWNER_UPGRADE_IDEAS = [
+  {
+    id: 'home-1',
+    title: 'Smart Home Energy System',
+    category: 'Energy Efficiency',
+    icon: Lightbulb,
+    color: 'yellow',
+    
+    typicalCost: { min: 1500, max: 3000 },
+    annualSavings: { min: 450, max: 750 },
+    paybackPeriod: { min: 2.0, max: 6.7 },
+    roi10Year: '150-500%',
+    
+    benefits: [
+      'Smart thermostats + LED conversion bundle',
+      'Reduce energy bills 20-30% year-round',
+      'Remote control from phone',
+      'Track usage patterns and optimize',
+      'Increase home value $2K-$3K'
+    ],
+    
+    considerations: [
+      'Smart thermostats: $250-500 each',
+      'LED conversion: $350-600 for whole home',
+      'DIY-friendly installation',
+      'Immediate comfort improvement'
+    ],
+    
+    difficulty: 'Easy DIY',
+    timeframe: '1 weekend',
+    tags: ['Energy Savings', 'DIY-Friendly', 'Quick Payback']
+  },
+  {
+    id: 'home-2',
+    title: 'Attic Insulation Upgrade',
+    category: 'Energy Efficiency',
+    icon: Home,
+    color: 'orange',
+    
+    typicalCost: { min: 1800, max: 2800 },
+    annualSavings: { min: 350, max: 600 },
+    paybackPeriod: { min: 3.0, max: 8.0 },
+    roi10Year: '125-333%',
+    
+    benefits: [
+      'Reduce heating/cooling costs 25-35%',
+      'Even temperature throughout home',
+      'Less HVAC strain = longer equipment life',
+      'Quieter home (sound dampening)',
+      'Increase home value $1,500-$2,000'
+    ],
+    
+    considerations: [
+      'Boost from R-30 to R-49 (Pacific NW)',
+      'Professional blown-in installation',
+      'One-time investment, lifetime benefit',
+      'Eligible for tax credits'
+    ],
+    
+    difficulty: 'Professional Recommended',
+    timeframe: '1 day',
+    tags: ['Energy Savings', 'Comfort', 'Tax Credit']
+  },
+  {
+    id: 'home-3',
+    title: 'Kitchen Refresh Package',
+    category: 'Quality of Life',
+    icon: Palette,
+    color: 'purple',
+    
+    typicalCost: { min: 3500, max: 6500 },
+    annualSavings: { min: 0, max: 0 },
+    resaleValueIncrease: { min: 5000, max: 9000 },
+    roi: '140-180%',
+    
+    benefits: [
+      'Subway tile backsplash + cabinet refresh',
+      'Modern look without full remodel',
+      'Easier to clean and maintain',
+      'Start every day in a space you love',
+      'Increase home value $5K-$9K'
+    ],
+    
+    considerations: [
+      'DIY backsplash: Save $1,200 in labor',
+      'Paint cabinets vs replace (10x cheaper)',
+      'New hardware makes huge impact',
+      'Weekend project with big visual impact'
+    ],
+    
+    difficulty: 'Moderate DIY',
+    timeframe: '2-3 weekends',
+    tags: ['Quality of Life', 'DIY Option', 'High Impact']
+  },
+  {
+    id: 'home-4',
+    title: 'Water Conservation System',
+    category: 'Energy Efficiency',
+    icon: Droplet,
+    color: 'blue',
+    
+    typicalCost: { min: 800, max: 1500 },
+    annualSavings: { min: 200, max: 400 },
+    paybackPeriod: { min: 2.0, max: 7.5 },
+    roi10Year: '133-500%',
+    
+    benefits: [
+      'Low-flow fixtures + smart irrigation',
+      'Reduce water bills 30-40%',
+      'Drought-resistant landscaping',
+      'Smart sprinkler controller saves water',
+      'Eco-friendly + lower utility costs'
+    ],
+    
+    considerations: [
+      'Low-flow showerheads/faucets: $200-400',
+      'Smart irrigation controller: $150-300',
+      'Native plants reduce water needs',
+      'Fast DIY installation'
+    ],
+    
+    difficulty: 'Easy DIY',
+    timeframe: '1 day',
+    tags: ['Water Savings', 'Eco-Friendly', 'DIY-Friendly']
+  },
+  {
+    id: 'home-5',
+    title: 'Outdoor Living Space',
+    category: 'Quality of Life',
+    icon: Leaf,
+    color: 'green',
+    
+    typicalCost: { min: 2500, max: 5000 },
+    annualSavings: { min: 0, max: 0 },
+    resaleValueIncrease: { min: 4000, max: 7500 },
+    roi: '150-200%',
+    
+    benefits: [
+      'Deck refresh + patio upgrade',
+      'Extend living space outdoors',
+      'Perfect for entertaining guests',
+      'Enjoy Pacific NW summers',
+      'Increase home value $4K-$7.5K'
+    ],
+    
+    considerations: [
+      'Deck staining/sealing: $800-1,500',
+      'Patio furniture + fire pit: $1,200-2,500',
+      'String lights + landscaping: $500-1,000',
+      'Creates outdoor room for enjoyment'
+    ],
+    
+    difficulty: 'DIY or Professional',
+    timeframe: '1-2 weekends',
+    tags: ['Quality of Life', 'Entertaining', 'Resale Value']
+  },
+  {
+    id: 'home-6',
+    title: 'Bathroom Modernization',
+    category: 'Quality of Life',
+    icon: Sparkles,
+    color: 'blue',
+    
+    typicalCost: { min: 3000, max: 5500 },
+    annualSavings: { min: 0, max: 0 },
+    resaleValueIncrease: { min: 5500, max: 9000 },
+    roi: '164-250%',
+    
+    benefits: [
+      'New vanity, fixtures, and lighting',
+      'Spa-like experience at home',
+      'Modern, clean aesthetic',
+      'Improved functionality',
+      'Increase home value $5.5K-$9K'
+    ],
+    
+    considerations: [
+      'Focus on high-impact updates',
+      'Paint, fixtures, hardware = biggest impact',
+      'Skip full gut remodel',
+      'Can DIY many components'
+    ],
+    
+    difficulty: 'Moderate DIY or Professional',
+    timeframe: '1-2 weekends',
+    tags: ['Quality of Life', 'High ROI', 'Daily Use']
+  },
+  {
+    id: 'home-7',
+    title: 'Whole-Home Air Quality',
+    category: 'Health & Safety',
+    icon: Wind,
+    color: 'purple',
+    
+    typicalCost: { min: 1200, max: 2200 },
+    annualSavings: { min: 0, max: 0 },
+    healthBenefit: 'Significant',
+    
+    benefits: [
+      'HEPA filtration + ventilation upgrade',
+      'Reduce allergens and pollutants',
+      'Better sleep quality',
+      'Healthier indoor environment',
+      'Especially valuable for families with allergies'
+    ],
+    
+    considerations: [
+      'Whole-home HEPA: $800-1,500',
+      'Smart air quality monitors: $150-300',
+      'ERV/HRV ventilation: $1,500-3,000',
+      'Health investment, not just financial ROI'
+    ],
+    
+    difficulty: 'Professional Required',
+    timeframe: '1 day',
+    tags: ['Health', 'Quality of Life', 'Family Friendly']
+  },
+  {
+    id: 'home-8',
+    title: 'Garage Workshop Setup',
+    category: 'Quality of Life',
+    icon: Home,
+    color: 'orange',
+    
+    typicalCost: { min: 1500, max: 3000 },
+    annualSavings: { min: 0, max: 0 },
+    diySavings: 'High',
+    
+    benefits: [
+      'Workbench + tool storage + lighting',
+      'Enable more DIY projects',
+      'Save on contractor costs long-term',
+      'Functional workspace for hobbies',
+      'Organized, efficient storage'
+    ],
+    
+    considerations: [
+      'Quality workbench: $400-800',
+      'Tool storage system: $600-1,200',
+      'LED lighting upgrade: $200-400',
+      'Enables DIY for future projects'
+    ],
+    
+    difficulty: 'Easy DIY',
+    timeframe: '2-3 days',
+    tags: ['DIY Enabler', 'Organization', 'Hobby Space']
+  }
+];
+
+const INVESTOR_UPGRADE_IDEAS = [
   {
     id: 'idea-1',
     title: 'In-Unit Washer/Dryer Hookups',
@@ -259,10 +509,16 @@ const UPGRADE_IDEAS = [
 ];
 
 export default function BrowseIdeasTab() {
+  const { demoMode, isInvestor } = useDemo();
   const [filter, setFilter] = useState('all');
   const [selectedIdea, setSelectedIdea] = useState(null);
 
-  const categories = ['all', 'Rental Income Boosters', 'Energy Efficiency', 'Curb Appeal'];
+  // Use homeowner ideas in homeowner demo mode, investor ideas otherwise
+  const UPGRADE_IDEAS = (demoMode && !isInvestor) ? HOMEOWNER_UPGRADE_IDEAS : INVESTOR_UPGRADE_IDEAS;
+
+  const categories = (demoMode && !isInvestor) 
+    ? ['all', 'Energy Efficiency', 'Quality of Life', 'Health & Safety']
+    : ['all', 'Rental Income Boosters', 'Energy Efficiency', 'Curb Appeal'];
 
   const filteredIdeas = filter === 'all' 
     ? UPGRADE_IDEAS 
