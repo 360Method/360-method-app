@@ -126,6 +126,57 @@ export const DEMO_PORTFOLIO_INVESTOR = {
     }
   ],
 
+  seasonalTemplates: [
+    {
+      id: 'demo-inv-template-1',
+      title: 'Test & Document Smoke/CO Detectors (Rental Compliance)',
+      description: 'Washington state requires annual smoke/CO detector testing for all rental properties. Document testing dates to maintain compliance.',
+      system_type: 'General',
+      priority: 'High',
+      season: 'Fall',
+      climate_zone: 'All Climates',
+      applies_to_scope: 'per_unit',
+      suggested_interval_days: 365,
+      estimated_cost_range: '$0',
+      estimated_time_minutes: 15,
+      is_diy_friendly: true,
+      why_important: 'WA state law. Non-compliance = $500-$2,000 fines per violation. Document testing to prove compliance.',
+      tools_needed: ['Test button', 'Documentation form']
+    },
+    {
+      id: 'demo-inv-template-2',
+      title: 'Clean Dryer Vents (Fire Prevention)',
+      description: 'Professional dryer vent cleaning to remove lint buildup. Critical fire prevention in multi-family rentals.',
+      system_type: 'Appliances',
+      priority: 'High',
+      season: 'Fall',
+      climate_zone: 'All Climates',
+      applies_to_scope: 'building_wide',
+      suggested_interval_days: 365,
+      estimated_cost_range: '$125-200',
+      estimated_time_minutes: 90,
+      is_diy_friendly: false,
+      why_important: 'Dryer fires cause $236M damage annually. Multi-unit = higher liability. Professional cleaning recommended for rentals.',
+      tools_needed: []
+    },
+    {
+      id: 'demo-inv-template-3',
+      title: 'Winterize Irrigation System',
+      description: 'Blow out irrigation lines and shut off exterior water. Prevents freeze damage to irrigation systems and outdoor plumbing.',
+      system_type: 'Landscaping',
+      priority: 'Medium',
+      season: 'Fall',
+      climate_zone: 'Zone 4: Temperate/Coastal (Pacific NW)',
+      applies_to_scope: 'building_wide',
+      suggested_interval_days: 365,
+      estimated_cost_range: '$75-150',
+      estimated_time_minutes: 60,
+      is_diy_friendly: false,
+      why_important: 'Vancouver gets freezes 20-30 nights per year. Frozen irrigation lines = $500-$2,000 repair costs.',
+      tools_needed: []
+    }
+  ],
+
   systems: [
     // ==========================================
     // PROPERTY 1: MAPLE STREET DUPLEX (1998) - 16 SYSTEMS
