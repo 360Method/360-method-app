@@ -220,7 +220,8 @@ const DemoWizard = ({ onComplete, onSkip }) => {
                 onComplete();
                 navigate(createPageUrl('Waitlist'));
               }}
-              className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium"
+              className="px-6 py-3 bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 font-bold shadow-md"
+              style={{ minHeight: '48px' }}
             >
               Join Waitlist
             </button>

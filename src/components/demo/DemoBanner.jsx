@@ -53,14 +53,14 @@ export function DemoBanner({ onAddProperty }) {
           
           {/* Right side - CTAs */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <span className="text-sm text-yellow-700 hidden lg:inline">
+            <span className="text-sm text-yellow-900 font-semibold hidden lg:inline">
               Ready to track your own property?
             </span>
             <Button
               onClick={handleJoinWaitlist}
               size="sm"
-              className="bg-yellow-600 hover:bg-yellow-700 text-white gap-1 flex-shrink-0"
-              style={{ minHeight: '36px' }}
+              className="bg-yellow-700 hover:bg-yellow-800 text-white gap-1 flex-shrink-0 shadow-md"
+              style={{ minHeight: '40px', fontSize: '15px', fontWeight: '600' }}
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Join Waitlist</span>

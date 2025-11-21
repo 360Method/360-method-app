@@ -57,8 +57,8 @@ export default function ServiceAvailabilityBanner({ user, property, className = 
             <Button
               asChild
               size="sm"
-              className="bg-amber-600 hover:bg-amber-700"
-              style={{ minHeight: '40px' }}
+              className="bg-amber-700 hover:bg-amber-800 text-white shadow-md font-semibold"
+              style={{ minHeight: '44px', fontSize: '15px' }}
             >
               <Link to={createPageUrl('Waitlist')}>
                 <MapPin className="w-4 h-4 mr-2" />

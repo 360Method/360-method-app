@@ -23,7 +23,8 @@ export default function DontWantDIYBanner() {
           </p>
           <button
             onClick={() => navigate(createPageUrl('Waitlist') + '?source=full-service')}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold transition-colors shadow-sm hover:shadow-md"
+            className="px-5 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 text-base font-bold transition-colors shadow-md hover:shadow-lg"
+            style={{ minHeight: '48px' }}
           >
             Notify Me When Available →
           </button>

@@ -68,7 +68,7 @@ export default function Welcome() {
           <div className="text-center">
             <button
               onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="text-gray-600 hover:text-gray-900 underline text-sm"
+              className="text-blue-700 hover:text-blue-900 underline text-base font-semibold"
             >
               Skip demo, join waitlist →
             </button>
