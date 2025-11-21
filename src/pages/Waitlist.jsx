@@ -282,6 +282,20 @@ export default function Waitlist() {
                 <option value="both">Both homeowner and investor</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                What would you like to see in version 1.0? <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows="4"
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg resize-none"
+                placeholder="Any features, integrations, or capabilities you'd love to see? Share your thoughts..."
+              />
+              <p className="text-xs text-gray-500 mt-1">Your feedback helps shape our roadmap</p>
+            </div>
             
             <button
               type="submit"
