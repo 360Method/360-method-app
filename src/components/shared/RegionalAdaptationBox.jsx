@@ -6,69 +6,53 @@ const CLIMATE_EXAMPLES = {
     name: 'Pacific Northwest',
     icon: Droplet,
     color: 'blue',
-    description: 'Wet winters, mild summers',
-    bgGradient: 'bg-gradient-to-r from-blue-50 to-blue-100',
+    bgLight: 'bg-blue-50',
+    bgMedium: 'bg-blue-100',
+    bgDark: 'bg-blue-200',
     border: 'border-blue-300',
-    iconBg: 'bg-blue-200',
-    iconText: 'text-blue-700',
-    textPrimary: 'text-blue-800',
-    textSecondary: 'text-blue-700',
-    titleText: 'text-blue-900',
-    hoverText: 'hover:text-blue-800',
-    bottomBg: 'bg-blue-100',
-    bottomText: 'text-blue-900',
-    cardBorder: 'border-blue-400'
+    text: 'text-blue-700',
+    textDark: 'text-blue-800',
+    textDarker: 'text-blue-900',
+    description: 'Wet winters, mild summers'
   },
   'southwest': {
     name: 'Southwest Desert',
     icon: Sun,
     color: 'orange',
-    description: 'Extreme heat, low humidity, monsoons',
-    bgGradient: 'bg-gradient-to-r from-orange-50 to-orange-100',
+    bgLight: 'bg-orange-50',
+    bgMedium: 'bg-orange-100',
+    bgDark: 'bg-orange-200',
     border: 'border-orange-300',
-    iconBg: 'bg-orange-200',
-    iconText: 'text-orange-700',
-    textPrimary: 'text-orange-800',
-    textSecondary: 'text-orange-700',
-    titleText: 'text-orange-900',
-    hoverText: 'hover:text-orange-800',
-    bottomBg: 'bg-orange-100',
-    bottomText: 'text-orange-900',
-    cardBorder: 'border-orange-400'
+    text: 'text-orange-700',
+    textDark: 'text-orange-800',
+    textDarker: 'text-orange-900',
+    description: 'Extreme heat, low humidity, monsoons'
   },
   'midwest-northeast': {
     name: 'Midwest/Northeast',
     icon: Snowflake,
     color: 'purple',
-    description: 'Freezing winters, hot summers',
-    bgGradient: 'bg-gradient-to-r from-purple-50 to-purple-100',
+    bgLight: 'bg-purple-50',
+    bgMedium: 'bg-purple-100',
+    bgDark: 'bg-purple-200',
     border: 'border-purple-300',
-    iconBg: 'bg-purple-200',
-    iconText: 'text-purple-700',
-    textPrimary: 'text-purple-800',
-    textSecondary: 'text-purple-700',
-    titleText: 'text-purple-900',
-    hoverText: 'hover:text-purple-800',
-    bottomBg: 'bg-purple-100',
-    bottomText: 'text-purple-900',
-    cardBorder: 'border-purple-400'
+    text: 'text-purple-700',
+    textDark: 'text-purple-800',
+    textDarker: 'text-purple-900',
+    description: 'Freezing winters, hot summers'
   },
   'southeast': {
     name: 'Southeast/Gulf Coast',
     icon: Wind,
     color: 'green',
-    description: 'High humidity, hurricanes, heat',
-    bgGradient: 'bg-gradient-to-r from-green-50 to-green-100',
+    bgLight: 'bg-green-50',
+    bgMedium: 'bg-green-100',
+    bgDark: 'bg-green-200',
     border: 'border-green-300',
-    iconBg: 'bg-green-200',
-    iconText: 'text-green-700',
-    textPrimary: 'text-green-800',
-    textSecondary: 'text-green-700',
-    titleText: 'text-green-900',
-    hoverText: 'hover:text-green-800',
-    bottomBg: 'bg-green-100',
-    bottomText: 'text-green-900',
-    cardBorder: 'border-green-400'
+    text: 'text-green-700',
+    textDark: 'text-green-800',
+    textDarker: 'text-green-900',
+    description: 'High humidity, hurricanes, heat'
   }
 };
 
@@ -82,20 +66,20 @@ export default function RegionalAdaptationBox({
   const IconComponent = region.icon;
 
   return (
-    <div className={`${region.bgGradient} border-2 ${region.border} rounded-xl p-6 mb-8`}>
+    <div className={`${region.bgLight} border-2 ${region.border} rounded-xl p-6 mb-8`}>
       <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 ${region.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
-          <MapPin className={`w-6 h-6 ${region.iconText}`} />
+        <div className={`w-12 h-12 ${region.bgDark} rounded-full flex items-center justify-center flex-shrink-0`}>
+          <MapPin className={`w-6 h-6 ${region.text}`} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-            <h3 className={`font-bold ${region.titleText} text-lg flex items-center gap-2`}>
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <h3 className={`font-bold ${region.textDarker} text-lg flex items-center gap-2`}>
               <IconComponent className="w-5 h-5" />
               Regional Climate Adaptation
             </h3>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className={`${region.textSecondary} ${region.hoverText} flex items-center gap-1 text-sm font-semibold flex-shrink-0`}
+              className={`${region.text} hover:opacity-80 flex items-center gap-1 text-sm font-semibold`}
             >
               <Info className="w-4 h-4" />
               {isExpanded ? 'Hide' : 'Learn More'}
@@ -106,10 +90,10 @@ export default function RegionalAdaptationBox({
           {!isExpanded ? (
             // Collapsed View
             <div>
-              <p className={`${region.textPrimary} mb-2`}>
+              <p className={`${region.textDark} mb-2`}>
                 <strong>Demo Location: {region.name}</strong> ({region.description})
               </p>
-              <p className={`text-sm ${region.textSecondary}`}>
+              <p className={`text-sm ${region.text}`}>
                 This demo shows {step} adapted for {region.name} climate. 
                 The real app automatically adjusts based on <strong>your property's zip code</strong>.
               </p>
@@ -118,10 +102,10 @@ export default function RegionalAdaptationBox({
             // Expanded View
             <div className="space-y-4">
               <div>
-                <p className={`${region.textPrimary} mb-2`}>
+                <p className={`${region.textDark} mb-2`}>
                   <strong>Demo Location: {region.name}</strong>
                 </p>
-                <p className={`text-sm ${region.textSecondary} mb-4`}>
+                <p className={`text-sm ${region.text} mb-4`}>
                   {regionalAdaptations.description}
                 </p>
               </div>
@@ -137,11 +121,11 @@ export default function RegionalAdaptationBox({
                     <div 
                       key={key}
                       className={`bg-white border-2 rounded-lg p-4 ${
-                        isDemo ? climate.cardBorder : 'border-gray-200'
+                        isDemo ? climate.border : 'border-gray-200'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <ClimateIcon className={`w-5 h-5 ${climate.iconText}`} />
+                        <ClimateIcon className={`w-5 h-5 ${climate.text}`} />
                         <h4 className="font-bold text-gray-900 text-sm">
                           {climate.name}
                           {isDemo && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">DEMO</span>}
@@ -186,8 +170,8 @@ export default function RegionalAdaptationBox({
               </div>
 
               {/* Bottom Note */}
-              <div className={`${region.bottomBg} rounded-lg p-3 text-center`}>
-                <p className={`text-xs ${region.bottomText} font-semibold`}>
+              <div className={`${region.bgMedium} rounded-lg p-3 text-center`}>
+                <p className={`text-xs ${region.textDarker} font-semibold`}>
                   ✨ Your property gets {step} tailored to YOUR climate's specific challenges
                 </p>
               </div>
