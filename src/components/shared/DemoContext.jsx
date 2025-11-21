@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import DemoWizard from '../demo/DemoWizard';
 import InvestorDemoWizard from '../demo/InvestorDemoWizard';
-import InteractiveDemoTour from '../demo/InteractiveDemoTour';
 
 const DemoContext = createContext();
 
@@ -134,7 +133,6 @@ export function DemoProvider({ children }) {
           onSkip={handleWizardSkip}
         />
       )}
-      <InteractiveDemoTour />
     </DemoContext.Provider>
   );
 }
