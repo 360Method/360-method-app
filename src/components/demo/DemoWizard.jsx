@@ -38,7 +38,7 @@ const DemoWizard = ({ onComplete, onSkip }) => {
                 <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="font-semibold">2 Inspections</div>
-                  <div className="text-gray-600">Fall 2024 + Spring 2024</div>
+                  <div className="text-gray-600">Fall 2025 + Spring 2025</div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -77,7 +77,7 @@ const DemoWizard = ({ onComplete, onSkip }) => {
                 <h4 className="font-bold text-blue-900 mb-2">Inspect</h4>
                 <p className="text-sm text-blue-800">
                   Seasonal walkthroughs catch problems early. This demo includes 
-                  Fall 2024 and Spring 2024 inspections.
+                  Fall 2025 and Spring 2025 inspections.
                 </p>
               </div>
               <div>

@@ -146,7 +146,7 @@ export default function DashboardHomeowner() {
               <DollarSign className="w-6 h-6 text-blue-700" />
             </div>
             <span className="text-xs font-semibold text-blue-700 bg-blue-200 px-3 py-1 rounded-full">
-              YTD 2024
+              YTD 2025
             </span>
           </div>
           

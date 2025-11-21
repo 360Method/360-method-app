@@ -21,7 +21,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     last_inspection_date: '2025-10-15',
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
-    created_date: '2024-01-01T00:00:00Z'
+    created_date: '2025-01-01T00:00:00Z'
   },
   
   systems: [
@@ -33,13 +33,13 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       brand_model: 'Lennox XC25 Heat Pump',
       installation_year: 2017,
       condition: 'Good',
-      condition_notes: 'Serviced every 6 months. Last service: April 2024. Filter changed quarterly. Running at 95% efficiency.',
-      last_service_date: '2024-04-10',
-      next_service_date: '2024-10-15',
+      condition_notes: 'Serviced every 6 months. Last service: April 2025. Filter changed quarterly. Running at 95% efficiency.',
+      last_service_date: '2025-04-10',
+      next_service_date: '2025-10-15',
       estimated_lifespan_years: 15,
       replacement_cost_estimate: 8500,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-002',
@@ -51,12 +51,12 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       condition: 'Fair',
       condition_notes: 'Showing signs of age. Minor sediment buildup detected during last flush. No leaks. Plan replacement within 12-18 months.',
       warning_signs_present: ['Sediment buildup', 'Age approaching end of lifespan'],
-      last_service_date: '2024-03-15',
+      last_service_date: '2025-03-15',
       next_service_date: '2025-03-15',
       estimated_lifespan_years: 10,
       replacement_cost_estimate: 1800,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-003',
@@ -67,12 +67,12 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Good',
       condition_notes: '30-year architectural shingles. No missing/damaged shingles. Flashing intact. Gutters clean.',
-      last_service_date: '2024-09-20',
-      next_service_date: '2025-09-20',
+      last_service_date: '2025-09-20',
+      next_service_date: '2026-09-20',
       estimated_lifespan_years: 30,
       replacement_cost_estimate: 12000,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-004',
@@ -83,11 +83,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Good',
       condition_notes: 'Copper supply lines, PVC drains. No visible leaks. Water pressure normal (60 PSI).',
-      last_service_date: '2024-10-01',
+      last_service_date: '2025-10-01',
       estimated_lifespan_years: 50,
       replacement_cost_estimate: 8000,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-005',
@@ -98,11 +98,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Excellent',
       condition_notes: '200-amp service. 32 circuit breakers. All labeled. GFCI outlets in kitchen, bathrooms, garage.',
-      last_service_date: '2024-06-10',
+      last_service_date: '2025-06-10',
       estimated_lifespan_years: 40,
       replacement_cost_estimate: 3500,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-006',
@@ -117,7 +117,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       estimated_lifespan_years: 20,
       replacement_cost_estimate: 4500,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-007',
@@ -128,11 +128,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Excellent',
       condition_notes: 'Poured concrete walls. No visible cracks. Proper drainage. Sump pump functioning.',
-      last_service_date: '2024-09-01',
+      last_service_date: '2025-09-01',
       estimated_lifespan_years: 100,
       replacement_cost_estimate: 50000,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-008',
@@ -143,11 +143,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Good',
       condition_notes: '1/3 HP submersible pump with battery backup. Tested quarterly. At end of typical 10-year lifespan.',
-      last_service_date: '2024-09-15',
+      last_service_date: '2025-09-15',
       estimated_lifespan_years: 10,
       replacement_cost_estimate: 800,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-009',
@@ -158,11 +158,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2022,
       condition: 'Excellent',
       condition_notes: 'Braided stainless steel hoses (replaced rubber hoses). Auto-shutoff feature. No leaks.',
-      last_service_date: '2024-06-01',
+      last_service_date: '2025-06-01',
       estimated_lifespan_years: 5,
       replacement_cost_estimate: 50,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-010',
@@ -177,7 +177,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       estimated_lifespan_years: 10,
       replacement_cost_estimate: 300,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-011',
@@ -188,11 +188,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2019,
       condition: 'Good',
       condition_notes: 'Stainless steel interior. Runs quietly. No leaks. Occasional error code (cleared by reset).',
-      last_service_date: '2024-08-20',
+      last_service_date: '2025-08-20',
       estimated_lifespan_years: 10,
       replacement_cost_estimate: 800,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-012',
@@ -203,11 +203,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2021,
       condition: 'Excellent',
       condition_notes: 'Counter-depth French door with ice maker. Cooling properly at optimal temps (37°F fridge, 0°F freezer).',
-      last_service_date: '2024-07-01',
+      last_service_date: '2025-07-01',
       estimated_lifespan_years: 13,
       replacement_cost_estimate: 2500,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-013',
@@ -218,11 +218,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2015,
       condition: 'Good',
       condition_notes: '5-burner gas range. Oven calibrated correctly. All burners ignite properly.',
-      last_service_date: '2024-06-15',
+      last_service_date: '2025-06-15',
       estimated_lifespan_years: 15,
       replacement_cost_estimate: 1200,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-014',
@@ -237,7 +237,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       estimated_lifespan_years: 9,
       replacement_cost_estimate: 400,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-015',
@@ -248,11 +248,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       installation_year: 2020,
       condition: 'Good',
       condition_notes: 'Belt-drive opener with battery backup. WiFi enabled. Safety sensors functioning properly.',
-      last_service_date: '2024-05-10',
+      last_service_date: '2025-05-10',
       estimated_lifespan_years: 15,
       replacement_cost_estimate: 400,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     },
     {
       id: 'demo-h-sys-016',
@@ -267,7 +267,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       estimated_lifespan_years: 10,
       replacement_cost_estimate: 5500,
       photo_urls: [],
-      created_date: '2024-01-15T00:00:00Z'
+      created_date: '2025-01-15T00:00:00Z'
     }
   ],
 
@@ -783,7 +783,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       id: 'demo-h-hist-002',
       property_id: 'demo-homeowner-001',
       system_id: 'demo-h-sys-001',
-      date: '2024-04-10',
+      date: '2025-04-10',
       type: 'Service',
       title: 'Spring HVAC Service',
       description: 'Professional bi-annual HVAC maintenance',
@@ -797,7 +797,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       id: 'demo-h-hist-003',
       property_id: 'demo-homeowner-001',
       system_id: 'demo-h-sys-003',
-      date: '2024-04-20',
+      date: '2025-04-20',
       type: 'Maintenance',
       title: 'Spring Gutter Cleaning',
       description: 'Removed debris and flushed downspouts',
@@ -811,21 +811,21 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       id: 'demo-h-hist-004',
       property_id: 'demo-homeowner-001',
       system_id: 'demo-h-sys-002',
-      date: '2024-03-15',
+      date: '2025-03-15',
       type: 'Service',
       title: 'Water Heater Flush',
       description: 'Annual sediment flush and anode rod inspection',
       cost: 150,
       completed_by: 'Plumbing Pro',
       time_spent_hours: 1,
-      notes: 'Moderate sediment buildup. Anode rod 40% depleted. Plan replacement 2025.',
+      notes: 'Moderate sediment buildup. Anode rod 40% depleted. Plan replacement 2026.',
       prevented_cost: 1200
     },
     {
       id: 'demo-h-hist-005',
       property_id: 'demo-homeowner-001',
       system_id: 'demo-h-sys-008',
-      date: '2024-09-15',
+      date: '2025-09-15',
       type: 'Test',
       title: 'Sump Pump Quarterly Test',
       description: 'Tested sump pump operation and battery backup',
@@ -961,8 +961,8 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       spent: 350,
       remaining: 250,
       
-      startDate: '2024-10-15',
-      targetCompletion: '2024-11-30',
+      startDate: '2025-10-15',
+      targetCompletion: '2025-11-30',
       actualCompletion: null,
       daysElapsed: 35,
       daysRemaining: 10,
@@ -976,28 +976,28 @@ export const DEMO_PROPERTY_HOMEOWNER = {
           id: 'milestone-1',
           title: 'Research & purchase thermostats',
           status: 'completed',
-          completedDate: '2024-10-18',
+          completedDate: '2025-10-18',
           cost: 350
         },
         {
           id: 'milestone-2',
           title: 'Install living room thermostat',
           status: 'completed',
-          completedDate: '2024-10-22',
+          completedDate: '2025-10-22',
           cost: 0
         },
         {
           id: 'milestone-3',
           title: 'Install bedroom thermostat',
           status: 'in-progress',
-          targetDate: '2024-11-25',
+          targetDate: '2025-11-25',
           cost: 0
         },
         {
           id: 'milestone-4',
           title: 'Configure scheduling & automation',
           status: 'pending',
-          targetDate: '2024-11-30',
+          targetDate: '2025-11-30',
           cost: 0
         }
       ],
@@ -1024,9 +1024,9 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       spent: 2150,
       remaining: 50,
       
-      startDate: '2024-06-01',
-      targetCompletion: '2024-06-15',
-      actualCompletion: '2024-06-12',
+      startDate: '2025-06-01',
+      targetCompletion: '2025-06-15',
+      actualCompletion: '2025-06-12',
       
       estimatedAnnualSavings: 450,
       paybackPeriod: 4.8,
@@ -1037,28 +1037,28 @@ export const DEMO_PROPERTY_HOMEOWNER = {
           id: 'milestone-5',
           title: 'Get 3 contractor quotes',
           status: 'completed',
-          completedDate: '2024-05-20',
+          completedDate: '2025-05-20',
           cost: 0
         },
         {
           id: 'milestone-6',
           title: 'Schedule installation',
           status: 'completed',
-          completedDate: '2024-05-28',
+          completedDate: '2025-05-28',
           cost: 0
         },
         {
           id: 'milestone-7',
           title: 'Insulation installed (R-49)',
           status: 'completed',
-          completedDate: '2024-06-12',
+          completedDate: '2025-06-12',
           cost: 2150
         },
         {
           id: 'milestone-8',
           title: 'Post-install inspection',
           status: 'completed',
-          completedDate: '2024-06-12',
+          completedDate: '2025-06-12',
           cost: 0
         }
       ],
@@ -1098,7 +1098,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
           id: 'milestone-9',
           title: 'Inventory all fixtures (26 bulbs)',
           status: 'completed',
-          completedDate: '2024-11-10',
+          completedDate: '2025-11-10',
           cost: 0
         },
         {
