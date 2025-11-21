@@ -441,12 +441,7 @@ export default function Properties() {
               property={properties[0]}
               onEdit={() => {}}
               onDelete={() => {}}
-              onViewFinancials={() => {}}
-              onViewSystems={() => navigate(createPageUrl('Baseline'))}
-              onViewTasks={() => navigate(createPageUrl('Prioritize'))}
-              onViewUpgrades={() => navigate(createPageUrl('Upgrade'))}
-              canEdit={false}
-              isDemo={true}
+              demoData={demoData}
             />
 
             {/* Exit Demo CTA */}
