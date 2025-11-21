@@ -22,8 +22,6 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
-import StepEducationCard from '../components/shared/StepEducationCard';
-import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
 
 export default function ExecutePage() {
   const location = useLocation();
