@@ -492,10 +492,11 @@ function ArrowIndicator({ targetSelector, direction }) {
         {/* Pulsing glow behind arrow */}
         <div className="absolute inset-0 bg-blue-500 rounded-full opacity-40 animate-pulse blur-md scale-150" />
         
-        {/* Arrow container with bounce */}
-        <div className="relative w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl animate-bounce-slow">
-          <div className="absolute inset-0 bg-white opacity-20 rounded-full animate-ping" />
-          <ArrowIcon className="w-7 h-7 text-white relative z-10" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }} />
+        {/* Arrow container with bounce - larger and more visible */}
+        <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-2xl animate-bounce-slow">
+          <div className="absolute inset-0 bg-white opacity-30 rounded-full animate-ping" />
+          <div className="absolute -inset-1 bg-blue-400 rounded-full opacity-40 blur-lg" />
+          <ArrowIcon className="w-9 h-9 text-white relative z-10 font-bold" style={{ filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4))' }} />
         </div>
       </div>
     </div>
