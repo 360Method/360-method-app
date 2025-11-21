@@ -102,7 +102,7 @@ export default function DashboardHomeowner() {
               Welcome back! 👋
             </h1>
             <p className="text-base font-semibold mb-2 tracking-wide" style={{ color: '#6B5A3D' }}>
-              Own with Confidence. Build with Purpose. Wealth with Strategy.
+              Own with Confidence. Build with Purpose. Grow with Strategy.
             </p>
             <p className="text-gray-600">
               Here's what's happening with your home

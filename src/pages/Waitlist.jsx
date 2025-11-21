@@ -225,7 +225,7 @@ export default function Waitlist() {
             />
           </div>
           <p className="text-sm md:text-base font-semibold mb-6 tracking-wide" style={{ color: '#6B5A3D' }}>
-            Own with Confidence. Build with Purpose. Wealth with Strategy.
+            Own with Confidence. Build with Purpose. Grow with Strategy.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-6">
             <Sparkles className="w-4 h-4" />
