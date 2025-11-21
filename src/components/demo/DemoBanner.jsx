@@ -10,11 +10,12 @@ export function DemoBanner({ onAddProperty }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show on landing/welcome pages
+  // Don't show on landing/welcome/demoentry/waitlist pages
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
   const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
+  const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
   
-  if (!demoMode || isLandingPage) return null;
+  if (!demoMode || isLandingPage || isWaitlistPage || isDemoEntryPage) return null;
 
   const handleJoinWaitlist = () => {
     sessionStorage.setItem('navigatedFromDemo', 'true');
