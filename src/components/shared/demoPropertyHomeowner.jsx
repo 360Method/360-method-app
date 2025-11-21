@@ -270,6 +270,57 @@ export const DEMO_PROPERTY_HOMEOWNER = {
       created_date: '2024-01-15T00:00:00Z'
     }
   ],
+
+  seasonalTemplates: [
+    {
+      id: 'demo-template-1',
+      title: 'Winterize Exterior Faucets',
+      description: 'Disconnect hoses, drain faucets, and install insulated covers. Critical in Pacific Northwest to prevent frozen pipe bursts during cold snaps.',
+      system_type: 'Plumbing',
+      priority: 'High',
+      season: 'Fall',
+      climate_zone: 'Zone 4: Temperate/Coastal (Pacific NW)',
+      applies_to_scope: 'property_wide',
+      suggested_interval_days: 365,
+      estimated_cost_range: '$25-50',
+      estimated_time_minutes: 30,
+      is_diy_friendly: true,
+      why_important: 'Frozen pipes can burst and cause $3,000-$8,000 in water damage. Vancouver gets occasional hard freezes (20°F-28°F).',
+      tools_needed: ['Screwdriver', 'Foam faucet covers']
+    },
+    {
+      id: 'demo-template-2',
+      title: 'Clean Bathroom Exhaust Fan Vents',
+      description: 'Remove dust buildup from bathroom exhaust fans to maintain proper ventilation and prevent mold growth.',
+      system_type: 'HVAC',
+      priority: 'Routine',
+      season: 'Fall',
+      climate_zone: 'All Climates',
+      applies_to_scope: 'property_wide',
+      suggested_interval_days: 180,
+      estimated_cost_range: '$0',
+      estimated_time_minutes: 45,
+      is_diy_friendly: true,
+      why_important: 'Pacific Northwest humidity makes bathroom ventilation critical. Clogged fans reduce moisture removal by 60%+.',
+      tools_needed: ['Vacuum', 'Microfiber cloth', 'Step stool']
+    },
+    {
+      id: 'demo-template-3',
+      title: 'Test Sump Pump & Battery Backup',
+      description: 'Pour water into sump pit to verify pump activates. Test battery backup operation. Critical before rainy season.',
+      system_type: 'Plumbing',
+      priority: 'High',
+      season: 'Fall',
+      climate_zone: 'Zone 4: Temperate/Coastal (Pacific NW)',
+      applies_to_scope: 'property_wide',
+      suggested_interval_days: 90,
+      estimated_cost_range: '$0',
+      estimated_time_minutes: 15,
+      is_diy_friendly: true,
+      why_important: 'Vancouver gets 40-45 inches of rain annually (Nov-Mar). Failed sump pump = basement flooding risk ($5,000-$15,000).',
+      tools_needed: ['5-gallon bucket of water']
+    }
+  ],
   
   tasks: [
     {

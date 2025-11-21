@@ -184,7 +184,7 @@ export default function PrioritizePage() {
     queryKey: ['maintenanceTemplates'],
     queryFn: () => {
       if (demoMode) {
-        return [];
+        return demoData?.seasonalTemplates || [];
       }
       return base44.entities.MaintenanceTemplate.list();
     }
