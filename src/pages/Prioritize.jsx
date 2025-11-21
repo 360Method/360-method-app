@@ -734,6 +734,49 @@ export default function PrioritizePage() {
         {/* Don't Want DIY Banner */}
         <DontWantDIYBanner />
 
+        {/* Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.prioritize}
+          defaultExpanded={false}
+          className="mb-6"
+        />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="task prioritization"
+            regionalAdaptations={{
+              description: "Cascade risk calculations adjust for climate. A clogged gutter in Seattle (URGENT) is less critical in Phoenix (MEDIUM).",
+              howItWorks: "AI applies regional risk multipliers. Same task gets different urgency ratings based on your climate's specific failure modes",
+              examples: {
+                'pacific-northwest': [
+                  'Gutter cleaning: URGENT (+40% risk multiplier)',
+                  'Roof repairs: HIGH (+30% multiplier)',
+                  'Crawlspace moisture: HIGH (+50% multiplier)',
+                  'Deck sealing: MEDIUM (+40% multiplier)'
+                ],
+                'southwest': [
+                  'AC maintenance: URGENT (+50% multiplier)',
+                  'Roof UV damage: HIGH (+30% multiplier)',
+                  'Seal replacement: MEDIUM (+40% multiplier)',
+                  'Gutter cleaning: LOW (-30% multiplier)'
+                ],
+                'midwest-northeast': [
+                  'Winterization: URGENT (+50% multiplier)',
+                  'Furnace service: URGENT (+60% multiplier)',
+                  'Ice dam prevention: HIGH (+40% multiplier)',
+                  'Foundation cracks: HIGH (+30% multiplier)'
+                ],
+                'southeast': [
+                  'Hurricane prep: URGENT (+60% multiplier)',
+                  'Termite inspection: HIGH (+40% multiplier)',
+                  'Mold prevention: HIGH (+50% multiplier)',
+                  'Roof tie-downs: HIGH (+50% multiplier)'
+                ]
+              }
+            }}
+          />
+        )}
+
         {/* Property Selector */}
         {properties.length > 1 && (
           <Card className="mb-6 border-2 border-red-200 bg-white">
