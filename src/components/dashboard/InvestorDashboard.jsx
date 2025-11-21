@@ -1,3 +1,4 @@
+import React from 'react';
 import { TrendingUp, DollarSign, Home, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,6 +6,7 @@ import { DemoBanner } from '@/components/demo/DemoBanner';
 
 export default function InvestorDashboard({ data }) {
   const { portfolioStats, properties, tasks } = data;
+  const [showMobileTip, setShowMobileTip] = React.useState(true);
 
   const urgentTasks = tasks?.filter(t => t.priority === 'High' || t.priority === 'Urgent') || [];
   const scheduledTasks = tasks?.filter(t => t.status === 'Scheduled') || [];
@@ -14,6 +16,28 @@ export default function InvestorDashboard({ data }) {
       <DemoBanner />
       
       <div className="p-6">
+        {/* Mobile Navigation Tip - Demo Only */}
+        {showMobileTip && (
+          <div className="md:hidden bg-gradient-to-r from-green-600 to-blue-600 text-white p-4 rounded-xl shadow-lg relative animate-pulse mb-6">
+            <button
+              onClick={() => setShowMobileTip(false)}
+              className="absolute top-2 right-2 text-white/80 hover:text-white"
+              style={{ minHeight: '32px', minWidth: '32px' }}
+            >
+              ✕
+            </button>
+            <div className="pr-6">
+              <p className="font-bold text-lg mb-2">👋 Portfolio Command Center</p>
+              <p className="text-sm mb-3">
+                Tap the <strong>☰ menu button</strong> in the top-left to navigate through all features and manage your 3-property portfolio.
+              </p>
+              <p className="text-xs opacity-90">
+                💡 Tip: All cards are clickable. Explore freely!
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio Command Center</h1>

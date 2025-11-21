@@ -127,6 +127,8 @@ const MiniCalendar = ({ tasks }) => {
 };
 
 export default function HomeownerDashboard({ property, systems = [], tasks = [], inspections = [] }) {
+  const [showMobileTip, setShowMobileTip] = React.useState(true);
+
   const scheduledTasks = tasks.filter(t => t.status === 'Scheduled' && t.scheduled_date);
   const identifiedTasks = tasks.filter(t => t.status === 'Identified' || t.status === 'Deferred');
   const completedTasks = tasks.filter(t => t.status === 'Completed');
@@ -234,6 +236,28 @@ export default function HomeownerDashboard({ property, systems = [], tasks = [],
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Mobile Navigation Tip - Demo Only */}
+      {showMobileTip && (
+        <div className="md:hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl shadow-lg relative animate-pulse">
+          <button
+            onClick={() => setShowMobileTip(false)}
+            className="absolute top-2 right-2 text-white/80 hover:text-white"
+            style={{ minHeight: '32px', minWidth: '32px' }}
+          >
+            ✕
+          </button>
+          <div className="pr-6">
+            <p className="font-bold text-lg mb-2">👋 Welcome to the Dashboard!</p>
+            <p className="text-sm mb-3">
+              This is your command center. Tap the <strong>☰ menu button</strong> in the top-left to explore all 9 steps of the 360° Method.
+            </p>
+            <p className="text-xs opacity-90">
+              💡 Tip: All cards and buttons are clickable. Start exploring!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Progress Overview */}
       <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-lg">
         <CardHeader className="p-4 md:p-6">
