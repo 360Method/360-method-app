@@ -22,10 +22,10 @@ export default function Waitlist() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Scroll to top on mount
+  // Scroll to top on mount and when submitted
   React.useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+  }, [submitted]);
 
   // Handle browser back button for demo users
   React.useEffect(() => {
@@ -81,11 +81,6 @@ export default function Waitlist() {
   };
 
   if (submitted) {
-    // Scroll to top when confirmation is shown
-    React.useEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12">
