@@ -46,7 +46,7 @@ function LayoutContent({ children }) {
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
 
   // Determine if we should show the app UI (sidebar, header, etc.)
-  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome';
+  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
   const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
   const showAppUI = !isLandingPage && !isWaitlistPage;
 
