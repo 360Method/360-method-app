@@ -1,15 +1,19 @@
 import React from 'react';
-import { Info, Sparkles, X, ArrowLeft } from 'lucide-react';
+import { Info, Sparkles, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '../shared/DemoContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 export function DemoBanner({ onAddProperty }) {
-  const { demoMode, exitDemoMode } = useDemo();
+  const { demoMode } = useDemo();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  if (!demoMode) return null;
+  // Don't show on landing/welcome pages
+  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
+  
+  if (!demoMode || isLandingPage) return null;
 
   const handleJoinWaitlist = () => {
     sessionStorage.setItem('navigatedFromDemo', 'true');
@@ -18,13 +22,6 @@ export function DemoBanner({ onAddProperty }) {
 
   const handleBackToLanding = () => {
     navigate('/');
-  };
-
-  const handleExitDemo = () => {
-    // Clear demo mode from sessionStorage
-    sessionStorage.removeItem('demoMode');
-    sessionStorage.removeItem('demoWizardSeen');
-    exitDemoMode();
   };
 
   return (
@@ -68,16 +65,6 @@ export function DemoBanner({ onAddProperty }) {
               title="Back to Landing"
             >
               <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              onClick={handleExitDemo}
-              variant="ghost"
-              size="sm"
-              className="text-yellow-800 hover:text-yellow-900 hover:bg-yellow-100"
-              style={{ minHeight: '40px' }}
-              title="Exit Demo"
-            >
-              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>
