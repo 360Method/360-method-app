@@ -31,22 +31,24 @@ export function DemoBanner({ onAddProperty }) {
     }`}>
       <div className="px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Left side - Demo info */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-yellow-100 rounded-full p-2 flex-shrink-0">
-              <Info className="w-4 h-4 text-yellow-700" />
-            </div>
-            <div className="text-sm min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-yellow-900 bg-yellow-200 px-2 py-0.5 rounded-md text-xs uppercase tracking-wide">
-                  Demo Mode
-                </span>
-                <span className="text-yellow-800 font-medium hidden sm:inline">
-                  Exploring sample property
-                </span>
+            {/* Left side - Demo info */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="bg-yellow-100 rounded-full p-2 flex-shrink-0">
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
+                  <Home className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              <div className="text-sm min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-yellow-900 bg-yellow-200 px-2 py-0.5 rounded-md text-xs uppercase tracking-wide">
+                    Demo Mode
+                  </span>
+                  <span className="text-yellow-800 font-medium hidden sm:inline">
+                    Exploring sample property
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
           
           {/* Right side - CTAs */}
           <div className="flex items-center gap-2 flex-shrink-0">
