@@ -4,6 +4,9 @@ import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 
 export default function Waitlist() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const source = urlParams.get('source');
+  
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -12,9 +15,14 @@ export default function Waitlist() {
     zip_code: '',
     property_type: 'homecare',
     notes: '',
-    source: 'waitlist_page'
+    source: source || 'waitlist_page'
   });
   const [submitted, setSubmitted] = useState(false);
+
+  // Scroll to top on mount
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const submitWaitlistMutation = useMutation({
     mutationFn: (data) => base44.entities.Waitlist.create(data),
@@ -136,6 +144,13 @@ export default function Waitlist() {
     );
   }
 
+  const scrollToForm = () => {
+    const formElement = document.getElementById('waitlist-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
       <div className="max-w-5xl mx-auto">
@@ -145,14 +160,142 @@ export default function Waitlist() {
             Early Access • Founding Members Only
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Master the 360° Method<br />Before Launch
-          </h1>
+          {source === 'full-service' ? (
+            <>
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                We'll Handle Everything<br />For You
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Join the waitlist for our full-service concierge option. 
+                You focus on your life—we'll protect your property.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                Master the 360° Method<br />Before Launch
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Join the waitlist for the 360° Asset Command Center and start learning 
+                the framework that prevents cascade failures and protects your property value.
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Form Section - Moved to top */}
+        <div id="waitlist-form" className="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-2xl mx-auto mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+            Join the Waitlist
+          </h2>
           
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Join the waitlist for the 360° Asset Command Center and start learning 
-            the framework that prevents cascade failures and protects your property value.
-          </p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Last Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                  placeholder="Smith"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                placeholder="you@example.com"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                placeholder="(555) 123-4567"
+              />
+              <p className="text-xs text-gray-500 mt-1">We'll only text you for launch updates (never spam)</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Zip Code *
+              </label>
+              <input
+                type="text"
+                required
+                pattern="[0-9]{5}"
+                maxLength="5"
+                value={formData.zip_code}
+                onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                placeholder="98661"
+              />
+              <p className="text-xs text-gray-500 mt-1">We'll send you climate-specific maintenance tips for your area</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                I'm a... *
+              </label>
+              <select
+                required
+                value={formData.property_type}
+                onChange={(e) => setFormData({...formData, property_type: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+              >
+                <option value="homecare">Homeowner (primary residence)</option>
+                <option value="propertycare">Real Estate Investor (rental properties)</option>
+                <option value="property-manager">Property Manager</option>
+                <option value="both">Both homeowner and investor</option>
+              </select>
+            </div>
+            
+            <button
+              type="submit"
+              disabled={submitWaitlistMutation.isPending}
+              className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitWaitlistMutation.isPending ? 'Joining...' : 'Join Waitlist & Start Learning'}
+              {!submitWaitlistMutation.isPending && <ArrowRight className="w-5 h-5" />}
+            </button>
+            
+            <p className="text-xs text-center text-gray-500">
+              We respect your privacy. Unsubscribe anytime. No spam, ever.
+            </p>
+          </form>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12">
@@ -309,119 +452,7 @@ export default function Waitlist() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Join the Waitlist
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  First Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-                  placeholder="Smith"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-                placeholder="you@example.com"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
-              </label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-                placeholder="(555) 123-4567"
-              />
-              <p className="text-xs text-gray-500 mt-1">We'll only text you for launch updates (never spam)</p>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Zip Code *
-              </label>
-              <input
-                type="text"
-                required
-                pattern="[0-9]{5}"
-                maxLength="5"
-                value={formData.zip_code}
-                onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-                placeholder="98661"
-              />
-              <p className="text-xs text-gray-500 mt-1">We'll send you climate-specific maintenance tips for your area</p>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                I'm a... *
-              </label>
-              <select
-                required
-                value={formData.property_type}
-                onChange={(e) => setFormData({...formData, property_type: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
-              >
-                <option value="homecare">Homeowner (primary residence)</option>
-                <option value="propertycare">Real Estate Investor (rental properties)</option>
-                <option value="property-manager">Property Manager</option>
-                <option value="both">Both homeowner and investor</option>
-              </select>
-            </div>
-            
-            <button
-              type="submit"
-              disabled={submitWaitlistMutation.isPending}
-              className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {submitWaitlistMutation.isPending ? 'Joining...' : 'Join Waitlist & Start Learning'}
-              {!submitWaitlistMutation.isPending && <ArrowRight className="w-5 h-5" />}
-            </button>
-            
-            <p className="text-xs text-center text-gray-500">
-              We respect your privacy. Unsubscribe anytime. No spam, ever.
-            </p>
-          </form>
-        </div>
-
-        <div className="text-center mt-12">
+        <div className="text-center mb-12">
           <p className="text-gray-600 mb-4">
             Join <strong className="text-gray-900">487 homeowners</strong> already on the waitlist
           </p>
@@ -439,6 +470,17 @@ export default function Waitlist() {
               <span>Unsubscribe anytime</span>
             </div>
           </div>
+        </div>
+
+        {/* Scroll to Form Button */}
+        <div className="text-center mt-16">
+          <button
+            onClick={scrollToForm}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg flex items-center justify-center gap-2 mx-auto"
+          >
+            Join the Waitlist Now
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
