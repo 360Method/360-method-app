@@ -669,11 +669,7 @@ export default function Baseline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
-        {demoMode && (
-          <div className="mb-6 mt-4">
-            <PreviewBanner onAddProperty={() => setShowQuickPropertyAdd(true)} />
-          </div>
-        )}
+
 
         {demoMode && (
           <Alert className="mb-6 mt-4 border-yellow-400 bg-yellow-50">
