@@ -27,54 +27,56 @@ export function DemoBanner({ onAddProperty }) {
   };
 
   return (
-    <div className="bg-yellow-50 border-b-2 border-yellow-300 sticky top-0 z-50">
-      <div className="px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          {/* Left side - Back to Landing */}
-          <button
-            onClick={handleBackToLanding}
-            className="flex items-center gap-2 text-yellow-700 hover:text-yellow-900 text-sm font-medium transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Landing</span>
-            <span className="sm:hidden">Back</span>
-          </button>
-          
-          {/* Center - Demo info */}
-          <div className="flex items-center gap-3">
-            <Info className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <div className="text-sm">
-              <span className="font-semibold text-yellow-900">Demo Mode:</span>
-              <span className="text-yellow-800 ml-2">
-                Exploring 2847 Maple Grove Ln
-              </span>
+    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 sticky top-0 z-50 shadow-sm">
+      <div className="px-4 py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Left side - Demo info */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="bg-yellow-100 rounded-full p-2 flex-shrink-0">
+              <Info className="w-4 h-4 text-yellow-700" />
+            </div>
+            <div className="text-sm min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-yellow-900 bg-yellow-200 px-2 py-0.5 rounded-md text-xs uppercase tracking-wide">
+                  Demo Mode
+                </span>
+                <span className="text-yellow-800 font-medium hidden sm:inline">
+                  Exploring sample property
+                </span>
+              </div>
             </div>
           </div>
           
           {/* Right side - CTAs */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <span className="text-sm text-yellow-900 font-semibold hidden lg:inline">
-              Ready to track your own property?
-            </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               onClick={handleJoinWaitlist}
               size="sm"
-              className="bg-yellow-700 hover:bg-yellow-800 text-white gap-1 flex-shrink-0 shadow-md"
-              style={{ minHeight: '40px', fontSize: '15px', fontWeight: '600' }}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg border border-blue-700"
+              style={{ minHeight: '40px', fontSize: '14px', fontWeight: '700' }}
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Join Waitlist</span>
-              <span className="sm:hidden">Waitlist</span>
+              <span>Join Waitlist</span>
+            </Button>
+            <Button
+              onClick={handleBackToLanding}
+              variant="ghost"
+              size="sm"
+              className="text-yellow-800 hover:text-yellow-900 hover:bg-yellow-100"
+              style={{ minHeight: '40px' }}
+              title="Back to Landing"
+            >
+              <ArrowLeft className="w-4 h-4" />
             </Button>
             <Button
               onClick={handleExitDemo}
               variant="ghost"
               size="sm"
-              className="text-yellow-700 hover:text-yellow-900 flex-shrink-0"
-              style={{ minHeight: '36px' }}
+              className="text-yellow-800 hover:text-yellow-900 hover:bg-yellow-100"
+              style={{ minHeight: '40px' }}
+              title="Exit Demo"
             >
-              <X className="w-4 h-4" />
-              <span className="hidden sm:inline">Exit Demo</span>
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>
