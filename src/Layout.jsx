@@ -214,7 +214,7 @@ function LayoutContent({ children }) {
                   <img 
                     src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/0255f5a44_BannerSize_1.jpg"
                     alt="360° Method"
-                    className="w-10 h-10 object-cover rounded-full"
+                    className="w-10 h-10 object-contain"
                   />
                   <div>
                     <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
@@ -341,7 +341,7 @@ function LayoutContent({ children }) {
                   <img 
                     src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/0255f5a44_BannerSize_1.jpg"
                     alt="360° Method"
-                    className="w-10 h-10 object-cover rounded-full"
+                    className="w-10 h-10 object-contain"
                   />
                   <div>
                     <h2 className="font-bold text-gray-900">360° Method</h2>
@@ -471,7 +471,7 @@ function LayoutContent({ children }) {
                 <img 
                   src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/0255f5a44_BannerSize_1.jpg"
                   alt="360° Method"
-                  className="h-8 w-8 object-cover rounded-full"
+                  className="h-8 object-contain"
                 />
                 <div className="flex items-center gap-1">
                   <HelpSystem
