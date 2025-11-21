@@ -33,6 +33,7 @@ import {
 import { format } from "date-fns";
 import AddToCartDialog from "../cart/AddToCartDialog";
 import ManualTaskForm from "../tasks/ManualTaskForm";
+import { useDemo } from "../shared/DemoContext";
 
 const PRIORITY_COLORS = {
   High: 'bg-red-600',
@@ -97,6 +98,7 @@ export default function PriorityTaskCard({
   canEdit = true
 }) {
   const queryClient = useQueryClient();
+  const { demoMode } = useDemo();
   const [expanded, setExpanded] = React.useState(false);
   const [showAddToCart, setShowAddToCart] = React.useState(false);
   const [showEditForm, setShowEditForm] = React.useState(false);
@@ -532,9 +534,14 @@ export default function PriorityTaskCard({
 
           {/* Intent-Based Action Buttons */}
           <div className="pt-4 border-t border-red-200">
-            <div className="text-sm font-semibold text-gray-700 mb-3">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
               How will you handle this?
             </div>
+            {demoMode && (
+              <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                Choose your execution path. Each option routes differently through the workflow.
+              </p>
+            )}
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
               <button
@@ -545,8 +552,10 @@ export default function PriorityTaskCard({
               >
                 <Wrench className="w-5 h-5" />
                 <span className="text-sm font-semibold">I'll DIY</span>
-                {task.diy_cost && (
+                {task.diy_cost ? (
                   <span className="text-xs text-green-600 font-semibold">~${task.diy_cost}</span>
+                ) : demoMode && (
+                  <span className="text-xs text-green-600">Do it yourself</span>
                 )}
               </button>
               
@@ -557,9 +566,11 @@ export default function PriorityTaskCard({
                 style={{ minHeight: '80px' }}
               >
                 <HardHat className="w-5 h-5" />
-                <span className="text-sm font-semibold">Hire Pro</span>
-                {task.contractor_cost && (
+                <span className="text-sm font-semibold">{demoMode ? 'Find Your Own Pro' : 'Hire Pro'}</span>
+                {task.contractor_cost ? (
                   <span className="text-xs text-gray-600 font-semibold">~${task.contractor_cost}</span>
+                ) : demoMode && (
+                  <span className="text-xs text-gray-600">Track contractor</span>
                 )}
               </button>
               
@@ -570,9 +581,11 @@ export default function PriorityTaskCard({
                 style={{ minHeight: '80px' }}
               >
                 <Star className="w-5 h-5" />
-                <span className="text-sm font-semibold">Get Quote</span>
-                {task.operator_cost && (
+                <span className="text-sm font-semibold">{demoMode ? '360° Service' : 'Get Quote'}</span>
+                {task.operator_cost ? (
                   <span className="text-xs text-blue-600 font-semibold">~${task.operator_cost}</span>
+                ) : demoMode && (
+                  <span className="text-xs text-blue-600">Full service</span>
                 )}
               </button>
             </div>
