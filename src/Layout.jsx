@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -456,13 +455,13 @@ function LayoutContent({ children }) {
             </header>
           )}
 
-          <div className={`flex-1 overflow-auto ${showAppUI ? 'pt-[56px] pb-[80px] md:pt-0 md:pb-0' : ''}`}>
+          <div className={`flex-1 overflow-auto ${showAppUI ? (demoMode ? 'pt-[56px] md:pt-0' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
             {children}
           </div>
         </main>
 
-        {/* Bottom Nav - Only show if not landing/waitlist */}
-        {showAppUI && (
+        {/* Bottom Nav - Only show if not landing/waitlist and not in demo mode */}
+        {showAppUI && !demoMode && (
           <BottomNav
             taskCount={urgentTasks?.length || 0}
             onQuickAdd={() => setShowQuickAddMenu(true)}
