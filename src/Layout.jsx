@@ -152,18 +152,35 @@ function LayoutContent({ children }) {
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Settings")}>
-          <Settings className="w-4 h-4 mr-2" />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Services")}>
-          <Wrench className="w-4 h-4 mr-2" />
-          Professional Services
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Pricing")}>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Plans & Pricing
-        </DropdownMenuItem>
+        {!demoMode && (
+          <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Settings")}>
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </DropdownMenuItem>
+        )}
+        {demoMode ? (
+          <>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Waitlist")}>
+              <Wrench className="w-4 h-4 mr-2" />
+              Professional Services
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Waitlist")}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Plans & Pricing
+            </DropdownMenuItem>
+          </>
+        ) : (
+          <>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Services")}>
+              <Wrench className="w-4 h-4 mr-2" />
+              Professional Services
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Pricing")}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Plans & Pricing
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="text-red-600">
           <LogOut className="w-4 h-4 mr-2" />
