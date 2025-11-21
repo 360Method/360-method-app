@@ -26,8 +26,8 @@ export default function ExitIntentPopup() {
   if (!show || !demoMode) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" style={{ pointerEvents: 'auto' }}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-in fade-in zoom-in duration-300" style={{ pointerEvents: 'auto' }}>
         <button
           onClick={() => {
             setShow(false);
@@ -55,7 +55,7 @@ export default function ExitIntentPopup() {
           <button
             onClick={() => navigate(createPageUrl('Waitlist'))}
             className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition-all mb-3"
-            style={{ minHeight: '44px' }}
+            style={{ minHeight: '44px', pointerEvents: 'auto', cursor: 'pointer' }}
           >
             Join Waitlist (2 minutes)
           </button>
@@ -65,7 +65,8 @@ export default function ExitIntentPopup() {
               setShow(false);
               setDismissed(true);
             }}
-            className="text-gray-600 hover:text-gray-800 text-sm font-semibold"
+            className="text-gray-600 hover:text-gray-800 text-sm font-semibold py-3"
+            style={{ minHeight: '44px', pointerEvents: 'auto', cursor: 'pointer' }}
           >
             Continue exploring demo
           </button>
