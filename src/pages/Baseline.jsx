@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
+import RegionalAdaptationBox from "../components/shared/RegionalAdaptationBox";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -711,6 +712,42 @@ export default function Baseline() {
           defaultExpanded={false}
           className="mb-6"
         />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="system documentation"
+            regionalAdaptations={{
+              description: "Different climates stress different systems. The app's system templates and condition rating criteria adapt to your region's primary failure modes.",
+              howItWorks: "System priority, expected lifespan, and maintenance intervals automatically adjust based on climate stress factors",
+              examples: {
+                'pacific-northwest': [
+                  'Roof: Shorter lifespan (moss, moisture)',
+                  'Crawlspace: Critical monitoring (moisture)',
+                  'Exterior wood: High priority (rot risk)',
+                  'Gutters: Essential system (heavy rain)'
+                ],
+                'southwest': [
+                  'HVAC/AC: Most critical system (life safety)',
+                  'Roof: UV damage focus vs. moisture',
+                  'Pool equipment: Standard system category',
+                  'Evaporative coolers: Climate-specific system'
+                ],
+                'midwest-northeast': [
+                  'Furnace: Life safety critical system',
+                  'Foundation: Elevated monitoring (freeze/thaw)',
+                  'Insulation: High priority documentation',
+                  'Ice dam barriers: Climate-specific system'
+                ],
+                'southeast': [
+                  'Hurricane tie-downs: Critical system',
+                  'Termite barriers: Essential monitoring',
+                  'Mold prevention: High priority category',
+                  'Storm shutters: Climate-specific system'
+                ]
+              }
+            }}
+          />
+        )}
 
         {showPostOnboardingPrompt && currentProperty && !demoMode && (
           <PostOnboardingPrompt

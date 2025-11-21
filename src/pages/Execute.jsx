@@ -21,6 +21,9 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
+import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
+import StepEducationCard from '../components/shared/StepEducationCard';
+import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
 
 export default function ExecutePage() {
   const location = useLocation();
@@ -215,6 +218,49 @@ export default function ExecutePage() {
 
         {/* Don't Want DIY Banner */}
         <DontWantDIYBanner />
+
+        {/* Step Education Card */}
+        <StepEducationCard 
+          {...STEP_EDUCATION.execute}
+          defaultExpanded={false}
+          className="mb-6"
+        />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="task execution guides"
+            regionalAdaptations={{
+              description: "How-to guides include climate-specific techniques. Roof repair in wet climates includes moisture barriers; desert climates focus on UV protection.",
+              howItWorks: "Instructions, materials, and techniques adapt to your climate. Phoenix guides recommend reflective coatings; Seattle guides emphasize waterproofing",
+              examples: {
+                'pacific-northwest': [
+                  'Roof: Moss prevention techniques included',
+                  'Deck: Water-resistant stains recommended',
+                  'Crawlspace: Vapor barrier installation guides',
+                  'Paint: Mildew-resistant formulas specified'
+                ],
+                'southwest': [
+                  'Roof: Cool roof coatings recommended',
+                  'Exterior: UV-resistant materials specified',
+                  'AC: Desert-specific maintenance tips',
+                  'Irrigation: Drought-tolerant system guides'
+                ],
+                'midwest-northeast': [
+                  'Winterization: Freeze protection detailed',
+                  'Roof: Ice dam barrier installation',
+                  'Foundation: Freeze/thaw repair techniques',
+                  'Insulation: Cold climate R-values specified'
+                ],
+                'southeast': [
+                  'Hurricane: Wind-resistant fasteners specified',
+                  'Termite: Bait vs. barrier system guides',
+                  'Mold: High-humidity prevention tactics',
+                  'Roof: Hurricane strap installation'
+                ]
+              }
+            }}
+          />
+        )}
 
         {properties.length > 1 && (
           <Card className="mb-6 border-2 border-green-200 bg-white">

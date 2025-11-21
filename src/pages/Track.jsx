@@ -26,6 +26,7 @@ import { STEP_EDUCATION } from '../components/shared/stepEducationContent';
 import StepNavigation from '../components/navigation/StepNavigation';
 import { Badge } from '@/components/ui/badge';
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -675,6 +676,42 @@ Provide comprehensive analysis with this structure:
           defaultExpanded={false}
           className="mb-6"
         />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="maintenance logging"
+            regionalAdaptations={{
+              description: "Historical tracking captures regional patterns. Pacific NW properties log more moisture issues; Southwest logs more HVAC work.",
+              howItWorks: "Analytics compare your maintenance patterns to regional benchmarks, flagging unusual trends that may indicate problems",
+              examples: {
+                'pacific-northwest': [
+                  'Moisture events tracked separately',
+                  'Gutter cleaning frequency monitored',
+                  'Mold remediation costs flagged',
+                  'Seasonal spend peaks in fall (pre-rain)'
+                ],
+                'southwest': [
+                  'AC filter changes tracked weekly in summer',
+                  'UV damage repairs categorized',
+                  'Monsoon damage tracked separately',
+                  'Seasonal spend peaks in spring (AC prep)'
+                ],
+                'midwest-northeast': [
+                  'Freeze damage incidents tracked',
+                  'Heating costs monitored by severity',
+                  'Ice dam occurrences logged',
+                  'Seasonal spend peaks in fall (winterization)'
+                ],
+                'southeast': [
+                  'Hurricane prep/recovery costs separated',
+                  'Termite treatment cycles tracked',
+                  'Mold remediation frequency monitored',
+                  'Seasonal spend peaks in spring (hurricane prep)'
+                ]
+              }
+            }}
+          />
+        )}
 
         <Tabs value={activeTab}>
           
