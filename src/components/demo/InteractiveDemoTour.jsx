@@ -219,22 +219,22 @@ export default function InteractiveDemoTour() {
 
   // Start tour AFTER wizard completes
   useEffect(() => {
-    if (demoMode) {
+    if (demoMode && location.pathname === createPageUrl('Dashboard')) {
       const wizardSeen = sessionStorage.getItem('demoWizardSeen');
       const tourCompleted = sessionStorage.getItem('demo_tour_completed');
       
       // Only start tour if wizard was seen and tour hasn't been completed
-      if (wizardSeen && !tourCompleted) {
-        // Delay slightly to ensure wizard has fully closed
+      if (wizardSeen && !tourCompleted && !tourActive) {
+        // Longer delay to ensure everything is rendered and wizard is fully closed
         const timer = setTimeout(() => {
           setTourActive(true);
-        }, 800);
+        }, 1500);
         return () => clearTimeout(timer);
       }
-    } else {
+    } else if (!demoMode) {
       setTourActive(false);
     }
-  }, [demoMode]);
+  }, [demoMode, location.pathname, tourActive]);
 
   // Navigate if step requires different page
   useEffect(() => {
