@@ -15,7 +15,7 @@ export default function Welcome() {
         <div className="text-center mb-12">
           <div className="mb-6 flex justify-center">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/893921411_GreyProfessionalMonogramCircularBrandLogo1.png" 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
               alt="360° Method Logo" 
               className="w-24 h-24 md:w-32 md:h-32"
             />

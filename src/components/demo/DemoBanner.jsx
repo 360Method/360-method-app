@@ -34,7 +34,7 @@ export function DemoBanner({ onAddProperty }) {
           {/* Left side - Demo info */}
           <div className="flex items-center gap-3 min-w-0">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/893921411_GreyProfessionalMonogramCircularBrandLogo1.png" 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
               alt="360° Method" 
               className="w-8 h-8 rounded-full flex-shrink-0"
             />

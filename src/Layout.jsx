@@ -212,7 +212,7 @@ function LayoutContent({ children }) {
             <div className="border-b border-gray-200 p-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/893921411_GreyProfessionalMonogramCircularBrandLogo1.png" 
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
                   alt="360° Method" 
                   className="w-10 h-10 rounded-lg"
                 />
@@ -339,7 +339,7 @@ function LayoutContent({ children }) {
               <div className="border-b border-gray-200 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/893921411_GreyProfessionalMonogramCircularBrandLogo1.png" 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
                     alt="360° Method" 
                     className="w-10 h-10 rounded-lg"
                   />
