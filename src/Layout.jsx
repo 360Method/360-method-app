@@ -481,46 +481,90 @@ function LayoutContent({ children }) {
       </div>
 
       <style>{`
-        /* Interactive Tour Animations */
-        @keyframes pulse-glow {
+        /* Interactive Tour Animations - Enhanced */
+
+        /* Pulsing ring around highlighted element */
+        @keyframes pulse-ring {
           0%, 100% {
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 
-                        0 0 0 8px rgba(59, 130, 246, 0.3), 
-                        0 0 30px 10px rgba(59, 130, 246, 0.5);
-          }
-          50% {
-            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.8), 
-                        0 0 0 12px rgba(59, 130, 246, 0.4), 
-                        0 0 40px 15px rgba(59, 130, 246, 0.7);
-          }
-        }
-
-        .animate-pulse-glow {
-          animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-
-        .animate-blink {
-          animation: blink 1s ease-in-out infinite;
-        }
-
-        @keyframes tap-hint {
-          0%, 100% { 
-            transform: scale(1) translateY(0); 
+            transform: scale(1);
             opacity: 1;
           }
-          50% { 
-            transform: scale(0.9) translateY(5px); 
-            opacity: 0.7;
+          50% {
+            transform: scale(1.03);
+            opacity: 0.9;
           }
         }
 
-        .animate-tap-hint {
-          animation: tap-hint 1.5s ease-in-out infinite;
+        .animate-pulse-ring {
+          animation: pulse-ring 2s ease-in-out infinite;
+        }
+
+        /* Ripple effect expanding outward */
+        @keyframes ripple {
+          0% {
+            transform: scale(1);
+            opacity: 0.8;
+          }
+          50% {
+            transform: scale(1.15);
+            opacity: 0.3;
+          }
+          100% {
+            transform: scale(1.3);
+            opacity: 0;
+          }
+        }
+
+        .animate-ripple {
+          animation: ripple 2s ease-out infinite;
+        }
+
+        /* Hand tap bounce */
+        @keyframes tap-bounce {
+          0%, 100% { 
+            transform: scale(1) translateY(0); 
+          }
+          25% { 
+            transform: scale(0.95) translateY(8px); 
+          }
+          50% { 
+            transform: scale(1.05) translateY(-4px); 
+          }
+          75% { 
+            transform: scale(0.98) translateY(2px); 
+          }
+        }
+
+        .animate-tap-bounce {
+          animation: tap-bounce 1.8s ease-in-out infinite;
+        }
+
+        /* Wiggle animation for hand icon */
+        @keyframes wiggle {
+          0%, 100% { 
+            transform: rotate(-5deg); 
+          }
+          50% { 
+            transform: rotate(5deg); 
+          }
+        }
+
+        .animate-wiggle {
+          animation: wiggle 0.8s ease-in-out infinite;
+        }
+
+        /* Slow bounce for arrows */
+        @keyframes bounce-slow {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-12px);
+          }
+        }
+
+        .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
         }
 
         :root {

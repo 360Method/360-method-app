@@ -401,29 +401,46 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
 
   return (
     <>
-      {/* White highlight box - allows clicks through */}
+      {/* Glowing highlight ring */}
       <div
-        className={`fixed z-[9999] bg-transparent rounded-xl pointer-events-none ${
-          pulse ? 'animate-pulse-glow' : ''
-        } ${blink ? 'animate-blink' : ''}`}
+        className={`fixed z-[9999] rounded-xl pointer-events-none ${
+          pulse ? 'animate-pulse-ring' : ''
+        }`}
         style={{
           top: `${rect.top}px`,
           left: `${rect.left}px`,
           width: `${rect.width}px`,
           height: `${rect.height}px`,
-          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.8), 0 0 0 8px rgba(59, 130, 246, 0.4), 0 0 40px 15px rgba(59, 130, 246, 0.6)'
+          boxShadow: 'inset 0 0 0 4px rgba(59, 130, 246, 1), 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px 8px rgba(59, 130, 246, 0.4), 0 0 60px 20px rgba(59, 130, 246, 0.3)',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.15) 100%)',
+          border: '2px solid rgba(59, 130, 246, 0.8)'
         }}
       />
 
-      {/* Hand pointer for tap indication */}
+      {/* Animated ripple effect */}
       <div
-        className="fixed z-[10000] pointer-events-none animate-tap-hint"
+        className="fixed z-[9998] rounded-xl pointer-events-none animate-ripple"
         style={{
-          top: `${rect.top + rect.height / 2 - 20}px`,
-          left: `${rect.left + rect.width / 2 - 20}px`
+          top: `${rect.top}px`,
+          left: `${rect.left}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          border: '3px solid rgba(59, 130, 246, 0.6)'
+        }}
+      />
+
+      {/* Hand pointer with bounce animation */}
+      <div
+        className="fixed z-[10000] pointer-events-none"
+        style={{
+          top: `${rect.top + rect.height / 2 - 24}px`,
+          left: `${rect.left + rect.width / 2 - 24}px`
         }}
       >
-        <Hand className="w-10 h-10 text-blue-400" />
+        <div className="relative animate-tap-bounce">
+          <div className="absolute -inset-2 bg-blue-400 rounded-full opacity-30 animate-ping" />
+          <Hand className="w-12 h-12 text-blue-500 drop-shadow-lg relative z-10" style={{ filter: 'drop-shadow(0 4px 8px rgba(59, 130, 246, 0.5))' }} />
+        </div>
       </div>
     </>
   );
@@ -467,11 +484,18 @@ function ArrowIndicator({ targetSelector, direction }) {
 
   return (
     <div
-      className="fixed z-[10000] pointer-events-none animate-bounce"
+      className="fixed z-[10000] pointer-events-none"
       style={{ top: `${position.top}px`, left: `${position.left}px` }}
     >
-      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-        <ArrowIcon className="w-6 h-6 text-white" />
+      <div className="relative">
+        {/* Pulsing glow behind arrow */}
+        <div className="absolute inset-0 bg-blue-500 rounded-full opacity-40 animate-pulse blur-md scale-150" />
+        
+        {/* Arrow container with bounce */}
+        <div className="relative w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl animate-bounce-slow">
+          <div className="absolute inset-0 bg-white opacity-20 rounded-full animate-ping" />
+          <ArrowIcon className="w-7 h-7 text-white relative z-10" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }} />
+        </div>
       </div>
     </div>
   );
@@ -577,10 +601,13 @@ function InstructionCard({
             {step.message}
           </p>
           
-          {/* Mobile-specific instruction */}
-          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 flex items-center gap-2 md:gap-3">
-            <Hand className="w-7 h-7 md:w-8 md:h-8 text-blue-600 flex-shrink-0 animate-pulse" />
-            <p className="text-blue-900 font-bold text-sm md:text-base">
+          {/* Mobile-specific instruction with enhanced styling */}
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-3 border-blue-400 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+            <div className="relative flex-shrink-0">
+              <div className="absolute -inset-1 bg-blue-400 rounded-full opacity-30 animate-pulse" />
+              <Hand className="w-8 h-8 md:w-9 md:h-9 text-blue-600 relative z-10 animate-wiggle" />
+            </div>
+            <p className="text-blue-900 font-bold text-base md:text-lg leading-snug">
               {step.mobileInstructions}
             </p>
           </div>
