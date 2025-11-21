@@ -213,7 +213,7 @@ export default function Waitlist() {
               className="w-20 h-20 md:w-24 md:h-24"
             />
           </div>
-          <p className="text-sm md:text-base text-blue-700 font-semibold mb-6 tracking-wide">
+          <p className="text-sm md:text-base font-semibold mb-6 tracking-wide" style={{ color: '#6B5A3D' }}>
             Own with Confidence. Build with Purpose. Wealth with Strategy.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-6">

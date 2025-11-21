@@ -540,7 +540,7 @@ export default function Properties() {
               <h2 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
                 Add Your First Property
               </h2>
-              <p className="text-base text-blue-700 font-semibold mb-4">
+              <p className="text-base font-semibold mb-4" style={{ color: '#6B5A3D' }}>
                 Own with Confidence. Build with Purpose. Wealth with Strategy.
               </p>
               <p className="text-gray-600 mb-2 max-w-md mx-auto">

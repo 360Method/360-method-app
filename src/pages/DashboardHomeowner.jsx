@@ -87,7 +87,7 @@ export default function DashboardHomeowner() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Welcome back! 👋
         </h1>
-        <p className="text-base text-blue-700 font-semibold mb-2 tracking-wide">
+        <p className="text-base font-semibold mb-2 tracking-wide" style={{ color: '#6B5A3D' }}>
           Own with Confidence. Build with Purpose. Wealth with Strategy.
         </p>
         <p className="text-gray-600">

@@ -20,7 +20,7 @@ export default function Welcome() {
               className="w-24 h-24 md:w-32 md:h-32"
             />
           </div>
-          <p className="text-base md:text-lg text-blue-700 font-semibold mb-8 tracking-wide">
+          <p className="text-base md:text-lg font-semibold mb-8 tracking-wide" style={{ color: '#6B5A3D' }}>
             Own with Confidence. Build with Purpose. Wealth with Strategy.
           </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
