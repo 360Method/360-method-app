@@ -260,6 +260,13 @@ export default function Baseline() {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
       return base44.entities.Property.list('-created_date');
+    },
+    initialData: () => {
+      // Provide initial data immediately for demo mode
+      if (demoMode && demoData) {
+        return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
+      }
+      return [];
     }
   });
 
@@ -268,7 +275,7 @@ export default function Baseline() {
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
     }
-  }, [properties]);
+  }, [properties, selectedProperty]);
 
   const { data: realSystems = [], isLoading: isLoadingRealSystems } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
