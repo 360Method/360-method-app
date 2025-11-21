@@ -45,6 +45,11 @@ function LayoutContent({ children }) {
   });
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
 
+  // Scroll to top on route change
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // Determine if we should show the app UI (sidebar, header, etc.)
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
   const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
