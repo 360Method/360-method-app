@@ -17,7 +17,7 @@ export default function Welcome() {
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/0255f5a44_BannerSize_1.jpg"
               alt="360° Method"
-              className="w-36 h-36 object-cover rounded-full shadow-xl"
+              className="w-32 h-32 object-cover rounded-full shadow-xl"
             />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
