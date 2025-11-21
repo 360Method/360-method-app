@@ -394,9 +394,6 @@ export default function Waitlist() {
                     }}
                     className="w-6 h-6 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   />
-                  {formData.marketing_consent && (
-                    <Check className="w-4 h-4 text-white absolute top-1 left-1 pointer-events-none" />
-                  )}
                 </div>
 
                 <div className="flex-1">
