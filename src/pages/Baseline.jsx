@@ -213,7 +213,21 @@ export default function Baseline() {
     if (demoMode) markStepVisited(1);
   }, [demoMode, markStepVisited]);
   
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || '');
+  // Initialize selectedProperty with demo data if available
+  const getInitialProperty = () => {
+    if (propertyIdFromUrl) return propertyIdFromUrl;
+    if (demoMode && demoData) {
+      if (isInvestor && demoData.properties?.[0]) {
+        return demoData.properties[0].id;
+      }
+      if (!isInvestor && demoData.property) {
+        return demoData.property.id;
+      }
+    }
+    return '';
+  };
+  
+  const [selectedProperty, setSelectedProperty] = React.useState(getInitialProperty());
   const [showDialog, setShowDialog] = React.useState(false);
   const [showCartDialog, setShowCartDialog] = React.useState(false);
   const [editingSystem, setEditingSystem] = React.useState(null);
