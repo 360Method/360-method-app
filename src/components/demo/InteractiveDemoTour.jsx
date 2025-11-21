@@ -217,12 +217,19 @@ export default function InteractiveDemoTour() {
 
   const currentStepData = TOUR_STEPS[currentStep];
 
-  // Start tour on demo entry
+  // Start tour AFTER wizard completes
   useEffect(() => {
     if (demoMode) {
+      const wizardSeen = sessionStorage.getItem('demoWizardSeen');
       const tourCompleted = sessionStorage.getItem('demo_tour_completed');
-      if (!tourCompleted) {
-        setTourActive(true);
+      
+      // Only start tour if wizard was seen and tour hasn't been completed
+      if (wizardSeen && !tourCompleted) {
+        // Delay slightly to ensure wizard has fully closed
+        const timer = setTimeout(() => {
+          setTourActive(true);
+        }, 800);
+        return () => clearTimeout(timer);
       }
     } else {
       setTourActive(false);
@@ -272,12 +279,16 @@ export default function InteractiveDemoTour() {
     const handleClick = (e) => {
       const target = e.target.closest(currentStepData.targetElement);
       if (target) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleNextStep();
+        // For center modals, don't prevent default
+        if (currentStepData.position !== 'center') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        setTimeout(() => handleNextStep(), 200);
       }
     };
 
+    // Use capture phase for better control
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
   }, [tourActive, currentStep, currentStepData]);
@@ -314,8 +325,15 @@ export default function InteractiveDemoTour() {
 
   return (
     <>
-      {/* Backdrop Overlay */}
-      <div className="fixed inset-0 bg-black/75 z-[9998]" />
+      {/* Backdrop Overlay - blocks interaction outside highlighted area */}
+      <div 
+        className="fixed inset-0 bg-black/75 z-[9998]"
+        onClick={(e) => {
+          // Prevent clicks on backdrop
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      />
 
       {/* Spotlight on Target Element */}
       {currentStepData.targetElement && (
@@ -383,9 +401,9 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
 
   return (
     <>
-      {/* White highlight box */}
+      {/* White highlight box - allows clicks through */}
       <div
-        className={`fixed z-[9999] bg-white rounded-xl pointer-events-none ${
+        className={`fixed z-[9999] bg-transparent rounded-xl pointer-events-none ${
           pulse ? 'animate-pulse-glow' : ''
         } ${blink ? 'animate-blink' : ''}`}
         style={{
@@ -393,7 +411,7 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
           left: `${rect.left}px`,
           width: `${rect.width}px`,
           height: `${rect.height}px`,
-          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 0 8px rgba(59, 130, 246, 0.3), 0 0 30px 10px rgba(59, 130, 246, 0.5)'
+          boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.8), 0 0 0 8px rgba(59, 130, 246, 0.4), 0 0 40px 15px rgba(59, 130, 246, 0.6)'
         }}
       />
 
@@ -526,8 +544,8 @@ function InstructionCard({
 
   // Bottom sheet for step-by-step instructions
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[10001] p-4 pb-safe">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg mx-auto border-4 border-blue-500">
+    <div className="fixed bottom-0 left-0 right-0 z-[10001] p-3 md:p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 max-w-lg mx-auto border-4 border-blue-500">
         {/* Progress Indicator */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm font-semibold text-gray-600">
@@ -551,18 +569,18 @@ function InstructionCard({
         </div>
 
         {/* Instruction Content */}
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
+        <div className="mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
             {step.title}
           </h3>
-          <p className="text-gray-700 mb-3 text-base leading-relaxed">
+          <p className="text-gray-700 mb-3 text-sm md:text-base leading-relaxed">
             {step.message}
           </p>
           
           {/* Mobile-specific instruction */}
-          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 flex items-center gap-3">
-            <Hand className="w-8 h-8 text-blue-600 flex-shrink-0 animate-pulse" />
-            <p className="text-blue-900 font-bold text-base">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 flex items-center gap-2 md:gap-3">
+            <Hand className="w-7 h-7 md:w-8 md:h-8 text-blue-600 flex-shrink-0 animate-pulse" />
+            <p className="text-blue-900 font-bold text-sm md:text-base">
               {step.mobileInstructions}
             </p>
           </div>
