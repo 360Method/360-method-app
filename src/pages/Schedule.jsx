@@ -41,6 +41,7 @@ import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function SchedulePage() {

@@ -38,6 +38,7 @@ import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 
 export default function Upgrade() {
   const location = useLocation();
@@ -256,6 +257,42 @@ export default function Upgrade() {
           defaultExpanded={false}
           className="mb-6"
         />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="upgrade recommendations"
+            regionalAdaptations={{
+              description: "Upgrade ROI varies dramatically by climate. Solar panels pay back faster in sunny regions; insulation upgrades deliver more in cold climates.",
+              howItWorks: "ROI calculations, payback periods, and recommendations adjust for your climate's energy costs, weather patterns, and available incentives",
+              examples: {
+                'pacific-northwest': [
+                  'Heat pump: High ROI (mild winters)',
+                  'Solar: Moderate ROI (cloudy weather)',
+                  'Insulation: Good ROI (heating savings)',
+                  'Smart irrigation: Low priority (natural rain)'
+                ],
+                'southwest': [
+                  'Solar: Excellent ROI (intense sun)',
+                  'Cool roof: High ROI (AC savings)',
+                  'Shade structures: Good ROI (heat reduction)',
+                  'Smart irrigation: Critical (water costs)'
+                ],
+                'midwest-northeast': [
+                  'Insulation: Excellent ROI (heating costs)',
+                  'Windows: High ROI (thermal loss)',
+                  'Furnace upgrade: Good ROI (efficiency)',
+                  'Solar: Moderate ROI (seasonal production)'
+                ],
+                'southeast': [
+                  'Hurricane windows: High ROI (insurance)',
+                  'Dehumidification: Good ROI (AC efficiency)',
+                  'Generator: High value (storm prep)',
+                  'Solar: Good ROI (year-round sun)'
+                ]
+              }
+            }}
+          />
+        )}
 
         {/* Service Availability Banner */}
         <ServiceAvailabilityBanner user={user} property={currentProperty} className="mb-6" />

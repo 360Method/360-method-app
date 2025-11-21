@@ -28,6 +28,7 @@ import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
+import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -479,6 +480,42 @@ export default function Inspect() {
           defaultExpanded={false}
           className="mb-6"
         />
+
+        {demoMode && (
+          <RegionalAdaptationBox
+            step="seasonal inspections"
+            regionalAdaptations={{
+              description: "Inspection timing and focus areas shift dramatically by climate. A fall inspection in Seattle looks nothing like one in Phoenix.",
+              howItWorks: "Inspection checklists, timing windows, and urgency levels adapt to your region's critical maintenance seasons",
+              examples: {
+                'pacific-northwest': [
+                  'Fall: Pre-rain prep (gutters, drainage) - CRITICAL',
+                  'Winter: Storm damage monitoring',
+                  'Spring: Moisture damage assessment',
+                  'Summer: Preventive maintenance window'
+                ],
+                'southwest': [
+                  'Spring: Pre-summer AC critical check',
+                  'Summer: Heat stress monitoring',
+                  'Fall: Post-monsoon damage assessment',
+                  'Winter: Off-season maintenance window'
+                ],
+                'midwest-northeast': [
+                  'Fall: Pre-freeze winterization - CRITICAL',
+                  'Winter: Freeze damage monitoring',
+                  'Spring: Thaw damage assessment',
+                  'Summer: Foundation & AC maintenance'
+                ],
+                'southeast': [
+                  'Spring: Pre-hurricane season prep - CRITICAL',
+                  'Summer: Hurricane damage monitoring',
+                  'Fall: Storm recovery assessment',
+                  'Winter: Termite & mold prevention'
+                ]
+              }
+            }}
+          />
+        )}
 
         {/* Why Inspections Matter - Educational Section */}
         <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-8">
