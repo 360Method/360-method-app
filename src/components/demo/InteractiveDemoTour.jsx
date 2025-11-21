@@ -429,17 +429,18 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
         }}
       />
 
-      {/* Hand pointer with bounce animation */}
+      {/* Hand pointer with bounce animation - larger and more visible */}
       <div
         className="fixed z-[10000] pointer-events-none"
         style={{
-          top: `${rect.top + rect.height / 2 - 24}px`,
-          left: `${rect.left + rect.width / 2 - 24}px`
+          top: `${rect.top + rect.height / 2 - 30}px`,
+          left: `${rect.left + rect.width / 2 - 30}px`
         }}
       >
         <div className="relative animate-tap-bounce">
-          <div className="absolute -inset-2 bg-blue-400 rounded-full opacity-30 animate-ping" />
-          <Hand className="w-12 h-12 text-blue-500 drop-shadow-lg relative z-10" style={{ filter: 'drop-shadow(0 4px 8px rgba(59, 130, 246, 0.5))' }} />
+          <div className="absolute -inset-3 bg-blue-400 rounded-full opacity-40 animate-ping" />
+          <div className="absolute -inset-2 bg-blue-500 rounded-full opacity-30 blur-md" />
+          <Hand className="w-16 h-16 text-blue-500 drop-shadow-2xl relative z-10" style={{ filter: 'drop-shadow(0 6px 12px rgba(59, 130, 246, 0.7))' }} />
         </div>
       </div>
     </>
