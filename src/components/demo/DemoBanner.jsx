@@ -29,7 +29,7 @@ export function DemoBanner({ onAddProperty }) {
   const topPosition = isWaitlistPage ? '0' : '56px';
 
   return (
-    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 sticky top-0 md:top-0 z-[60] shadow-sm" style={{ top: topPosition }}>
+    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 sticky top-0 md:top-0 z-[40] shadow-sm" style={{ top: topPosition }}>
       <div className="px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Left side - Demo info */}
