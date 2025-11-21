@@ -1,4 +1,3 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -94,7 +93,8 @@ export default function PriorityTaskCard({
   onMarkComplete, 
   onDelete,
   property,
-  compact = false
+  compact = false,
+  canEdit = true
 }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = React.useState(false);
@@ -481,6 +481,7 @@ export default function PriorityTaskCard({
                   <Select 
                     value={task.execution_type || 'Not Decided'} 
                     onValueChange={handleExecutionTypeChange}
+                    disabled={!canEdit}
                   >
                     <SelectTrigger className="bg-white" style={{ minHeight: '44px' }}>
                       <SelectValue />
@@ -512,6 +513,7 @@ export default function PriorityTaskCard({
                   <Select 
                     value={task.priority} 
                     onValueChange={handlePriorityChange}
+                    disabled={!canEdit}
                   >
                     <SelectTrigger className="bg-white" style={{ minHeight: '44px' }}>
                       <SelectValue />
@@ -536,8 +538,9 @@ export default function PriorityTaskCard({
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
               <button
-                onClick={() => handleExecutionMethod('DIY')}
-                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-green-300 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 hover:border-green-400 transition-all"
+                onClick={() => canEdit && handleExecutionMethod('DIY')}
+                disabled={!canEdit}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-green-300 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 hover:border-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ minHeight: '80px' }}
               >
                 <Wrench className="w-5 h-5" />
@@ -548,8 +551,9 @@ export default function PriorityTaskCard({
               </button>
               
               <button
-                onClick={() => handleExecutionMethod('Contractor')}
-                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-gray-300 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all"
+                onClick={() => canEdit && handleExecutionMethod('Contractor')}
+                disabled={!canEdit}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-gray-300 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ minHeight: '80px' }}
               >
                 <HardHat className="w-5 h-5" />
@@ -560,8 +564,9 @@ export default function PriorityTaskCard({
               </button>
               
               <button
-                onClick={() => handleExecutionMethod('360_Operator')}
-                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-blue-300 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 hover:border-blue-400 transition-all"
+                onClick={() => canEdit && handleExecutionMethod('360_Operator')}
+                disabled={!canEdit}
+                className="flex flex-col items-center justify-center gap-1 px-3 py-3 border-2 border-blue-300 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 hover:border-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ minHeight: '80px' }}
               >
                 <Star className="w-5 h-5" />
@@ -578,8 +583,9 @@ export default function PriorityTaskCard({
               </div>
               
               <button
-                onClick={() => setShowAddToCart(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-orange-300 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition-all"
+                onClick={() => canEdit && setShowAddToCart(true)}
+                disabled={!canEdit}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-orange-300 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 hover:border-orange-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ minHeight: '48px' }}
               >
                 <ShoppingCart className="w-4 h-4" />
@@ -588,29 +594,31 @@ export default function PriorityTaskCard({
               </button>
             </div>
 
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-              <button
-                onClick={() => updateTaskMutation.mutate({ taskId: task.id, data: { status: 'Deferred' }})}
-                className="text-sm text-gray-500 hover:text-gray-700 transition"
-              >
-                Skip for now
-              </button>
-              
-              <div className="flex gap-3">
+            {canEdit && (
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                 <button
-                  onClick={() => setShowEditForm(true)}
+                  onClick={() => updateTaskMutation.mutate({ taskId: task.id, data: { status: 'Deferred' }})}
                   className="text-sm text-gray-500 hover:text-gray-700 transition"
                 >
-                  Edit
+                  Skip for now
                 </button>
-                <button
-                  onClick={() => onDelete(task)}
-                  className="text-sm text-red-500 hover:text-red-700 transition"
-                >
-                  Delete
-                </button>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEditForm(true)}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDelete(task)}
+                    className="text-sm text-red-500 hover:text-red-700 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
