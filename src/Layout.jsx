@@ -437,10 +437,10 @@ function LayoutContent({ children }) {
               <div className="flex items-center justify-between h-full px-4">
                 <button
                   onClick={() => setMobileMenuOpen(true)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  style={{ minHeight: '44px', minWidth: '44px' }}
+                  className="p-3 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+                  style={{ minHeight: '48px', minWidth: '48px' }}
                 >
-                  <Menu className="w-6 h-6 text-gray-900" />
+                  <Menu className="w-7 h-7 text-gray-900" />
                 </button>
                 <div className="text-center">
                   <h1 className="text-sm font-semibold text-gray-900">360° Method</h1>
