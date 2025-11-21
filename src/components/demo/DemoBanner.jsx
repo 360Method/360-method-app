@@ -27,7 +27,7 @@ export function DemoBanner({ onAddProperty }) {
   };
 
   return (
-    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 sticky top-0 z-50 shadow-sm">
+    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 sticky top-0 md:top-0 z-[60] shadow-sm" style={{ top: '56px' }}>
       <div className="px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Left side - Demo info */}
