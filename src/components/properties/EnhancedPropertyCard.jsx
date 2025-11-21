@@ -17,28 +17,41 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { createPageUrl } from "@/utils";
 import { Link } from "react-router-dom";
 
-export default function EnhancedPropertyCard({ property, onEdit, onDelete }) {
+export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoData = null }) {
   const isPrimary = property.property_use_type === 'primary';
+  const isDemo = property.is_demo || demoData;
 
-  // Fetch related data
+  // Fetch related data - skip queries in demo mode
   const { data: systems = [] } = useQuery({
     queryKey: ['systems-count', property.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id })
+    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+    enabled: !isDemo,
+    initialData: isDemo && demoData ? (demoData.systems?.filter(s => s.property_id === property.id) || []) : []
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-count', property.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({ property_id: property.id, status: 'Identified' })
+    queryFn: () => base44.entities.MaintenanceTask.filter({ property_id: property.id, status: 'Identified' }),
+    enabled: !isDemo,
+    initialData: isDemo && demoData ? (demoData.tasks?.filter(t => t.property_id === property.id && t.status === 'Identified') || []) : []
   });
 
   const { data: preserveRecs = [] } = useQuery({
     queryKey: ['preserve-count', property.id],
-    queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: property.id, status: 'PENDING' })
+    queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: property.id, status: 'PENDING' }),
+    enabled: !isDemo,
+    initialData: isDemo && demoData ? (demoData.preserveSchedules?.[0]?.interventions?.filter(i => i.status === 'Recommended') || []) : []
   });
 
   const { data: equity } = useQuery({
     queryKey: ['equity-snapshot', property.id],
-    queryFn: () => base44.entities.PortfolioEquity.filter({ property_id: property.id })
+    queryFn: () => base44.entities.PortfolioEquity.filter({ property_id: property.id }),
+    enabled: !isDemo,
+    initialData: isDemo && property.current_value ? [{
+      current_market_value: property.current_value,
+      equity_dollars: property.equity || (property.current_value - (property.mortgage_balance || 0)),
+      equity_percentage: property.equity_percentage || ((property.current_value - (property.mortgage_balance || 0)) / property.current_value * 100)
+    }] : []
   });
 
   const equityData = equity?.[0];
