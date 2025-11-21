@@ -13,20 +13,20 @@ export default function Welcome() {
         
         {/* Logo & Brand */}
         <div className="text-center mb-12">
-          <div className="mb-6 flex justify-center">
+          <div className="mb-3 flex justify-center">
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
               alt="360° Method Logo" 
               className="w-24 h-24 md:w-32 md:h-32"
             />
           </div>
+          <p className="text-base md:text-lg text-blue-700 font-semibold mb-8 tracking-wide">
+            Own with Confidence. Build with Purpose. Wealth with Strategy.
+          </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
             Stop Reacting to Problems.<br />
             Start Preventing Disasters.
           </h1>
-          <p className="text-lg md:text-xl text-blue-700 font-semibold mb-6 tracking-wide">
-            Own with Confidence. Build with Purpose. Wealth with Strategy.
-          </p>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12">
             The 360° Method transforms reactive chaos into proactive control. 
             Small problems stay small. Big savings compound over time.
