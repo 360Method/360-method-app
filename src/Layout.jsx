@@ -55,7 +55,8 @@ function LayoutContent({ children }) {
   // Determine if we should show the app UI (sidebar, header, etc.)
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
   const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
-  const showAppUI = !isLandingPage && !isWaitlistPage;
+  const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
+  const showAppUI = !isLandingPage && !isWaitlistPage && !isDemoEntryPage;
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -491,7 +492,7 @@ function LayoutContent({ children }) {
           </div>
         </main>
 
-        {/* Bottom Nav - Only show if not landing/waitlist and not in demo mode */}
+        {/* Bottom Nav - Only show if not landing/waitlist/demoentry and not in demo mode */}
         {showAppUI && !demoMode && (
           <BottomNav
             taskCount={urgentTasks?.length || 0}
