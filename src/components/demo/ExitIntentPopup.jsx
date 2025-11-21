@@ -33,7 +33,7 @@ export default function ExitIntentPopup() {
             setShow(false);
             setDismissed(true);
           }}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10 flex items-center justify-center"
           style={{ minWidth: '44px', minHeight: '44px' }}
         >
           <X className="w-6 h-6" />
