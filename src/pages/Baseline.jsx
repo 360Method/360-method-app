@@ -290,7 +290,17 @@ export default function Baseline() {
         ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
         : Promise.resolve([]);
     },
-    enabled: !!selectedProperty
+    enabled: !!selectedProperty,
+    initialData: () => {
+      // Provide initial data immediately for demo mode
+      if (demoMode && demoData && selectedProperty) {
+        if (isInvestor) {
+          return demoData?.systems?.filter(s => s.property_id === selectedProperty) || [];
+        }
+        return demoData?.systems || [];
+      }
+      return [];
+    }
   });
 
   const systems = demoMode
