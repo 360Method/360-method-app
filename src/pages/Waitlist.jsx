@@ -81,9 +81,25 @@ export default function Waitlist() {
   };
 
   if (submitted) {
+    // Scroll to top when confirmation is shown
+    React.useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12">
+          <div className="mb-6 flex justify-center">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
+              alt="360° Method Logo" 
+              className="w-20 h-20 md:w-24 md:h-24"
+            />
+          </div>
+          <p className="text-sm md:text-base font-semibold mb-6 tracking-wide text-center" style={{ color: '#6B5A3D' }}>
+            Own with Confidence. Build with Purpose. Wealth with Strategy.
+          </p>
+          
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
