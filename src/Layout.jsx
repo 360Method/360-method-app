@@ -176,7 +176,7 @@ function LayoutContent({ children }) {
       <Toaster position="top-center" richColors closeButton />
       <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />
 
-      <div className="min-h-screen flex w-full" style={{ backgroundColor: showAppUI ? 'var(--background)' : '#FFFFFF' }}>
+      <div className="min-h-screen flex w-full overflow-x-hidden" style={{ backgroundColor: showAppUI ? 'var(--background)' : '#FFFFFF' }}>
         {showAppUI && (
           <ProgressiveEducation
             user={user}
@@ -430,7 +430,7 @@ function LayoutContent({ children }) {
           </>
         )}
 
-        <main className={`flex-1 flex flex-col ${showAppUI ? '' : 'w-full'}`}>
+        <main className={`flex-1 flex flex-col overflow-x-hidden ${showAppUI ? '' : 'w-full'}`}>
           {/* Mobile Header - Only show if not landing/waitlist */}
           {showAppUI && (
             <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
@@ -460,7 +460,7 @@ function LayoutContent({ children }) {
             </header>
           )}
 
-          <div className={`flex-1 overflow-auto ${showAppUI ? (demoMode ? 'pt-[56px] md:pt-0' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
+          <div className={`flex-1 overflow-auto overflow-x-hidden ${showAppUI ? (demoMode ? 'pt-[56px] md:pt-0' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
             {children}
           </div>
         </main>
@@ -602,6 +602,16 @@ function LayoutContent({ children }) {
 
           body {
             padding-bottom: env(safe-area-inset-bottom);
+            overflow-x: hidden;
+          }
+
+          * {
+            max-width: 100vw;
+          }
+
+          img, video, iframe {
+            max-width: 100%;
+            height: auto;
           }
         }
 
