@@ -753,6 +753,11 @@ Provide comprehensive analysis with this structure:
           </TabsContent>
 
         </Tabs>
+
+        {/* CTA after track content */}
+        {demoMode && (
+          <ContextualWaitlistCTA variant="default" className="mt-8" />
+        )}
       </div>
     </div>
   );

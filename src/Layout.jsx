@@ -33,6 +33,8 @@ import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
+import FloatingWaitlistCTA from "./components/demo/FloatingWaitlistCTA";
+import ExitIntentPopup from "./components/demo/ExitIntentPopup";
 
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -478,7 +480,9 @@ function LayoutContent({ children }) {
         )}
 
         {showAppUI && <CartDrawer />}
-      </div>
+        <FloatingWaitlistCTA />
+        <ExitIntentPopup />
+        </div>
 
       <style>{`
         /* Interactive Tour Animations - Enhanced */
