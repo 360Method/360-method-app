@@ -479,7 +479,7 @@ function LayoutContent({ children }) {
           />
         )}
 
-        {showAppUI && <CartDrawer />}
+        {showAppUI && !demoMode && <CartDrawer />}
         <FloatingWaitlistCTA />
         <ExitIntentPopup />
         </div>
