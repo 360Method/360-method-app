@@ -13,13 +13,8 @@ export default function Welcome() {
         
         {/* Logo & Brand */}
         <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <div className="relative">
-              <Home className="w-12 h-12 text-white" />
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-blue-600">360°</span>
-              </div>
-            </div>
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
             Stop Reacting to Problems.<br />

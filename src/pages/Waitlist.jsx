@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check, Home } from 'lucide-react';
+import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check } from 'lucide-react';
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 
@@ -206,14 +206,6 @@ export default function Waitlist() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <div className="relative">
-              <Home className="w-10 h-10 text-white" />
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-blue-600">360°</span>
-              </div>
-            </div>
-          </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-6">
             <Sparkles className="w-4 h-4" />
             Early Access • Founding Members Only

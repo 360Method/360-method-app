@@ -210,18 +210,15 @@ function LayoutContent({ children }) {
         {showAppUI && (
           <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
             <div className="border-b border-gray-200 p-4">
-              <button 
-                onClick={() => navigate(createPageUrl('Dashboard'))}
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full"
-              >
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
                   <Home className="w-6 h-6 text-white" />
                 </div>
-                <div className="text-left">
+                <div>
                   <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
                   <p className="text-xs text-gray-500">Asset Command Center</p>
                 </div>
-              </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2">
@@ -338,21 +335,15 @@ function LayoutContent({ children }) {
               }`}
             >
               <div className="border-b border-gray-200 p-4 flex items-center justify-between">
-                <button 
-                  onClick={() => {
-                    navigate(createPageUrl('Dashboard'));
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                >
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
                     <Home className="w-6 h-6 text-white" />
                   </div>
-                  <div className="text-left">
+                  <div>
                     <h2 className="font-bold text-gray-900">360° Method</h2>
                     <p className="text-xs text-gray-500">Asset Command Center</p>
                   </div>
-                </button>
+                </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -473,20 +464,10 @@ function LayoutContent({ children }) {
                 >
                   <Menu className="w-7 h-7 text-gray-900" />
                 </button>
-                <button 
-                  onClick={() => navigate(createPageUrl('Dashboard'))}
-                  className="text-center hover:opacity-80 transition-opacity"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1B365D 0%, #2A4A7F 100%)' }}>
-                      <Home className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <h1 className="text-sm font-semibold text-gray-900 leading-tight">360° Method</h1>
-                      <p className="text-xs text-gray-500 leading-tight">Asset Command Center</p>
-                    </div>
-                  </div>
-                </button>
+                <div className="text-center">
+                  <h1 className="text-sm font-semibold text-gray-900">360° Method</h1>
+                  <p className="text-xs text-gray-500">Asset Command Center</p>
+                </div>
                 <div className="flex items-center gap-1">
                   <HelpSystem
                     currentPhase={getCurrentPhase()}
