@@ -953,9 +953,15 @@ export default function Baseline() {
                   Complete <span className="font-bold">4 of these {REQUIRED_SYSTEMS.length} essential systems</span> to unlock the ACT phase.
                 </p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {REQUIRED_SYSTEMS.map((systemType) => 
-                    renderSystemGroup(systemType, systemsByType[systemType] || [], true)
-                  )}
+                 {REQUIRED_SYSTEMS.map((systemType, idx) => {
+                   const instances = systemsByType[systemType] || [];
+                   const isFirst = idx === 0 && instances.length > 0;
+                   return (
+                     <div key={systemType} data-tour={isFirst ? "system-card-first" : undefined}>
+                       {renderSystemGroup(systemType, instances, true)}
+                     </div>
+                   );
+                 })}
                 </div>
               </CardContent>
             </Card>
