@@ -541,7 +541,7 @@ export default function Properties() {
                 Add Your First Property
               </h2>
               <p className="text-base font-semibold mb-4" style={{ color: '#6B5A3D' }}>
-                Own with Confidence. Build with Purpose. Grow Wealth with Strategy.
+                Own with Confidence. Build with Purpose. Wealth with Strategy.
               </p>
               <p className="text-gray-600 mb-2 max-w-md mx-auto">
                 Start protecting your largest asset with the 360° Method. It only takes 5 minutes.

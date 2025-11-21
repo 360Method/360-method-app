@@ -21,7 +21,7 @@ export default function Welcome() {
             />
           </div>
           <p className="text-base md:text-lg font-semibold mb-8 tracking-wide" style={{ color: '#6B5A3D' }}>
-            Own with Confidence. Build with Purpose. Grow Wealth with Strategy.
+            Own with Confidence. Build with Purpose. Wealth with Strategy.
           </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
             Stop Reacting to Problems.<br />
