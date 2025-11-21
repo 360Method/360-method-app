@@ -239,6 +239,7 @@ function LayoutContent({ children }) {
                           <Link
                             key={item.id}
                             to={isLocked ? '#' : item.url}
+                            data-tour={`sidebar-${item.id.toLowerCase()}`}
                             onClick={(e) => {
                               if (isLocked) {
                                 e.preventDefault();
@@ -371,6 +372,7 @@ function LayoutContent({ children }) {
                             <Link
                               key={item.id}
                               to={isLocked ? '#' : item.url}
+                              data-tour={`sidebar-${item.id.toLowerCase()}`}
                               onClick={(e) => {
                                 if (isLocked) {
                                   e.preventDefault();
@@ -437,6 +439,7 @@ function LayoutContent({ children }) {
               <div className="flex items-center justify-between h-full px-4">
                 <button
                   onClick={() => setMobileMenuOpen(true)}
+                  data-tour="menu-button"
                   className="p-3 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
                   style={{ minHeight: '48px', minWidth: '48px' }}
                 >
@@ -478,6 +481,48 @@ function LayoutContent({ children }) {
       </div>
 
       <style>{`
+        /* Interactive Tour Animations */
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 
+                        0 0 0 8px rgba(59, 130, 246, 0.3), 
+                        0 0 30px 10px rgba(59, 130, 246, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.8), 
+                        0 0 0 12px rgba(59, 130, 246, 0.4), 
+                        0 0 40px 15px rgba(59, 130, 246, 0.7);
+          }
+        }
+
+        .animate-pulse-glow {
+          animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+
+        .animate-blink {
+          animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes tap-hint {
+          0%, 100% { 
+            transform: scale(1) translateY(0); 
+            opacity: 1;
+          }
+          50% { 
+            transform: scale(0.9) translateY(5px); 
+            opacity: 0.7;
+          }
+        }
+
+        .animate-tap-hint {
+          animation: tap-hint 1.5s ease-in-out infinite;
+        }
+
         :root {
           --primary: #1B365D;
           --secondary: #FF6B35;
