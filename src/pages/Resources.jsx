@@ -540,7 +540,7 @@ function MethodologyGuideModal({ onClose }) {
 
             <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">The Origin Story</h3>
             <p className="text-sm md:text-base text-gray-700 mb-4">
-              The 360° Method was developed by Marcin Kmiec after managing a 12-door rental portfolio 
+              The 360° Method was developed by Marcin Micek after managing a 12-door rental portfolio 
               and experiencing firsthand how <strong>small ignored problems become financial disasters</strong>. 
               His background spans:
             </p>
