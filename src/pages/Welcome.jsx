@@ -20,6 +20,9 @@ export default function Welcome() {
             Stop Reacting to Problems.<br />
             Start Preventing Disasters.
           </h1>
+          <p className="text-lg md:text-xl text-blue-700 font-semibold mb-6 tracking-wide">
+            Own with Confidence. Build with Purpose. Wealth with Strategy.
+          </p>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12">
             The 360° Method transforms reactive chaos into proactive control. 
             Small problems stay small. Big savings compound over time.
