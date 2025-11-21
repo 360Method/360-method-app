@@ -14,7 +14,8 @@ export default function TaskGroupCard({
   onMarkComplete,
   onDelete,
   selectedTasks,
-  onToggleTask
+  onToggleTask,
+  canEdit = true
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   
@@ -56,17 +57,19 @@ export default function TaskGroupCard({
         {/* Collapsed Group Header */}
         <div className="flex items-start gap-3">
           {/* Checkbox for group selection */}
-          <Checkbox
-            id={`group-${batchId}`}
-            checked={allSelected}
-            onCheckedChange={handleToggleAll}
-            className="mt-1"
-            ref={(el) => {
-              if (el && someSelected && !allSelected) {
-                el.indeterminate = true;
-              }
-            }}
-          />
+          {canEdit && (
+            <Checkbox
+              id={`group-${batchId}`}
+              checked={allSelected}
+              onCheckedChange={handleToggleAll}
+              className="mt-1"
+              ref={(el) => {
+                if (el && someSelected && !allSelected) {
+                  el.indeterminate = true;
+                }
+              }}
+            />
+          )}
           
           <div className="flex-1">
             <div className="flex items-start justify-between gap-3 mb-3">
@@ -141,13 +144,15 @@ export default function TaskGroupCard({
               <div className="mt-4 pt-4 border-t border-blue-300 space-y-3">
                 {tasks.map((task) => (
                   <div key={task.id} className="flex items-start gap-2">
-                    <Checkbox
-                      id={`task-${task.id}`}
-                      checked={selectedTasks.includes(task.id)}
-                      onCheckedChange={() => onToggleTask(task.id)}
-                      disabled={task.status === 'Completed'}
-                      className="mt-3"
-                    />
+                    {canEdit && (
+                      <Checkbox
+                        id={`task-${task.id}`}
+                        checked={selectedTasks.includes(task.id)}
+                        onCheckedChange={() => onToggleTask(task.id)}
+                        disabled={task.status === 'Completed'}
+                        className="mt-3"
+                      />
+                    )}
                     <div className="flex-1">
                       <PriorityTaskCard
                         task={task}
@@ -156,6 +161,7 @@ export default function TaskGroupCard({
                         onMarkComplete={onMarkComplete}
                         onDelete={onDelete}
                         compact={true}
+                        canEdit={canEdit}
                       />
                     </div>
                   </div>
@@ -163,7 +169,7 @@ export default function TaskGroupCard({
               </div>
               
               {/* Quick Actions */}
-              {pendingCount > 0 && (
+              {pendingCount > 0 && canEdit && (
                 <div className="mt-4 pt-4 border-t border-blue-300">
                   <Button
                     variant="outline"
