@@ -13,8 +13,12 @@ export default function Welcome() {
         
         {/* Logo & Brand */}
         <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-10 h-10 text-white" />
+          <div className="mb-6 flex justify-center">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/893921411_GreyProfessionalMonogramCircularBrandLogo1.png" 
+              alt="360° Method Logo" 
+              className="w-24 h-24 md:w-32 md:h-32"
+            />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
             Stop Reacting to Problems.<br />
