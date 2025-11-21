@@ -41,13 +41,34 @@ export default function DemoEntry() {
             )}
           </h1>
           
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
             {isInvestor ? (
               'Transform maintenance from a cost center into a wealth-building strategy'
             ) : (
               'From reactive chaos to proactive control in 9 systematic steps'
             )}
           </p>
+          
+          {/* Top CTA */}
+          <div className="flex justify-center">
+            <Button
+              onClick={handleEnterDemo}
+              size="lg"
+              className="px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+            >
+              {isInvestor ? (
+                <>
+                  Jump Into Portfolio Demo
+                  <ArrowRight className="w-6 h-6 ml-2" />
+                </>
+              ) : (
+                <>
+                  Jump Into Demo Property
+                  <ArrowRight className="w-6 h-6 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* 3x3 Framework */}
