@@ -604,12 +604,13 @@ function InstructionCard({
           </p>
           
           {/* Mobile-specific instruction with enhanced styling */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-3 border-blue-400 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+          <div className="bg-gradient-to-r from-blue-100 to-blue-200 border-3 border-blue-500 rounded-xl p-5 flex items-center gap-4 shadow-lg">
             <div className="relative flex-shrink-0">
-              <div className="absolute -inset-1 bg-blue-400 rounded-full opacity-30 animate-pulse" />
-              <Hand className="w-8 h-8 md:w-9 md:h-9 text-blue-600 relative z-10 animate-wiggle" />
+              <div className="absolute -inset-2 bg-blue-400 rounded-full opacity-40 animate-pulse" />
+              <div className="absolute -inset-1 bg-blue-500 rounded-full opacity-30 blur-sm" />
+              <Hand className="w-10 h-10 md:w-12 md:h-12 text-blue-700 relative z-10 animate-wiggle drop-shadow-lg" />
             </div>
-            <p className="text-blue-900 font-bold text-base md:text-lg leading-snug">
+            <p className="text-blue-950 font-black text-lg md:text-xl leading-tight">
               {step.mobileInstructions}
             </p>
           </div>
