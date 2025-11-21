@@ -135,7 +135,7 @@ export const NAVIGATION_STRUCTURE = [
       },
       { 
         id: "scale",
-        label: "Scale", 
+        label: "Grow", 
         subtitle: "Portfolio growth",
         step: "9 of 9",
         icon: Building2,
