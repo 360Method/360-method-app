@@ -24,6 +24,15 @@ export default function Waitlist() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Handle browser back button for demo users
+  React.useEffect(() => {
+    const wasInDemo = sessionStorage.getItem('demoMode');
+    if (wasInDemo) {
+      // Store where we came from
+      sessionStorage.setItem('cameFromDemo', 'true');
+    }
+  }, []);
+
   const submitWaitlistMutation = useMutation({
     mutationFn: (data) => base44.entities.Waitlist.create(data),
     onSuccess: () => {
