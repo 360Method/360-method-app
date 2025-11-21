@@ -345,8 +345,8 @@ function LayoutContent({ children }) {
                     className="w-10 h-10 rounded-lg"
                   />
                   <div>
-                    <h2 className="font-bold text-gray-900">360° Method</h2>
-                    <p className="text-xs text-gray-500">Asset Command Center</p>
+                    <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
+                    <p className="text-xs text-gray-500">Own. Build. Wealth.</p>
                   </div>
                 </div>
                 <button

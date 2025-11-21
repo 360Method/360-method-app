@@ -102,12 +102,28 @@ export default function DashboardInvestor() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Portfolio Command Center 📊
-        </h1>
-        <p className="text-gray-600">
-          {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} units • Clark County, WA
-        </p>
+        {demoMode ? (
+          <>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              Dashboard
+            </h1>
+            <p className="text-lg md:text-xl text-gray-600 mb-2">
+              Your Command Center
+            </p>
+            <p className="text-sm text-gray-500">
+              {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} units • Clark County, WA
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Portfolio Command Center 📊
+            </h1>
+            <p className="text-gray-600">
+              {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} units • Clark County, WA
+            </p>
+          </>
+        )}
       </div>
 
       {/* SECTION 1: PORTFOLIO OVERVIEW (The Big 4) */}

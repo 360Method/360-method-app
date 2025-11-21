@@ -84,15 +84,31 @@ export default function DashboardHomeowner() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back! 👋
-        </h1>
-        <p className="text-base font-semibold mb-2 tracking-wide" style={{ color: '#6B5A3D' }}>
-          Own with Confidence. Build with Purpose. Wealth with Strategy.
-        </p>
-        <p className="text-gray-600">
-          Here's what's happening with your home
-        </p>
+        {demoMode ? (
+          <>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              Dashboard
+            </h1>
+            <p className="text-lg md:text-xl text-gray-600 mb-2">
+              Your Command Center
+            </p>
+            <p className="text-sm text-gray-500">
+              Here's what's happening with your home
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back! 👋
+            </h1>
+            <p className="text-base font-semibold mb-2 tracking-wide" style={{ color: '#6B5A3D' }}>
+              Own with Confidence. Build with Purpose. Wealth with Strategy.
+            </p>
+            <p className="text-gray-600">
+              Here's what's happening with your home
+            </p>
+          </>
+        )}
       </div>
 
       {/* SECTION 1: HERO METRICS (The Big 3) */}
