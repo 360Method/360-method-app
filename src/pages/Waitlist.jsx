@@ -119,13 +119,20 @@ export default function Waitlist() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/demo"
+            <button
+              onClick={() => {
+                const wasInDemo = sessionStorage.getItem('demoMode');
+                if (wasInDemo) {
+                  window.history.back();
+                } else {
+                  window.location.href = '/demo';
+                }
+              }}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
             >
-              Explore the Demo Again
+              {sessionStorage.getItem('demoMode') ? 'Back to Demo' : 'Explore the Demo'}
               <ArrowRight className="w-5 h-5" />
-            </a>
+            </button>
             <a
               href="/"
               className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 font-medium transition-colors"
