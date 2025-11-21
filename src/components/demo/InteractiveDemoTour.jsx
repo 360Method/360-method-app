@@ -401,7 +401,7 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
 
   return (
     <>
-      {/* Glowing highlight ring */}
+      {/* Glowing highlight ring - enhanced visibility */}
       <div
         className={`fixed z-[9999] rounded-xl pointer-events-none ${
           pulse ? 'animate-pulse-ring' : ''
@@ -411,13 +411,13 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
           left: `${rect.left}px`,
           width: `${rect.width}px`,
           height: `${rect.height}px`,
-          boxShadow: 'inset 0 0 0 4px rgba(59, 130, 246, 1), 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px 8px rgba(59, 130, 246, 0.4), 0 0 60px 20px rgba(59, 130, 246, 0.3)',
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.15) 100%)',
-          border: '2px solid rgba(59, 130, 246, 0.8)'
+          boxShadow: 'inset 0 0 0 5px rgba(59, 130, 246, 1), 0 0 0 6px rgba(59, 130, 246, 0.8), 0 0 30px 12px rgba(59, 130, 246, 0.6), 0 0 80px 30px rgba(59, 130, 246, 0.4)',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.2) 100%)',
+          border: '3px solid rgba(59, 130, 246, 0.9)'
         }}
       />
 
-      {/* Animated ripple effect */}
+      {/* Animated ripple effect - more prominent */}
       <div
         className="fixed z-[9998] rounded-xl pointer-events-none animate-ripple"
         style={{
@@ -425,7 +425,7 @@ function SpotlightHighlight({ targetSelector, pulse, blink }) {
           left: `${rect.left}px`,
           width: `${rect.width}px`,
           height: `${rect.height}px`,
-          border: '3px solid rgba(59, 130, 246, 0.6)'
+          border: '4px solid rgba(59, 130, 246, 0.8)'
         }}
       />
 
