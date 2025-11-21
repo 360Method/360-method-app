@@ -537,9 +537,12 @@ export default function Properties() {
               <div className="w-20 h-20 rounded-full bg-blue-100 mx-auto mb-6 flex items-center justify-center">
                 <Home className="w-10 h-10 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
+              <h2 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
                 Add Your First Property
               </h2>
+              <p className="text-base text-blue-700 font-semibold mb-4">
+                Own with Confidence. Build with Purpose. Wealth with Strategy.
+              </p>
               <p className="text-gray-600 mb-2 max-w-md mx-auto">
                 Start protecting your largest asset with the 360° Method. It only takes 5 minutes.
               </p>
