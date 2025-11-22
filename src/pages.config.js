@@ -31,7 +31,6 @@ import WelcomeDemo from './pages/WelcomeDemo';
 import DemoEntry from './pages/DemoEntry';
 import DashboardHomeowner from './pages/DashboardHomeowner';
 import DashboardInvestor from './pages/DashboardInvestor';
-import PropertyScore from './pages/PropertyScore';
 import __Layout from './Layout.jsx';
 
 
@@ -69,7 +68,6 @@ export const PAGES = {
     "DemoEntry": DemoEntry,
     "DashboardHomeowner": DashboardHomeowner,
     "DashboardInvestor": DashboardInvestor,
-    "PropertyScore": PropertyScore,
 }
 
 export const pagesConfig = {
