@@ -11,8 +11,10 @@ import {
   ArrowRight,
   MoreVertical,
   DollarSign,
-  Activity
+  Activity,
+  Award
 } from "lucide-react";
+import ScoreBadge from "@/components/score/ScoreBadge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from "@/utils";
 import { Link } from "react-router-dom";
@@ -134,6 +136,13 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
                   🔧 View Upgrades (ADVANCE)
                 </Link>
               </DropdownMenuItem>
+              {property.totalScore && (
+                <DropdownMenuItem asChild>
+                  <Link to={createPageUrl('PropertyScore') + `?property=${property.id}`}>
+                    ⭐ 360° Score Breakdown
+                  </Link>
+                </DropdownMenuItem>
+              )}
               {equityData && (
                 <DropdownMenuItem asChild>
                   <Link to={createPageUrl('Scale') + `?property=${property.id}`}>
@@ -150,6 +159,24 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
       </CardHeader>
 
       <CardContent className="space-y-4">
+        
+        {/* 360° Score Badge (if available) */}
+        {property.totalScore && (
+          <div 
+            className="flex items-center justify-between p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200 cursor-pointer hover:border-blue-400 transition-all"
+            onClick={() => window.location.href = createPageUrl('PropertyScore') + `?property=${property.id}`}
+          >
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-semibold text-gray-700">360° Score</span>
+            </div>
+            <ScoreBadge 
+              score={property.totalScore}
+              certificationLevel={property.certificationLevel}
+              size="sm"
+            />
+          </div>
+        )}
         
         {/* Health Score */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
