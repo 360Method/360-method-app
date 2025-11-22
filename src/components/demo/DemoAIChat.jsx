@@ -44,7 +44,9 @@ export default function DemoAIChat() {
   }, [isOpen]);
 
   const initializeConversation = async () => {
+    setIsLoading(true);
     try {
+      console.log('🤖 Initializing AI conversation...');
       const propertyContext = demoData?.property ? 
         `Demo Property: ${demoData.property.address} (${demoData.property.property_type})` : 
         'Demo Mode';
@@ -57,6 +59,7 @@ export default function DemoAIChat() {
         }
       });
 
+      console.log('✅ Conversation created:', conversation.id);
       setConversationId(conversation.id);
       
       // Add welcome message
@@ -65,11 +68,14 @@ export default function DemoAIChat() {
         content: `👋 Hi! I'm your 360° Method AI assistant. I'm here to help you understand property maintenance and the demo you're exploring.\n\nFeel free to ask me anything about:\n• The 360° Method framework\n• Your demo property's inspection findings\n• Where to find home systems\n• Why maintenance matters\n• How to prevent expensive repairs\n\nWhat would you like to know?`
       }]);
     } catch (error) {
-      console.error('Failed to create conversation:', error);
+      console.error('❌ Failed to create conversation:', error);
+      setConversationId('error');
       setMessages([{
         role: 'assistant',
-        content: '❌ Sorry, I\'m having trouble connecting right now. Please try closing and reopening the chat, or refresh the page.'
+        content: '❌ Sorry, I\'m having trouble connecting right now. This is a demo limitation. The AI assistant works in the full version. Please refresh the page to try again, or continue exploring the demo!'
       }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,14 +83,26 @@ export default function DemoAIChat() {
     const text = messageText || inputValue.trim();
     if (!text || isLoading) return;
     
+    // If conversation errored, don't allow sending
+    if (conversationId === 'error') {
+      alert('AI assistant is unavailable. Please refresh the page to try again.');
+      return;
+    }
+    
     // If no conversation yet, try to create one
     if (!conversationId) {
+      console.log('⏳ No conversation yet, initializing...');
       await initializeConversation();
       // Wait a moment for conversation to be created, then retry
-      setTimeout(() => handleSendMessage(messageText), 500);
+      setTimeout(() => {
+        if (conversationId && conversationId !== 'error') {
+          handleSendMessage(text);
+        }
+      }, 1000);
       return;
     }
 
+    console.log('📤 Sending message:', text);
     setInputValue('');
     setIsLoading(true);
 
@@ -95,6 +113,7 @@ export default function DemoAIChat() {
     try {
       // Subscribe to updates for streaming
       const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
+        console.log('📥 Received update:', data.messages.length, 'messages');
         setMessages(data.messages);
       });
 
@@ -104,10 +123,10 @@ export default function DemoAIChat() {
       // Cleanup subscription after response
       setTimeout(() => unsubscribe(), 100);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('❌ Failed to send message:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Sorry, I encountered an error. Please try asking your question again.'
+        content: '❌ Sorry, I encountered an error. This may be a demo limitation. Please try refreshing the page or continue exploring the demo features!'
       }]);
     } finally {
       setIsLoading(false);
