@@ -148,17 +148,17 @@ export default function Welcome() {
         <div className="max-w-5xl mx-auto mb-12">
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              The 360° Method: A Proven 3×3 Framework
+              The 360° Method: A Proven 3-Phase Framework
             </h2>
             <p className="text-lg text-gray-600">
-              Three phases. Three steps each. Nine total steps that protect your largest asset.
+              You'll learn the specific steps as you progress through each phase
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {/* Phase 1: AWARE */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-6">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
                 1
               </div>
               <h3 className="text-xl font-bold text-blue-900 mb-2">AWARE</h3>
@@ -166,8 +166,8 @@ export default function Welcome() {
             </div>
 
             {/* Phase 2: ACT */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-6">
-              <div className="w-12 h-12 bg-orange-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-orange-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
                 2
               </div>
               <h3 className="text-xl font-bold text-orange-900 mb-2">ACT</h3>
@@ -175,8 +175,8 @@ export default function Welcome() {
             </div>
 
             {/* Phase 3: ADVANCE */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-xl p-6">
-              <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-xl p-6 text-center">
+              <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
                 3
               </div>
               <h3 className="text-xl font-bold text-green-900 mb-2">ADVANCE</h3>
@@ -184,12 +184,7 @@ export default function Welcome() {
             </div>
           </div>
 
-          <div className="text-center mt-6">
-            <p className="text-2xl font-bold text-gray-900">
-              3 Phases × 3 Steps = <span className="text-blue-600">9 Total Steps</span>
-            </p>
-            <p className="text-gray-600 mt-2">Each property flows through this systematic approach</p>
-          </div>
+
         </div>
 
         {/* Social Proof / Results */}
