@@ -1,222 +1,93 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Sparkles, Home, Building2 } from 'lucide-react';
+import { Home, Building2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function Welcome() {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
+      <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
         
-        {/* Logo & Brand */}
-        <div className="text-center mb-12">
-          <div className="mb-3 flex justify-center">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="mb-4 flex justify-center">
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
               alt="360° Method Logo" 
-              className="w-24 h-24 md:w-32 md:h-32"
+              className="w-20 h-20 md:w-24 md:h-24"
             />
           </div>
-          <p className="text-base md:text-lg font-semibold mb-8 tracking-wide" style={{ color: '#6B5A3D' }}>
-            Own with Confidence. Build with Purpose. Grow with Strategy.
-          </p>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Here's The Perfect Solution If You Want To Grow Wealth With A Proven Strategy<br />
-            <span className="text-2xl md:text-4xl text-gray-600 font-normal">(even if you believe maintenance is just something you deal with when things break, or that you don't have time to stay on top of everything)</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12">
-            The 360° Method transforms reactive chaos into proactive control. 
-            Small problems stay small. Big savings compound over time.
-          </p>
           
-          {/* Dual CTAs - Homeowner vs Investor */}
-          <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch max-w-4xl mx-auto mb-8">
-            {/* Homeowner CTA */}
-            <div className="flex-1 bg-blue-50 border-2 border-blue-300 rounded-2xl p-6 hover:border-blue-500 transition-all">
-              <div className="mb-4">
-                <div className="text-5xl mb-3">🏡</div>
-                <h3 className="text-2xl font-bold text-blue-900 mb-2">I'm a Homeowner</h3>
-                <p className="text-blue-800 text-sm mb-4">
-                  Protect your largest asset. Sleep soundly knowing small problems 
-                  won't become expensive disasters.
+          {/* Simple Hero Message */}
+          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+            Home Maintenance is<br />
+            3 Simple Phases:
+          </h1>
+          
+          <div className="text-xl md:text-2xl text-gray-700 space-y-2 mb-10">
+            <p><span className="font-bold">1. KNOW</span> what you have</p>
+            <p><span className="font-bold">2. KEEP</span> it working</p>
+            <p><span className="font-bold">3. MAKE</span> it better</p>
+          </div>
+          
+          <p className="text-lg text-gray-600 mb-8">
+            See how it works with a real home
+          </p>
+        </div>
+        
+        {/* Demo Selection */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">
+            Pick one to explore:
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Homeowner Demo */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 transition-all">
+              <div className="text-center mb-4">
+                <Home className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                <h3 className="text-2xl font-bold text-blue-900 mb-2">Homeowner</h3>
+                <p className="text-blue-800 mb-4">"I own my home"</p>
+                <p className="text-sm text-blue-700 mb-6">
+                  See how the 3 phases work for you
                 </p>
               </div>
               <button
                 onClick={() => navigate(createPageUrl('DemoEntry') + '?type=homeowner')}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-lg transition-colors"
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
               >
-                Explore Homeowner Demo →
+                Explore Demo
               </button>
             </div>
             
-            {/* Investor CTA */}
-            <div className="flex-1 bg-green-50 border-2 border-green-300 rounded-2xl p-6 hover:border-green-500 transition-all">
-              <div className="mb-4">
-                <div className="text-5xl mb-3">🏢</div>
-                <h3 className="text-2xl font-bold text-green-900 mb-2">I'm an Investor</h3>
-                <p className="text-green-800 text-sm mb-4">
-                  Maximize ROI across your portfolio. Turn maintenance from a cost 
-                  center into a wealth-building strategy.
+            {/* Investor Demo */}
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 hover:border-green-400 transition-all">
+              <div className="text-center mb-4">
+                <Building2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                <h3 className="text-2xl font-bold text-green-900 mb-2">Investor</h3>
+                <p className="text-green-800 mb-4">"I own rentals"</p>
+                <p className="text-sm text-green-700 mb-6">
+                  See how the 3 phases work across multiple properties
                 </p>
               </div>
               <button
                 onClick={() => navigate(createPageUrl('DemoEntry') + '?type=investor')}
-                className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold text-lg transition-colors"
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors"
               >
-                Explore Investor Demo →
+                Explore Demo
               </button>
             </div>
           </div>
-          
-          {/* Secondary CTA - Skip to Waitlist */}
-          <div className="text-center">
-            <button
-              onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="text-blue-700 hover:text-blue-900 underline text-base font-semibold"
-            >
-              Skip demo, join waitlist →
-            </button>
-          </div>
         </div>
 
-        {/* Visual Problem → Solution */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12 max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            
-            {/* The Problem */}
-            <div className="text-center md:text-left">
-              <div className="inline-block px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-semibold mb-4">
-                😰 The Old Way (Reactive)
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                One Surprise Away From Crisis
-              </h3>
-              <ul className="space-y-3 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">✗</span>
-                  <span>No system for tracking maintenance</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">✗</span>
-                  <span>Small problems become expensive disasters</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">✗</span>
-                  <span>Emergency repairs at the worst times</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 mt-1">✗</span>
-                  <span>Losing thousands in preventable failures</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* The Solution */}
-            <div className="text-center md:text-left">
-              <div className="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold mb-4">
-                😌 The 360° Way (Proactive)
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Systematic Prevention = Peace of Mind
-              </h3>
-              <ul className="space-y-3 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  <span>Know exactly what you have and when it was serviced</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  <span>Catch $50 problems before they cascade</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  <span>Plan maintenance on your schedule</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 mt-1">✓</span>
-                  <span>Save $27K-$72K over 10-15 years</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* The 3×3 Framework (Visual) */}
-        <div className="max-w-5xl mx-auto mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              The 360° Method: A Proven 3-Phase Framework
-            </h2>
-            <p className="text-lg text-gray-600">
-              You'll learn the specific steps as you progress through each phase
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Phase 1: AWARE */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
-                1
-              </div>
-              <h3 className="text-xl font-bold text-blue-900 mb-2">AWARE</h3>
-              <p className="text-blue-800 text-sm">Know Your Property</p>
-            </div>
-
-            {/* Phase 2: ACT */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-orange-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-orange-900 mb-2">ACT</h3>
-              <p className="text-orange-800 text-sm">Fix Problems Smart</p>
-            </div>
-
-            {/* Phase 3: ADVANCE */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4 mx-auto">
-                3
-              </div>
-              <h3 className="text-xl font-bold text-green-900 mb-2">ADVANCE</h3>
-              <p className="text-green-800 text-sm">Build Long-Term Value</p>
-            </div>
-          </div>
-
-
-        </div>
-
-        {/* Social Proof / Results */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto mb-12">
-          <div className="text-center p-4 md:p-6 bg-white rounded-xl shadow-md">
-            <div className="text-2xl md:text-4xl font-bold text-blue-600 mb-2">$27K-$72K</div>
-            <div className="text-xs md:text-sm text-gray-600">Average savings over 10-15 years</div>
-          </div>
-          <div className="text-center p-4 md:p-6 bg-white rounded-xl shadow-md">
-            <div className="text-2xl md:text-4xl font-bold text-green-600 mb-2">87%</div>
-            <div className="text-xs md:text-sm text-gray-600">Of failures prevented by tracking 9 systems</div>
-          </div>
-          <div className="text-center p-4 md:p-6 bg-white rounded-xl shadow-md">
-            <div className="text-2xl md:text-4xl font-bold text-purple-600 mb-2">$8K-$15K</div>
-            <div className="text-xs md:text-sm text-gray-600">Added value at resale with maintenance history</div>
-          </div>
-          <div className="text-center p-4 md:p-6 bg-white rounded-xl shadow-md">
-            <div className="text-2xl md:text-4xl font-bold text-orange-600 mb-2">30X</div>
-            <div className="text-xs md:text-sm text-gray-600">Typical ROI on preventive maintenance</div>
-          </div>
-        </div>
-
-        {/* Trust Signals */}
-        <div className="text-center mt-12 max-w-3xl mx-auto">
-          <p className="text-sm md:text-base text-gray-600 mb-4">
-            Join thousands of homeowners and investors who protect their properties systematically.
+        {/* Simple footer */}
+        <div className="text-center mt-12">
+          <p className="text-sm text-gray-500">
+            No sign-up required • Explore fully interactive demos
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 text-xs md:text-sm text-gray-500">
-            <div>✓ No credit card required</div>
-            <div>✓ Try full demo first</div>
-            <div>✓ Your data is private</div>
-          </div>
         </div>
 
       </div>
