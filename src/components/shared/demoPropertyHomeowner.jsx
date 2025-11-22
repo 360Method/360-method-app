@@ -21,7 +21,21 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     last_inspection_date: '2025-10-15',
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
-    created_date: '2025-01-01T00:00:00Z'
+    created_date: '2025-01-01T00:00:00Z',
+    
+    // 360° Score Data
+    totalScore: 92,
+    certificationLevel: 'gold',
+    isCertified: true,
+    certifiedBy: 'Handy Pioneers LLC',
+    certificationDate: '2024-09-15',
+    expiresAt: '2025-09-15',
+    scoreBreakdown: {
+      condition: 36,
+      maintenance: 34,
+      improvement: 18,
+      climateBonus: 4
+    }
   },
   
   systems: [
