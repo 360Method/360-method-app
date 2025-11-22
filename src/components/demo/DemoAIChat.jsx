@@ -27,7 +27,10 @@ export default function DemoAIChat() {
   // Create conversation on first open
   useEffect(() => {
     if (isOpen && !conversationId) {
-      initializeConversation();
+      const timer = setTimeout(() => {
+        initializeConversation();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -134,6 +137,8 @@ export default function DemoAIChat() {
   };
 
   const handleSuggestedQuestion = (question) => {
+    console.log('🎯 Suggested question clicked:', question);
+    setInputValue(question);
     handleSendMessage(question);
   };
 
@@ -235,7 +240,9 @@ export default function DemoAIChat() {
                   <button
                     key={idx}
                     onClick={() => handleSuggestedQuestion(question)}
-                    className="text-xs px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full border border-purple-200 transition-colors"
+                    disabled={conversationId === 'error' || isLoading}
+                    className="text-xs px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full border border-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ minHeight: '36px' }}
                   >
                     {question}
                   </button>
@@ -265,11 +272,11 @@ export default function DemoAIChat() {
               />
               <Button
                 type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className="bg-purple-600 hover:bg-purple-700"
+                disabled={!inputValue.trim() || isLoading || conversationId === 'error'}
+                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
                 style={{ minHeight: '44px', minWidth: '44px' }}
               >
-                <Send className="w-5 h-5" />
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </Button>
             </form>
           </div>
