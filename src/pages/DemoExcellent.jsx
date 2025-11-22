@@ -208,109 +208,246 @@ export default function DemoExcellent() {
           </CardContent>
         </Card>
         
-        {/* Elite Banner */}
-        <div className="mb-8">
-          <EliteBannerDemo
-            title="Gold Certification"
-            subtitle="Better than 95 out of 100 homes"
-            message="You've achieved elite homeowner status through consistent excellence"
-            icon="🏆"
-          />
-        </div>
-        
-        {/* Platinum Preview */}
-        <div className="mb-8">
-          <Card className="bg-gradient-to-br from-gray-50 to-purple-50 border-2 border-gray-300">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Crown className="w-8 h-8 text-purple-600" />
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">The Final Frontier: Platinum</h2>
-                  <p className="text-sm text-gray-600">Only 1% of all homes reach this level</p>
+        {/* What This Score Means */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What Does a 92 Mean?</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-yellow-50 rounded-lg border-2 border-yellow-300">
+                <div className="text-3xl mb-2">🏆</div>
+                <p className="font-semibold text-gray-900">Elite Homeowner</p>
+                <p className="text-sm text-gray-600 mt-1">Top 5% of all homes</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-3xl mb-2">📈</div>
+                <p className="font-semibold text-gray-900">3-Year Journey</p>
+                <p className="text-sm text-gray-600 mt-1">From 68 → 92 score</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-3xl mb-2">👑</div>
+                <p className="font-semibold text-gray-900">Almost Platinum</p>
+                <p className="text-sm text-gray-600 mt-1">Just 4 points to top 1%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Your Journey */}
+        <Card className="mb-8 bg-gradient-to-br from-blue-50 to-purple-50">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Your 3-Year Journey to Excellence</h2>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 text-center">
+                  <div className="text-2xl font-bold text-gray-400">68</div>
+                  <div className="text-xs text-gray-500">2022</div>
+                </div>
+                <div className="flex-1 p-4 bg-white rounded-lg">
+                  <p className="font-semibold text-gray-900">Started Tracking</p>
+                  <p className="text-sm text-gray-600">Began systematic maintenance</p>
                 </div>
               </div>
-              
-              <NextLevelPreviewDemo
-                currentScore={demoData.totalScore}
-                nextLevel={demoData.nextLevel.name}
-                nextThreshold={demoData.nextLevel.threshold}
-                pointsNeeded={pointsNeeded}
-                benefits={demoData.nextLevel.benefits}
-              />
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Performance Timeline */}
+
+              <div className="flex items-center gap-4">
+                <div className="w-16 text-center">
+                  <div className="text-2xl font-bold text-amber-600">76</div>
+                  <div className="text-xs text-gray-500">2022</div>
+                </div>
+                <div className="flex-1 p-4 bg-white rounded-lg border-2 border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">Bronze Certified</p>
+                    <Badge className="bg-amber-600">⭐</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">First certification milestone</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-16 text-center">
+                  <div className="text-2xl font-bold text-gray-500">85</div>
+                  <div className="text-xs text-gray-500">2023</div>
+                </div>
+                <div className="flex-1 p-4 bg-white rounded-lg border-2 border-gray-300">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">Silver Certified</p>
+                    <Badge className="bg-gray-500">⭐⭐</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">Top 15% of all homes</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-16 text-center">
+                  <div className="text-2xl font-bold text-yellow-600">92</div>
+                  <div className="text-xs text-gray-500">2024</div>
+                </div>
+                <div className="flex-1 p-4 bg-white rounded-lg border-2 border-yellow-300">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">Gold Certified</p>
+                    <Badge className="bg-yellow-600">⭐⭐⭐</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">Elite status - Top 5%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-green-100 rounded-lg">
+              <p className="font-bold text-gray-900">+24 points in 3 years</p>
+              <p className="text-sm text-gray-700">Consistent maintenance + smart upgrades</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* What Makes This Home Elite */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What Makes This Home Elite</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Perfect Tracking</p>
+                <p className="text-sm text-gray-600">All systems documented with photos, ages, warranties</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Never Missed a Check</p>
+                <p className="text-sm text-gray-600">All 4 quarterly checks for 3 years straight</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Fast Response</p>
+                <p className="text-sm text-gray-600">Issues fixed within 48 hours, not weeks</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Professional Care</p>
+                <p className="text-sm text-gray-600">Annual HVAC service, roof inspections</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Smart Protection</p>
+                <p className="text-sm text-gray-600">Leak detectors, smart thermostat, monitoring</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="font-semibold text-gray-900 mb-2">✓ Proactive Replacements</p>
+                <p className="text-sm text-gray-600">Replaced water heater at 12 years, not 18</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Score Breakdown */}
         <div className="mb-8">
-          <PerformanceTimelineDemo
-            startScore={demoData.timeline.startScore}
-            currentScore={demoData.timeline.currentScore}
-            timeframe={demoData.timeline.timeframe}
-            milestones={demoData.timeline.milestones}
-          />
-        </div>
-        
-        {/* Phase Breakdown */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Score Breakdown</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Nearly Perfect Scores</h2>
           <p className="text-gray-600 mb-4">
-            Nearly perfect across all phases - just a few advanced optimizations remain
+            Just a few advanced optimizations to reach Platinum
           </p>
           <PhaseBreakdownDemo phases={demoData.phases} interactive={true} />
         </div>
-        
-        {/* Quick Wins to Platinum */}
+
+        {/* Path to Platinum */}
+        <Card className="mb-8 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Crown className="w-10 h-10 text-purple-600" />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">The Final Frontier: Platinum</h2>
+                <p className="text-gray-600">Top 1% - Only 4 points away</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">1️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Whole-House Surge Protection</h3>
+                  <p className="text-gray-700 mb-2">Protects all electronics from power surges</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-purple-600">+1 point</Badge>
+                    <span className="text-sm text-gray-600">$400 • 2 hours</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">2️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Advanced Leak Detection</h3>
+                  <p className="text-gray-700 mb-2">Catches leaks before they cause damage</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-purple-600">+1 point</Badge>
+                    <span className="text-sm text-gray-600">$500 • 3 hours</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">3️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Energy Optimization Program</h3>
+                  <p className="text-gray-700 mb-2">Ongoing monitoring + quarterly adjustments</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-purple-600">+2 points</Badge>
+                    <span className="text-sm text-gray-600">$300 • Ongoing</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-purple-100 rounded-lg">
+              <p className="font-bold text-gray-900 mb-1">Total: $1,200 → Platinum (96)</p>
+              <p className="text-sm text-gray-700">Top 1% elite status • Maximum benefits</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Compare to Other Homes */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">How You Compare</h2>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg opacity-40">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">The Struggling Home</span>
+                  <Badge variant="destructive">62 score</Badge>
+                </div>
+                <Progress value={62} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Reactive. No tracking. High risk.</p>
+              </div>
+
+              <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-lg opacity-60">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">The Improver</span>
+                  <Badge className="bg-amber-600">78 score ⭐</Badge>
+                </div>
+                <Progress value={78} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Bronze certified. Improving steadily.</p>
+              </div>
+
+              <div className="p-4 bg-yellow-50 border-2 border-yellow-500 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">You (The Achiever)</span>
+                  <Badge className="bg-yellow-600">92 score ⭐⭐⭐</Badge>
+                </div>
+                <Progress value={92} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Gold certified. Elite maintenance. Top 5%.</p>
+              </div>
+
+              <div className="p-4 bg-purple-50 border-2 border-purple-300 rounded-lg opacity-60">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">Target: Platinum</span>
+                  <Badge className="bg-purple-600">96 score 👑</Badge>
+                </div>
+                <Progress value={96} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Top 1%. Maximum benefits. Legacy status.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievements */}
         <div className="mb-8">
-          <QuickWinsDemo 
-            title="Path to Platinum"
-            wins={demoData.quickWins}
-            showTotal={true}
-          />
-        </div>
-        
-        {/* All Achievements */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Achievement Showcase</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Achievements</h2>
           <AchievementDisplayDemo
             earned={demoData.achievements.earned}
             nextUp={demoData.achievements.nextUp}
           />
         </div>
-        
-        {/* Final Summary */}
-        <Card className="mb-8 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Why This Home is Elite:</h3>
-            <div className="space-y-2 text-gray-700">
-              <p className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>Never missed a quarterly check in 3 years</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>All preventive tasks completed on schedule</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>Issues fixed within 48 hours</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>Professional inspections annual</span>
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>Smart systems and proactive replacements</span>
-              </p>
-            </div>
-            <div className="mt-4 pt-4 border-t border-green-300">
-              <p className="text-sm font-semibold text-green-900">
-                Only 4 points from Platinum - Top 1% status within reach
-              </p>
-            </div>
-          </CardContent>
-        </Card>
         
         {/* CTA Section */}
         <Card className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">

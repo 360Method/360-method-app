@@ -188,57 +188,167 @@ export default function DemoImproving() {
           </CardContent>
         </Card>
         
-        {/* Celebration Banner */}
-        <Card className="mb-8 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300">
-          <CardContent className="p-6 text-center">
-            <div className="text-5xl mb-3">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Bronze Certification Earned!
-            </h2>
-            <p className="text-gray-700">
-              You're better than 65 out of 100 homes. Keep going!
-            </p>
+        {/* What This Score Means */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What Does a 78 Mean?</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-3xl mb-2">✅</div>
+                <p className="font-semibold text-gray-900">You're maintaining consistently</p>
+                <p className="text-sm text-gray-600 mt-1">Better than 65 out of 100 homes</p>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-3xl mb-2">📊</div>
+                <p className="font-semibold text-gray-900">Bronze Certified</p>
+                <p className="text-sm text-gray-600 mt-1">You track your home systems</p>
+              </div>
+              <div className="text-center p-4 bg-amber-50 rounded-lg">
+                <div className="text-3xl mb-2">🎯</div>
+                <p className="font-semibold text-gray-900">7 points to Silver</p>
+                <p className="text-sm text-gray-600 mt-1">Top 15% within reach</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        
-        {/* Next Level Preview */}
+
+        {/* Score Breakdown */}
         <div className="mb-8">
-          <NextLevelPreviewDemo
-            currentScore={demoData.totalScore}
-            nextLevel={demoData.nextLevel.name}
-            nextThreshold={demoData.nextLevel.threshold}
-            pointsNeeded={pointsNeeded}
-            benefits={demoData.nextLevel.benefits}
-          />
-        </div>
-        
-        {/* Phase Breakdown */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Score Breakdown</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Where You Stand</h2>
           <PhaseBreakdownDemo phases={demoData.phases} interactive={true} />
         </div>
-        
-        {/* Quick Wins */}
-        <div className="mb-8">
-          <QuickWinsDemo 
-            wins={demoData.quickWins}
-            showTotal={true}
-          />
-        </div>
-        
-        {/* Level Up Plan */}
-        <div className="mb-8">
-          <LevelUpPlanDemo
-            currentScore={demoData.totalScore}
-            targetScore={demoData.nextLevel.threshold}
-            targetLevel={demoData.nextLevel.name}
-            levels={demoData.levelUpPlan}
-          />
-        </div>
-        
+
+        {/* Path to Silver */}
+        <Card className="mb-8 bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-4xl">🥈</div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Your Path to Silver</h2>
+                <p className="text-gray-600">Just 7 points away from top 15%</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 mt-6">
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">1️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Perfect Your Routine</h3>
+                  <p className="text-gray-700 mb-2">Complete all 4 quarterly checks this year</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-green-600">+4 points</Badge>
+                    <span className="text-sm text-gray-600">Free • 1 hour total</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">2️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Add Smart Protection</h3>
+                  <p className="text-gray-700 mb-2">Smart thermostat saves energy + tracks data</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-green-600">+1 point</Badge>
+                    <span className="text-sm text-gray-600">$250 • 2 hours</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
+                <div className="text-2xl">3️⃣</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-2">Get Professional Maintenance</h3>
+                  <p className="text-gray-700 mb-2">Annual HVAC service prevents breakdowns</p>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-green-600">+2 points</Badge>
+                    <span className="text-sm text-gray-600">$150 • 3 hours</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-100 rounded-lg">
+              <p className="font-bold text-gray-900 mb-1">Total Investment: $400</p>
+              <p className="text-sm text-gray-700">Reach 85 score → Silver Certification → Top 15%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* What You Get at Silver */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What You Get at Silver (85+)</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💰</div>
+                <div>
+                  <p className="font-semibold text-gray-900">10% Insurance Discount</p>
+                  <p className="text-sm text-gray-600">Average savings: $200-400/year</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🏠</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Faster Home Sale</p>
+                  <p className="text-sm text-gray-600">Sell 15-20 days faster</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">📈</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Higher Home Value</p>
+                  <p className="text-sm text-gray-600">3-5% value increase</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🎖️</div>
+                <div>
+                  <p className="font-semibold text-gray-900">Silver Badge</p>
+                  <p className="text-sm text-gray-600">Better than 85% of homes</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Compare to Other Homes */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">How You Compare</h2>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">The Struggling Home</span>
+                  <Badge variant="destructive">62 score</Badge>
+                </div>
+                <Progress value={62} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">No tracking. Reactive maintenance. High risk.</p>
+              </div>
+
+              <div className="p-4 bg-amber-50 border-2 border-amber-500 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">You (The Improver)</span>
+                  <Badge className="bg-amber-600">78 score ⭐</Badge>
+                </div>
+                <Progress value={78} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Consistent tracking. Bronze certified. Improving.</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 border-2 border-gray-300 rounded-lg opacity-60">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-gray-900">Target: Silver Level</span>
+                  <Badge className="bg-gray-500">85 score ⭐⭐</Badge>
+                </div>
+                <Progress value={85} className="h-2 mb-2" />
+                <p className="text-sm text-gray-700">Top 15%. Insurance discounts. Higher value.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Achievements */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Achievements</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Achievements</h2>
           <AchievementDisplayDemo
             earned={demoData.achievements.earned}
             nextUp={demoData.achievements.nextUp}
