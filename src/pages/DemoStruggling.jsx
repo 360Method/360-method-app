@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, DollarSign, Clock, CheckCircle, TrendingUp, Shield } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, DollarSign, Clock, CheckCircle, TrendingUp, Shield, Calendar } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
