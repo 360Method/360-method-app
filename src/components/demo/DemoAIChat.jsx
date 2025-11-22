@@ -197,7 +197,7 @@ export default function DemoAIChat() {
 
           {/* Suggested Questions (show when no messages yet) */}
           {messages.length <= 1 && !isLoading && (
-            <div className="p-4 bg-white border-t border-gray-200">
+            <div className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
               <p className="text-xs font-semibold text-gray-600 mb-2">Suggested questions:</p>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTED_QUESTIONS.slice(0, 3).map((question, idx) => (
@@ -214,7 +214,7 @@ export default function DemoAIChat() {
           )}
 
           {/* Input */}
-          <div className="p-4 bg-white border-t border-gray-200">
+          <div className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
