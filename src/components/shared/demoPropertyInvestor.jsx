@@ -48,6 +48,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       totalScore: 97,
       certificationLevel: 'platinum',
       breakdown: { condition: 39, maintenance: 35, improvement: 23 },
+      quickWins: [],
       units: [
         {
           unit_id: 'A',
@@ -97,7 +98,12 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       baseline_completion: 100,
       totalScore: 78,
       certificationLevel: 'bronze',
-      breakdown: { condition: 32, maintenance: 30, improvement: 14 }
+      breakdown: { condition: 32, maintenance: 30, improvement: 14 },
+      quickWins: [
+        { action: 'Complete fall inspection', points: 3, cost: 'Free' },
+        { action: 'Fix dryer vent hazard', points: 2, cost: '$95' },
+        { action: 'Add smart locks', points: 2, cost: '$280' }
+      ]
     },
     {
       id: 'demo-investor-3',
@@ -127,6 +133,12 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       certificationLevel: 'fair',
       isCertified: false,
       breakdown: { condition: 26, maintenance: 24, improvement: 9 },
+      quickWins: [
+        { action: 'Fix roof leak (URGENT)', points: 4, cost: '$850' },
+        { action: 'Complete baseline documentation', points: 4, cost: 'Free' },
+        { action: 'Clean dryer vent (SAFETY)', points: 3, cost: '$125' },
+        { action: 'Start quarterly inspections', points: 2, cost: 'Free' }
+      ],
       units: [
         { unit_id: '1A', nickname: 'Unit 1A', bedrooms: 1, bathrooms: 1, square_footage: 900, occupancy_status: 'Tenant-Occupied', monthly_rent: 900 },
         { unit_id: '2C', nickname: 'Unit 2C', bedrooms: 1, bathrooms: 1, square_footage: 900, occupancy_status: 'Tenant-Occupied', monthly_rent: 900 },

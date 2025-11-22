@@ -24,6 +24,11 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     totalScore: 92,
     certificationLevel: 'gold',
     breakdown: { condition: 36, maintenance: 34, improvement: 18 },
+    quickWins: [
+      { action: 'Complete quarterly inspections', points: 2, cost: 'Free' },
+      { action: 'Schedule annual HVAC service', points: 2, cost: '$150' },
+      { action: 'Add exterior cameras', points: 1, cost: '$300' }
+    ],
     created_date: '2025-01-01T00:00:00Z'
   },
   

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import ScoreBadge from '@/components/score/ScoreBadge';
+import NextMilestone from '@/components/score/NextMilestone';
 import { useDemo } from '@/components/shared/DemoContext';
 
 const CERTIFICATION_LEVELS = {
@@ -30,7 +31,12 @@ export default function PropertyScore() {
       condition: 36,
       maintenance: 34,
       improvement: 18
-    }
+    },
+    quickWins: [
+      { action: 'Complete quarterly inspections', points: 2, cost: 'Free' },
+      { action: 'Schedule annual HVAC service', points: 2, cost: '$150' },
+      { action: 'Add exterior cameras', points: 1, cost: '$300' }
+    ]
   };
   
   const level = CERTIFICATION_LEVELS[property.certificationLevel] || CERTIFICATION_LEVELS.fair;
@@ -131,11 +137,19 @@ export default function PropertyScore() {
                   certificationLevel={property.certificationLevel}
                   size="xl"
                   showTrend
+                  showPercentile
                 />
               </div>
             </div>
           </CardContent>
         </Card>
+        
+        {/* Next Milestone */}
+        <NextMilestone 
+          currentScore={property.totalScore}
+          certificationLevel={property.certificationLevel}
+          quickWins={property.quickWins || []}
+        />
         
         {/* Score Breakdown */}
         <div className="space-y-6">
