@@ -126,9 +126,9 @@ export default function DemoAIChat() {
   }
 
   return (
-    <div className="fixed top-40 right-4 md:top-24 md:right-6 z-40 w-[calc(100vw-32px)] md:w-[400px]">
-      <Card className="shadow-2xl border-2 border-purple-300">
-        <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4">
+    <div className="fixed inset-x-4 top-40 bottom-4 md:top-24 md:right-6 md:left-auto md:bottom-auto md:w-[400px] z-40">
+      <Card className="shadow-2xl border-2 border-purple-300 h-full md:h-auto flex flex-col">
+        <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
@@ -148,9 +148,9 @@ export default function DemoAIChat() {
           </p>
         </CardHeader>
 
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-1 flex flex-col min-h-0">
           {/* Messages */}
-          <div className="h-[400px] overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.map((message, idx) => (
               <div
                 key={idx}
