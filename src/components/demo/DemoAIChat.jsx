@@ -24,9 +24,6 @@ export default function DemoAIChat() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Only show in demo mode
-  if (!demoMode) return null;
-
   // Create conversation on first open
   useEffect(() => {
     if (isOpen && !conversationId) {
@@ -108,6 +105,9 @@ export default function DemoAIChat() {
   const handleSuggestedQuestion = (question) => {
     handleSendMessage(question);
   };
+
+  // Only show in demo mode
+  if (!demoMode) return null;
 
   if (!isOpen) {
     return (
