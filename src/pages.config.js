@@ -32,6 +32,7 @@ import DemoEntry from './pages/DemoEntry';
 import DashboardHomeowner from './pages/DashboardHomeowner';
 import DashboardInvestor from './pages/DashboardInvestor';
 import PropertyScore from './pages/PropertyScore';
+import DemoImproving from './pages/DemoImproving';
 import __Layout from './Layout.jsx';
 
 
@@ -70,6 +71,7 @@ export const PAGES = {
     "DashboardHomeowner": DashboardHomeowner,
     "DashboardInvestor": DashboardInvestor,
     "PropertyScore": PropertyScore,
+    "DemoImproving": DemoImproving,
 }
 
 export const pagesConfig = {
