@@ -21,6 +21,10 @@ export default function Welcome() {
             />
           </div>
           
+          <p className="text-base md:text-lg font-semibold mb-8 tracking-wide" style={{ color: '#6B5A3D' }}>
+            Own with Confidence. Build with Purpose. Grow with Strategy.
+          </p>
+          
           {/* Simple Hero Message */}
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             Home Maintenance is<br />
@@ -28,9 +32,9 @@ export default function Welcome() {
           </h1>
           
           <div className="text-xl md:text-2xl text-gray-700 space-y-2 mb-10">
-            <p><span className="font-bold">1. KNOW</span> what you have</p>
-            <p><span className="font-bold">2. KEEP</span> it working</p>
-            <p><span className="font-bold">3. MAKE</span> it better</p>
+            <p><span className="font-bold">1. AWARE</span> - Know what you have</p>
+            <p><span className="font-bold">2. ACT</span> - Keep it working</p>
+            <p><span className="font-bold">3. ADVANCE</span> - Make it better</p>
           </div>
           
           <p className="text-lg text-gray-600 mb-8">
