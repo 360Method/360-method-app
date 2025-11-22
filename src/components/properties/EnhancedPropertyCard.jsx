@@ -151,22 +151,6 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
 
       <CardContent className="space-y-4">
         
-        {/* 360° Score Badge */}
-        {property.totalScore && (
-          <div 
-            onClick={() => window.location.href = createPageUrl('PropertyScore') + `?propertyId=${property.id}`}
-            className="cursor-pointer"
-          >
-            <ScoreBadge
-              score={property.totalScore}
-              level={property.certificationLevel}
-              certified={property.isCertified}
-              certifiedBy={property.certifiedBy}
-              size="small"
-            />
-          </div>
-        )}
-        
         {/* Health Score */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">

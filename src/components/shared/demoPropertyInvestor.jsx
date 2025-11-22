@@ -45,20 +45,6 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       last_inspection_date: '2024-10-15',
       occupancy_status: 'Both units occupied',
       baseline_completion: 100,
-      
-      // 360° Score Data
-      totalScore: 92,
-      certificationLevel: 'gold',
-      isCertified: true,
-      certifiedBy: 'Handy Pioneers LLC',
-      certificationDate: '2024-09-15',
-      expiresAt: '2025-09-15',
-      scoreBreakdown: {
-        condition: 36,
-        maintenance: 34,
-        improvement: 18,
-        climateBonus: 4
-      },
       units: [
         {
           unit_id: 'A',
@@ -105,21 +91,7 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       health_score: 88,
       last_inspection_date: '2024-09-28',
       occupancy_status: 'Tenant Occupied',
-      baseline_completion: 100,
-      
-      // 360° Score Data
-      totalScore: 97,
-      certificationLevel: 'platinum',
-      isCertified: true,
-      certifiedBy: 'Handy Pioneers LLC',
-      certificationDate: '2024-11-01',
-      expiresAt: '2025-11-01',
-      scoreBreakdown: {
-        condition: 39,
-        maintenance: 35,
-        improvement: 23,
-        climateBonus: 0
-      }
+      baseline_completion: 100
     },
     {
       id: 'demo-investor-3',
@@ -145,20 +117,6 @@ export const DEMO_PORTFOLIO_INVESTOR = {
       last_inspection_date: '2024-11-01',
       occupancy_status: '3 occupied, 1 vacant',
       baseline_completion: 100,
-      
-      // 360° Score Data
-      totalScore: 78,
-      certificationLevel: 'bronze',
-      isCertified: true,
-      certifiedBy: 'Handy Pioneers LLC',
-      certificationDate: '2024-10-01',
-      expiresAt: '2025-10-01',
-      scoreBreakdown: {
-        condition: 32,
-        maintenance: 30,
-        improvement: 14,
-        climateBonus: 2
-      },
       units: [
         { unit_id: '1A', nickname: 'Unit 1A', bedrooms: 1, bathrooms: 1, square_footage: 900, occupancy_status: 'Tenant-Occupied', monthly_rent: 900 },
         { unit_id: '2C', nickname: 'Unit 2C', bedrooms: 1, bathrooms: 1, square_footage: 900, occupancy_status: 'Tenant-Occupied', monthly_rent: 900 },
