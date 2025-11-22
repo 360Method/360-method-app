@@ -126,7 +126,7 @@ export default function DemoAIChat() {
   }
 
   return (
-    <div className="fixed inset-x-4 top-40 bottom-4 md:top-24 md:right-6 md:left-auto md:bottom-auto md:w-[400px] z-40">
+    <div className="fixed inset-x-4 top-40 bottom-4 md:top-24 md:right-6 md:left-auto md:bottom-auto md:w-[400px] z-[9999]">
       <Card className="shadow-2xl border-2 border-purple-300 h-full md:h-auto flex flex-col">
         <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
