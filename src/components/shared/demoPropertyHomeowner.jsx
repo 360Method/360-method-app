@@ -19,6 +19,18 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     baseline_completion: 100,
     health_score: 78,
     last_inspection_date: '2025-10-15',
+    totalScore: 92,
+    certificationLevel: 'gold',
+    isCertified: true,
+    certifiedBy: 'Handy Pioneers LLC',
+    certificationDate: '2024-09-15',
+    expiresAt: '2025-09-15',
+    scoreBreakdown: {
+      condition: 36,
+      maintenance: 34,
+      improvement: 18,
+      climateBonus: 4
+    },
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
     created_date: '2025-01-01T00:00:00Z'
