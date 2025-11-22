@@ -24,8 +24,8 @@ export default function Welcome() {
             Own with Confidence. Build with Purpose. Grow with Strategy.
           </p>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            Stop Reacting to Problems.<br />
-            Start Preventing Disasters.
+            Here's The Perfect Solution If You Want To Grow Wealth With A Proven Strategy<br />
+            <span className="text-2xl md:text-4xl text-gray-600 font-normal">(even if you believe maintenance is just something you deal with when things break, or that you don't have time to stay on top of everything)</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12">
             The 360° Method transforms reactive chaos into proactive control. 
