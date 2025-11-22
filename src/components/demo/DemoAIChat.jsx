@@ -66,12 +66,24 @@ export default function DemoAIChat() {
       }]);
     } catch (error) {
       console.error('Failed to create conversation:', error);
+      setMessages([{
+        role: 'assistant',
+        content: '❌ Sorry, I\'m having trouble connecting right now. Please try closing and reopening the chat, or refresh the page.'
+      }]);
     }
   };
 
   const handleSendMessage = async (messageText = null) => {
     const text = messageText || inputValue.trim();
-    if (!text || isLoading || !conversationId) return;
+    if (!text || isLoading) return;
+    
+    // If no conversation yet, try to create one
+    if (!conversationId) {
+      await initializeConversation();
+      // Wait a moment for conversation to be created, then retry
+      setTimeout(() => handleSendMessage(messageText), 500);
+      return;
+    }
 
     setInputValue('');
     setIsLoading(true);
