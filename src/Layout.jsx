@@ -42,9 +42,9 @@ function LayoutContent({ children }) {
   const { demoMode } = useDemo();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
-    "Phase I: AWARE": true,
-    "Phase II: ACT": true,
-    "Phase III: ADVANCE": true
+    "Phase I: AWARE": false,
+    "Phase II: ACT": false,
+    "Phase III: ADVANCE": false
   });
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
 
