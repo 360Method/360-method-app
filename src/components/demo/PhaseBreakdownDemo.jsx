@@ -7,9 +7,9 @@ export default function PhaseBreakdownDemo({ phases, interactive = true }) {
   const [expandedPhase, setExpandedPhase] = React.useState(null);
   
   const getPhaseColor = (name) => {
-    if (name === 'KNOW') return 'blue';
-    if (name === 'KEEP') return 'green';
-    if (name === 'MAKE') return 'purple';
+    if (name === 'AWARE' || name === 'KNOW') return 'blue';
+    if (name === 'ACT' || name === 'KEEP') return 'green';
+    if (name === 'ADVANCE' || name === 'MAKE') return 'purple';
     return 'gray';
   };
   

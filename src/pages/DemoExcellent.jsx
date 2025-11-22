@@ -24,10 +24,10 @@ export default function DemoExcellent() {
     certification: 'gold',
     phases: [
       {
-        name: 'KNOW',
+        name: 'AWARE',
         score: 38,
         max: 40,
-        description: 'Document your property systems',
+        description: 'Own your property baseline',
         details: {
           issues: [
             'Missing advanced system analytics (requires 3+ years data)',
@@ -40,10 +40,10 @@ export default function DemoExcellent() {
         }
       },
       {
-        name: 'KEEP',
+        name: 'ACT',
         score: 34,
         max: 35,
-        description: 'Maintain with seasonal inspections',
+        description: 'Build maintenance routines',
         details: {
           issues: [
             '5+ year perfect track record pending (keep going!)'
@@ -54,10 +54,10 @@ export default function DemoExcellent() {
         }
       },
       {
-        name: 'MAKE',
+        name: 'ADVANCE',
         score: 20,
         max: 25,
-        description: 'Strategic improvements and upgrades',
+        description: 'Grow property value strategically',
         details: {
           issues: [
             'Missing some advanced protection systems',

@@ -23,10 +23,10 @@ export default function DemoImproving() {
     certification: 'bronze',
     phases: [
       {
-        name: 'KNOW',
+        name: 'AWARE',
         score: 35,
         max: 40,
-        description: 'Document your property systems',
+        description: 'Own your property baseline',
         details: {
           issues: [
             'Missing some warranty documentation',
@@ -39,10 +39,10 @@ export default function DemoImproving() {
         }
       },
       {
-        name: 'KEEP',
+        name: 'ACT',
         score: 28,
         max: 35,
-        description: 'Maintain with seasonal inspections',
+        description: 'Build maintenance routines',
         details: {
           issues: [
             'Skipped 1 of 4 quarterly checks last year',
@@ -56,10 +56,10 @@ export default function DemoImproving() {
         }
       },
       {
-        name: 'MAKE',
+        name: 'ADVANCE',
         score: 15,
         max: 25,
-        description: 'Strategic improvements and upgrades',
+        description: 'Grow property value strategically',
         details: {
           issues: [
             'No strategic upgrades yet',
