@@ -35,6 +35,7 @@ import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
 import FloatingWaitlistCTA from "./components/demo/FloatingWaitlistCTA";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
+import DemoAIChat from "./components/demo/DemoAIChat";
 
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -502,6 +503,7 @@ function LayoutContent({ children }) {
         )}
 
         {showAppUI && !demoMode && <CartDrawer />}
+        <DemoAIChat />
         <FloatingWaitlistCTA />
         <ExitIntentPopup />
         </div>
