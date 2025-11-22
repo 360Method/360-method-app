@@ -16,11 +16,25 @@ export default function DemoEntry() {
   const scoreLevel = searchParams.get('score');
 
   const handleEnterDemo = (demoType, score) => {
-    enterDemoMode(demoType);
-    if (demoType === 'homeowner' || score !== 'portfolio') {
-      navigate(createPageUrl('DashboardHomeowner') + `?score=${score || 'improving'}`);
+    if (score === 'struggling') {
+      enterDemoMode('struggling');
+      navigate(createPageUrl('DemoStruggling'));
+    } else if (score === 'improving') {
+      enterDemoMode('homeowner');
+      navigate(createPageUrl('DemoImproving'));
+    } else if (score === 'excellent') {
+      enterDemoMode('homeowner');
+      navigate(createPageUrl('DemoExcellent'));
+    } else if (score === 'portfolio') {
+      enterDemoMode('investor');
+      navigate(createPageUrl('DemoPortfolio'));
     } else {
-      navigate(createPageUrl('DashboardInvestor'));
+      enterDemoMode(demoType);
+      if (demoType === 'homeowner' || score !== 'portfolio') {
+        navigate(createPageUrl('DashboardHomeowner') + `?score=${score || 'improving'}`);
+      } else {
+        navigate(createPageUrl('DashboardInvestor'));
+      }
     }
   };
 

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
+import { DEMO_PROPERTY_STRUGGLING } from './demoPropertyStruggling';
 import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -9,7 +10,7 @@ import InvestorDemoWizard from '../demo/InvestorDemoWizard';
 const DemoContext = createContext();
 
 export function DemoProvider({ children }) {
-  const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', or 'investor'
+  const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', 'struggling', or 'investor'
   const [demoData, setDemoData] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [visitedSteps, setVisitedSteps] = useState([]);
@@ -22,6 +23,10 @@ export function DemoProvider({ children }) {
       setDemoMode('investor');
       setDemoData(DEMO_PORTFOLIO_INVESTOR);
       sessionStorage.setItem('demoMode', 'investor');
+    } else if (userType === 'struggling') {
+      setDemoMode('struggling');
+      setDemoData(DEMO_PROPERTY_STRUGGLING);
+      sessionStorage.setItem('demoMode', 'struggling');
     } else {
       setDemoMode('homeowner');
       setDemoData(DEMO_PROPERTY_HOMEOWNER);
@@ -82,6 +87,10 @@ export function DemoProvider({ children }) {
       console.log('Restoring homeowner demo mode');
       setDemoMode('homeowner');
       setDemoData(DEMO_PROPERTY_HOMEOWNER);
+    } else if (stored === 'struggling') {
+      console.log('Restoring struggling demo mode');
+      setDemoMode('struggling');
+      setDemoData(DEMO_PROPERTY_STRUGGLING);
     } else if (stored === 'investor') {
       console.log('Restoring investor demo mode');
       setDemoMode('investor');
