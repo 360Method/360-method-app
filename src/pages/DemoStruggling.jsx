@@ -145,10 +145,10 @@ export default function DemoStruggling() {
           <div className="max-w-3xl mx-auto">
             <h2 className="text-4xl font-bold text-gray-900 mb-12 text-center">WHY YOUR SCORE IS 62:</h2>
             
-            {/* Phase 1: KNOW */}
+            {/* Phase 1: AWARE */}
             <Card className="mb-8 border-2 border-blue-200">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-blue-700 mb-4">PHASE 1: KNOW WHAT YOU HAVE (26/40 points)</h3>
+                <h3 className="text-2xl font-bold text-blue-700 mb-4">PHASE 1: AWARE (OWN) — 26/40 points</h3>
                 <Progress value={65} className="h-4 mb-6" />
                 
                 <h4 className="font-bold text-gray-900 mb-3 text-lg">Missing:</h4>
@@ -162,10 +162,10 @@ export default function DemoStruggling() {
               </CardContent>
             </Card>
             
-            {/* Phase 2: KEEP */}
+            {/* Phase 2: ACT */}
             <Card className="mb-8 border-2 border-green-200">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-green-700 mb-4">PHASE 2: KEEP IT WORKING (18/35 points)</h3>
+                <h3 className="text-2xl font-bold text-green-700 mb-4">PHASE 2: ACT (BUILD) — 18/35 points</h3>
                 <Progress value={51} className="h-4 mb-6" />
                 
                 <h4 className="font-bold text-gray-900 mb-3 text-lg">Missing:</h4>
@@ -179,10 +179,10 @@ export default function DemoStruggling() {
               </CardContent>
             </Card>
             
-            {/* Phase 3: MAKE */}
+            {/* Phase 3: ADVANCE */}
             <Card className="border-2 border-purple-200">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-purple-700 mb-4">PHASE 3: MAKE IT BETTER (18/25 points)</h3>
+                <h3 className="text-2xl font-bold text-purple-700 mb-4">PHASE 3: ADVANCE (GROW) — 18/25 points</h3>
                 <Progress value={72} className="h-4 mb-6" />
                 
                 <h4 className="font-bold text-gray-900 mb-3 text-lg">Missing:</h4>
