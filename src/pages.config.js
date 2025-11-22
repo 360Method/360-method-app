@@ -35,6 +35,7 @@ import PropertyScore from './pages/PropertyScore';
 import DemoImproving from './pages/DemoImproving';
 import DemoStruggling from './pages/DemoStruggling';
 import DemoExcellent from './pages/DemoExcellent';
+import DemoPortfolio from './pages/DemoPortfolio';
 import __Layout from './Layout.jsx';
 
 
@@ -76,6 +77,7 @@ export const PAGES = {
     "DemoImproving": DemoImproving,
     "DemoStruggling": DemoStruggling,
     "DemoExcellent": DemoExcellent,
+    "DemoPortfolio": DemoPortfolio,
 }
 
 export const pagesConfig = {
