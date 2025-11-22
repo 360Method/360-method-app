@@ -1,11 +1,11 @@
-
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Lightbulb, AlertTriangle, X, Edit } from "lucide-react";
+import { ArrowLeft, Lightbulb, AlertTriangle, X, Edit, MapPin, Eye } from "lucide-react";
 import IssueDocumentation from "./IssueDocumentation";
+import { getSystemMetadata, INSPECTION_AREA_HELPERS } from "../baseline/systemMetadata";
 
 // Safe string truncation helper
 const safeSubstring = (str, maxLength) => {
@@ -444,6 +444,32 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
           </>
         )}
 
+        {/* Seasonal Focus Helper */}
+        {INSPECTION_AREA_HELPERS[area.id] && (
+          <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#3B82F6', backgroundColor: '#EFF6FF' }}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <Eye className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h2 className="font-bold mb-2" style={{ color: '#1B365D', fontSize: '16px' }}>
+                    🎯 {inspection.season} Focus for {area.name}
+                  </h2>
+                  <p className="text-sm text-gray-700 mb-3">
+                    {INSPECTION_AREA_HELPERS[area.id].seasonalFocus[inspection.season]}
+                  </p>
+                  <div className="flex items-start gap-2 text-xs text-blue-800 bg-blue-100 rounded p-2">
+                    <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold">Where to start: </span>
+                      {INSPECTION_AREA_HELPERS[area.id].whereToStart}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Documented Systems */}
         {relevantSystems.length > 0 && (
           <Card className="border-2 mobile-card mb-6" style={{ borderColor: '#1B365D', backgroundColor: '#F0F4F8' }}>
@@ -452,30 +478,65 @@ Be concise, specific, and practical. Focus on preventing expensive failures and 
                 Your documented systems:
               </h2>
               <ul className="space-y-3">
-                {relevantSystems.map((system) => (
-                  <li key={system.id} className="flex items-center justify-between p-3 bg-white rounded-lg border hover:border-blue-300 transition-colors">
-                    <div className="flex items-start gap-2 flex-1">
-                      <span className="text-green-600 font-bold">•</span>
-                      <div>
-                        <span className="font-medium">{system.nickname || system.system_type}</span>
-                        {system.brand_model && <span className="text-gray-600"> - {system.brand_model}</span>}
-                        {system.installation_year && (
-                          <span className="text-gray-600"> ({new Date().getFullYear() - system.installation_year} years old)</span>
-                        )}
+                {relevantSystems.map((system) => {
+                  const metadata = getSystemMetadata(system.system_type);
+                  const [showDetails, setShowDetails] = React.useState(false);
+                  
+                  return (
+                    <li key={system.id} className="bg-white rounded-lg border hover:border-blue-300 transition-colors">
+                      <div className="flex items-center justify-between p-3">
+                        <div 
+                          className="flex items-start gap-2 flex-1 cursor-pointer"
+                          onClick={() => setShowDetails(!showDetails)}
+                        >
+                          <span className="text-xl">{metadata.emoji}</span>
+                          <div>
+                            <span className="font-medium">{system.nickname || system.system_type}</span>
+                            {system.brand_model && <span className="text-gray-600"> - {system.brand_model}</span>}
+                            {system.installation_year && (
+                              <span className="text-gray-600"> ({new Date().getFullYear() - system.installation_year} years old)</span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDocumentIssueForSystem(system);
+                          }}
+                          className="ml-2 whitespace-nowrap"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Report Issue
+                        </Button>
                       </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDocumentIssueForSystem(system)}
-                      className="ml-2 whitespace-nowrap"
-                      style={{ minHeight: '36px' }}
-                    >
-                      <AlertTriangle className="w-4 h-4 mr-1" />
-                      Report Issue
-                    </Button>
-                  </li>
-                ))}
+                      
+                      {/* Expandable location helper */}
+                      {showDetails && (
+                        <div className="px-3 pb-3 pt-0">
+                          <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs">
+                            <div className="flex items-start gap-2 mb-2">
+                              <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-semibold text-blue-900">Where to find: </span>
+                                <span className="text-gray-700">{metadata.whereToFind}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <Eye className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-semibold text-green-900">Look for: </span>
+                                <span className="text-gray-700">{metadata.visualCues}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </CardContent>
           </Card>

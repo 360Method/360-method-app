@@ -4,27 +4,11 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle, ClipboardCheck } from "lucide-react";
+import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle, ClipboardCheck, MapPin, Lightbulb } from "lucide-react";
+import { getSystemMetadata } from "./systemMetadata";
 
 const getSystemIcon = (type) => {
-  const icons = {
-    "HVAC System": "🌡️",
-    "Plumbing System": "🚰",
-    "Electrical System": "⚡",
-    "Roof System": "🏠",
-    "Foundation & Structure": "🏗️",
-    "Water & Sewer/Septic": "💧",
-    "Exterior Siding & Envelope": "🏡",
-    "Windows & Doors": "🚪",
-    "Gutters & Downspouts": "🌧️",
-    "Landscaping & Grading": "🌳",
-    "Major Appliances": "🔌",
-    "Attic & Insulation": "⬆️",
-    "Basement/Crawlspace": "⬇️",
-    "Garage & Overhead Door": "🚗",
-    "Safety Systems": "🚨"
-  };
-  return icons[type] || "📋";
+  return getSystemMetadata(type).emoji;
 };
 
 const getConditionColor = (condition) => {
@@ -65,12 +49,15 @@ export default function SystemCard({ systemType, system, description, isRequired
     return null;
   }, [system, recentInspections]);
 
+  const metadata = getSystemMetadata(systemType);
+  const [showHelper, setShowHelper] = React.useState(false);
+
   if (!system) {
     return (
       <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={onAdd}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-3xl">{getSystemIcon(systemType)}</div>
+            <div className="text-3xl">{metadata.emoji}</div>
             {isRequired ? (
               <AlertCircle className="w-5 h-5 text-red-600" />
             ) : (
@@ -81,15 +68,37 @@ export default function SystemCard({ systemType, system, description, isRequired
             {systemType}
             {isRequired && <span className="text-red-600 text-xs">*REQUIRED</span>}
           </h3>
-          {description && (
-            <div className="mb-4 space-y-2">
-              <p className="text-xs text-gray-600">{description.what}</p>
-              <div className="p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800">
-                <AlertTriangle className="w-3 h-3 inline mr-1" />
-                {description.why}
+          
+          {/* Where to Find It Helper */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowHelper(!showHelper);
+            }}
+            className="w-full mb-3 p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-xs text-left transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="font-semibold text-blue-900">📍 Where to find it</span>
+            </div>
+            {showHelper && (
+              <div className="mt-2 text-gray-700">
+                {metadata.whereToFind}
+              </div>
+            )}
+          </button>
+
+          {/* Quick Tip */}
+          <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+            <div className="flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-amber-900 mb-1">💡 Why it matters:</div>
+                <div className="text-amber-800">{metadata.quickTip}</div>
               </div>
             </div>
-          )}
+          </div>
+
           <Button variant="outline" size="sm" className="w-full gap-2">
             <Plus className="w-4 h-4" />
             Document System
@@ -101,6 +110,8 @@ export default function SystemCard({ systemType, system, description, isRequired
 
   const age = system.installation_year ? new Date().getFullYear() - system.installation_year : null;
 
+  const [showLocationHelper, setShowLocationHelper] = React.useState(false);
+
   return (
     <Card className={`border-2 shadow-lg hover:shadow-xl transition-shadow ${
       isRequired ? 'border-red-200' : 'border-blue-200'
@@ -108,7 +119,7 @@ export default function SystemCard({ systemType, system, description, isRequired
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{getSystemIcon(systemType)}</span>
+            <span className="text-2xl">{metadata.emoji}</span>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-base">{systemType}</span>
@@ -118,10 +129,40 @@ export default function SystemCard({ systemType, system, description, isRequired
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onEdit(system)}>
-            <Edit className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowLocationHelper(!showLocationHelper)}
+              title="Where to find it"
+            >
+              <MapPin className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(system)}>
+              <Edit className="w-4 h-4" />
+            </Button>
+          </div>
         </CardTitle>
+        
+        {/* Location Helper - Collapsible */}
+        {showLocationHelper && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+            <div className="flex items-start gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-blue-900 mb-1">📍 Where to find it:</div>
+                <div className="text-gray-700">{metadata.whereToFind}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-amber-900 mb-1">Visual cues:</div>
+                <div className="text-gray-700">{metadata.visualCues}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <Badge className={`${getConditionColor(system.condition)} border`}>

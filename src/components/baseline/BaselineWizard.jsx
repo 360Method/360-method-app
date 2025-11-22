@@ -7,36 +7,33 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, Upload, Camera, Zap, X, AlertCircle, MapPin, Eye } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
+import { getSystemMetadata } from "./systemMetadata";
 
 const QUICK_START_SYSTEMS = [
   {
     id: 'hvac',
     type: 'HVAC System',
-    icon: '❄️',
     why: 'Failed HVAC = $8K+ emergency replacement',
     fields: ['installation_year', 'brand_model']
   },
   {
     id: 'water_heater',
     type: 'Plumbing System',
-    icon: '🚿',
     why: 'Water heater failure = home flood + $15K damage',
     fields: ['water_heater_year', 'water_heater_type']
   },
   {
     id: 'roof',
     type: 'Roof System',
-    icon: '🏠',
     why: 'Small roof leak = $30K+ disaster in mold and structure',
     fields: ['installation_year', 'material_type']
   },
   {
     id: 'electrical',
     type: 'Electrical System',
-    icon: '⚡',
     why: 'Faulty wiring = house fire = total loss',
     fields: ['panel_capacity', 'wiring_type']
   }
@@ -69,6 +66,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
   });
 
   const currentSystem = QUICK_START_SYSTEMS[currentStep];
+  const currentMetadata = getSystemMetadata(currentSystem.type);
   const isLastStep = currentStep === QUICK_START_SYSTEMS.length - 1;
   const progress = ((currentStep + 1) / QUICK_START_SYSTEMS.length) * 100;
 
@@ -323,10 +321,31 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
             )}
 
             <div className="text-center mb-6">
-              <div className="text-6xl mb-3">{currentSystem.icon}</div>
+              <div className="text-6xl mb-3">{currentMetadata.emoji}</div>
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
                 {currentSystem.type}
               </h2>
+              
+              {/* Location & Visual Helper */}
+              <Card className="border-2 border-blue-300 bg-blue-50 mb-4 text-left">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-blue-900">Where to find it: </span>
+                      <span className="text-gray-700">{currentMetadata.whereToFind}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <Eye className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-green-900">What to look for: </span>
+                      <span className="text-gray-700">{currentMetadata.visualCues}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 mb-4">
                 <p className="text-sm font-semibold text-orange-900">
                   ⚠️ {currentSystem.why}
