@@ -113,7 +113,7 @@ export default function DemoAIChat() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-20 right-4 md:top-24 md:right-6 z-40 w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
+        className="fixed top-40 right-4 md:top-24 md:right-6 z-40 w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
         style={{ minHeight: '56px', minWidth: '56px' }}
       >
         <MessageCircle className="w-6 h-6" />
@@ -126,7 +126,7 @@ export default function DemoAIChat() {
   }
 
   return (
-    <div className="fixed top-20 right-4 md:top-24 md:right-6 z-40 w-[calc(100vw-32px)] md:w-[400px]">
+    <div className="fixed top-40 right-4 md:top-24 md:right-6 z-40 w-[calc(100vw-32px)] md:w-[400px]">
       <Card className="shadow-2xl border-2 border-purple-300">
         <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4">
           <div className="flex items-center justify-between">
