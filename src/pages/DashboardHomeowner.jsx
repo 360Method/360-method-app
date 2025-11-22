@@ -113,45 +113,53 @@ export default function DashboardHomeowner() {
 
       {/* SECTION 1: HERO METRICS (The Big 3) */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
-        {/* Health Score */}
+        {/* 360° Score (replaces Health Score) */}
         <div 
-          data-tour="health-score"
-          className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(createPageUrl('Baseline'))}
+          data-tour="360-score"
+          className="bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate(createPageUrl('PropertyScore') + `?propertyId=${property?.id}`)}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-              <Shield className="w-6 h-6 text-green-700" />
+            <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
+              <Shield className="w-6 h-6 text-blue-700" />
             </div>
-            <span className="text-xs font-semibold text-green-700 bg-green-200 px-3 py-1 rounded-full">
-              EXCELLENT
-            </span>
+            {property?.certificationLevel && (
+              <span className="text-xs font-semibold text-blue-700 bg-blue-200 px-3 py-1 rounded-full uppercase">
+                {property.certificationLevel}
+              </span>
+            )}
           </div>
           
           <div className="mb-2">
-            <div className="text-sm text-green-800 mb-1">Property Health Score</div>
-            <div className="text-5xl font-bold text-green-900">{healthScore}</div>
-            <div className="text-xs text-green-700 mt-1">out of 100</div>
+            <div className="text-sm text-blue-800 mb-1">360° Property Score</div>
+            <div className="text-5xl font-bold text-blue-900">{property?.totalScore || healthScore}</div>
+            <div className="text-xs text-blue-700 mt-1">out of 100</div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-green-300">
+          <div className="mt-4 pt-4 border-t border-blue-300">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-800">View all systems →</span>
-              <ArrowRight className="w-4 h-4 text-green-700" />
+              <span className="text-blue-800">View full breakdown →</span>
+              <ArrowRight className="w-4 h-4 text-blue-700" />
             </div>
           </div>
 
-          {/* Mini health breakdown */}
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-800">Critical Systems:</span>
-              <span className="font-semibold text-green-900">{criticalSystems.length}/{systems.length} Healthy</span>
+          {/* Score breakdown preview */}
+          {property?.scoreBreakdown && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-800">Condition:</span>
+                <span className="font-semibold text-blue-900">{property.scoreBreakdown.condition}/40</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-800">Maintenance:</span>
+                <span className="font-semibold text-blue-900">{property.scoreBreakdown.maintenance}/35</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-800">Improvement:</span>
+                <span className="font-semibold text-blue-900">{property.scoreBreakdown.improvement}/25</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-800">Attention Needed:</span>
-              <span className="font-semibold text-yellow-700">{attentionNeeded.length} items</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Prevented Costs */}
