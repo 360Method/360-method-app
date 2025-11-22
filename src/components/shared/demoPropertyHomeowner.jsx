@@ -21,6 +21,9 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     last_inspection_date: '2025-10-15',
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
+    totalScore: 92,
+    certificationLevel: 'gold',
+    breakdown: { condition: 36, maintenance: 34, improvement: 18 },
     created_date: '2025-01-01T00:00:00Z'
   },
   
