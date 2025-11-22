@@ -23,6 +23,10 @@ const getConditionColor = (condition) => {
 };
 
 export default function SystemCard({ systemType, system, description, isRequired, onEdit, onAdd, propertyId }) {
+  const metadata = getSystemMetadata(systemType);
+  const [showHelper, setShowHelper] = React.useState(false);
+  const [showLocationHelper, setShowLocationHelper] = React.useState(false);
+
   // Fetch recent inspections for this property to show last inspected date
   const { data: recentInspections = [] } = useQuery({
     queryKey: ['recent-inspections', propertyId],
@@ -48,9 +52,6 @@ export default function SystemCard({ systemType, system, description, isRequired
     }
     return null;
   }, [system, recentInspections]);
-
-  const metadata = getSystemMetadata(systemType);
-  const [showHelper, setShowHelper] = React.useState(false);
 
   if (!system) {
     return (
@@ -109,8 +110,6 @@ export default function SystemCard({ systemType, system, description, isRequired
   }
 
   const age = system.installation_year ? new Date().getFullYear() - system.installation_year : null;
-
-  const [showLocationHelper, setShowLocationHelper] = React.useState(false);
 
   return (
     <Card className={`border-2 shadow-lg hover:shadow-xl transition-shadow ${
