@@ -162,12 +162,7 @@ export default function Welcome() {
                 1
               </div>
               <h3 className="text-xl font-bold text-blue-900 mb-2">AWARE</h3>
-              <p className="text-blue-800 text-sm mb-4">Know Your Property</p>
-              <ul className="space-y-2 text-sm text-blue-900">
-                <li><strong>1. Baseline:</strong> Document systems</li>
-                <li><strong>2. Inspect:</strong> Seasonal check-ins</li>
-                <li><strong>3. Track:</strong> Build history</li>
-              </ul>
+              <p className="text-blue-800 text-sm">Know Your Property</p>
             </div>
 
             {/* Phase 2: ACT */}
@@ -176,12 +171,7 @@ export default function Welcome() {
                 2
               </div>
               <h3 className="text-xl font-bold text-orange-900 mb-2">ACT</h3>
-              <p className="text-orange-800 text-sm mb-4">Fix Problems Smart</p>
-              <ul className="space-y-2 text-sm text-orange-900">
-                <li><strong>4. Prioritize:</strong> Rank by urgency</li>
-                <li><strong>5. Schedule:</strong> Plan timeline</li>
-                <li><strong>6. Execute:</strong> Complete work</li>
-              </ul>
+              <p className="text-orange-800 text-sm">Fix Problems Smart</p>
             </div>
 
             {/* Phase 3: ADVANCE */}
@@ -190,12 +180,7 @@ export default function Welcome() {
                 3
               </div>
               <h3 className="text-xl font-bold text-green-900 mb-2">ADVANCE</h3>
-              <p className="text-green-800 text-sm mb-4">Build Long-Term Value</p>
-              <ul className="space-y-2 text-sm text-green-900">
-                <li><strong>7. Preserve:</strong> Extend lifespans</li>
-                <li><strong>8. Upgrade:</strong> Strategic improvements</li>
-                <li><strong>9. SCALE:</strong> Portfolio intelligence</li>
-              </ul>
+              <p className="text-green-800 text-sm">Build Long-Term Value</p>
             </div>
           </div>
 
