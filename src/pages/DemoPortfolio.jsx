@@ -4,7 +4,8 @@ import { ArrowLeft, Building2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import PortfolioScoreHero from '@/components/demo/PortfolioScoreHero';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import PortfolioDistribution from '@/components/demo/PortfolioDistribution';
 import PortfolioAnalytics from '@/components/demo/PortfolioAnalytics';
 import PortfolioMission from '@/components/demo/PortfolioMission';
@@ -129,15 +130,41 @@ export default function DemoPortfolio() {
           </Button>
         </div>
         
-        {/* Portfolio Hero */}
-        <div className="mb-8">
-          <PortfolioScoreHero
-            portfolioScore={portfolioData.portfolioScore}
-            propertyCount={portfolioData.propertyCount}
-            certification={portfolioData.certification}
-            message={portfolioData.message}
-          />
+        {/* HERO SECTION - Above Fold */}
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+          <div className="text-center max-w-2xl">
+            <div className="text-6xl mb-4">🏢</div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">The Professional Investor</h1>
+            <p className="text-xl text-gray-600 mb-8">12-Property Portfolio</p>
+            
+            <div className="border-t-2 border-gray-300 my-8"></div>
+            
+            {/* Score Display */}
+            <div className="mb-6">
+              <p className="text-gray-600 text-lg mb-2">PORTFOLIO SCORE:</p>
+              <div className="text-8xl md:text-9xl font-bold text-blue-600 mb-4">
+                {portfolioData.portfolioScore}<span className="text-5xl text-gray-400">/100</span>
+              </div>
+              <Progress value={portfolioData.portfolioScore} className="h-6 mb-4" />
+              <Badge className="bg-amber-600 text-white text-xl px-6 py-2">
+                ⭐ BRONZE PORTFOLIO
+              </Badge>
+            </div>
+            
+            <p className="text-xl text-gray-700 mb-2">Better than 65% of investor portfolios.</p>
+            <p className="text-2xl font-bold text-gray-900 mb-8">Solid foundation. Ready to scale!</p>
+            
+            <Button 
+              size="lg"
+              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+            >
+              See Your Path to Silver ↓
+            </Button>
+          </div>
         </div>
+        
+        <div id="breakdown" className="py-8"></div>
         
         {/* Info Banner */}
         <Card className="mb-8 bg-gradient-to-r from-blue-100 to-indigo-100 border-2 border-blue-300">

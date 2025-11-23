@@ -36,6 +36,7 @@ import DemoImproving from './pages/DemoImproving';
 import DemoStruggling from './pages/DemoStruggling';
 import DemoExcellent from './pages/DemoExcellent';
 import DemoPortfolio from './pages/DemoPortfolio';
+import Score360 from './pages/Score360';
 import __Layout from './Layout.jsx';
 
 
@@ -78,6 +79,7 @@ export const PAGES = {
     "DemoStruggling": DemoStruggling,
     "DemoExcellent": DemoExcellent,
     "DemoPortfolio": DemoPortfolio,
+    "Score360": Score360,
 }
 
 export const pagesConfig = {
