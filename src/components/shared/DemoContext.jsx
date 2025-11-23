@@ -148,18 +148,6 @@ export function DemoProvider({ children }) {
       isInvestor
     }}>
       {children}
-      {showWizard && demoMode === 'homeowner' && (
-        <DemoWizard 
-          onComplete={handleWizardComplete}
-          onSkip={handleWizardSkip}
-        />
-      )}
-      {showWizard && demoMode === 'investor' && (
-        <InvestorDemoWizard 
-          onComplete={handleWizardComplete}
-          onSkip={handleWizardSkip}
-        />
-      )}
     </DemoContext.Provider>
   );
 }
