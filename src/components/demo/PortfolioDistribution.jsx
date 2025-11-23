@@ -7,8 +7,11 @@ import { Progress } from '@/components/ui/progress';
 import { Star } from 'lucide-react';
 
 export default function PortfolioDistribution({ properties, visualization = 'bars' }) {
+  const navigate = useNavigate();
+  
   const getTierBadge = (tier) => {
     const configs = {
+      'Platinum': { color: 'bg-purple-600', stars: '👑' },
       'Gold': { color: 'bg-yellow-500', stars: '⭐⭐⭐' },
       'Silver': { color: 'bg-gray-500', stars: '⭐⭐' },
       'Bronze': { color: 'bg-amber-600', stars: '⭐' },
