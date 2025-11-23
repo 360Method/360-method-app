@@ -70,7 +70,13 @@ export default function DemoEntry() {
             {/* Struggling Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-red-200">
               <CardContent className="p-6">
-                <div className="text-3xl mb-3">😰</div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="text-3xl">😰</div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-900">62</div>
+                    <div className="text-xs text-gray-500">Current Score</div>
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">THE OVERWHELMED OWNER</h3>
                 <p className="text-lg italic text-gray-600 mb-6">"I have no idea what's about to break."</p>
                 
@@ -108,7 +114,13 @@ export default function DemoEntry() {
             {/* Improving Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-amber-200">
               <CardContent className="p-6">
-                <div className="text-3xl mb-3">😊</div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="text-3xl">😊</div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-900">78</div>
+                    <div className="text-xs text-gray-500">Current Score</div>
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">THE ORGANIZED OWNER</h3>
                 <p className="text-lg italic text-gray-600 mb-6">"I maintain pretty well, but is it enough?"</p>
                 
@@ -146,7 +158,13 @@ export default function DemoEntry() {
             {/* Excellent Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-yellow-300">
               <CardContent className="p-6">
-                <div className="text-3xl mb-3">🏆</div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="text-3xl">🏆</div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-900">92</div>
+                    <div className="text-xs text-gray-500">Current Score</div>
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">THE ELITE OWNER</h3>
                 <p className="text-lg italic text-gray-600 mb-6">"My home is dialed in. How do I keep it there?"</p>
                 
@@ -184,7 +202,13 @@ export default function DemoEntry() {
             {/* Portfolio */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-green-200">
               <CardContent className="p-6">
-                <div className="text-3xl mb-3">🏢</div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="text-3xl">🏢</div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-900">79</div>
+                    <div className="text-xs text-gray-500">Portfolio Avg</div>
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">THE PORTFOLIO OPERATOR</h3>
                 <p className="text-lg italic text-gray-600 mb-6">"How do I manage 3 properties without chaos?"</p>
                 
