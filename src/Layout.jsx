@@ -224,8 +224,8 @@ function LayoutContent({ children }) {
             sidebarCollapsed ? 'md:w-16' : 'md:w-64'
           }`}>
             <div className="border-b border-gray-200 p-4 flex-shrink-0">
-              <div className="flex items-center justify-between gap-3">
-                {!sidebarCollapsed && (
+              {!sidebarCollapsed ? (
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <img 
                       src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
@@ -237,23 +237,27 @@ function LayoutContent({ children }) {
                       <p className="text-xs text-gray-500">Asset Command Center</p>
                     </div>
                   </div>
-                )}
-                {sidebarCollapsed && (
-                  <img 
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
-                    alt="360° Method" 
-                    className="w-8 h-8 rounded-lg mx-auto"
-                  />
-                )}
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  style={{ minHeight: '32px', minWidth: '32px' }}
-                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                >
-                  <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${sidebarCollapsed ? 'rotate-0' : 'rotate-180'}`} />
-                </button>
-              </div>
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    style={{ minHeight: '32px', minWidth: '32px' }}
+                    title="Collapse sidebar"
+                  >
+                    <ChevronRight className="w-4 h-4 text-gray-600 transition-transform rotate-180" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors w-full flex items-center justify-center"
+                    style={{ minHeight: '44px', minWidth: '44px' }}
+                    title="Expand sidebar"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 flex-shrink min-h-0">
