@@ -290,33 +290,31 @@ export default function DemoPortfolio() {
         </Card>
         
         {/* CTA Section */}
-        <Card className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-          <CardContent className="p-8 text-center">
-            <h2 className="text-3xl font-bold mb-3">Ready to Achieve Excellence?</h2>
-            <p className="text-lg mb-6 opacity-90">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white py-12 px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Achieve Excellence?</h2>
+            <p className="text-lg md:text-xl mb-8 opacity-95">
               Join the waitlist to start your journey to elite property maintenance
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg"
-                className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold"
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <button 
+                className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold px-8 py-3 rounded-lg text-lg transition-colors"
                 onClick={() => navigate(createPageUrl('Waitlist'))}
               >
                 Join Waitlist
-              </Button>
-              <Button 
-                size="lg"
-                className="bg-white/20 backdrop-blur-sm border-2 border-white text-white hover:bg-white/30 font-semibold"
+              </button>
+              <button 
+                className="border-2 border-white text-white hover:bg-white/10 font-semibold px-8 py-3 rounded-lg text-lg transition-colors"
                 onClick={() => navigate(createPageUrl('DemoEntry'))}
               >
                 Try Another Demo
-              </Button>
+              </button>
             </div>
-            <p className="text-xs opacity-75 mt-6">
+            <p className="text-sm opacity-75">
               Demo uses hypothetical data. Actual results, timelines, and benefits vary by property and individual circumstances.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
