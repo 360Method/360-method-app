@@ -35,8 +35,8 @@ export default function FloatingWaitlistCTA() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[45] bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-2xl border-t-4 border-white/30">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-5">
+    <div className="fixed bottom-0 left-0 right-0 z-[45] bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-2xl border-t-4 border-white/30 md:left-64">
+      <div className="max-w-5xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
