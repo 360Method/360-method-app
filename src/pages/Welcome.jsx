@@ -27,13 +27,11 @@ export default function Welcome() {
           
           {/* Transformation-First Hero */}
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-            <span className="hidden md:inline">Stop Worrying About Your Home Breaking Down On You.</span>
-            <span className="md:hidden">Stop Worrying.<br />Start Preventing.</span>
+            How To Stop Worrying About Your Home Breaking Down And Start Building Wealth
           </h1>
           
           <p className="text-lg md:text-xl text-gray-700 mb-10 leading-relaxed">
-            Most property owners are one surprise away from a $10,000 emergency.<br />
-            See how the 3-phase system prevents this.
+            Most property owners are one surprise away from a $10,000 emergency. See how the 3-phase system prevents this.
           </p>
           
           <button
