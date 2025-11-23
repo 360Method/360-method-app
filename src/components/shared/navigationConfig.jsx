@@ -9,7 +9,8 @@ import {
   Shield, 
   Lightbulb, 
   Building2,
-  BookOpen
+  BookOpen,
+  Award
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
@@ -30,6 +31,13 @@ export const NAVIGATION_STRUCTURE = [
         subtitle: "Manage your assets", 
         icon: Home,
         url: createPageUrl("Properties")
+      },
+      { 
+        id: "score",
+        label: "360° Score", 
+        subtitle: "View & share report", 
+        icon: Award,
+        url: createPageUrl("PropertyScore")
       },
       { 
         id: "resources",
