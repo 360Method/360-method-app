@@ -166,7 +166,7 @@ export default function Welcome() {
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-500">
-                  Journey: See portfolio control (12 properties, 84 avg)
+                  Journey: See portfolio control (3 properties, 79 avg)
                 </div>
               </div>
             </div>
