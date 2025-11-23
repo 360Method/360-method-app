@@ -54,10 +54,13 @@ export default function DemoEntry() {
             </button>
             
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Compare Different Score Levels
+              Which Journey Sounds Like Yours?
             </h1>
-            <p className="text-lg text-gray-600">
-              Pick one to explore in detail
+            <p className="text-lg text-gray-600 mb-2">
+              Pick the situation that feels most like you.
+            </p>
+            <p className="text-base text-gray-500">
+              See how others transformed from there.
             </p>
           </div>
           
@@ -66,105 +69,152 @@ export default function DemoEntry() {
             
             {/* Struggling Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-red-200">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-3xl mb-2">😰</div>
-                    <CardTitle className="text-xl">The Struggling Home</CardTitle>
-                  </div>
-                  <Badge variant="destructive">Needs Work</Badge>
+              <CardContent className="p-6">
+                <div className="text-3xl mb-3">😰</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">THE OVERWHELMED OWNER</h3>
+                <p className="text-lg italic text-gray-600 mb-6">"I have no idea what's about to break."</p>
+                
+                <div className="mb-4">
+                  <p className="text-sm font-bold text-gray-900 mb-2">You right now:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Reacting to emergencies</li>
+                    <li>• Crossing fingers nothing breaks</li>
+                    <li>• Losing weekends to home chaos</li>
+                  </ul>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">62/100</div>
-                <Progress value={62} className="h-3 mb-4" />
-                <p className="text-sm text-gray-600">
-                  Reactive maintenance. No tracking. Bottom 65%.
+                
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-gray-900 mb-2">Where you could be:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>→ Nothing surprises you</li>
+                    <li>→ Problems caught early</li>
+                    <li>→ Peace of mind</li>
+                  </ul>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>The transformation:</strong> 6 months, $1,000
                 </p>
-              </CardHeader>
-              <CardContent>
+                
                 <Button 
                   onClick={() => handleEnterDemo('homeowner', 'struggling')}
                   className="w-full"
-                  variant="outline"
                 >
-                  See This Home
+                  See This Journey →
                 </Button>
               </CardContent>
             </Card>
             
             {/* Improving Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-amber-200">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-3xl mb-2">😊</div>
-                    <CardTitle className="text-xl">The Improving Home</CardTitle>
-                  </div>
-                  <Badge className="bg-amber-600">Bronze ⭐</Badge>
+              <CardContent className="p-6">
+                <div className="text-3xl mb-3">😊</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">THE ORGANIZED OWNER</h3>
+                <p className="text-lg italic text-gray-600 mb-6">"I maintain pretty well, but is it enough?"</p>
+                
+                <div className="mb-4">
+                  <p className="text-sm font-bold text-gray-900 mb-2">You right now:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Doing quarterly checks (mostly)</li>
+                    <li>• Bronze certified - doing okay</li>
+                    <li>• Could your home be worth more?</li>
+                  </ul>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">78/100</div>
-                <Progress value={78} className="h-3 mb-4" />
-                <p className="text-sm text-gray-600">
-                  Getting better. Bronze certified. Better than 65%.
+                
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-gray-900 mb-2">Where you could be:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>→ Never skip maintenance</li>
+                    <li>→ Home value up 5%</li>
+                    <li>→ Silver certified (top 15%)</li>
+                  </ul>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>The upgrade:</strong> 3 months, $400
                 </p>
-              </CardHeader>
-              <CardContent>
+                
                 <Button 
                   onClick={() => handleEnterDemo('homeowner', 'improving')}
                   className="w-full"
                 >
-                  See This Home
+                  See This Journey →
                 </Button>
               </CardContent>
             </Card>
             
             {/* Excellent Home */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-yellow-300">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-3xl mb-2">🏆</div>
-                    <CardTitle className="text-xl">The Excellent Home</CardTitle>
-                  </div>
-                  <Badge className="bg-yellow-500">Gold ⭐⭐⭐</Badge>
+              <CardContent className="p-6">
+                <div className="text-3xl mb-3">🏆</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">THE ELITE OWNER</h3>
+                <p className="text-lg italic text-gray-600 mb-6">"My home is dialed in. How do I keep it there?"</p>
+                
+                <div className="mb-4">
+                  <p className="text-sm font-bold text-gray-900 mb-2">You right now:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Gold certified (top 5%)</li>
+                    <li>• Perfect maintenance routine</li>
+                    <li>• Everything documented</li>
+                  </ul>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">92/100</div>
-                <Progress value={92} className="h-3 mb-4" />
-                <p className="text-sm text-gray-600">
-                  Elite maintenance. Gold certified. Top 5%.
+                
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-gray-900 mb-2">How to maintain excellence:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>→ Keep the system effortless</li>
+                    <li>→ Premium value when selling</li>
+                    <li>→ Benchmark-quality property</li>
+                  </ul>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>Your maintenance strategy</strong>
                 </p>
-              </CardHeader>
-              <CardContent>
+                
                 <Button 
                   onClick={() => handleEnterDemo('homeowner', 'excellent')}
                   className="w-full bg-yellow-600 hover:bg-yellow-700"
                 >
-                  See This Home
+                  See This Journey →
                 </Button>
               </CardContent>
             </Card>
             
             {/* Portfolio */}
             <Card className="hover:shadow-lg transition-shadow border-2 border-green-200">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-3xl mb-2">🏢</div>
-                    <CardTitle className="text-xl">Investor Portfolio</CardTitle>
-                  </div>
-                  <Badge className="bg-green-600">Bronze Portfolio</Badge>
+              <CardContent className="p-6">
+                <div className="text-3xl mb-3">🏢</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">THE PORTFOLIO OPERATOR</h3>
+                <p className="text-lg italic text-gray-600 mb-6">"How do I manage 3 properties without chaos?"</p>
+                
+                <div className="mb-4">
+                  <p className="text-sm font-bold text-gray-900 mb-2">You right now:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• 3 properties, mixed condition</li>
+                    <li>• Getting emergency calls</li>
+                    <li>• Spending $8K+ on reactive repairs</li>
+                  </ul>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">79/100</div>
-                <Progress value={79} className="h-3 mb-4" />
-                <p className="text-sm text-gray-600">
-                  3 properties. Portfolio average. Better than 65%.
+                
+                <div className="mb-6">
+                  <p className="text-sm font-bold text-gray-900 mb-2">Where you could be:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>→ One dashboard, all 3 properties</li>
+                    <li>→ Cut reactive repairs 60%</li>
+                    <li>→ Professional operation</li>
+                  </ul>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>The transformation:</strong> 6 months, $3,500
                 </p>
-              </CardHeader>
-              <CardContent>
+                
                 <Button 
                   onClick={() => handleEnterDemo('investor', 'portfolio')}
                   className="w-full bg-green-600 hover:bg-green-700"
                 >
-                  See Portfolio
+                  See This Journey →
                 </Button>
               </CardContent>
             </Card>
@@ -178,8 +228,7 @@ export default function DemoEntry() {
                 <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-700">
-                    <span className="font-semibold">Each demo is fully interactive.</span> You'll see real data, 
-                    real scores, and real paths to improvement. No sign-up required.
+                    <span className="font-semibold">Each journey shows real examples with actual numbers and timelines.</span> See how others transformed from where you are now. No sign-up required.
                   </p>
                 </div>
               </div>
