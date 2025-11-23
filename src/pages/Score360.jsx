@@ -153,8 +153,40 @@ export default function Score360() {
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
-          
+
           <div className="flex items-center gap-2">
+            {/* Property Selector - only show for portfolios */}
+            {isPortfolio && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <HomeIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">
+                      {portfolioView ? 'Portfolio Average' : allProperties.find(p => p.id === propertyId)?.nickname || 'Select Property'}
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuItem onClick={() => handlePropertySelect('portfolio')}>
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-semibold">Portfolio Average</span>
+                      <Badge className="bg-blue-600">{portfolioScore}</Badge>
+                    </div>
+                  </DropdownMenuItem>
+                  <div className="border-t my-1"></div>
+                  {allProperties.map(p => (
+                    <DropdownMenuItem key={p.id} onClick={() => handlePropertySelect(p.id)}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{p.nickname}</span>
+                        <Badge variant="outline">{p.health_score}</Badge>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <Button
               variant="outline"
               size="sm"
