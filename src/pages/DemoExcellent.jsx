@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Calendar, Star, Crown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
@@ -13,14 +13,20 @@ import AchievementDisplayDemo from '@/components/demo/AchievementDisplayDemo';
 import NextLevelPreviewDemo from '@/components/demo/NextLevelPreviewDemo';
 import EliteBannerDemo from '@/components/demo/EliteBannerDemo';
 import PerformanceTimelineDemo from '@/components/demo/PerformanceTimelineDemo';
+import { useDemo } from '@/components/shared/DemoContext';
 
 export default function DemoExcellent() {
   const navigate = useNavigate();
+  const { enterDemoMode } = useDemo();
+
+  useEffect(() => {
+    enterDemoMode('homeowner', 'excellent');
+  }, []);
   
   const demoData = {
     name: 'The Achiever',
-    location: 'Battle Ground, WA',
-    built: 2012,
+    location: 'Vancouver, WA',
+    built: 2015,
     totalScore: 92,
     certification: 'gold',
     phases: [

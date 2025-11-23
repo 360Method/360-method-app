@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Building2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
@@ -11,9 +11,15 @@ import PortfolioAnalytics from '@/components/demo/PortfolioAnalytics';
 import PortfolioMission from '@/components/demo/PortfolioMission';
 import PortfolioROI from '@/components/demo/PortfolioROI';
 import AchievementDisplayDemo from '@/components/demo/AchievementDisplayDemo';
+import { useDemo } from '@/components/shared/DemoContext';
 
 export default function DemoPortfolio() {
   const navigate = useNavigate();
+  const { enterDemoMode } = useDemo();
+
+  useEffect(() => {
+    enterDemoMode('investor');
+  }, []);
   
   const portfolioData = {
     portfolioScore: 84,
