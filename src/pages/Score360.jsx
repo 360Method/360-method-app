@@ -365,6 +365,419 @@ export default function Score360() {
           </CardContent>
         </Card>
         
+        {/* What This Score Means - Narrative Section */}
+        <div className="mb-8 print:hidden">
+          {score < 65 ? (
+            <div className="space-y-6">
+              <Card className="border-2 border-red-200 bg-red-50">
+                <CardContent className="p-8">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">What a {score} Score Means:</h3>
+                  <p className="text-xl text-gray-700 mb-6">
+                    Your home works... until something breaks.<br />
+                    Then it's a $5,000 surprise.
+                  </p>
+                  
+                  <div className="bg-white p-6 rounded-lg border-2 border-red-300">
+                    <h4 className="font-bold text-xl text-gray-900 mb-4">You have:</h4>
+                    <div className="space-y-3">
+                      <p className="text-lg text-gray-700 flex items-start gap-3">
+                        <span className="text-red-500 text-2xl">❌</span>
+                        <span>No idea what's about to fail</span>
+                      </p>
+                      <p className="text-lg text-gray-700 flex items-start gap-3">
+                        <span className="text-red-500 text-2xl">❌</span>
+                        <span>No prevention plan</span>
+                      </p>
+                      <p className="text-lg text-gray-700 flex items-start gap-3">
+                        <span className="text-red-500 text-2xl">❌</span>
+                        <span>No records or documentation</span>
+                      </p>
+                      <p className="text-lg text-gray-700 flex items-start gap-3">
+                        <span className="text-red-500 text-2xl">❌</span>
+                        <span>No system</span>
+                      </p>
+                    </div>
+                    <p className="text-xl font-bold text-red-600 mt-6">
+                      Translation: You're just crossing your fingers.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-orange-200 bg-orange-50">
+                <CardContent className="p-8">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">What Happens If You Do Nothing:</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-white p-6 rounded-lg border-2 border-red-200">
+                      <div className="flex items-start gap-4">
+                        <Calendar className="w-8 h-8 text-red-600 flex-shrink-0" />
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-900 mb-2">Next 6 months:</h4>
+                          <p className="text-gray-700 mb-2">Your water heater dies on a Sunday morning.</p>
+                          <p className="text-2xl font-bold text-red-600">Emergency plumber: $2,500</p>
+                          <p className="text-sm text-gray-600 mt-1">(Planned replacement would've been $1,200)</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white p-6 rounded-lg border-2 border-red-200">
+                      <div className="flex items-start gap-4">
+                        <Calendar className="w-8 h-8 text-red-600 flex-shrink-0" />
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-900 mb-2">Next 12 months:</h4>
+                          <p className="text-gray-700 mb-2">Small roof leak you didn't know about damages your attic.</p>
+                          <p className="text-2xl font-bold text-red-600">Repair + cleanup: $8,000</p>
+                          <p className="text-sm text-gray-600 mt-1">(Catching it early would've been $200)</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 bg-red-600 text-white rounded-lg text-center">
+                      <p className="text-xl mb-2">TOTAL IF YOU DO NOTHING:</p>
+                      <p className="text-5xl font-bold mb-2">$10,000+</p>
+                      <p className="text-lg">This is what a {score} score predicts.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : score < 75 ? (
+            <Card className="border-2 border-amber-200 bg-amber-50 mb-8">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">What a {score} Score Means:</h3>
+                <p className="text-xl text-gray-700 mb-6">
+                  You're tracking some things, but gaps remain. You're better than most, but not yet systematic enough to prevent all surprises.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg border-2 border-green-200">
+                    <h4 className="font-bold text-green-700 mb-3">What You're Doing Right:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Some system documentation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Occasional inspections</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Addressing major issues</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
+                    <h4 className="font-bold text-orange-700 mb-3">What's Missing:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                        <span>Incomplete documentation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                        <span>Irregular inspection schedule</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                        <span>No prevention plan</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : score < 90 ? (
+            <Card className="border-2 border-yellow-200 bg-yellow-50 mb-8">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">What a {score} Score Means:</h3>
+                <p className="text-xl text-gray-700 mb-6">
+                  You're systematic and consistent. You're in the top tier of homeowners. Just a few optimizations away from elite status.
+                </p>
+                
+                <div className="bg-white p-6 rounded-lg border-2 border-green-300">
+                  <h4 className="font-bold text-green-700 text-lg mb-3">What Makes You Stand Out:</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Comprehensive documentation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Consistent inspections</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Proactive maintenance</span>
+                      </li>
+                    </ul>
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Fast issue resolution</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Smart upgrades</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Prevention focus</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-2 border-purple-200 bg-purple-50 mb-8">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">What a {score} Score Means:</h3>
+                <p className="text-xl text-gray-700 mb-6">
+                  You're in the top 1-5% of all properties. Elite maintenance standard. Your home is a benchmark for others.
+                </p>
+                
+                <div className="bg-white p-6 rounded-lg border-2 border-purple-300">
+                  <h4 className="font-bold text-purple-700 text-lg mb-3">Elite Status Achievements:</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Perfect system tracking</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Never missed inspections</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Professional maintenance</span>
+                      </li>
+                    </ul>
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Smart protection systems</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Proactive replacements</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Trophy className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <span>Strategic value building</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Path to Next Level */}
+        {score < 96 && (
+          <Card className="mb-8 border-2 border-blue-200 bg-blue-50 print:hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
+                Your Path to {score < 75 ? 'Bronze (75)' : score < 85 ? 'Silver (85)' : score < 90 ? 'Gold (90)' : 'Platinum (96)'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-6">
+                You're <span className="font-bold text-blue-600">{(score < 75 ? 75 : score < 85 ? 85 : score < 90 ? 90 : 96) - score} points</span> away from your next certification level.
+              </p>
+              
+              <div className="space-y-4">
+                {score < 65 && (
+                  <>
+                    <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">1</div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 text-lg mb-2">Fix the Dangerous Stuff</h4>
+                          <p className="text-gray-700 mb-3">Add CO detectors, fix electrical outlets near water</p>
+                          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="text-center">
+                              <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-600" />
+                              <p className="font-bold text-gray-900">$600</p>
+                              <p className="text-xs text-gray-600">Cost</p>
+                            </div>
+                            <div className="text-center">
+                              <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-600" />
+                              <p className="font-bold text-gray-900">1 day</p>
+                              <p className="text-xs text-gray-600">Time</p>
+                            </div>
+                            <div className="text-center">
+                              <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600" />
+                              <p className="font-bold text-gray-900">+4</p>
+                              <p className="text-xs text-gray-600">Points</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">2</div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 text-lg mb-2">Start Tracking Your Home</h4>
+                          <p className="text-gray-700 mb-3">Document your 6 main systems, take photos, note ages</p>
+                          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="text-center">
+                              <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-600" />
+                              <p className="font-bold text-gray-900">FREE</p>
+                              <p className="text-xs text-gray-600">Cost</p>
+                            </div>
+                            <div className="text-center">
+                              <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-600" />
+                              <p className="font-bold text-gray-900">1 hour</p>
+                              <p className="text-xs text-gray-600">Time</p>
+                            </div>
+                            <div className="text-center">
+                              <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600" />
+                              <p className="font-bold text-gray-900">+8</p>
+                              <p className="text-xs text-gray-600">Points</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">3</div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 text-lg mb-2">Get One Professional Inspection</h4>
+                          <p className="text-gray-700 mb-3">Expert assessment of all systems, complete report</p>
+                          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="text-center">
+                              <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-600" />
+                              <p className="font-bold text-gray-900">$400</p>
+                              <p className="text-xs text-gray-600">Cost</p>
+                            </div>
+                            <div className="text-center">
+                              <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-600" />
+                              <p className="font-bold text-gray-900">2 hours</p>
+                              <p className="text-xs text-gray-600">Time</p>
+                            </div>
+                            <div className="text-center">
+                              <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600" />
+                              <p className="font-bold text-gray-900">+6</p>
+                              <p className="text-xs text-gray-600">Points</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {score >= 65 && score < 75 && (
+                  <>
+                    <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                      <h4 className="font-bold text-gray-900 text-lg mb-3">Quick Wins to Reach Bronze (75):</h4>
+                      <ul className="space-y-3">
+                        <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-900">Complete all system documentation</span>
+                          <Badge className="bg-green-600">+{Math.min(75 - score, 5)} pts</Badge>
+                        </li>
+                        <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-900">Schedule regular inspections</span>
+                          <Badge className="bg-green-600">+{Math.min(Math.max(75 - score - 5, 0), 4)} pts</Badge>
+                        </li>
+                        <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-900">Create maintenance calendar</span>
+                          <Badge className="bg-green-600">+{Math.max(75 - score - 9, 0)} pts</Badge>
+                        </li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+                
+                {score >= 75 && score < 85 && (
+                  <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                    <h4 className="font-bold text-gray-900 text-lg mb-3">Path to Silver (85):</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Perfect your quarterly inspection routine</span>
+                        <Badge className="bg-green-600">+4 pts</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Add smart home monitoring</span>
+                        <Badge className="bg-green-600">+2 pts</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Complete advanced system documentation</span>
+                        <Badge className="bg-green-600">+{85 - score - 6} pts</Badge>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+                
+                {score >= 85 && score < 90 && (
+                  <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                    <h4 className="font-bold text-gray-900 text-lg mb-3">Path to Gold (90):</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">3+ year perfect maintenance record</span>
+                        <Badge className="bg-yellow-600">+2 pts</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Advanced protection systems</span>
+                        <Badge className="bg-yellow-600">+2 pts</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Strategic preservation program</span>
+                        <Badge className="bg-yellow-600">+{90 - score - 4} pts</Badge>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+                
+                {score >= 90 && (
+                  <div className="bg-white p-6 rounded-lg border-2 border-purple-200">
+                    <h4 className="font-bold text-gray-900 text-lg mb-3">Path to Platinum (96) - Top 1%:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Whole-house surge protection</span>
+                        <Badge className="bg-purple-600">+1 pt</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Advanced leak detection system</span>
+                        <Badge className="bg-purple-600">+1 pt</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">Energy optimization program</span>
+                        <Badge className="bg-purple-600">+2 pts</Badge>
+                      </li>
+                      <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-900">5+ year excellence record</span>
+                        <Badge className="bg-purple-600">+{Math.max(96 - score - 4, 0)} pts</Badge>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6 p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                <p className="text-lg mb-2">Total Investment to Next Level:</p>
+                <p className="text-4xl font-bold mb-2">
+                  {score < 65 ? '$1,000' : score < 75 ? '$200' : score < 85 ? '$400' : score < 90 ? '$800' : '$1,200'}
+                </p>
+                <p className="text-sm opacity-90">
+                  Potential savings: {score < 75 ? '$5,000-15,000' : score < 85 ? '$3,000-8,000' : '$2,000-5,000'} in first year
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Certified Benefits or Path Forward */}
         {score >= 75 ? (
           <Card className="mb-8 border-2 border-green-200 bg-green-50">
