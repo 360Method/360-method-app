@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DEMO_PROPERTY_HOMEOWNER } from "@/components/shared/demoPropertyHomeowner";
 import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStruggling";
+import { DEMO_PROPERTY_IMPROVING } from "@/components/shared/demoPropertyImproving";
+import { DEMO_PROPERTY_EXCELLENT } from "@/components/shared/demoPropertyExcellent";
 import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
 
 export default function Score360() {
@@ -21,6 +23,8 @@ export default function Score360() {
   const getPropertyData = () => {
     if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
     if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
+    if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;
+    if (propertyId === 'demo-excellent-001') return DEMO_PROPERTY_EXCELLENT.property;
     if (propertyId === 'demo-investor-1') return DEMO_PORTFOLIO_INVESTOR.properties[0];
     if (propertyId === 'demo-investor-2') return DEMO_PORTFOLIO_INVESTOR.properties[1];
     if (propertyId === 'demo-investor-3') return DEMO_PORTFOLIO_INVESTOR.properties[2];
