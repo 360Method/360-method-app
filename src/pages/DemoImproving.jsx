@@ -183,7 +183,7 @@ export default function DemoImproving() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + `?score=${demoData.totalScore}&name=${encodeURIComponent(demoData.name)}&address=${encodeURIComponent(demoData.location)}`)}
+                onClick={() => navigate(createPageUrl('Score360') + `?score=${demoData.totalScore}&name=2847 Maple Grove Lane&address=Vancouver, WA&propertyType=Single-Family Home&yearBuilt=2015&sqft=2400`)}
                 className="border-2 border-amber-600 text-amber-600 hover:bg-amber-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report

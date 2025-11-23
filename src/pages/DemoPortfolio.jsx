@@ -165,7 +165,7 @@ export default function DemoPortfolio() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + `?score=${portfolioData.portfolioScore}&name=Professional Investor Portfolio&address=12 Properties`)}
+                onClick={() => navigate(createPageUrl('Score360') + `?score=${portfolioData.portfolioScore}&name=12-Property Investment Portfolio&address=Vancouver & Portland Metro&propertyType=Multi-Family Portfolio&yearBuilt=Various (1985-2015)&sqft=28000`)}
                 className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report

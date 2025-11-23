@@ -105,7 +105,7 @@ export default function DemoStruggling() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + '?score=62&name=The Fixer-Upper&address=Vancouver, WA')}
+                onClick={() => navigate(createPageUrl('Score360') + '?score=62&name=1847 Riverside Drive&address=Vancouver, WA&propertyType=Single-Family Home&yearBuilt=2010&sqft=1850')}
                 className="border-2 border-red-600 text-red-600 hover:bg-red-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report
