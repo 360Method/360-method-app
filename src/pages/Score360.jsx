@@ -23,8 +23,27 @@ export default function Score360() {
   const [searchParams, setSearchParams] = useSearchParams();
   const printRef = useRef(null);
   
-  const propertyId = searchParams.get('property_id');
+  let propertyId = searchParams.get('property_id');
   const portfolioView = searchParams.get('portfolio') === 'true';
+  
+  // Auto-detect demo mode and set default if no property specified
+  React.useEffect(() => {
+    const demoMode = sessionStorage.getItem('demoMode');
+    if (!propertyId && !portfolioView && demoMode) {
+      if (demoMode === 'investor') {
+        // Default to portfolio view for investor
+        setSearchParams({ portfolio: 'true' });
+      } else if (demoMode === 'struggling') {
+        navigate(createPageUrl('Score360') + '?property_id=demo-struggling-001', { replace: true });
+      } else if (demoMode === 'improving') {
+        navigate(createPageUrl('Score360') + '?property_id=demo-improving-001', { replace: true });
+      } else if (demoMode === 'excellent') {
+        navigate(createPageUrl('Score360') + '?property_id=demo-excellent-001', { replace: true });
+      } else {
+        navigate(createPageUrl('Score360') + '?property_id=demo-homeowner-001', { replace: true });
+      }
+    }
+  }, [propertyId, portfolioView, navigate, setSearchParams]);
   
   // Get all properties for portfolio view
   const getAllProperties = () => {
