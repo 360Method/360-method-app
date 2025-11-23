@@ -189,17 +189,20 @@ export default function Score360() {
                   </div>
                   
                   {/* Certification Badge */}
-                  <div className="mt-6">
-                    <Badge className={`px-6 py-2.5 text-base md:text-lg font-bold ${
-                      score >= 96 ? 'bg-purple-600' :
-                      score >= 90 ? 'bg-yellow-500' :
-                      score >= 85 ? 'bg-gray-500' :
-                      score >= 75 ? 'bg-amber-600' :
-                      'bg-gray-400'
-                    }`}>
+                  <div className="mt-6 text-center">
+                    <div 
+                      className="inline-flex px-6 py-2.5 text-base md:text-lg font-bold rounded-full text-white"
+                      style={{
+                        backgroundColor: score >= 96 ? '#9333EA' :
+                          score >= 90 ? '#EAB308' :
+                          score >= 85 ? '#6B7280' :
+                          score >= 75 ? '#D97706' :
+                          '#9CA3AF'
+                      }}
+                    >
                       {cert.stars} {cert.level} {score >= 75 ? 'Certified' : ''}
-                    </Badge>
-                    <p className="text-sm text-gray-500 text-center mt-2">{cert.text}</p>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">{cert.text}</p>
                   </div>
                 </div>
                 
@@ -321,7 +324,12 @@ export default function Score360() {
                   <div key={idx} className="group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full bg-${color}-600`}></div>
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{ 
+                            backgroundColor: idx === 0 ? '#2563EB' : idx === 1 ? '#16A34A' : '#9333EA' 
+                          }}
+                        ></div>
                         <span className="font-semibold text-gray-900">{phase.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -333,8 +341,15 @@ export default function Score360() {
                     <div className="relative">
                       <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full bg-gradient-to-r from-${color}-500 to-${color}-600 transition-all duration-1000 rounded-full`}
-                          style={{ width: `${percentage}%` }}
+                          className="h-full transition-all duration-1000 rounded-full"
+                          style={{ 
+                            width: `${percentage}%`,
+                            background: idx === 0 
+                              ? 'linear-gradient(to right, #3B82F6, #2563EB)' 
+                              : idx === 1 
+                              ? 'linear-gradient(to right, #22C55E, #16A34A)'
+                              : 'linear-gradient(to right, #A855F7, #9333EA)'
+                          }}
                         ></div>
                       </div>
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600">
