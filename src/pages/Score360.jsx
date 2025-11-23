@@ -26,6 +26,22 @@ export default function Score360() {
   const propertyId = searchParams.get('property_id');
   const portfolioView = searchParams.get('portfolio') === 'true';
   
+  // Get all properties for portfolio view
+  const getAllProperties = () => {
+    if (propertyId?.startsWith('demo-investor') || portfolioView) {
+      return DEMO_PORTFOLIO_INVESTOR.properties;
+    }
+    return [];
+  };
+  
+  const allProperties = getAllProperties();
+  const isPortfolio = allProperties.length > 1;
+  
+  // Calculate portfolio average score
+  const portfolioScore = isPortfolio 
+    ? Math.round(allProperties.reduce((sum, p) => sum + p.health_score, 0) / allProperties.length)
+    : null;
+  
   const handleBack = () => {
     if (propertyId?.startsWith('demo-')) {
       const parts = propertyId.split('-');
@@ -43,6 +59,20 @@ export default function Score360() {
   
   // Get property from demo data
   const getPropertyData = () => {
+    // Portfolio view - return portfolio average as a virtual property
+    if (portfolioView && isPortfolio) {
+      return {
+        id: 'portfolio',
+        address: 'Portfolio Average',
+        city: `${allProperties.length} Properties`,
+        state: '',
+        property_type: 'Multi-Property Portfolio',
+        year_built: '',
+        square_footage: allProperties.reduce((sum, p) => sum + (p.square_footage || 0), 0),
+        health_score: portfolioScore
+      };
+    }
+    
     if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
     if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
     if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;
@@ -56,6 +86,15 @@ export default function Score360() {
   };
   
   const property = getPropertyData();
+  
+  // Handle property selection
+  const handlePropertySelect = (selectedId) => {
+    if (selectedId === 'portfolio') {
+      setSearchParams({ portfolio: 'true' });
+    } else {
+      setSearchParams({ property_id: selectedId });
+    }
+  };
   
   const score = property?.health_score || 0;
   const propertyName = property?.address || 'Property';
