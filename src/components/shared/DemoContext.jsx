@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
 import { DEMO_PROPERTY_STRUGGLING } from './demoPropertyStruggling';
 import { DEMO_PROPERTY_IMPROVING } from './demoPropertyImproving';
+import { DEMO_PROPERTY_EXCELLENT } from './demoPropertyExcellent';
 import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -32,6 +33,10 @@ export function DemoProvider({ children }) {
       setDemoMode('improving');
       setDemoData(DEMO_PROPERTY_IMPROVING);
       sessionStorage.setItem('demoMode', 'improving');
+    } else if (scoreLevel === 'excellent') {
+      setDemoMode('excellent');
+      setDemoData(DEMO_PROPERTY_EXCELLENT);
+      sessionStorage.setItem('demoMode', 'excellent');
     } else {
       setDemoMode('homeowner');
       setDemoData(DEMO_PROPERTY_HOMEOWNER);
@@ -100,6 +105,10 @@ export function DemoProvider({ children }) {
       console.log('Restoring improving demo mode');
       setDemoMode('improving');
       setDemoData(DEMO_PROPERTY_IMPROVING);
+    } else if (stored === 'excellent') {
+      console.log('Restoring excellent demo mode');
+      setDemoMode('excellent');
+      setDemoData(DEMO_PROPERTY_EXCELLENT);
     } else if (stored === 'investor') {
       console.log('Restoring investor demo mode');
       setDemoMode('investor');
