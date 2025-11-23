@@ -380,12 +380,24 @@ export default function Score360() {
                   <HomeIcon className="w-4 h-4" />
                   {propertyAddress}
                 </span>
-                <span className="text-gray-400">•</span>
-                <span>{propertyType}</span>
-                <span className="text-gray-400">•</span>
-                <span>Built {yearBuilt}</span>
-                <span className="text-gray-400">•</span>
-                <span>{parseInt(sqft).toLocaleString()} sq ft</span>
+                {propertyType && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span>{propertyType}</span>
+                  </>
+                )}
+                {yearBuilt && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span>Built {yearBuilt}</span>
+                  </>
+                )}
+                {sqft && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span>{parseInt(sqft).toLocaleString()} sq ft</span>
+                  </>
+                )}
               </div>
             </div>
             
