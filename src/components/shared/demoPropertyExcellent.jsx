@@ -977,8 +977,6 @@ export const DEMO_PROPERTY_EXCELLENT = {
   ],
 
   portfolioMetrics: {
-
-  portfolioMetrics: {
     total_properties: 1,
     total_units: 1,
     current_property_value: 550000,
