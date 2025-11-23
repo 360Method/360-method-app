@@ -27,7 +27,7 @@ export default function Welcome() {
           
           {/* Transformation-First Hero */}
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-            How To Stop Worrying About Your Home Breaking Down And Start Building Wealth
+            How To Stop Worrying About Your Home Breaking Down And Start Focusing On Building Wealth
           </h1>
           
           <p className="text-lg md:text-xl text-gray-700 mb-10 leading-relaxed">
