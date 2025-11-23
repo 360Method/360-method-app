@@ -17,11 +17,10 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     is_demo: true,
     demo_type: 'homeowner',
     baseline_completion: 100,
-    health_score: 78,
+    health_score: 92,
     last_inspection_date: '2025-10-15',
     total_maintenance_spent: 3200,
     estimated_disasters_prevented: 7200,
-    totalScore: 92,
     certificationLevel: 'gold',
     breakdown: { condition: 36, maintenance: 34, improvement: 18 },
     quickWins: [
@@ -1226,7 +1225,7 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     current_equity: 250000,
     loan_to_value_ratio: 54.5,
     
-    average_health_score: 78,
+    average_health_score: 92,
     total_maintenance_invested: 4800,
     total_savings_from_prevention: 7200,
     roi_on_maintenance: 150,
@@ -1291,6 +1290,6 @@ export const DEMO_PROPERTY_HOMEOWNER = {
     tasks_medium: 3,
     tasks_low: 1,
     total_estimated_savings: 7200,
-    health_score: 78
+    health_score: 92
   }
 };

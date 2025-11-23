@@ -21,7 +21,6 @@ export const DEMO_PROPERTY_STRUGGLING = {
     last_inspection_date: null,
     total_maintenance_spent: 0,
     estimated_disasters_prevented: 0,
-    totalScore: 62,
     certificationLevel: null,
     breakdown: { condition: 26, maintenance: 18, improvement: 18 },
     created_date: '2025-01-01T00:00:00Z'
