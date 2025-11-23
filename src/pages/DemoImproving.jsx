@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Calendar, TrendingUp } from 'lucide-react';
 import { createPageUrl } from '@/utils';
@@ -12,9 +12,15 @@ import QuickWinsDemo from '@/components/demo/QuickWinsDemo';
 import LevelUpPlanDemo from '@/components/demo/LevelUpPlanDemo';
 import AchievementDisplayDemo from '@/components/demo/AchievementDisplayDemo';
 import NextLevelPreviewDemo from '@/components/demo/NextLevelPreviewDemo';
+import { useDemo } from '@/components/shared/DemoContext';
 
 export default function DemoImproving() {
   const navigate = useNavigate();
+  const { enterDemoMode } = useDemo();
+
+  useEffect(() => {
+    enterDemoMode('homeowner', 'improving');
+  }, []);
   
   const demoData = {
     name: 'The Improver',
@@ -183,7 +189,7 @@ export default function DemoImproving() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + `?property_id=demo-homeowner-001`)}
+                onClick={() => navigate(createPageUrl('Score360') + `?property_id=demo-improving-001`)}
                 className="border-2 border-amber-600 text-amber-600 hover:bg-amber-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report
