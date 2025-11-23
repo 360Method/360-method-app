@@ -28,7 +28,12 @@ export default function Score360() {
   
   // Get all properties for portfolio view
   const getAllProperties = () => {
-    if (propertyId?.startsWith('demo-investor') || portfolioView) {
+    // Check if this is an investor portfolio context
+    if (propertyId?.startsWith('demo-investor')) {
+      return DEMO_PORTFOLIO_INVESTOR.properties;
+    }
+    // If portfolio=true in URL, assume investor demo
+    if (portfolioView) {
       return DEMO_PORTFOLIO_INVESTOR.properties;
     }
     return [];
@@ -36,6 +41,11 @@ export default function Score360() {
   
   const allProperties = getAllProperties();
   const isPortfolio = allProperties.length > 1;
+  
+  // If portfolio view requested but no specific property, default to portfolio view
+  if (portfolioView && isPortfolio && !propertyId) {
+    // Portfolio view is active
+  }
   
   // Calculate portfolio average score
   const portfolioScore = isPortfolio 
