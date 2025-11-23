@@ -187,11 +187,15 @@ export default function DemoPortfolio() {
               <Building2 className="w-8 h-8 text-blue-600 flex-shrink-0" />
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
-                  Your Portfolio is Better Than Most
+                  {portfolioScore >= 90 ? 'Elite Portfolio Performance' :
+                   portfolioScore >= 85 ? 'Professional-Grade Portfolio' :
+                   portfolioScore >= 75 ? 'Your Portfolio is Better Than Most' :
+                   'Portfolio Needs Attention'}
                 </h2>
                 <p className="text-gray-700">
-                  At 84/100, you're in Bronze Portfolio tier (top 35%). But you're only 4 points from Silver - 
-                  and the path is clear: fix your 3 weakest properties.
+                  At {portfolioScore}/100, you're in {portfolioData.certification} tier (top {portfolioScore < 65 ? 65 : portfolioScore < 75 ? 50 : portfolioScore < 85 ? 35 : portfolioScore < 90 ? 15 : 5}%). 
+                  {portfolioScore < 85 && ` You're ${85 - portfolioScore} points from Silver - focus on your weakest property.`}
+                  {portfolioScore >= 90 && ' Exceptional multi-property management!'}
                 </p>
               </div>
             </div>
