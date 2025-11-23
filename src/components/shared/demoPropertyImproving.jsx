@@ -218,6 +218,211 @@ export const DEMO_PROPERTY_IMPROVING = {
     }
   ],
 
+  preserveSchedules: [
+    {
+      id: 'demo-i-pres-001',
+      season: 'Recommended Interventions',
+      title: 'Strategic Life Extensions to Reach Silver (85+)',
+      description: 'These high-ROI interventions extend system life and move you toward Silver certification.',
+      interventions: [
+        {
+          id: 'pres-int-i-001',
+          system_id: 'demo-i-sys-001',
+          system_name: 'HVAC Furnace',
+          intervention: 'Add Bi-Annual Service Program',
+          description: 'Currently serviced once yearly. Upgrading to twice yearly extends furnace life 2-3 years.',
+          current_age_years: 13,
+          estimated_lifespan_without: 15,
+          estimated_lifespan_with: 18,
+          years_extended: 3,
+          investment_cost: 330,
+          replacement_cost_avoided: 7000,
+          roi_multiplier: 21.2,
+          frequency: 'Spring & Fall',
+          next_due: '2026-01-15',
+          status: 'Recommended',
+          why_worth_it: 'Doubles service frequency extends furnace 3 years. $330/year avoids $7K replacement.',
+          not_routine_because: 'Upgrade from annual to bi-annual is strategic preservation, not routine.'
+        },
+        {
+          id: 'pres-int-i-002',
+          system_id: 'demo-i-sys-002',
+          system_name: 'Water Heater',
+          intervention: 'Anode Rod Replacement + Anti-Scale Treatment',
+          description: 'Proactive anode replacement with scale treatment extends water heater 3+ years.',
+          current_age_years: 11,
+          estimated_lifespan_without: 12,
+          estimated_lifespan_with: 15,
+          years_extended: 3,
+          investment_cost: 380,
+          replacement_cost_avoided: 1500,
+          roi_multiplier: 3.9,
+          frequency: 'One-time intervention',
+          next_due: '2026-03-01',
+          status: 'High Priority',
+          why_worth_it: 'Water heater at end of life. $380 extends it 3 years, preventing emergency replacement.',
+          not_routine_because: 'Strategic anode replacement, not routine flush.'
+        },
+        {
+          id: 'pres-int-i-003',
+          system_id: 'demo-i-sys-006',
+          system_name: 'Crawlspace Foundation',
+          intervention: 'Vapor Barrier Replacement + Dehumidifier',
+          description: 'New vapor barrier + dehumidifier prevents moisture damage and extends foundation life.',
+          current_age_years: 15,
+          estimated_lifespan_without: 100,
+          estimated_lifespan_with: 100,
+          years_extended: 0,
+          investment_cost: 1200,
+          replacement_cost_avoided: 40000,
+          roi_multiplier: 33.3,
+          frequency: 'One-time intervention',
+          next_due: '2026-04-01',
+          status: 'Recommended',
+          why_worth_it: 'Prevents $15K-$40K foundation damage from moisture. Critical intervention.',
+          not_routine_because: 'Major structural preservation preventing cascade failure.'
+        }
+      ],
+      total_investment: 1910,
+      total_replacement_costs_avoided: 48500,
+      average_roi: 25.4,
+      why_preserve_matters: `
+        You're doing okay, but you're still vulnerable to surprises.
+        
+        🎯 The Bronze → Silver Gap:
+        • Bronze (78): You maintain reactively, some tracking
+        • Silver (85): You preserve strategically, nothing surprises you
+        
+        💡 These 3 Interventions:
+        • $1,910 investment
+        • Extends 3 major systems 3-6 years
+        • Prevents $8K-$15K in emergency replacements
+        • Moves you from "pretty good" to "dialed in"
+        
+        This is the difference between homeowner and strategic operator.
+      `
+    }
+  ],
+
+  upgradeProjects: [
+    {
+      id: 'demo-i-upg-001',
+      property_id: 'demo-improving-001',
+      title: 'Smart Thermostat + Leak Detectors',
+      category: 'Energy Efficiency',
+      description: 'Nest thermostat + 3 smart leak detectors for monitoring',
+      status: 'Planned',
+      priority: 7,
+      
+      budget: 420,
+      spent: 0,
+      remaining: 420,
+      
+      startDate: null,
+      targetCompletion: null,
+      
+      estimatedAnnualSavings: 280,
+      paybackPeriod: 1.5,
+      roi5Year: '233%',
+      
+      milestones: [
+        {
+          id: 'milestone-i1',
+          title: 'Purchase equipment',
+          status: 'pending',
+          targetDate: null,
+          cost: 420
+        },
+        {
+          id: 'milestone-i2',
+          title: 'Install thermostat',
+          status: 'pending',
+          targetDate: null,
+          cost: 0
+        },
+        {
+          id: 'milestone-i3',
+          title: 'Install leak detectors',
+          status: 'pending',
+          targetDate: null,
+          cost: 0
+        }
+      ],
+      
+      impactMetrics: {
+        hvacRuntime: '-15%',
+        monthlyEnergyCost: '-$23',
+        leakProtection: 'Added',
+        resaleValue: '+$1,200'
+      },
+      
+      notes: 'Quick win. Smart monitoring gives you visibility you currently lack.'
+    },
+    {
+      id: 'demo-i-upg-002',
+      property_id: 'demo-improving-001',
+      title: 'Crawlspace Encapsulation',
+      category: 'Preventive Replacements',
+      description: 'Full crawlspace encapsulation with vapor barrier and dehumidifier',
+      status: 'Identified',
+      priority: 9,
+      
+      budget: 3500,
+      spent: 0,
+      remaining: 3500,
+      
+      startDate: null,
+      targetCompletion: null,
+      
+      estimatedAnnualSavings: 180,
+      resaleValueIncrease: 5500,
+      roi: '157%',
+      
+      milestones: [
+        {
+          id: 'milestone-i4',
+          title: 'Get 3 contractor quotes',
+          status: 'pending',
+          targetDate: null,
+          cost: 0
+        },
+        {
+          id: 'milestone-i5',
+          title: 'Schedule installation',
+          status: 'pending',
+          targetDate: null,
+          cost: 0
+        },
+        {
+          id: 'milestone-i6',
+          title: 'Install system',
+          status: 'pending',
+          targetDate: null,
+          cost: 3500
+        }
+      ],
+      
+      why_worth_it: `
+        Your crawlspace moisture is a ticking time bomb.
+        
+        ⚠️ Current Risk:
+        • Moisture damages floor joists
+        • Mold growth (health hazard)
+        • Foundation integrity threatened
+        
+        💡 Solution:
+        • $3,500 one-time investment
+        • Prevents $15K-$40K foundation damage
+        • Improves indoor air quality
+        • Increases home value $5,500
+        
+        This is the upgrade that prevents the catastrophic repair.
+      `,
+      
+      notes: 'High priority. Prevents major structural damage. Do within 12 months.'
+    }
+  ],
+
   portfolioMetrics: {
     total_properties: 1,
     total_units: 1,

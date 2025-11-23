@@ -1,4 +1,3 @@
-
 // Investor Demo Data - 3-Property Portfolio
 import { getDemoDate, getDemoPastDate, getDemoFutureDate } from './demoDates';
 
@@ -2709,87 +2708,257 @@ export const DEMO_PORTFOLIO_INVESTOR = {
     {
       id: 'preserve-inv-1',
       property_id: 'demo-investor-1',
-      total_investment: 1450,
-      total_replacement_costs_avoided: 6200,
-      average_roi: 4.3,
+      season: 'Active Program',
+      title: 'Maple Street Duplex - Elite Preservation',
+      description: 'Ongoing strategic interventions maintaining Platinum performance and preventing all CapEx.',
+      total_investment: 1560,
+      total_replacement_costs_avoided: 19900,
+      average_roi: 12.8,
       interventions: [
         {
           id: 'int-p1-1',
+          system_id: 'sys-5',
           system_name: 'Water Heaters - Both Units',
-          intervention: 'Anode rod replacement program',
+          intervention: 'Anode Rod Replacement Program',
           description: 'Proactive anode replacement every 4-5 years extends tank life 3+ years',
+          current_age_years: 7,
+          estimated_lifespan_without: 10,
+          estimated_lifespan_with: 13,
+          years_extended: 3,
           investment_cost: 390,
           replacement_cost_avoided: 3000,
-          years_extended: 3,
           roi_multiplier: 7.7,
           frequency: 'Every 4-5 years',
-          status: 'Active - Ongoing',
-          why_worth_it: '$195 per unit extends life 3 years. Prevents mid-winter emergency replacements.',
+          next_due: '2028-09-10',
+          status: 'Completed - Ongoing Program',
+          why_worth_it: '$195 per unit extends life 3 years. Prevents mid-winter emergency replacements affecting tenants.',
           not_routine_because: 'Strategic preservation, not routine flushing.'
         },
         {
           id: 'int-p1-2',
+          system_id: 'sys-3',
           system_name: 'Roof System',
-          intervention: 'Preventive flashing maintenance',
-          description: 'Annual inspection and flashing seal maintenance',
+          intervention: 'Annual Professional Inspection + Preventive Flashing Maintenance',
+          description: 'Professional inspection and flashing seal maintenance prevents leaks and extends lifespan.',
+          current_age_years: 11,
+          estimated_lifespan_without: 35,
+          estimated_lifespan_with: 40,
+          years_extended: 5,
           investment_cost: 450,
-          replacement_cost_avoided: 3200,
-          years_extended: 3,
-          roi_multiplier: 7.1,
+          replacement_cost_avoided: 10500,
+          roi_multiplier: 23.3,
+          frequency: 'Annual',
+          next_due: '2026-09-20',
           status: 'Active - Ongoing',
-          why_worth_it: 'Small annual investment prevents major roof failures.',
+          why_worth_it: '$450/year prevents tenant-impacting roof failures. Already extended roof 5 years.',
           not_routine_because: 'Strategic flashing intervention extends capital asset life.'
         },
         {
           id: 'int-p1-3',
-          system_name: 'HVAC Systems',
-          intervention: 'Bi-annual professional maintenance',
-          description: 'Spring & fall tune-ups extend furnace life significantly',
-          investment_cost: 740,
+          system_id: 'sys-1',
+          system_name: 'HVAC Systems - Both Furnaces',
+          intervention: 'Bi-Annual Professional Maintenance Program',
+          description: 'Spring & fall tune-ups extend furnace life from 15 to 18+ years.',
+          current_age_years: 9,
+          estimated_lifespan_without: 15,
+          estimated_lifespan_with: 18,
+          years_extended: 3,
+          investment_cost: 370,
           replacement_cost_avoided: 8400,
-          years_extended: 2,
-          roi_multiplier: 11.4,
+          roi_multiplier: 22.7,
+          frequency: 'Twice yearly',
+          next_due: '2026-04-10',
           status: 'Active - Ongoing',
-          why_worth_it: 'Extended 15-year typical lifespan to 18 years through preventive care.',
+          why_worth_it: '$370/year for both units avoids $8,400 in replacements. Extended lifespan 2 years already.',
           not_routine_because: 'Professional preservation program, not just filter changes.'
         }
-      ]
+      ],
+      why_preserve_matters: `
+        Maple Street is your cash cow. PRESERVE keeps it that way.
+        
+        🏆 Why This Property Performs:
+        • 97 health score (Platinum)
+        • Zero emergency repairs in 2 years
+        • Tenants never call about breakdowns
+        • $1,100/mo cash flow
+        
+        💡 The Secret:
+        $1,560/year in strategic preservation prevents $19,900 in CapEx.
+        
+        This isn't maintenance - it's asset protection that prints money.
+      `
     },
     {
       id: 'preserve-inv-2',
+      property_id: 'demo-investor-2',
+      season: 'Recommended Program',
+      title: 'Oak Ridge - Bronze → Silver Interventions',
+      description: 'Strategic interventions to move from reactive (78) to proactive (85+).',
+      total_investment: 1480,
+      total_replacement_costs_avoided: 15200,
+      average_roi: 10.3,
+      interventions: [
+        {
+          id: 'int-p2-1',
+          system_id: 'sys-19',
+          system_name: 'Heat Pump',
+          intervention: 'Upgrade to Bi-Annual Service',
+          description: 'Currently serviced once yearly. Adding fall service extends aging heat pump 2-3 years.',
+          current_age_years: 20,
+          estimated_lifespan_without: 20,
+          estimated_lifespan_with: 23,
+          years_extended: 3,
+          investment_cost: 370,
+          replacement_cost_avoided: 7200,
+          roi_multiplier: 19.5,
+          frequency: 'Add fall service',
+          next_due: '2025-11-15',
+          status: 'Recommended',
+          why_worth_it: 'System already at end of typical life. $185 fall service could extend it 3 years.',
+          not_routine_because: 'Adding service frequency is strategic preservation.'
+        },
+        {
+          id: 'int-p2-2',
+          system_id: 'sys-22',
+          system_name: 'Water Heater',
+          intervention: 'Emergency Anode Replacement',
+          description: '9-year-old tank approaching failure. Anode replacement extends life 2-3 years.',
+          current_age_years: 9,
+          estimated_lifespan_without: 10,
+          estimated_lifespan_with: 13,
+          years_extended: 3,
+          investment_cost: 195,
+          replacement_cost_avoided: 1600,
+          roi_multiplier: 8.2,
+          frequency: 'One-time',
+          next_due: 'Within 60 days',
+          status: 'High Priority',
+          why_worth_it: '$195 buys 2-3 years, preventing mid-winter tenant emergency.',
+          not_routine_because: 'Strategic life extension on aging asset.'
+        },
+        {
+          id: 'int-p2-3',
+          system_id: 'sys-20',
+          system_name: 'Roof',
+          intervention: 'Roof Coating Application',
+          description: '20-year-old roof showing wear. Coating extends life 5-7 years, delays $11.5K replacement.',
+          current_age_years: 20,
+          estimated_lifespan_without: 23,
+          estimated_lifespan_with: 28,
+          years_extended: 5,
+          investment_cost: 1800,
+          replacement_cost_avoided: 11500,
+          roi_multiplier: 6.4,
+          frequency: 'One-time',
+          next_due: '2026-06-01',
+          status: 'Planned',
+          why_worth_it: '$1,800 extends roof 5 years = delays $11.5K replacement to 2028.',
+          not_routine_because: 'Strategic coating, not routine cleaning.'
+        }
+      ],
+      why_preserve_matters: `
+        Oak Ridge is Bronze (78). Here's how you reach Silver (85):
+        
+        📊 Current State:
+        • Reactive maintenance
+        • Some emergencies slip through
+        • $645/mo cash flow (okay but could be better)
+        
+        💡 With PRESERVE:
+        • $1,480 investment extends 3 systems 11 years total
+        • Prevents $15,200 in CapEx
+        • Moves from Bronze → Silver
+        • Increases cash flow by reducing surprises
+        
+        This is the difference between "landlord" and "operator."
+      `
+    },
+    {
+      id: 'preserve-inv-3',
       property_id: 'demo-investor-3',
-      total_investment: 3400,
-      total_replacement_costs_avoided: 24500,
-      average_roi: 7.2,
+      season: 'Emergency Triage',
+      title: 'Cedar Court - Stop the Bleeding',
+      description: 'URGENT interventions to prevent cascade failures and stabilize this struggling asset.',
+      total_investment: 5200,
+      total_replacement_costs_avoided: 40500,
+      average_roi: 7.8,
       interventions: [
         {
           id: 'int-p3-1',
+          system_id: 'sys-36',
           system_name: 'Roof System',
-          intervention: 'Roof coating + targeted repairs',
-          description: '22-year-old roof showing wear. Coating extends life 5-7 years and seals minor leaks.',
-          investment_cost: 2400,
-          replacement_cost_avoided: 16500,
+          intervention: 'EMERGENCY Roof Coating + Leak Repair',
+          description: '22-year-old roof with active leak in Unit 2C. Coating + targeted repair extends life 5-6 years, prevents interior damage cascade.',
+          current_age_years: 22,
+          estimated_lifespan_without: 22,
+          estimated_lifespan_with: 28,
           years_extended: 6,
-          roi_multiplier: 6.9,
-          frequency: 'One-time',
-          status: 'Recommended - High Priority',
-          why_worth_it: '$2,400 now extends roof 6 years = delays $16,500 replacement. Prevents interior water damage.',
-          not_routine_because: 'Strategic coating intervention, not routine maintenance.'
+          investment_cost: 3200,
+          replacement_cost_avoided: 16500,
+          roi_multiplier: 5.2,
+          frequency: 'IMMEDIATE',
+          next_due: 'ASAP - Active leak',
+          status: 'CRITICAL URGENCY',
+          why_worth_it: 'Active leak = $8K-$15K interior damage cascade across 4 units. $3,200 stops it NOW and buys 6 years.',
+          not_routine_because: 'Emergency intervention preventing catastrophic multi-unit cascade.'
         },
         {
           id: 'int-p3-2',
+          system_id: 'sys-35',
           system_name: 'HVAC System',
-          intervention: 'Zone control upgrade',
-          description: '39-year-old system still works. Adding zones reduces strain, extends life 3-4 years.',
-          investment_cost: 1000,
-          replacement_cost_avoided: 8000,
+          intervention: 'Zone Control + Deep Service (Last Resort Extension)',
+          description: '39-year-old furnace is living on borrowed time. Zone control reduces strain, could extend 2-3 years while you save for replacement.',
+          current_age_years: 39,
+          estimated_lifespan_without: 40,
+          estimated_lifespan_with: 43,
           years_extended: 3,
-          roi_multiplier: 8.0,
-          status: 'Planned',
-          why_worth_it: 'Delays $22K replacement 3-4 years. Also saves $400/year energy.',
-          not_routine_because: 'Capital preservation upgrade, not routine filter change.'
+          investment_cost: 1200,
+          replacement_cost_avoided: 22000,
+          roi_multiplier: 18.3,
+          frequency: 'One-time emergency extension',
+          next_due: 'Spring 2026',
+          status: 'High Priority',
+          why_worth_it: '$1,200 buys 2-3 years to save for $22K replacement. Also cuts heating bills $400/year.',
+          not_routine_because: 'Emergency life extension on dying asset.'
+        },
+        {
+          id: 'int-p3-3',
+          system_id: 'sys-38',
+          system_name: 'Plumbing System',
+          intervention: 'Camera Inspection + Targeted Copper Re-pipe',
+          description: 'Galvanized pipes at risk. Camera identifies worst sections for targeted copper replacement.',
+          current_age_years: 40,
+          estimated_lifespan_without: 50,
+          estimated_lifespan_with: 50,
+          years_extended: 0,
+          investment_cost: 800,
+          replacement_cost_avoided: 14000,
+          roi_multiplier: 17.5,
+          frequency: 'One-time assessment + targeted fix',
+          next_due: '2026-02-01',
+          status: 'Recommended',
+          why_worth_it: '$800 inspection identifies problem areas. Prevents $14K emergency re-pipe.',
+          not_routine_because: 'Strategic assessment preventing catastrophic failure.'
         }
-      ]
+      ],
+      why_preserve_matters: `
+        Cedar Court is bleeding cash through emergency repairs.
+        
+        🚨 The Problem:
+        • 62 health score (Fair)
+        • $270/mo cash flow (terrible for 4-plex)
+        • Emergency calls weekly
+        • Reactive repairs costing $8K-$12K/year
+        
+        💡 PRESERVE = Triage:
+        • $5,200 URGENT investment
+        • Prevents $40,500 in cascade failures
+        • Stabilizes the asset
+        • Buys time to save for major CapEx
+        
+        This isn't about perfection - it's about stopping the emergency cycle.
+        Transform from fire drill to strategic operator.
+      `
     }
   ],
 

@@ -715,51 +715,268 @@ export const DEMO_PROPERTY_EXCELLENT = {
 
   preserveSchedules: [
     {
-      id: 'demo-e-preserve-001',
-      property_id: 'demo-excellent-001',
-      system_id: 'demo-e-sys-001',
-      intervention_type: 'Life Extension',
-      title: 'HVAC Bi-Annual Service Program',
-      description: 'Professional maintenance twice yearly to maximize heat pump lifespan',
-      investment_cost: 330,
-      replacement_cost_avoided: 8500,
-      years_extended: 3,
-      roi_multiple: 25.8,
-      status: 'Active - Ongoing',
-      started_date: '2023-04-15',
-      notes: 'Extended typical 12-year lifespan to 15 years through consistent preventive care.'
-    },
-    {
-      id: 'demo-e-preserve-002',
-      property_id: 'demo-excellent-001',
-      system_id: 'demo-e-sys-002',
-      intervention_type: 'Preventive Repair',
-      title: 'Water Heater Anode Rod Replacement',
-      description: 'Proactive anode rod replacement before failure',
-      investment_cost: 195,
-      replacement_cost_avoided: 2000,
-      years_extended: 2,
-      roi_multiple: 10.3,
-      status: 'Completed',
-      completed_date: '2024-03-10',
-      notes: 'Prevented tank corrosion. Extended water heater life by 2-3 years.'
-    },
-    {
-      id: 'demo-e-preserve-003',
-      property_id: 'demo-excellent-001',
-      system_id: 'demo-e-sys-003',
-      intervention_type: 'Life Extension',
-      title: 'Annual Roof Maintenance Program',
-      description: 'Professional inspection, moss treatment, and minor repairs',
-      investment_cost: 500,
-      replacement_cost_avoided: 12000,
-      years_extended: 5,
-      roi_multiple: 24.0,
-      status: 'Active - Ongoing',
-      started_date: '2023-09-20',
-      notes: 'Extended typical 25-year roof to 30+ years through preventive care.'
+      id: 'demo-e-preserve-full',
+      season: 'Ongoing Excellence Program',
+      title: 'Elite-Level Strategic Preservation',
+      description: 'Systematic life extension interventions maintaining Gold standard and preventing all major replacements.',
+      interventions: [
+        {
+          id: 'pres-int-e-001',
+          system_id: 'demo-e-sys-001',
+          system_name: 'HVAC Heat Pump',
+          intervention: 'Bi-Annual Professional Service Program',
+          description: 'Spring & Fall deep service keeps heat pump running at 98% efficiency, extending life from 12 to 15+ years.',
+          current_age_years: 8,
+          estimated_lifespan_without: 12,
+          estimated_lifespan_with: 15,
+          years_extended: 3,
+          investment_cost: 330,
+          replacement_cost_avoided: 8500,
+          roi_multiplier: 25.8,
+          frequency: 'Twice yearly',
+          next_due: '2026-04-10',
+          status: 'Active - Ongoing',
+          why_worth_it: '$330/year avoids $8,500 replacement. Extended lifespan 3 years already.',
+          not_routine_because: 'Professional preservation program, not routine filter changes.'
+        },
+        {
+          id: 'pres-int-e-002',
+          system_id: 'demo-e-sys-002',
+          system_name: 'Water Heater',
+          intervention: 'Proactive Anode Rod Replacement',
+          description: 'Replaced anode rod in 2024 at 4-year mark, preventing tank corrosion and extending life 2-3 years.',
+          current_age_years: 5,
+          estimated_lifespan_without: 10,
+          estimated_lifespan_with: 13,
+          years_extended: 3,
+          investment_cost: 195,
+          replacement_cost_avoided: 2000,
+          roi_multiplier: 10.3,
+          frequency: 'Every 4-5 years',
+          next_due: '2028-09-15',
+          status: 'Completed',
+          why_worth_it: '$195 extends water heater life 2-3 years beyond typical 10-year lifespan.',
+          not_routine_because: 'Strategic replacement that extends asset life, not routine flush.'
+        },
+        {
+          id: 'pres-int-e-003',
+          system_id: 'demo-e-sys-003',
+          system_name: 'Roof System',
+          intervention: 'Annual Professional Inspection + Moss Treatment',
+          description: 'Annual inspection, moss treatment, minor flashing repairs extend roof from 25 to 30+ years.',
+          current_age_years: 10,
+          estimated_lifespan_without: 25,
+          estimated_lifespan_with: 32,
+          years_extended: 7,
+          investment_cost: 500,
+          replacement_cost_avoided: 12000,
+          roi_multiplier: 24.0,
+          frequency: 'Annual',
+          next_due: '2026-09-20',
+          status: 'Active - Ongoing',
+          why_worth_it: '$500/year extends $12K roof 7 years. Already extended lifespan 5 years.',
+          not_routine_because: 'Professional preservation program beyond gutter cleaning.'
+        },
+        {
+          id: 'pres-int-e-004',
+          system_id: 'demo-e-sys-007',
+          system_name: 'Gutter System',
+          intervention: 'Gutter Guard Installation (Completed 2023)',
+          description: 'Installed premium guards reducing cleaning from 4x/year to 1x/year, preventing overflow damage.',
+          current_age_years: 10,
+          estimated_lifespan_without: 20,
+          estimated_lifespan_with: 28,
+          years_extended: 8,
+          investment_cost: 1800,
+          replacement_cost_avoided: 2200,
+          roi_multiplier: 1.2,
+          frequency: 'One-time',
+          next_due: 'N/A - Completed',
+          status: 'Completed',
+          why_worth_it: 'Also prevents $5K+ foundation damage from overflows. Time savings = $400/year.',
+          not_routine_because: 'Capital upgrade preventing cascade failures.'
+        }
+      ],
+      total_investment: 2825,
+      total_replacement_costs_avoided: 24700,
+      average_roi: 8.7,
+      why_preserve_matters: `
+        You're Gold certified (92). How do you stay there?
+        
+        🏆 Elite Preservation Strategy:
+        • Not reacting - you're preventing
+        • Not maintaining - you're extending
+        • Not spending - you're investing
+        
+        💡 Your Current Program:
+        • $2,825/year in strategic interventions
+        • Avoided $24,700 in replacements
+        • Extended major systems 21 years total
+        • ROI: 8.7x average
+        
+        This is what separates good homeowners from elite operators.
+        You're not just maintaining - you're protecting $550K in property value.
+      `
     }
   ],
+
+  upgradeProjects: [
+    {
+      id: 'demo-e-upg-001',
+      property_id: 'demo-excellent-001',
+      title: 'Whole-House Surge Protection',
+      category: 'Safety',
+      description: 'Professional-grade surge protection at main panel + point-of-use protection',
+      status: 'Completed',
+      priority: 8,
+      
+      budget: 950,
+      spent: 925,
+      remaining: 25,
+      
+      startDate: '2024-03-10',
+      targetCompletion: '2024-03-15',
+      actualCompletion: '2024-03-14',
+      
+      estimatedAnnualSavings: 0,
+      resaleValueIncrease: 1200,
+      
+      milestones: [
+        {
+          id: 'milestone-e1',
+          title: 'Get electrician quotes',
+          status: 'completed',
+          completedDate: '2024-02-28',
+          cost: 0
+        },
+        {
+          id: 'milestone-e2',
+          title: 'Schedule installation',
+          status: 'completed',
+          completedDate: '2024-03-05',
+          cost: 0
+        },
+        {
+          id: 'milestone-e3',
+          title: 'Install main panel surge protector',
+          status: 'completed',
+          completedDate: '2024-03-14',
+          cost: 625
+        },
+        {
+          id: 'milestone-e4',
+          title: 'Install point-of-use protectors',
+          status: 'completed',
+          completedDate: '2024-03-14',
+          cost: 300
+        }
+      ],
+      
+      impactMetrics: {
+        protection: 'HVAC, electronics, appliances',
+        insuranceDiscount: 'Potential 2-5%',
+        resaleValue: '+$1,200',
+        peaceOfMind: 'High'
+      },
+      
+      why_worth_it: `
+        You have $15K+ in smart appliances and electronics.
+        
+        ⚡ Risk Without Protection:
+        • Lightning strike = $8K-$15K damage
+        • Power surge destroys HVAC board ($2,500)
+        • Ruins smart devices, TVs, computers
+        
+        💡 Solution:
+        • $925 one-time investment
+        • Protects $15K+ in equipment
+        • Potential insurance discount
+        • Platinum-level protection
+        
+        Elite homes have elite protection. This is how you stay Gold.
+      `,
+      
+      notes: 'Completed under budget. Peace of mind during Pacific NW storms.'
+    },
+    {
+      id: 'demo-e-upg-002',
+      property_id: 'demo-excellent-001',
+      title: 'Advanced Water Leak Detection System',
+      category: 'Safety',
+      description: 'Flo by Moen whole-house water monitoring with auto-shutoff',
+      status: 'In Progress',
+      priority: 8,
+      
+      budget: 850,
+      spent: 750,
+      remaining: 100,
+      
+      startDate: '2025-11-01',
+      targetCompletion: '2025-12-15',
+      
+      estimatedAnnualSavings: 0,
+      resaleValueIncrease: 1800,
+      
+      milestones: [
+        {
+          id: 'milestone-e5',
+          title: 'Research systems',
+          status: 'completed',
+          completedDate: '2025-10-20',
+          cost: 0
+        },
+        {
+          id: 'milestone-e6',
+          title: 'Purchase Flo system',
+          status: 'completed',
+          completedDate: '2025-11-05',
+          cost: 600
+        },
+        {
+          id: 'milestone-e7',
+          title: 'Professional installation',
+          status: 'in-progress',
+          targetDate: '2025-12-10',
+          cost: 250
+        },
+        {
+          id: 'milestone-e8',
+          title: 'Configure alerts',
+          status: 'pending',
+          targetDate: '2025-12-15',
+          cost: 0
+        }
+      ],
+      
+      impactMetrics: {
+        leakDetection: '24/7 monitoring',
+        autoShutoff: 'Prevents $50K floods',
+        insuranceDiscount: 'Up to 10%',
+        resaleValue: '+$1,800'
+      },
+      
+      why_worth_it: `
+        Water damage is the #1 homeowner fear.
+        
+        🚰 What This Prevents:
+        • Toilet supply line bursts while you're at work ($8K damage)
+        • Water heater leak floods basement ($12K)
+        • Washing machine hose failure ($15K)
+        
+        💡 Flo System:
+        • Detects leaks in real-time
+        • Auto-shuts off water to prevent flooding
+        • Monitors usage patterns
+        • Insurance discount up to 10%
+        
+        Elite protection for an elite property.
+      `,
+      
+      notes: 'Installation scheduled Dec 10. This is Platinum-level infrastructure.'
+    }
+  ],
+
+  portfolioMetrics: {
 
   portfolioMetrics: {
     total_properties: 1,
