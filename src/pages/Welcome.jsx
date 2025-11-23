@@ -53,12 +53,8 @@ export default function Welcome() {
         <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-12">
           
           {/* Card 1 - The Overwhelmed Owner */}
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry') + '?userType=homeowner&scoreLevel=struggling')}
-            className="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 p-6 md:p-8 text-left transition-all hover:shadow-xl group"
-            style={{ minHeight: '48px' }}
-          >
-            <div className="flex items-start gap-4 mb-4">
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-6 md:p-8">
+            <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Home className="w-6 h-6 text-red-600" />
               </div>
@@ -84,19 +80,11 @@ export default function Welcome() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-              <span className="text-blue-600 font-semibold group-hover:text-blue-700">See This Journey</span>
-              <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+          </div>
 
           {/* Card 2 - The Organized Owner */}
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry') + '?userType=homeowner&scoreLevel=improving')}
-            className="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 p-6 md:p-8 text-left transition-all hover:shadow-xl group"
-            style={{ minHeight: '48px' }}
-          >
-            <div className="flex items-start gap-4 mb-4">
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-6 md:p-8">
+            <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Shield className="w-6 h-6 text-orange-600" />
               </div>
@@ -122,19 +110,11 @@ export default function Welcome() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-              <span className="text-blue-600 font-semibold group-hover:text-blue-700">See This Journey</span>
-              <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+          </div>
 
           {/* Card 3 - The Elite Owner */}
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry') + '?userType=homeowner&scoreLevel=excellent')}
-            className="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 p-6 md:p-8 text-left transition-all hover:shadow-xl group"
-            style={{ minHeight: '48px' }}
-          >
-            <div className="flex items-start gap-4 mb-4">
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-6 md:p-8">
+            <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Award className="w-6 h-6 text-green-600" />
               </div>
@@ -160,19 +140,11 @@ export default function Welcome() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-              <span className="text-blue-600 font-semibold group-hover:text-blue-700">See This Journey</span>
-              <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+          </div>
 
           {/* Card 4 - The Portfolio Builder */}
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry') + '?userType=investor')}
-            className="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 p-6 md:p-8 text-left transition-all hover:shadow-xl group"
-            style={{ minHeight: '48px' }}
-          >
-            <div className="flex items-start gap-4 mb-4">
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-6 md:p-8">
+            <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Briefcase className="w-6 h-6 text-purple-600" />
               </div>
@@ -198,11 +170,7 @@ export default function Welcome() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-              <span className="text-blue-600 font-semibold group-hover:text-blue-700">See This Journey</span>
-              <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
+          </div>
 
         </div>
 
