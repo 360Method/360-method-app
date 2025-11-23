@@ -37,7 +37,7 @@ export const NAVIGATION_STRUCTURE = [
         label: "360° Score", 
         subtitle: "View & share report", 
         icon: Award,
-        url: createPageUrl("PropertyScore")
+        url: createPageUrl("Score360")
       },
       { 
         id: "resources",
