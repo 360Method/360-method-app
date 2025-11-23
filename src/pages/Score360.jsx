@@ -113,8 +113,147 @@ export default function Score360() {
         </div>
       </div>
       
+      {/* Print-Only One-Page Summary */}
+      <div className="hidden print:block print:p-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Compact Header */}
+          <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">360° Property Score</h1>
+              <p className="text-sm text-gray-600">Official Maintenance Certificate</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Report Date</p>
+              <p className="text-sm font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+          </div>
+
+          {/* Property & Score - Compact */}
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{propertyName}</h2>
+              <p className="text-sm text-gray-600">{propertyAddress}</p>
+              <p className="text-sm text-gray-600">{propertyType} • Built {yearBuilt} • {parseInt(sqft).toLocaleString()} sq ft</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 uppercase mb-1">Overall Score</p>
+              <p className="text-5xl font-bold text-gray-900">{score}<span className="text-2xl text-gray-400">/100</span></p>
+              <div 
+                className="inline-block mt-2 px-4 py-1 text-sm font-bold rounded-full text-white"
+                style={{
+                  backgroundColor: score >= 96 ? '#9333EA' : score >= 90 ? '#EAB308' : score >= 85 ? '#6B7280' : score >= 75 ? '#D97706' : '#9CA3AF'
+                }}
+              >
+                {cert.stars} {cert.level} {score >= 75 ? 'Certified' : ''}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{cert.text}</p>
+            </div>
+          </div>
+
+          {/* Key Metrics - Compact Grid */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+              <p className="text-xs font-semibold text-green-700 uppercase">Maintenance Level</p>
+              <p className="text-sm font-bold text-gray-900">{score >= 90 ? 'Elite' : score >= 75 ? 'Systematic' : score >= 65 ? 'Developing' : 'Reactive'}</p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-xs font-semibold text-blue-700 uppercase">Risk Level</p>
+              <p className="text-sm font-bold text-gray-900">{score >= 85 ? 'Low Risk' : score >= 70 ? 'Moderate' : 'High Risk'}</p>
+            </div>
+            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+              <p className="text-xs font-semibold text-purple-700 uppercase">Percentile</p>
+              <p className="text-sm font-bold text-gray-900">Better than {score < 65 ? 35 : score < 75 ? 50 : score < 85 ? 65 : score < 90 ? 85 : 95}%</p>
+            </div>
+          </div>
+
+          {/* Phase Breakdown - Compact */}
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">Score Breakdown</h3>
+            <div className="space-y-2">
+              {phases.map((phase, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="w-32 text-xs font-semibold text-gray-700">{phase.name}</div>
+                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full"
+                      style={{ 
+                        width: `${(phase.score / phase.max) * 100}%`,
+                        background: idx === 0 ? '#3B82F6' : idx === 1 ? '#16A34A' : '#9333EA'
+                      }}
+                    />
+                  </div>
+                  <div className="w-16 text-right text-sm font-bold text-gray-900">{phase.score}/{phase.max}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Benefits or Next Steps - Compact */}
+          {score >= 75 ? (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">Certified Benefits</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">Potential insurance benefits</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">Improved marketability</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">Enhanced property value</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-700">Fewer surprise repairs</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">Path to Certification (75+)</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                  <span className="text-gray-700">Complete system documentation</span>
+                  <span className="font-semibold text-gray-900">+{Math.min(75 - score, 25)} pts</span>
+                </div>
+                <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                  <span className="text-gray-700">Schedule regular inspections</span>
+                  <span className="font-semibold text-gray-900">+{Math.min(Math.max(75 - score - 25, 0), 15)} pts</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-4 text-xs mb-3">
+              <div>
+                <p className="text-gray-500 uppercase">Issued By</p>
+                <p className="font-semibold text-gray-900">360° Method</p>
+              </div>
+              <div>
+                <p className="text-gray-500 uppercase">Certificate ID</p>
+                <p className="font-mono font-semibold text-gray-900">{propertyAddress.replace(/\s/g, '').substring(0, 6).toUpperCase()}-{score}-{new Date().getFullYear()}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 uppercase">Valid Through</p>
+                <p className="font-semibold text-gray-900">{new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+              </div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+              <p className="text-xs text-gray-600 leading-relaxed">
+                <strong>Disclaimers:</strong> Estimates and benefits shown are approximations and may vary based on property, location, and individual circumstances. Insurance benefits not guaranteed. For informational purposes only.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Printable Professional Report */}
-      <div ref={printRef} className="max-w-5xl mx-auto p-4 md:p-8 print:p-12 print:max-w-none">
+      <div ref={printRef} className="max-w-5xl mx-auto p-4 md:p-8 print:hidden">
         
         {/* Professional Header - Streamlined */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 md:p-8 rounded-2xl shadow-xl mb-6 print:rounded-none">
@@ -955,10 +1094,16 @@ export default function Score360() {
           }
           @page {
             size: letter;
-            margin: 0.75in;
+            margin: 0.5in;
           }
           .print\\:hidden {
             display: none !important;
+          }
+          .print\\:block {
+            display: block !important;
+          }
+          .print\\:p-8 {
+            padding: 2rem !important;
           }
           .print\\:p-12 {
             padding: 3rem !important;
