@@ -952,6 +952,29 @@ export default function Baseline() {
                 <p className="text-sm text-gray-700 mb-6">
                   Complete <span className="font-bold">4 of these {REQUIRED_SYSTEMS.length} essential systems</span> to unlock the ACT phase.
                 </p>
+                {demoMode && (
+                  <Card className="border-2 border-blue-300 bg-blue-50 mb-6">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Wrench className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-blue-900 mb-2">Need Help?</p>
+                          <p className="text-sm text-gray-700 mb-3">
+                            Reach out to your local 360° Operator for professional documentation services.
+                          </p>
+                          <Button
+                            onClick={() => window.location.href = createPageUrl('Waitlist')}
+                            variant="outline"
+                            size="sm"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                          >
+                            Find a Local Operator
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                  {REQUIRED_SYSTEMS.map((systemType, idx) => {
                    const instances = systemsByType[systemType] || [];
