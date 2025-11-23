@@ -310,6 +310,9 @@ export default function DemoPortfolio() {
                 Try Another Demo
               </Button>
             </div>
+            <p className="text-xs opacity-75 mt-6">
+              Demo uses hypothetical portfolio data. Actual scores, ROI, loan terms, and savings vary by portfolio, market, and lender.
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -802,13 +802,13 @@ export default function Score360() {
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-300">
                   <div className="flex items-center gap-3 mb-3">
                     <Shield className="w-8 h-8 text-green-600" />
-                    <p className="font-bold text-gray-900 text-lg">Insurance Discount</p>
+                    <p className="font-bold text-gray-900 text-lg">Insurance Benefits</p>
                   </div>
                   <p className="text-4xl font-bold text-green-700 mb-1">
-                    {score >= 90 ? '15%' : score >= 85 ? '10%' : '5%'}
+                    {score >= 90 ? 'Premium' : score >= 85 ? 'Strong' : 'Good'}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Save ${score >= 90 ? '300-500' : score >= 85 ? '200-300' : '100-200'}/year
+                    May qualify for lower premiums
                   </p>
                 </div>
 
@@ -853,12 +853,12 @@ export default function Score360() {
               </div>
 
               <div className="mt-6 p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl">
-                <p className="text-sm opacity-90 mb-1">Total Annual Value</p>
+                <p className="text-sm opacity-90 mb-1">Estimated Annual Value</p>
                 <p className="text-3xl md:text-4xl font-bold mb-2">
                   ${score >= 90 ? '5,000-10,000' : score >= 85 ? '3,000-6,000' : '2,000-4,000'}+
                 </p>
                 <p className="text-sm opacity-90">
-                  Combined insurance savings, prevented repairs, and property value gains
+                  Est. prevented repairs, potential insurance benefits, and property value gains
                 </p>
               </div>
             </CardContent>
@@ -899,19 +899,19 @@ export default function Score360() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    <span>5% insurance discount</span>
+                    <span>Potential insurance benefits</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    <span>Faster sale (15-20 days)</span>
+                    <span>Faster sale potential</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    <span>+2-3% property value</span>
+                    <span>Improved property value</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    <span>60% fewer emergencies</span>
+                    <span>Fewer surprise repairs</span>
                   </div>
                 </div>
               </div>
@@ -939,6 +939,11 @@ export default function Score360() {
             This score reflects your property's maintenance practices and system health as of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. 
             Annual recertification recommended.
           </p>
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-gray-600 leading-relaxed">
+              <strong className="text-gray-900">Important Disclaimers:</strong> All estimates, savings projections, and benefits shown are approximations based on industry research and may vary significantly based on your specific property, location, insurance provider, and individual circumstances. Insurance benefits are not guaranteed and depend on your insurer's policies. Property value impacts and sale timelines are estimates only. Actual results may differ. This certificate is for informational purposes and does not constitute financial, insurance, or real estate advice.
+            </p>
+          </div>
         </div>
       </div>
       

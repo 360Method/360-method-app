@@ -479,6 +479,9 @@ export default function DemoExcellent() {
                 Try Another Demo
               </Button>
             </div>
+            <p className="text-xs opacity-75 mt-6">
+              Demo uses hypothetical data. Actual results, timelines, and benefits vary by property and individual circumstances.
+            </p>
           </CardContent>
         </Card>
       </div>
