@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award, ChevronDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,13 +11,20 @@ import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStrugg
 import { DEMO_PROPERTY_IMPROVING } from "@/components/shared/demoPropertyImproving";
 import { DEMO_PROPERTY_EXCELLENT } from "@/components/shared/demoPropertyExcellent";
 import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Score360() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const printRef = useRef(null);
   
   const propertyId = searchParams.get('property_id');
+  const portfolioView = searchParams.get('portfolio') === 'true';
   
   const handleBack = () => {
     if (propertyId?.startsWith('demo-')) {
