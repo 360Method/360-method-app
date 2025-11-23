@@ -63,10 +63,11 @@ export default function DemoStruggling() {
           <Button
             variant="ghost"
             onClick={() => navigate(createPageUrl('DemoEntry'))}
-            className="mb-6"
+            className="mb-6 hover:bg-gray-100"
+            style={{ minHeight: '44px', minWidth: '44px' }}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Demo Selection
+            <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 mr-2" />
+            <span className="text-base md:text-sm">Back to Demo Selection</span>
           </Button>
         </div>
         
