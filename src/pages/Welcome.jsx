@@ -171,6 +171,19 @@ export default function Welcome() {
           </div>
 
         </div>
+        
+        {/* Bottom CTA */}
+        <div className="text-center pb-12">
+          <p className="text-gray-600 mb-6 text-lg">
+            Ready to see how the 360° Method works?
+          </p>
+          <button
+            onClick={() => navigate(createPageUrl('DemoEntry'))}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg inline-flex items-center gap-2"
+          >
+            Explore the Demo →
+          </button>
+        </div>
 
       </div>
     </div>
