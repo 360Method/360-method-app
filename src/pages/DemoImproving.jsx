@@ -371,9 +371,9 @@ export default function DemoImproving() {
         {/* CTA Section */}
         <Card className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">
           <CardContent className="p-8 text-center">
-            <h2 className="text-3xl font-bold mb-3">Ready to Build Your Score?</h2>
+            <h2 className="text-3xl font-bold mb-3">Ready to Achieve Excellence?</h2>
             <p className="text-lg mb-6 opacity-90">
-              Join the waitlist to track your property's score and earn certifications
+              Join the waitlist to start your journey to elite property maintenance
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -392,7 +392,7 @@ export default function DemoImproving() {
               </Button>
             </div>
             <p className="text-xs opacity-75 mt-6">
-              Demo uses hypothetical data. Actual scores, costs, timelines, and benefits vary by property and circumstances.
+              Demo uses hypothetical data. Actual results, timelines, and benefits vary by property and individual circumstances.
             </p>
           </CardContent>
         </Card>

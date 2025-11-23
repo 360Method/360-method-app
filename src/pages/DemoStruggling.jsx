@@ -688,42 +688,34 @@ export default function DemoStruggling() {
           </div>
         </div>
         
-        {/* SECTION 9: THE CALL TO ACTION */}
-        <div className="py-16 px-8 bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Go From 62 to 75?</h2>
-            
-            <p className="text-lg mb-8 opacity-90">
-              We're launching in Clark County. Join the waitlist now.
+        {/* CTA Section */}
+        <Card className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-3xl font-bold mb-3">Ready to Achieve Excellence?</h2>
+            <p className="text-lg mb-6 opacity-90">
+              Join the waitlist to start your journey to elite property maintenance
             </p>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/20">
-              <p className="font-bold mb-4">When you join, you'll get:</p>
-              <ul className="space-y-3 text-sm text-left max-w-md mx-auto">
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <span>Your actual starting score</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <span>Your personalized 3-step plan</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <span>First access when we launch</span>
-                </li>
-              </ul>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold"
+                onClick={() => navigate(createPageUrl('Waitlist'))}
+              >
+                Join Waitlist
+              </Button>
+              <Button 
+                size="lg"
+                className="bg-white/20 backdrop-blur-sm border-2 border-white text-white hover:bg-white/30 font-semibold"
+                onClick={() => navigate(createPageUrl('DemoEntry'))}
+              >
+                Try Another Demo
+              </Button>
             </div>
-            
-            <Button 
-              size="lg"
-              onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold text-xl px-12 py-6 rounded-full shadow-2xl"
-            >
-              Join Waitlist
-            </Button>
-          </div>
-        </div>
+            <p className="text-xs opacity-75 mt-6">
+              Demo uses hypothetical data. Actual results, timelines, and benefits vary by property and individual circumstances.
+            </p>
+          </CardContent>
+        </Card>
       </div>
       
       <style>{`

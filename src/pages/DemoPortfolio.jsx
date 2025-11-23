@@ -292,9 +292,9 @@ export default function DemoPortfolio() {
         {/* CTA Section */}
         <Card className="bg-gradient-to-br from-blue-600 to-purple-600 text-white">
           <CardContent className="p-8 text-center">
-            <h2 className="text-3xl font-bold mb-3">Ready to Scale Your Portfolio?</h2>
+            <h2 className="text-3xl font-bold mb-3">Ready to Achieve Excellence?</h2>
             <p className="text-lg mb-6 opacity-90">
-              Join the waitlist to get your portfolio scored and start managing properties like a pro
+              Join the waitlist to start your journey to elite property maintenance
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -313,7 +313,7 @@ export default function DemoPortfolio() {
               </Button>
             </div>
             <p className="text-xs opacity-75 mt-6">
-              Demo uses hypothetical portfolio data. Actual scores, ROI, loan terms, and savings vary by portfolio, market, and lender.
+              Demo uses hypothetical data. Actual results, timelines, and benefits vary by property and individual circumstances.
             </p>
           </CardContent>
         </Card>
