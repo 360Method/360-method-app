@@ -40,9 +40,11 @@ export default function Score360() {
     if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
     if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;
     if (propertyId === 'demo-excellent-001') return DEMO_PROPERTY_EXCELLENT.property;
-    if (propertyId === 'demo-investor-1') return DEMO_PORTFOLIO_INVESTOR.properties[0];
-    if (propertyId === 'demo-investor-2') return DEMO_PORTFOLIO_INVESTOR.properties[1];
-    if (propertyId === 'demo-investor-3') return DEMO_PORTFOLIO_INVESTOR.properties[2];
+
+    // Portfolio investor properties
+    const portfolioProperty = DEMO_PORTFOLIO_INVESTOR.properties.find(p => p.id === propertyId);
+    if (portfolioProperty) return portfolioProperty;
+
     return null;
   };
   
