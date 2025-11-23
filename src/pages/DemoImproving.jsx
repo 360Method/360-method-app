@@ -289,27 +289,27 @@ export default function DemoImproving() {
         {/* What You Get at Silver */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">What You Get at Silver (85+)</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Potential Benefits at Silver (85+)</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
                 <div className="text-2xl">💰</div>
                 <div>
-                  <p className="font-semibold text-gray-900">10% Insurance Discount</p>
-                  <p className="text-sm text-gray-600">Average savings: $200-400/year</p>
+                  <p className="font-semibold text-gray-900">Potential Insurance Benefits</p>
+                  <p className="text-sm text-gray-600">May qualify for lower premiums</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="text-2xl">🏠</div>
                 <div>
-                  <p className="font-semibold text-gray-900">Faster Home Sale</p>
-                  <p className="text-sm text-gray-600">Sell 15-20 days faster</p>
+                  <p className="font-semibold text-gray-900">Improved Marketability</p>
+                  <p className="text-sm text-gray-600">Faster sale potential</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="text-2xl">📈</div>
                 <div>
-                  <p className="font-semibold text-gray-900">Higher Home Value</p>
-                  <p className="text-sm text-gray-600">3-5% value increase</p>
+                  <p className="font-semibold text-gray-900">Property Value</p>
+                  <p className="text-sm text-gray-600">Enhanced value positioning</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -391,6 +391,9 @@ export default function DemoImproving() {
                 Try Another Demo
               </Button>
             </div>
+            <p className="text-xs opacity-75 mt-6">
+              Demo uses hypothetical data. Actual scores, costs, timelines, and benefits vary by property and circumstances.
+            </p>
           </CardContent>
         </Card>
       </div>
