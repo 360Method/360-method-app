@@ -41,6 +41,7 @@ function LayoutContent({ children }) {
   const location = useLocation();
   const { demoMode } = useDemo();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
     "Phase I: AWARE": false,
     "Phase II: ACT": false,
@@ -192,6 +193,15 @@ function LayoutContent({ children }) {
     </DropdownMenu>
   );
 
+  // Set CSS variable for sidebar width
+  React.useEffect(() => {
+    if (showAppUI) {
+      document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '64px' : '256px');
+    } else {
+      document.documentElement.style.setProperty('--sidebar-width', '0px');
+    }
+  }, [sidebarCollapsed, showAppUI]);
+
   return (
     <>
       <Toaster position="top-center" richColors closeButton />
@@ -210,115 +220,182 @@ function LayoutContent({ children }) {
 
         {/* Desktop Sidebar - Only show if not landing/waitlist */}
         {showAppUI && (
-          <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col fixed left-0 top-0 bottom-0 z-40">
+          <aside className={`hidden md:flex border-r border-gray-200 bg-white flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-300 ${
+            sidebarCollapsed ? 'md:w-16' : 'md:w-64'
+          }`}>
             <div className="border-b border-gray-200 p-4 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
-                  alt="360° Method" 
-                  className="w-10 h-10 rounded-lg"
-                />
-                <div>
-                  <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
-                  <p className="text-xs text-gray-500">Asset Command Center</p>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                {!sidebarCollapsed && (
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
+                      alt="360° Method" 
+                      className="w-10 h-10 rounded-lg"
+                    />
+                    <div>
+                      <h2 className="font-bold text-gray-900 text-sm">360° Method</h2>
+                      <p className="text-xs text-gray-500">Asset Command Center</p>
+                    </div>
+                  </div>
+                )}
+                {sidebarCollapsed && (
+                  <img 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
+                    alt="360° Method" 
+                    className="w-8 h-8 rounded-lg mx-auto"
+                  />
+                )}
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  style={{ minHeight: '32px', minWidth: '32px' }}
+                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${sidebarCollapsed ? 'rotate-0' : 'rotate-180'}`} />
+                </button>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 flex-shrink min-h-0">
-              {NAVIGATION_STRUCTURE.map((section) => (
-                <div key={section.section} className="mb-4">
-                  {section.section !== "Core" && (
-                    <button
-                      onClick={() => toggleSection(section.section)}
-                      className="w-full flex items-center justify-between px-3 py-2 mb-1"
-                    >
-                      <div className="text-left">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          {section.section}
-                        </h3>
-                        {section.sectionSubtitle && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {section.sectionSubtitle}
-                          </p>
+              {!sidebarCollapsed ? (
+                NAVIGATION_STRUCTURE.map((section) => (
+                  <div key={section.section} className="mb-4">
+                    {section.section !== "Core" && (
+                      <button
+                        onClick={() => toggleSection(section.section)}
+                        className="w-full flex items-center justify-between px-3 py-2 mb-1"
+                      >
+                        <div className="text-left">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            {section.section}
+                          </h3>
+                          {section.sectionSubtitle && (
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {section.sectionSubtitle}
+                            </p>
+                          )}
+                        </div>
+                        {openSections[section.section] ? (
+                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
                         )}
-                      </div>
-                      {openSections[section.section] ? (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
-                  )}
+                      </button>
+                    )}
 
-                  {(section.section === "Core" || openSections[section.section]) && (
-                    <div className="space-y-1">
-                      {section.items.map((item) => {
-                        const isLocked = isNavItemLocked(item, selectedProperty);
-                        const isActive = location.pathname === item.url;
-                        const Icon = item.icon;
+                    {(section.section === "Core" || openSections[section.section]) && (
+                      <div className="space-y-1">
+                        {section.items.map((item) => {
+                          const isLocked = isNavItemLocked(item, selectedProperty);
+                          const isActive = location.pathname === item.url;
+                          const Icon = item.icon;
 
-                        return (
-                          <Link
-                            key={item.id}
-                            to={isLocked ? '#' : item.url}
-                            data-tour={`sidebar-${item.id.toLowerCase()}`}
-                            onClick={(e) => {
-                              if (isLocked) {
-                                e.preventDefault();
-                                toast.info(item.unlockHint || "Complete previous steps to unlock");
-                              }
-                            }}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                              isActive ? 'bg-blue-50 text-blue-700' :
-                              isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
-                              'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4 flex-shrink-0" />
+                          return (
+                            <Link
+                              key={item.id}
+                              to={isLocked ? '#' : item.url}
+                              data-tour={`sidebar-${item.id.toLowerCase()}`}
+                              onClick={(e) => {
+                                if (isLocked) {
+                                  e.preventDefault();
+                                  toast.info(item.unlockHint || "Complete previous steps to unlock");
+                                }
+                              }}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                isActive ? 'bg-blue-50 text-blue-700' :
+                                isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
+                                'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4 flex-shrink-0" />
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium truncate">
-                                  {item.label}
-                                </span>
-                                {item.step && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs flex-shrink-0"
-                                  >
-                                    {item.step}
-                                  </Badge>
-                                )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium truncate">
+                                    {item.label}
+                                  </span>
+                                  {item.step && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs flex-shrink-0"
+                                    >
+                                      {item.step}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {item.subtitle}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500 truncate">
-                                {item.subtitle}
-                              </p>
-                            </div>
 
-                            {isLocked && (
-                              <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
+                              {isLocked && (
+                                <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-2">
+                  {NAVIGATION_STRUCTURE.flatMap((section) => section.items).map((item) => {
+                    const isLocked = isNavItemLocked(item, selectedProperty);
+                    const isActive = location.pathname === item.url;
+                    const Icon = item.icon;
+
+                    return (
+                      <Link
+                        key={item.id}
+                        to={isLocked ? '#' : item.url}
+                        onClick={(e) => {
+                          if (isLocked) {
+                            e.preventDefault();
+                            toast.info(item.unlockHint || "Complete previous steps to unlock");
+                          }
+                        }}
+                        className={`flex items-center justify-center p-3 rounded-lg transition-colors ${
+                          isActive ? 'bg-blue-50 text-blue-700' :
+                          isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
+                          'text-gray-700 hover:bg-gray-100'
+                        }`}
+                        title={item.label}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </Link>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
 
             <div className="border-t border-gray-200 p-2 space-y-2 flex-shrink-0">
-              <HelpSystem
-                currentPhase={getCurrentPhase()}
-                nextStep={getNextStep()}
-                selectedProperty={selectedProperty}
-                systems={systems}
-                tasks={tasks}
-              />
-              <div className="px-1">
-                <AccountDropdown isMobile={false} />
-              </div>
+              {!sidebarCollapsed ? (
+                <>
+                  <HelpSystem
+                    currentPhase={getCurrentPhase()}
+                    nextStep={getNextStep()}
+                    selectedProperty={selectedProperty}
+                    systems={systems}
+                    tasks={tasks}
+                  />
+                  <div className="px-1">
+                    <AccountDropdown isMobile={false} />
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <HelpSystem
+                    currentPhase={getCurrentPhase()}
+                    nextStep={getNextStep()}
+                    selectedProperty={selectedProperty}
+                    systems={systems}
+                    tasks={tasks}
+                  />
+                  <AccountDropdown isMobile={true} />
+                </div>
+              )}
             </div>
             </aside>
             )}
@@ -457,7 +534,7 @@ function LayoutContent({ children }) {
           </>
         )}
 
-        <main className={`flex-1 flex flex-col overflow-x-hidden ${showAppUI ? 'md:ml-64' : 'w-full'}`}>
+        <main className={`flex-1 flex flex-col overflow-x-hidden transition-all duration-300 ${showAppUI ? (sidebarCollapsed ? 'md:ml-16' : 'md:ml-64') : 'w-full'}`}>
           {/* Mobile Header - Only show if not landing/waitlist */}
           {showAppUI && (
             <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
