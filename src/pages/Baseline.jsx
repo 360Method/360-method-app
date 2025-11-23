@@ -28,6 +28,7 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
 import RegionalAdaptationBox from "../components/shared/RegionalAdaptationBox";
+import DemoCTA from "../components/demo/DemoCTA";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -1119,6 +1120,8 @@ export default function Baseline() {
             window.location.href = `/baseline?propertyId=${propertyId}&welcome=true`;
           }}
         />
+
+        <DemoCTA />
       </div>
     </div>
   );

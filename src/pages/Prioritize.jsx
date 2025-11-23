@@ -49,6 +49,7 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
+import DemoCTA from '../components/demo/DemoCTA';
 
 
 const Label = ({ children, className = "", ...props }) => (
@@ -1250,6 +1251,8 @@ export default function PrioritizePage() {
         onClearSelection={() => setSelectedTasks([])}
         canEdit={canEdit}
       />
+
+      <DemoCTA />
     </div>
   );
 }

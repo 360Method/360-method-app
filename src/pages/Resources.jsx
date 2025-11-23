@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
+import DemoCTA from '../components/demo/DemoCTA';
 
 export default function Resources() {
   const navigate = useNavigate();
@@ -233,6 +234,8 @@ export default function Resources() {
             </Button>
           </CardContent>
         </Card>
+
+        <DemoCTA />
       </div>
 
       {/* Modals for Clickable Content */}

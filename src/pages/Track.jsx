@@ -27,6 +27,7 @@ import StepNavigation from '../components/navigation/StepNavigation';
 import { Badge } from '@/components/ui/badge';
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
+import DemoCTA from '../components/demo/DemoCTA';
 
 export default function TrackPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -754,6 +755,7 @@ Provide comprehensive analysis with this structure:
 
         </Tabs>
 
+        <DemoCTA />
 
       </div>
     </div>

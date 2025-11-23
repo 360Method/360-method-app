@@ -11,6 +11,7 @@ import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStrugg
 import { DEMO_PROPERTY_IMPROVING } from "@/components/shared/demoPropertyImproving";
 import { DEMO_PROPERTY_EXCELLENT } from "@/components/shared/demoPropertyExcellent";
 import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
+import DemoCTA from '../components/demo/DemoCTA';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1222,6 +1223,8 @@ export default function Score360() {
             </p>
           </div>
         </div>
+
+        <DemoCTA />
       </div>
       
       <style>{`

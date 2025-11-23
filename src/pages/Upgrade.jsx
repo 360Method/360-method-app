@@ -39,6 +39,7 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
+import DemoCTA from '../components/demo/DemoCTA';
 
 export default function Upgrade() {
   const location = useLocation();
@@ -414,6 +415,8 @@ export default function Upgrade() {
             </TabsContent>
           </Tabs>
         )}
+
+        <DemoCTA />
 
       </div>
     </div>

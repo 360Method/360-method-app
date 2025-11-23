@@ -29,6 +29,7 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
+import DemoCTA from '../components/demo/DemoCTA';
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -959,6 +960,8 @@ export default function Inspect() {
           properties={properties}
         />
       )}
+
+      <DemoCTA />
     </div>
   );
 }

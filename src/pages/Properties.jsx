@@ -34,6 +34,7 @@ import PropertyWizard from "../components/properties/PropertyWizard";
 import PropertyProfileWizard from "../components/properties/PropertyProfileWizard";
 import { createPageUrl } from "@/utils";
 import { useDemo } from "../components/shared/DemoContext";
+import DemoCTA from "../components/demo/DemoCTA";
 
 export default function Properties() {
   const location = useLocation();
@@ -748,6 +749,8 @@ export default function Properties() {
             </div>
           </div>
         )}
+
+        <DemoCTA />
 
       </div>
     </div>

@@ -21,6 +21,7 @@ import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
+import DemoCTA from '../components/demo/DemoCTA';
 
 // The Big 7 system categories
 const BIG_7_CATEGORIES = [
@@ -623,6 +624,8 @@ export default function Preserve() {
             </CardContent>
           </Card>
         )}
+
+        <DemoCTA />
 
       </div>
     </div>

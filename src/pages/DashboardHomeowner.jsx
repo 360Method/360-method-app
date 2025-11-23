@@ -8,6 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
 import { createPageUrl } from '@/utils';
+import DemoCTA from '../components/demo/DemoCTA';
 
 export default function DashboardHomeowner() {
   const navigate = useNavigate();
@@ -481,6 +482,8 @@ export default function DashboardHomeowner() {
           </div>
         </div>
       </div>
+
+      <DemoCTA />
     </div>
   );
 }

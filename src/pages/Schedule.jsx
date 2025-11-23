@@ -43,6 +43,7 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
+import DemoCTA from '../components/demo/DemoCTA';
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -954,6 +955,8 @@ export default function SchedulePage() {
             </DialogContent>
           </Dialog>
         )}
+
+        <DemoCTA />
       </div>
     </div>
   );
