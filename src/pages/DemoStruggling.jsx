@@ -47,7 +47,7 @@ export default function DemoStruggling() {
       <div className="max-w-4xl mx-auto">
         {/* Floating CTA - Sticky */}
         {showFloatingCTA && (
-          <div className="fixed bottom-6 right-6 z-50 animate-bounce-slow">
+          <div className="fixed bottom-24 right-6 z-50 animate-bounce-slow">
             <Button
               size="lg"
               onClick={scrollToSolution}
