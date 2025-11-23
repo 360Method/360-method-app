@@ -164,7 +164,7 @@ export default function DemoPortfolio() {
                 onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
               >
-                See Your Path to Silver ↓
+                {portfolioScore >= 85 ? 'See Your Portfolio Details ↓' : 'See Your Path to Next Level ↓'}
               </Button>
               <Button 
                 size="lg"
