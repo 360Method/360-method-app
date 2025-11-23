@@ -195,7 +195,7 @@ function LayoutContent({ children }) {
   return (
     <>
       <Toaster position="top-center" richColors closeButton />
-      <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />
+      {showAppUI && <DemoBanner onAddProperty={() => setShowQuickAddMenu(true)} />}
 
       <div className="min-h-screen flex w-full overflow-x-hidden" style={{ backgroundColor: showAppUI ? 'var(--background)' : '#FFFFFF' }}>
         {showAppUI && (
