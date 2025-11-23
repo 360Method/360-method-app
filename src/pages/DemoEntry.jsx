@@ -153,10 +153,10 @@ export default function DemoEntry() {
                   </div>
                   <Badge className="bg-green-600">Bronze Portfolio</Badge>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">84/100</div>
-                <Progress value={84} className="h-3 mb-4" />
+                <div className="text-4xl font-bold text-gray-900 mb-2">79/100</div>
+                <Progress value={79} className="h-3 mb-4" />
                 <p className="text-sm text-gray-600">
-                  12 properties. Portfolio average. Better than 65%.
+                  3 properties. Portfolio average. Better than 65%.
                 </p>
               </CardHeader>
               <CardContent>
