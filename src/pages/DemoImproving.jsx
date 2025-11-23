@@ -385,8 +385,7 @@ export default function DemoImproving() {
               </Button>
               <Button 
                 size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
+                className="bg-white/20 backdrop-blur-sm border-2 border-white text-white hover:bg-white/30 font-semibold"
                 onClick={() => navigate(createPageUrl('DemoEntry'))}
               >
                 Try Another Demo
