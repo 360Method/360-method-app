@@ -11,9 +11,13 @@ export default function FloatingWaitlistCTA() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Hide on waitlist page
+  // Only show on actual demo pages (DemoStruggling, DemoImproving, DemoExcellent, DemoPortfolio)
   useEffect(() => {
-    setIsVisible(!location.pathname.includes('Waitlist'));
+    const isDemoPage = location.pathname.includes('DemoStruggling') || 
+                       location.pathname.includes('DemoImproving') || 
+                       location.pathname.includes('DemoExcellent') || 
+                       location.pathname.includes('DemoPortfolio');
+    setIsVisible(isDemoPage);
   }, [location.pathname]);
 
   if (!demoMode || !isVisible) {
@@ -24,7 +28,7 @@ export default function FloatingWaitlistCTA() {
     return (
       <button
         onClick={() => setIsMinimized(false)}
-        className="fixed bottom-6 right-6 z-[45] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-full shadow-2xl hover:shadow-blue-500/50 active:scale-95 transition-all flex items-center gap-2 font-bold"
+        className="fixed bottom-6 right-6 z-[45] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-full shadow-2xl hover:shadow-blue-500/50 active:scale-95 transition-all flex items-center gap-2 font-bold md:right-6"
         style={{ minWidth: '44px', minHeight: '44px' }}
       >
         <Rocket className="w-5 h-5" />
