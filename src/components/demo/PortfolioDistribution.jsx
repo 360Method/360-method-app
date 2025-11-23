@@ -43,7 +43,11 @@ export default function PortfolioDistribution({ properties, visualization = 'bar
             {sortedProperties.map((property, idx) => {
               const tierConfig = getTierBadge(property.tier);
               return (
-                <div key={idx} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div 
+                  key={idx} 
+                  className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => property.id && navigate(createPageUrl('Score360') + `?property_id=${property.id}`)}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3 flex-1">
                       <div className={`w-12 h-12 rounded-full ${getScoreColor(property.score)} flex items-center justify-center text-white font-bold`}>
