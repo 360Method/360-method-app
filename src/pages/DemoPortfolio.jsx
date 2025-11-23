@@ -169,7 +169,7 @@ export default function DemoPortfolio() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + `?property_id=demo-investor-1`)}
+                onClick={() => navigate(createPageUrl('Score360') + `?portfolio=true`)}
                 className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report
