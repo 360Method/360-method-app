@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
 import { DEMO_PROPERTY_STRUGGLING } from './demoPropertyStruggling';
+import { DEMO_PROPERTY_IMPROVING } from './demoPropertyImproving';
 import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -10,23 +11,27 @@ import InvestorDemoWizard from '../demo/InvestorDemoWizard';
 const DemoContext = createContext();
 
 export function DemoProvider({ children }) {
-  const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', 'struggling', or 'investor'
+  const [demoMode, setDemoMode] = useState(null); // null, 'homeowner', 'struggling', 'improving', or 'investor'
   const [demoData, setDemoData] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [visitedSteps, setVisitedSteps] = useState([]);
   const navigate = useNavigate();
   
-  const enterDemoMode = (userType = 'homeowner') => {
-    console.log(`🎬 Entering demo mode: ${userType}`);
+  const enterDemoMode = (userType = 'homeowner', scoreLevel = null) => {
+    console.log(`🎬 Entering demo mode: ${userType}${scoreLevel ? ` (${scoreLevel})` : ''}`);
     
     if (userType === 'investor') {
       setDemoMode('investor');
       setDemoData(DEMO_PORTFOLIO_INVESTOR);
       sessionStorage.setItem('demoMode', 'investor');
-    } else if (userType === 'struggling') {
+    } else if (userType === 'struggling' || scoreLevel === 'struggling') {
       setDemoMode('struggling');
       setDemoData(DEMO_PROPERTY_STRUGGLING);
       sessionStorage.setItem('demoMode', 'struggling');
+    } else if (scoreLevel === 'improving') {
+      setDemoMode('improving');
+      setDemoData(DEMO_PROPERTY_IMPROVING);
+      sessionStorage.setItem('demoMode', 'improving');
     } else {
       setDemoMode('homeowner');
       setDemoData(DEMO_PROPERTY_HOMEOWNER);
@@ -39,7 +44,7 @@ export function DemoProvider({ children }) {
       setShowWizard(true);
     }
     
-    console.log('Demo data loaded for:', userType);
+    console.log('Demo data loaded for:', userType, scoreLevel);
   };
   
   const markStepVisited = (stepNumber) => {
@@ -91,6 +96,10 @@ export function DemoProvider({ children }) {
       console.log('Restoring struggling demo mode');
       setDemoMode('struggling');
       setDemoData(DEMO_PROPERTY_STRUGGLING);
+    } else if (stored === 'improving') {
+      console.log('Restoring improving demo mode');
+      setDemoMode('improving');
+      setDemoData(DEMO_PROPERTY_IMPROVING);
     } else if (stored === 'investor') {
       console.log('Restoring investor demo mode');
       setDemoMode('investor');
