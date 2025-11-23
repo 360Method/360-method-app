@@ -125,7 +125,7 @@ export default function DemoPortfolio() {
           <div className="text-center max-w-2xl">
             <div className="text-6xl mb-4">🏢</div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">The Professional Investor</h1>
-            <p className="text-xl text-gray-600 mb-8">12-Property Portfolio</p>
+            <p className="text-xl text-gray-600 mb-8">{portfolioData.propertyCount}-Property Portfolio</p>
             
             <div className="border-t-2 border-gray-300 my-8"></div>
             
