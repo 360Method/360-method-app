@@ -15,7 +15,10 @@ export default function Score360() {
   // Demo data - in real app, this would come from property data
   const score = parseInt(searchParams.get('score')) || 78;
   const propertyName = searchParams.get('name') || 'My Property';
-  const propertyAddress = searchParams.get('address') || 'Camas, WA';
+  const propertyAddress = searchParams.get('address') || 'Vancouver, WA';
+  const propertyType = searchParams.get('propertyType') || 'Single-Family Home';
+  const yearBuilt = searchParams.get('yearBuilt') || '2015';
+  const sqft = searchParams.get('sqft') || '2400';
   
   const getCertification = (score) => {
     if (score >= 96) return { level: 'Platinum', stars: '👑', color: 'purple', text: 'Top 1%' };
@@ -117,17 +120,27 @@ export default function Score360() {
         {/* Property Info Card */}
         <Card className="mb-8 border-2">
           <CardHeader className="bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">{propertyName}</CardTitle>
-                <p className="text-gray-600 flex items-center gap-2 mt-1">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="text-2xl mb-2">{propertyName}</CardTitle>
+                <p className="text-gray-600 flex items-center gap-2">
                   <HomeIcon className="w-4 h-4" />
                   {propertyAddress}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Property Type</p>
-                <p className="font-semibold">Single Family Home</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:text-right">
+                <div>
+                  <p className="text-sm text-gray-600">Property Type</p>
+                  <p className="font-semibold">{propertyType}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Year Built</p>
+                  <p className="font-semibold">{yearBuilt}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Square Footage</p>
+                  <p className="font-semibold">{parseInt(sqft).toLocaleString()} sq ft</p>
+                </div>
               </div>
             </div>
           </CardHeader>
