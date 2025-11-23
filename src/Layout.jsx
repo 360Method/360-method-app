@@ -488,7 +488,7 @@ function LayoutContent({ children }) {
             </header>
           )}
 
-          <div className={`flex-1 overflow-auto overflow-x-hidden ${showAppUI ? (demoMode ? 'pt-[56px] md:pt-0' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
+          <div className={`flex-1 overflow-auto overflow-x-hidden ${showAppUI ? (demoMode ? 'pt-[56px] md:pt-[48px]' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
             {children}
           </div>
         </main>
