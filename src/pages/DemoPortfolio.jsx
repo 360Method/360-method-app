@@ -12,6 +12,7 @@ import PortfolioMission from '@/components/demo/PortfolioMission';
 import PortfolioROI from '@/components/demo/PortfolioROI';
 import AchievementDisplayDemo from '@/components/demo/AchievementDisplayDemo';
 import { useDemo } from '@/components/shared/DemoContext';
+import { DEMO_PORTFOLIO_INVESTOR } from '@/components/shared/demoPropertyInvestor';
 
 export default function DemoPortfolio() {
   const navigate = useNavigate();
@@ -21,102 +22,85 @@ export default function DemoPortfolio() {
     enterDemoMode('investor');
   }, []);
   
+  // Use actual demo data
+  const { properties } = DEMO_PORTFOLIO_INVESTOR;
+  
+  const portfolioScore = Math.round(
+    properties.reduce((sum, p) => sum + p.health_score, 0) / properties.length
+  );
+  
+  const getTier = (score) => {
+    if (score >= 96) return 'Platinum';
+    if (score >= 90) return 'Gold';
+    if (score >= 85) return 'Silver';
+    if (score >= 75) return 'Bronze';
+    return 'Fair';
+  };
+  
   const portfolioData = {
-    portfolioScore: 84,
-    propertyCount: 12,
-    certification: 'Bronze Portfolio',
-    message: 'Your portfolio is maintained better than 65% of investor portfolios',
-    properties: [
-      { name: '123 Maple St', score: 92, tier: 'Gold' },
-      { name: '456 Oak Ave', score: 88, tier: 'Silver' },
-      { name: '789 Cedar Ln', score: 86, tier: 'Silver' },
-      { name: '147 Birch Way', score: 82, tier: 'Bronze' },
-      { name: '258 Elm St', score: 80, tier: 'Bronze' },
-      { name: '369 Pine Rd', score: 78, tier: 'Bronze' },
-      { name: '471 Fir Ave', score: 76, tier: 'Bronze' },
-      { name: '582 Ash Blvd', score: 75, tier: 'Bronze' },
-      { name: '693 Willow Dr', score: 74, tier: 'Participant' },
-      { name: '963 Hemlock Ln', score: 70, tier: 'Fair' },
-      { name: '852 Spruce Ct', score: 68, tier: 'Fair' },
-      { name: '741 Alder St', score: 65, tier: 'Fair' }
-    ],
+    portfolioScore,
+    propertyCount: properties.length,
+    certification: getTier(portfolioScore) + ' Portfolio',
+    message: `Your portfolio is maintained better than ${portfolioScore < 65 ? 35 : portfolioScore < 75 ? 50 : portfolioScore < 85 ? 65 : 85}% of investor portfolios`,
+    properties: properties.map(p => ({
+      name: p.nickname || p.address,
+      score: p.health_score,
+      tier: getTier(p.health_score),
+      id: p.id
+    })).sort((a, b) => b.score - a.score),
     analytics: {
-      avgScore: 84,
+      avgScore: portfolioScore,
       distribution: {
-        platinum: 0,
-        gold: 1,
-        silver: 2,
-        bronze: 5,
-        participant: 1,
-        fair: 3
+        platinum: properties.filter(p => p.health_score >= 96).length,
+        gold: properties.filter(p => p.health_score >= 90 && p.health_score < 96).length,
+        silver: properties.filter(p => p.health_score >= 85 && p.health_score < 90).length,
+        bronze: properties.filter(p => p.health_score >= 75 && p.health_score < 85).length,
+        participant: properties.filter(p => p.health_score >= 65 && p.health_score < 75).length,
+        fair: properties.filter(p => p.health_score < 65).length
       },
-      weakestLinks: [
-        { property: '741 Alder St', score: 65 },
-        { property: '852 Spruce Ct', score: 68 },
-        { property: '963 Hemlock Ln', score: 70 }
-      ]
+      weakestLinks: properties
+        .map(p => ({ property: p.nickname || p.address, score: p.health_score }))
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 3)
     },
     mission: {
-      title: 'Fix the Bottom 3',
-      description: 'Improve your 3 lowest-scoring properties to jump to Silver Portfolio',
-      targetScore: 88,
-      pointsNeeded: 4,
+      title: 'Elevate Cedar Court',
+      description: 'Fix the underperforming 4-plex to boost portfolio average',
+      targetScore: 85,
+      pointsNeeded: portfolioScore < 85 ? 85 - portfolioScore : 0,
       properties: [
         {
-          name: '741 Alder St',
-          currentScore: 65,
+          name: properties[2].nickname,
+          currentScore: properties[2].health_score,
           targetScore: 75,
-          tasks: [
-            { action: 'Professional inspection', points: 6, cost: '$600' },
-            { action: 'Fix safety issues', points: 4, cost: '$1,200' }
-          ],
-          totalCost: '$1,800'
-        },
-        {
-          name: '852 Spruce Ct',
-          currentScore: 68,
-          targetScore: 76,
-          tasks: [
-            { action: 'Tenant inspection program', points: 5, cost: 'Free' },
-            { action: 'Address deferred maintenance', points: 3, cost: '$900' }
-          ],
-          totalCost: '$900'
-        },
-        {
-          name: '963 Hemlock Ln',
-          currentScore: 70,
-          targetScore: 78,
-          tasks: [
-            { action: 'Implement quarterly checks', points: 4, cost: 'Free' },
-            { action: 'Small repairs', points: 4, cost: '$800' }
-          ],
-          totalCost: '$800'
+          tasks: properties[2].quickWins || [],
+          totalCost: '$2,825'
         }
       ],
-      totalInvestment: '$3,500',
-      timeline: '3-6 months',
-      newPortfolioScore: 88
+      totalInvestment: '$2,825',
+      timeline: '2-4 months',
+      newPortfolioScore: 85
     },
     roi: {
-      investment: 3500,
+      investment: 2825,
       savings: {
-        loanTerms: 5000,
-        insurance: 1800,
-        emergencies: 8000
+        loanTerms: 4200,
+        insurance: 1600,
+        emergencies: 12000
       },
-      totalAnnualValue: 14800,
-      roi: 423
+      totalAnnualValue: 17800,
+      roi: 630
     },
     achievements: {
       earned: [
-        { name: 'Bronze Portfolio', icon: '🏅', earnedDate: '2024-03-15' },
-        { name: '50% Consistency', icon: '🏅', earnedDate: '2024-06-10' },
-        { name: 'Multi-Property Manager', icon: '🏅', earnedDate: '2024-09-20' }
+        { name: 'Multi-Property Manager', icon: '🏅', earnedDate: '2023-03-15' },
+        { name: 'Platinum Property Owner', icon: '👑', earnedDate: '2024-10-15' },
+        { name: 'Preservation Pro', icon: '🛡️', earnedDate: '2024-08-20' }
       ],
       nextUp: [
-        { name: 'Silver Portfolio', requirement: 'Avg score 88' },
+        { name: 'Silver Portfolio', requirement: 'Avg score 85+' },
         { name: 'No Weak Links', requirement: 'All properties 75+' },
-        { name: 'Professional Operator', requirement: '12-month track record' }
+        { name: 'Gold Portfolio', requirement: 'Avg score 90+' }
       ]
     }
   };
