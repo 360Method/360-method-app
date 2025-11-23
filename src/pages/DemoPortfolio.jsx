@@ -154,13 +154,23 @@ export default function DemoPortfolio() {
             <p className="text-xl text-gray-700 mb-2">Better than 65% of investor portfolios.</p>
             <p className="text-2xl font-bold text-gray-900 mb-8">Solid foundation. Ready to scale!</p>
             
-            <Button 
-              size="lg"
-              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
-            >
-              See Your Path to Silver ↓
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                See Your Path to Silver ↓
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate(createPageUrl('Score360') + `?score=${portfolioData.portfolioScore}&name=Professional Investor Portfolio&address=12 Properties`)}
+                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                📄 View Score Report
+              </Button>
+            </div>
           </div>
         </div>
         

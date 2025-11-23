@@ -186,13 +186,23 @@ export default function DemoExcellent() {
             <p className="text-xl text-gray-700 mb-2">Top 5% of all homes.</p>
             <p className="text-2xl font-bold text-gray-900 mb-8">Elite homeowner status!</p>
             
-            <Button 
-              size="lg"
-              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
-            >
-              See Your Journey to Excellence ↓
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                See Your Journey to Excellence ↓
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate(createPageUrl('Score360') + `?score=${demoData.totalScore}&name=${encodeURIComponent(demoData.name)}&address=${encodeURIComponent(demoData.location)}`)}
+                className="border-2 border-yellow-600 text-yellow-600 hover:bg-yellow-50 text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                📄 View Score Report
+              </Button>
+            </div>
           </div>
         </div>
         

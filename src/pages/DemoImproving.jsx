@@ -172,13 +172,23 @@ export default function DemoImproving() {
             <p className="text-xl text-gray-700 mb-2">Better than 65 out of 100 homes.</p>
             <p className="text-2xl font-bold text-gray-900 mb-8">You're on the right track!</p>
             
-            <Button 
-              size="lg"
-              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-amber-600 hover:bg-amber-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
-            >
-              See Your Path to Silver ↓
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                See Your Path to Silver ↓
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate(createPageUrl('Score360') + `?score=${demoData.totalScore}&name=${encodeURIComponent(demoData.name)}&address=${encodeURIComponent(demoData.location)}`)}
+                className="border-2 border-amber-600 text-amber-600 hover:bg-amber-50 text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                📄 View Score Report
+              </Button>
+            </div>
           </div>
         </div>
         

@@ -94,13 +94,23 @@ export default function DemoStruggling() {
             <p className="text-xl text-gray-700 mb-2">You're in the bottom 65%.</p>
             <p className="text-2xl font-bold text-gray-900 mb-8">But you can fix this.</p>
             
-            <Button 
-              size="lg"
-              onClick={scrollToSolution}
-              className="bg-red-600 hover:bg-red-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
-            >
-              See How to Get to 75 ↓
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                onClick={scrollToSolution}
+                className="bg-red-600 hover:bg-red-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                See How to Get to 75 ↓
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate(createPageUrl('Score360') + '?score=62&name=The Fixer-Upper&address=Vancouver, WA')}
+                className="border-2 border-red-600 text-red-600 hover:bg-red-50 text-xl px-12 py-6 rounded-full shadow-2xl"
+              >
+                📄 View Score Report
+              </Button>
+            </div>
           </div>
         </div>
         
