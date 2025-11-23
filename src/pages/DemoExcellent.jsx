@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import ScoreBadgeDemo from '@/components/demo/ScoreBadgeDemo';
 import PhaseBreakdownDemo from '@/components/demo/PhaseBreakdownDemo';
 import QuickWinsDemo from '@/components/demo/QuickWinsDemo';
