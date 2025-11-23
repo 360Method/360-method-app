@@ -215,26 +215,6 @@ export default function Resources() {
           </div>
         </div>
 
-        {/* CTA Banner */}
-        <Card className="bg-gradient-to-br from-blue-600 to-purple-600 border-none shadow-xl">
-          <CardContent className="p-6 md:p-8 text-center text-white">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
-              Ready to Unlock Everything?
-            </h2>
-            <p className="text-base md:text-lg mb-4 md:mb-6 text-blue-100">
-              Join the waitlist and get early access to the complete Resource Center
-            </p>
-            <Button
-              onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="bg-white text-blue-600 hover:bg-gray-100 font-bold text-base md:text-lg inline-flex items-center gap-2"
-              style={{ minHeight: '52px' }}
-            >
-              <Star className="w-5 h-5" />
-              Join Waitlist
-            </Button>
-          </CardContent>
-        </Card>
-
         <DemoCTA />
       </div>
 
