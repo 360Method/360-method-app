@@ -1,24 +1,40 @@
 import React, { useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Printer, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { DEMO_PROPERTY_HOMEOWNER } from "@/components/shared/demoPropertyHomeowner";
+import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStruggling";
+import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
 
 export default function Score360() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const printRef = useRef(null);
   
-  // Demo data - in real app, this would come from property data
-  const score = parseInt(searchParams.get('score')) || 78;
-  const propertyName = searchParams.get('name') || 'My Property';
-  const propertyAddress = searchParams.get('address') || 'Vancouver, WA';
-  const propertyType = searchParams.get('propertyType') || 'Single-Family Home';
-  const yearBuilt = searchParams.get('yearBuilt') || '2015';
-  const sqft = searchParams.get('sqft') || '2400';
+  const propertyId = searchParams.get('property_id');
+  
+  // Get property from demo data
+  const getPropertyData = () => {
+    if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
+    if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
+    if (propertyId === 'demo-investor-1') return DEMO_PORTFOLIO_INVESTOR.properties[0];
+    if (propertyId === 'demo-investor-2') return DEMO_PORTFOLIO_INVESTOR.properties[1];
+    if (propertyId === 'demo-investor-3') return DEMO_PORTFOLIO_INVESTOR.properties[2];
+    return null;
+  };
+  
+  const property = getPropertyData();
+  
+  const score = property?.health_score || 0;
+  const propertyName = property?.address || 'Property';
+  const propertyAddress = `${property?.city || ''}, ${property?.state || ''}`.trim().replace(/^,\s*/, '');
+  const propertyType = property?.property_type || 'N/A';
+  const yearBuilt = property?.year_built || 'N/A';
+  const sqft = property?.square_footage || 'N/A';
   
   const getCertification = (score) => {
     if (score >= 96) return { level: 'Platinum', stars: '👑', color: 'purple', text: 'Top 1%' };
@@ -58,306 +74,273 @@ export default function Score360() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Action Bar - Don't print */}
-      <div className="bg-white border-b border-gray-200 p-4 print:hidden">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50 print:hidden">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
+            className="gap-2"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
           
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={handleShare}
               className="gap-2"
             >
               <Share2 className="w-4 h-4" />
-              Share
+              <span className="hidden sm:inline">Share</span>
             </Button>
             <Button
+              size="sm"
               onClick={handleDownloadPDF}
               className="bg-blue-600 hover:bg-blue-700 gap-2"
             >
               <Download className="w-4 h-4" />
-              Download PDF
+              <span className="hidden sm:inline">Download</span>
             </Button>
           </div>
         </div>
       </div>
       
       {/* Printable Professional Report */}
-      <div ref={printRef} className="max-w-5xl mx-auto p-8 bg-white print:p-12 print:max-w-none">
+      <div ref={printRef} className="max-w-5xl mx-auto p-4 md:p-8 print:p-12 print:max-w-none">
         
-        {/* Professional Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-lg mb-8 print:rounded-none">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
-                  alt="360° Method" 
-                  className="w-16 h-16 bg-white rounded-lg p-2"
-                />
-                <div>
-                  <h1 className="text-4xl font-bold">360° Property Score</h1>
-                  <p className="text-blue-100 text-lg">Official Maintenance Certificate</p>
-                </div>
+        {/* Professional Header - Streamlined */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 md:p-8 rounded-2xl shadow-xl mb-6 print:rounded-none">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <span className="text-3xl">🏠</span>
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">360° Property Score</h1>
+                <p className="text-blue-100">Official Maintenance Certificate</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-blue-100 text-sm">Report Date</p>
-              <p className="font-semibold text-lg">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-              <p className="text-blue-100 text-xs mt-2">Certificate ID: {propertyAddress.replace(/\s/g, '').substring(0, 6).toUpperCase()}-{score}-{new Date().getFullYear()}</p>
+            <div className="text-left md:text-right">
+              <p className="text-blue-100 text-xs uppercase tracking-wide">Report Date</p>
+              <p className="font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
             </div>
           </div>
         </div>
         
-        {/* Property Info Card */}
-        <Card className="mb-8 border-2">
-          <CardHeader className="bg-gray-50">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">{propertyName}</CardTitle>
-                <p className="text-gray-600 flex items-center gap-2">
+        {/* Property Header with Score - Hero Section */}
+        <div className="mb-6">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            {/* Top: Property Details */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{propertyName}</h2>
+              <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                <span className="flex items-center gap-1">
                   <HomeIcon className="w-4 h-4" />
                   {propertyAddress}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:text-right">
-                <div>
-                  <p className="text-sm text-gray-600">Property Type</p>
-                  <p className="font-semibold">{propertyType}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Year Built</p>
-                  <p className="font-semibold">{yearBuilt}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Square Footage</p>
-                  <p className="font-semibold">{parseInt(sqft).toLocaleString()} sq ft</p>
-                </div>
+                </span>
+                <span className="text-gray-400">•</span>
+                <span>{propertyType}</span>
+                <span className="text-gray-400">•</span>
+                <span>Built {yearBuilt}</span>
+                <span className="text-gray-400">•</span>
+                <span>{parseInt(sqft).toLocaleString()} sq ft</span>
               </div>
             </div>
-          </CardHeader>
-        </Card>
+            
+            {/* Bottom: Score Display */}
+            <div className="p-6 md:p-8">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                {/* Left: Score Circle */}
+                <div className="flex flex-col items-center">
+                  <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Overall Score</p>
+                  <div className="relative">
+                    <svg className="w-48 h-48 md:w-56 md:h-56" viewBox="0 0 200 200">
+                      {/* Background circle */}
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="80"
+                        fill="none"
+                        stroke="#E5E7EB"
+                        strokeWidth="16"
+                      />
+                      {/* Score circle */}
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="80"
+                        fill="none"
+                        stroke={score >= 90 ? '#EAB308' : score >= 85 ? '#F59E0B' : score >= 75 ? '#F59E0B' : score >= 65 ? '#FB923C' : '#DC2626'}
+                        strokeWidth="16"
+                        strokeDasharray={`${(score / 100) * 502.4} 502.4`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 100 100)"
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-5xl md:text-6xl font-bold text-gray-900">{score}</span>
+                      <span className="text-xl md:text-2xl text-gray-400">/100</span>
+                    </div>
+                  </div>
+                  
+                  {/* Certification Badge */}
+                  <div className="mt-6">
+                    <Badge className={`px-6 py-2.5 text-base md:text-lg font-bold ${
+                      score >= 96 ? 'bg-purple-600' :
+                      score >= 90 ? 'bg-yellow-500' :
+                      score >= 85 ? 'bg-gray-500' :
+                      score >= 75 ? 'bg-amber-600' :
+                      'bg-gray-400'
+                    }`}>
+                      {cert.stars} {cert.level} {score >= 75 ? 'Certified' : ''}
+                    </Badge>
+                    <p className="text-sm text-gray-500 text-center mt-2">{cert.text}</p>
+                  </div>
+                </div>
+                
+                {/* Right: Key Metrics Grid */}
+                <div className="space-y-3">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Maintenance Level</p>
+                        <p className="font-bold text-gray-900 truncate">
+                          {score >= 90 ? 'Elite' : score >= 75 ? 'Systematic' : score >= 65 ? 'Developing' : 'Reactive'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Score Showcase */}
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          {/* Left: Big Score */}
-          <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-            <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Overall Score</p>
-            <div className="relative">
-              <svg className="w-48 h-48" viewBox="0 0 200 200">
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="85"
-                  fill="none"
-                  stroke="#E5E7EB"
-                  strokeWidth="12"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="85"
-                  fill="none"
-                  stroke={score >= 90 ? '#EAB308' : score >= 75 ? '#F59E0B' : '#DC2626'}
-                  strokeWidth="12"
-                  strokeDasharray={`${(score / 100) * 534} 534`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 100 100)"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-6xl font-bold text-gray-900">{score}</span>
-                <span className="text-2xl text-gray-500">/100</span>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Risk Level</p>
+                        <p className="font-bold text-gray-900 truncate">
+                          {score >= 85 ? 'Low Risk' : score >= 70 ? 'Moderate' : 'High Risk'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+                        <Trophy className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Percentile</p>
+                        <p className="font-bold text-gray-900 truncate">
+                          Better than {score < 65 ? 35 : score < 75 ? 50 : score < 85 ? 65 : score < 90 ? 85 : 95}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {score >= 75 && (
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-amber-600 flex items-center justify-center flex-shrink-0">
+                          <Award className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Est. Annual Value</p>
+                          <p className="font-bold text-gray-900 truncate">
+                            ${score >= 90 ? '5,000-10,000' : score >= 85 ? '3,000-6,000' : '2,000-4,000'}+
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <Badge className={`mt-4 px-6 py-2 text-lg bg-${cert.color}-600`}>
-              {cert.stars} {cert.level} Certified
-            </Badge>
-            <p className="text-sm text-gray-600 mt-2">{cert.text} of all properties</p>
           </div>
+        </div>
 
-          {/* Right: Quick Stats */}
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="p-6 flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-lg">Maintenance Level</p>
-                  <p className="text-gray-600">
-                    {score >= 90 ? 'Elite - Top 5% of all properties' : 
-                     score >= 75 ? 'Systematic - Better than most' : 
-                     score >= 65 ? 'Developing - Room for improvement' : 
-                     'Reactive - High risk of surprises'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardContent className="p-6 flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-lg">Risk Assessment</p>
-                  <p className="text-gray-600">
-                    {score >= 85 ? 'Low Risk - Well maintained' : 
-                     score >= 70 ? 'Moderate Risk - Some gaps' : 
-                     'High Risk - Needs attention'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6 flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <Trophy className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-lg">Percentile Ranking</p>
-                  <p className="text-gray-600">
-                    Better than {score < 65 ? 35 : score < 75 ? 50 : score < 85 ? 65 : score < 90 ? 85 : 95}% of similar properties
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+        
+        {/* One-Line Summary */}
+        <div className={`mb-6 p-6 rounded-2xl shadow-lg border-2 ${
+          score >= 90 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300' :
+          score >= 75 ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300' :
+          score >= 65 ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300' :
+          'bg-gradient-to-r from-red-50 to-orange-50 border-red-300'
+        }`}>
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              score >= 90 ? 'bg-yellow-600' :
+              score >= 75 ? 'bg-blue-600' :
+              score >= 65 ? 'bg-orange-600' :
+              'bg-red-600'
+            }`}>
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 text-xl md:text-2xl mb-2">
+                {score >= 90 ? 'Elite property in the top 5%' :
+                 score >= 75 ? 'Well-maintained and systematic' :
+                 score >= 65 ? 'Developing good habits' :
+                 'High risk of expensive surprises'}
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                {score >= 90 ? 'Exceptional maintenance practices with comprehensive documentation, quarterly inspections, and proactive care. This property sets the standard.' :
+                 score >= 75 ? 'Strong systematic approach with documented systems, regular inspections, and preventive maintenance. A few optimizations away from elite status.' :
+                 score >= 65 ? 'Some tracking exists but significant gaps remain. Inspections are irregular and documentation is incomplete. Elevated risk of unexpected repairs.' :
+                 'Reactive approach with minimal documentation, rare inspections, and no prevention plan. Very high risk of emergency repairs and cascade failures.'}
+              </p>
+            </div>
           </div>
         </div>
         
-        {/* Executive Summary */}
-        <Card className="mb-8 border-2 border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6 text-blue-600" />
-              Executive Summary
+        {/* Score Breakdown - Simplified */}
+        <Card className="mb-6 shadow-lg border border-gray-200">
+          <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="w-5 h-5 text-blue-600" />
+              Score Breakdown by Phase
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {score >= 90 ? (
-              <div className="space-y-3">
-                <p className="text-gray-900 font-semibold text-lg">Elite Maintenance Standard</p>
-                <p className="text-gray-700 leading-relaxed">
-                  This property demonstrates exceptional maintenance practices placing it in the top 5% nationwide. 
-                  All major systems are comprehensively documented with detailed service histories. Regular seasonal 
-                  inspections prevent small issues from becoming costly repairs. A proactive maintenance schedule 
-                  ensures systems receive care before problems develop.
-                </p>
-                <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-blue-200">
-                  <div>
-                    <p className="text-sm text-gray-600">Documentation</p>
-                    <p className="font-bold text-green-700">Comprehensive</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Inspection Frequency</p>
-                    <p className="font-bold text-green-700">Quarterly</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Response Time</p>
-                    <p className="font-bold text-green-700">Within 48 hours</p>
-                  </div>
-                </div>
-              </div>
-            ) : score >= 75 ? (
-              <div className="space-y-3">
-                <p className="text-gray-900 font-semibold text-lg">Systematic Maintenance Approach</p>
-                <p className="text-gray-700 leading-relaxed">
-                  This property maintains strong systematic practices that place it above 65% of comparable properties. 
-                  Key systems have documented service records and routine inspections catch most issues early. 
-                  A preventive maintenance schedule is in place, though opportunities exist to expand documentation 
-                  and increase inspection frequency for even better results.
-                </p>
-                <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-blue-200">
-                  <div>
-                    <p className="text-sm text-gray-600">Documentation</p>
-                    <p className="font-bold text-amber-700">Good</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Inspection Frequency</p>
-                    <p className="font-bold text-amber-700">Semi-Annual</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Response Time</p>
-                    <p className="font-bold text-amber-700">Within 1 week</p>
-                  </div>
-                </div>
-              </div>
-            ) : score >= 65 ? (
-              <div className="space-y-3">
-                <p className="text-gray-900 font-semibold text-lg">Developing Maintenance Habits</p>
-                <p className="text-gray-700 leading-relaxed">
-                  This property shows emerging maintenance awareness with some tracking in place, but significant 
-                  gaps remain. Documentation is incomplete for many systems, inspections happen irregularly, and 
-                  preventive maintenance is limited. Without improvement, this property faces elevated risk of 
-                  unexpected major repairs and expenses.
-                </p>
-                <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-blue-200">
-                  <div>
-                    <p className="text-sm text-gray-600">Documentation</p>
-                    <p className="font-bold text-orange-700">Partial</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Inspection Frequency</p>
-                    <p className="font-bold text-orange-700">Annual</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Response Time</p>
-                    <p className="font-bold text-orange-700">Reactive</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-gray-900 font-semibold text-lg">Reactive Maintenance Approach</p>
-                <p className="text-gray-700 leading-relaxed">
-                  This property operates in reactive mode - addressing issues only after they become problems. 
-                  Little to no system documentation exists, inspections are rare or nonexistent, and no preventive 
-                  maintenance schedule is followed. This creates high risk of expensive emergency repairs, potential 
-                  cascade failures, and significant financial exposure.
-                </p>
-                <div className="grid md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-red-200">
-                  <div>
-                    <p className="text-sm text-gray-600">Documentation</p>
-                    <p className="font-bold text-red-700">Minimal</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Inspection Frequency</p>
-                    <p className="font-bold text-red-700">Rare/None</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Response Time</p>
-                    <p className="font-bold text-red-700">Emergency Only</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Score Breakdown */}
-        <Card className="mb-8">
           <CardContent className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Score Breakdown</h3>
-            <div className="space-y-4">
+            <div className="space-y-5">
               {phases.map((phase, idx) => {
                 const percentage = (phase.score / phase.max) * 100;
+                const phaseColors = ['blue', 'green', 'purple'];
+                const color = phaseColors[idx];
                 return (
-                  <div key={idx}>
+                  <div key={idx} className="group">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-900">{phase.name}</span>
-                      <span className="text-gray-600">{phase.score}/{phase.max} points</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full bg-${color}-600`}></div>
+                        <span className="font-semibold text-gray-900">{phase.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold text-gray-900">{phase.score}</span>
+                        <span className="text-gray-400">/</span>
+                        <span className="text-lg text-gray-500">{phase.max}</span>
+                      </div>
                     </div>
-                    <Progress value={percentage} className="h-3" />
+                    <div className="relative">
+                      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r from-${color}-500 to-${color}-600 transition-all duration-1000 rounded-full`}
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600">
+                        {Math.round(percentage)}%
+                      </span>
+                    </div>
                   </div>
                 );
               })}
@@ -578,19 +561,22 @@ export default function Score360() {
           )}
         </div>
 
-        {/* Path to Next Level */}
+        {/* Path to Next Level - Clearer Format */}
         {score < 96 && (
-          <Card className="mb-8 border-2 border-blue-200 bg-blue-50 print:hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-                Your Path to {score < 75 ? 'Bronze (75)' : score < 85 ? 'Silver (85)' : score < 90 ? 'Gold (90)' : 'Platinum (96)'}
-              </CardTitle>
+          <Card className="mb-6 shadow-lg border-2 border-blue-300 print:hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                  Next Level: {score < 75 ? 'Bronze (75)' : score < 85 ? 'Silver (85)' : score < 90 ? 'Gold (90)' : 'Platinum (96)'}
+                </CardTitle>
+                <Badge className="bg-blue-600 text-lg px-4 py-1">
+                  {(score < 75 ? 75 : score < 85 ? 85 : score < 90 ? 90 : 96) - score} pts away
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-6">
-                You're <span className="font-bold text-blue-600">{(score < 75 ? 75 : score < 85 ? 85 : score < 90 ? 90 : 96) - score} points</span> away from your next certification level.
-              </p>
+            <CardContent className="p-6">
+
               
               <div className="space-y-4">
                 {score < 65 && (
@@ -765,126 +751,113 @@ export default function Score360() {
                 )}
               </div>
               
-              <div className="mt-6 p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
-                <p className="text-lg mb-2">Total Investment to Next Level:</p>
-                <p className="text-4xl font-bold mb-2">
-                  {score < 65 ? '$1,000' : score < 75 ? '$200' : score < 85 ? '$400' : score < 90 ? '$800' : '$1,200'}
-                </p>
-                <p className="text-sm opacity-90">
-                  Potential savings: {score < 75 ? '$5,000-15,000' : score < 85 ? '$3,000-8,000' : '$2,000-5,000'} in first year
-                </p>
+              <div className="mt-6 grid md:grid-cols-2 gap-4">
+                <div className="p-5 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl">
+                  <p className="text-sm opacity-90 mb-1">Investment Required</p>
+                  <p className="text-3xl md:text-4xl font-bold">
+                    {score < 65 ? '$1,000' : score < 75 ? '$200' : score < 85 ? '$400' : score < 90 ? '$800' : '$1,200'}
+                  </p>
+                </div>
+                <div className="p-5 bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-xl">
+                  <p className="text-sm opacity-90 mb-1">Potential Year 1 Savings</p>
+                  <p className="text-3xl md:text-4xl font-bold">
+                    {score < 75 ? '$5K-15K' : score < 85 ? '$3K-8K' : '$2K-5K'}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Certified Benefits or Path Forward */}
+        {/* Certified Benefits - More Visual */}
         {score >= 75 ? (
-          <Card className="mb-8 border-2 border-green-200 bg-green-50">
-            <CardHeader>
+          <Card className="mb-6 shadow-lg border-2 border-green-300">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-6 h-6 text-green-600" />
-                Certified Benefits & Value
+                <Award className="w-6 h-6 text-green-600" />
+                Your Certified Benefits
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-6">
-                {cert.level} certification unlocks tangible financial benefits and market advantages:
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-lg border-2 border-green-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 text-lg">Insurance Discount</p>
-                      <p className="text-3xl font-bold text-green-600 my-2">
-                        {score >= 90 ? '15%' : score >= 85 ? '10%' : '5%'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Eligible for homeowner's insurance discount. Save ${score >= 90 ? '300-500' : score >= 85 ? '200-300' : '100-200'}/year.
-                      </p>
-                    </div>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Shield className="w-8 h-8 text-green-600" />
+                    <p className="font-bold text-gray-900 text-lg">Insurance Discount</p>
                   </div>
+                  <p className="text-4xl font-bold text-green-700 mb-1">
+                    {score >= 90 ? '15%' : score >= 85 ? '10%' : '5%'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Save ${score >= 90 ? '300-500' : score >= 85 ? '200-300' : '100-200'}/year
+                  </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg border-2 border-green-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <HomeIcon className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 text-lg">Increased Home Value</p>
-                      <p className="text-3xl font-bold text-blue-600 my-2">
-                        {score >= 90 ? '5-8%' : score >= 85 ? '3-5%' : '2-3%'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Well-maintained homes command premium pricing and attract quality buyers faster.
-                      </p>
-                    </div>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border-2 border-blue-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <HomeIcon className="w-8 h-8 text-blue-600" />
+                    <p className="font-bold text-gray-900 text-lg">Property Value</p>
                   </div>
+                  <p className="text-4xl font-bold text-blue-700 mb-1">
+                    +{score >= 90 ? '5-8%' : score >= 85 ? '3-5%' : '2-3%'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Premium pricing advantage
+                  </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg border-2 border-green-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 text-lg">Faster Sale Time</p>
-                      <p className="text-3xl font-bold text-purple-600 my-2">
-                        {score >= 85 ? '20-30' : '15-20'} days
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Certified homes sell faster with fewer negotiation issues during inspection periods.
-                      </p>
-                    </div>
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl border-2 border-purple-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Calendar className="w-8 h-8 text-purple-600" />
+                    <p className="font-bold text-gray-900 text-lg">Faster Sale</p>
                   </div>
+                  <p className="text-4xl font-bold text-purple-700 mb-1">
+                    {score >= 85 ? '-25' : '-18'} days
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Quicker transaction time
+                  </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg border-2 border-green-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 text-lg">Fewer Emergencies</p>
-                      <p className="text-3xl font-bold text-amber-600 my-2">
-                        {score >= 90 ? '90%' : score >= 85 ? '75%' : '60%'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Reduction in unexpected repair costs through proactive maintenance and early detection.
-                      </p>
-                    </div>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-xl border-2 border-amber-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <CheckCircle2 className="w-8 h-8 text-amber-600" />
+                    <p className="font-bold text-gray-900 text-lg">Less Emergencies</p>
                   </div>
+                  <p className="text-4xl font-bold text-amber-700 mb-1">
+                    -{score >= 90 ? '90%' : score >= 85 ? '75%' : '60%'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Fewer surprise repairs
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-white rounded-lg border-2 border-green-300">
-                <p className="font-bold text-gray-900 mb-2">Estimated Annual Value:</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div className="mt-6 p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl">
+                <p className="text-sm opacity-90 mb-1">Total Annual Value</p>
+                <p className="text-3xl md:text-4xl font-bold mb-2">
                   ${score >= 90 ? '5,000-10,000' : score >= 85 ? '3,000-6,000' : '2,000-4,000'}+
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Combined savings from insurance discounts, avoided emergency repairs, and property value appreciation.
+                <p className="text-sm opacity-90">
+                  Combined insurance savings, prevented repairs, and property value gains
                 </p>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card className="mb-8 border-2 border-orange-200 bg-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-orange-600" />
-                Path to Certification
-              </CardTitle>
+          <Card className="mb-6 shadow-lg border-2 border-orange-300">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-200">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+                  Get Certified
+                </CardTitle>
+                <Badge className="bg-orange-600 text-lg px-4 py-1">
+                  {75 - score} pts to Bronze
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-4">
-                You're <span className="font-bold">{75 - score} points</span> away from Bronze certification. 
-                Here's what you need to unlock certified benefits:
-              </p>
+            <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-lg border-2 border-orange-200">
                   <p className="font-bold text-gray-900 mb-2">✓ Complete System Documentation</p>
@@ -902,49 +875,51 @@ export default function Score360() {
                   <p className="text-xs text-orange-600 mt-1">Worth +{Math.max(75 - score - 40, 0)} points</p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-orange-100 rounded-lg border-2 border-orange-300">
-                <p className="font-bold text-gray-900">Once certified, you'll unlock:</p>
-                <ul className="text-sm text-gray-700 mt-2 space-y-1">
-                  <li>• Insurance discounts (5-15%)</li>
-                  <li>• Faster home sale times (15-30 days)</li>
-                  <li>• Higher property values (2-8%)</li>
-                  <li>• Dramatically fewer emergency repairs</li>
-                </ul>
+              <div className="mt-6 p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl">
+                <p className="font-bold text-lg mb-3">Once Certified at Bronze (75+):</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span>5% insurance discount</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span>Faster sale (15-20 days)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span>+2-3% property value</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                    <span>60% fewer emergencies</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
         
-        {/* Verification Footer */}
-        <div className="mt-12 pt-8 border-t-2 border-gray-300">
-          <div className="grid md:grid-cols-3 gap-8 mb-6">
+        {/* Verification Footer - Simplified */}
+        <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="grid md:grid-cols-3 gap-6 mb-4">
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Issued By</p>
-              <p className="font-bold text-gray-900">360° Method Platform</p>
-              <p className="text-sm text-gray-600">Property Maintenance Certification</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Issued By</p>
+              <p className="font-bold text-gray-900">360° Method</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Certificate ID</p>
-              <p className="font-mono font-bold text-gray-900">{propertyAddress.replace(/\s/g, '').substring(0, 6).toUpperCase()}-{score}-{new Date().getFullYear()}</p>
-              <p className="text-sm text-gray-600">Unique verification code</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Certificate ID</p>
+              <p className="font-mono font-semibold text-gray-900 text-sm">{propertyAddress.replace(/\s/g, '').substring(0, 6).toUpperCase()}-{score}-{new Date().getFullYear()}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Valid Until</p>
-              <p className="font-bold text-gray-900">{new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-              <p className="text-sm text-gray-600">Annual recertification required</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Valid Through</p>
+              <p className="font-bold text-gray-900">{new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
             </div>
           </div>
-          
-          <div className="bg-gray-100 p-6 rounded-lg text-center">
-            <p className="text-sm text-gray-600 mb-2">
-              This certificate represents a comprehensive assessment of property maintenance practices using 
-              the 360° Method scoring framework. Scores are calculated based on system documentation, 
-              inspection frequency, preventive maintenance schedules, and historical repair responsiveness.
-            </p>
-            <p className="text-xs text-gray-500 mt-4">
-              To verify this certificate, visit <span className="font-semibold">360method.com/verify</span> and enter the Certificate ID above.
-            </p>
-          </div>
+          <p className="text-xs text-gray-500 text-center pt-4 border-t border-gray-200">
+            This score reflects your property's maintenance practices and system health as of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. 
+            Annual recertification recommended.
+          </p>
         </div>
       </div>
       
