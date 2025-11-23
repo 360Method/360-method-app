@@ -150,8 +150,13 @@ export default function DemoPortfolio() {
               </Badge>
             </div>
             
-            <p className="text-xl text-gray-700 mb-2">Better than 65% of investor portfolios.</p>
-            <p className="text-2xl font-bold text-gray-900 mb-8">Solid foundation. Ready to scale!</p>
+            <p className="text-xl text-gray-700 mb-2">{portfolioData.message}</p>
+            <p className="text-2xl font-bold text-gray-900 mb-8">
+              {portfolioScore >= 90 ? 'Elite portfolio management!' :
+               portfolioScore >= 85 ? 'Professional-grade portfolio!' :
+               portfolioScore >= 75 ? 'Solid foundation. Ready to scale!' :
+               'Room for improvement across properties'}
+            </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
