@@ -426,26 +426,7 @@ export default function Properties() {
               demoData={demoData}
             />
 
-            {/* Exit Demo CTA */}
-            <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
-              <CardContent className="p-8 text-center">
-                <Lock className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ready to Add Your Real Property?
-                </h3>
-                <p className="text-gray-700 mb-6 max-w-md mx-auto">
-                  Exit demo mode to add and manage your properties with the complete 360° Method.
-                </p>
-                <Button 
-                  onClick={handleExitDemoAndAddProperty}
-                  className="bg-blue-600 hover:bg-blue-700 text-lg px-8"
-                  style={{ minHeight: '56px' }}
-                >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Exit Demo & Add My Property
-                </Button>
-              </CardContent>
-            </Card>
+
           </div>
         )}
 
@@ -508,26 +489,7 @@ export default function Properties() {
               ))}
             </div>
 
-            {/* Exit Demo CTA */}
-            <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-purple-50 shadow-xl">
-              <CardContent className="p-8 text-center">
-                <Lock className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ready to Add Your Real Portfolio?
-                </h3>
-                <p className="text-gray-700 mb-6 max-w-md mx-auto">
-                  Exit demo mode to add and manage your properties with complete portfolio intelligence.
-                </p>
-                <Button 
-                  onClick={handleExitDemoAndAddProperty}
-                  className="bg-blue-600 hover:bg-blue-700 text-lg px-8"
-                  style={{ minHeight: '56px' }}
-                >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Exit Demo & Add My Portfolio
-                </Button>
-              </CardContent>
-            </Card>
+
           </div>
         )}
 
