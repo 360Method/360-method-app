@@ -70,7 +70,7 @@ export default function Score360() {
   // Get property from demo data
   const getPropertyData = () => {
     // Portfolio view - return portfolio average as a virtual property
-    if (portfolioView && isPortfolio) {
+    if (portfolioView && isPortfolio && !propertyId) {
       return {
         id: 'portfolio',
         address: 'Portfolio Average',
@@ -88,9 +88,11 @@ export default function Score360() {
     if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;
     if (propertyId === 'demo-excellent-001') return DEMO_PROPERTY_EXCELLENT.property;
 
-    // Portfolio investor properties
-    const portfolioProperty = DEMO_PORTFOLIO_INVESTOR.properties.find(p => p.id === propertyId);
-    if (portfolioProperty) return portfolioProperty;
+    // Portfolio investor properties - individual property
+    if (propertyId?.startsWith('demo-investor')) {
+      const portfolioProperty = DEMO_PORTFOLIO_INVESTOR.properties.find(p => p.id === propertyId);
+      if (portfolioProperty) return portfolioProperty;
+    }
 
     return null;
   };
