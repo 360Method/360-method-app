@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Award, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,72 +8,105 @@ import { Badge } from '@/components/ui/badge';
 import ScoreBadge from '@/components/score/ScoreBadge';
 import NextMilestone from '@/components/score/NextMilestone';
 import { useDemo } from '@/components/shared/DemoContext';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 
 const CERTIFICATION_LEVELS = {
-  platinum: { label: 'Platinum', color: 'from-gray-300 to-gray-400', minScore: 95 },
+  platinum: { label: 'Platinum', color: 'from-purple-400 to-purple-600', minScore: 96 },
   gold: { label: 'Gold', color: 'from-yellow-400 to-yellow-600', minScore: 90 },
   silver: { label: 'Silver', color: 'from-gray-400 to-gray-500', minScore: 85 },
-  bronze: { label: 'Bronze', color: 'from-amber-700 to-amber-900', minScore: 75 },
+  bronze: { label: 'Bronze', color: 'from-amber-600 to-amber-800', minScore: 75 },
   fair: { label: 'Fair', color: 'from-gray-200 to-gray-300', minScore: 0 }
+};
+
+const getCertificationLevel = (score) => {
+  if (score >= 96) return 'platinum';
+  if (score >= 90) return 'gold';
+  if (score >= 85) return 'silver';
+  if (score >= 75) return 'bronze';
+  return 'fair';
 };
 
 export default function PropertyScore() {
   const navigate = useNavigate();
   const { propertyId } = useParams();
+  const [searchParams] = useSearchParams();
   const { demoData } = useDemo();
   
-  // For demo, use demo property data
-  const property = demoData?.property || {
-    address: '1234 Maple Street',
-    totalScore: 92,
-    certificationLevel: 'gold',
-    breakdown: {
-      condition: 36,
-      maintenance: 34,
-      improvement: 18
-    },
-    quickWins: [
-      { action: 'Complete quarterly inspections', points: 2, cost: 'Free' },
-      { action: 'Schedule annual HVAC service', points: 2, cost: '$150' },
-      { action: 'Add exterior cameras', points: 1, cost: '$300' }
-    ]
-  };
+  const propertyIdFromParams = searchParams.get('property_id') || propertyId;
   
-  const level = CERTIFICATION_LEVELS[property.certificationLevel] || CERTIFICATION_LEVELS.fair;
-  const isCertified = property.certificationLevel !== 'fair';
+  const { data: propertyFromDB } = useQuery({
+    queryKey: ['property', propertyIdFromParams],
+    queryFn: async () => {
+      if (!propertyIdFromParams) return null;
+      const props = await base44.entities.Property.filter({ id: propertyIdFromParams });
+      return props[0] || null;
+    },
+    enabled: !!propertyIdFromParams
+  });
+  
+  // Use actual property data, fallback to demo data
+  const property = propertyFromDB || demoData?.property || null;
+  
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">No Property Found</h2>
+            <p className="text-gray-600 mb-6">Please select a property to view its score.</p>
+            <Button onClick={() => navigate(-1)}>Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  const score = property.health_score || 0;
+  const certLevel = getCertificationLevel(score);
+  const level = CERTIFICATION_LEVELS[certLevel];
+  const isCertified = certLevel !== 'fair';
+  
+  // Calculate phase scores based on actual property score
+  const breakdown = {
+    condition: Math.round(score * 0.4),
+    maintenance: Math.round(score * 0.35),
+    improvement: Math.round(score * 0.25)
+  };
   
   const categoryData = [
     {
-      name: 'Property Condition',
-      score: property.breakdown.condition,
+      name: 'AWARE (Own)',
+      score: breakdown.condition,
       maxScore: 40,
-      description: 'Physical state of systems and structures',
+      description: 'System documentation and property baseline',
       improvements: [
-        'Complete all baseline documentation',
-        'Address 2 outstanding maintenance items',
-        'Update aging HVAC system'
+        'Complete all system baseline documentation',
+        'Add photos for all major systems',
+        'Document warranty and service records'
       ]
     },
     {
-      name: 'Maintenance History',
-      score: property.breakdown.maintenance,
+      name: 'ACT (Build)',
+      score: breakdown.maintenance,
       maxScore: 35,
-      description: 'Consistency and quality of upkeep',
+      description: 'Inspection routines and maintenance consistency',
       improvements: [
-        'Complete seasonal inspection',
-        'Log 3 recent maintenance tasks',
-        'Schedule annual HVAC service'
+        'Complete all 4 seasonal inspections',
+        'Address all identified issues promptly',
+        'Maintain perfect quarterly check record'
       ]
     },
     {
-      name: 'Value Improvement',
-      score: property.breakdown.improvement,
+      name: 'ADVANCE (Grow)',
+      score: breakdown.improvement,
       maxScore: 25,
-      description: 'Strategic upgrades and preservation',
+      description: 'Strategic upgrades and system preservation',
       improvements: [
-        'Complete 1 high-ROI upgrade',
-        'Document energy efficiency improvements',
-        'Implement preservation recommendations'
+        'Implement preservation recommendations',
+        'Complete strategic upgrades',
+        'Optimize system lifespans'
       ]
     }
   ];
