@@ -210,8 +210,8 @@ function LayoutContent({ children }) {
 
         {/* Desktop Sidebar - Only show if not landing/waitlist */}
         {showAppUI && (
-          <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col">
-            <div className="border-b border-gray-200 p-4">
+          <aside className="hidden md:flex md:w-64 border-r border-gray-200 bg-white flex-col fixed left-0 top-0 bottom-0 z-40">
+            <div className="border-b border-gray-200 p-4 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <img 
                   src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png" 
@@ -225,7 +225,7 @@ function LayoutContent({ children }) {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 flex-shrink min-h-0">
               {NAVIGATION_STRUCTURE.map((section) => (
                 <div key={section.section} className="mb-4">
                   {section.section !== "Core" && (
@@ -308,7 +308,7 @@ function LayoutContent({ children }) {
               ))}
             </div>
 
-            <div className="border-t border-gray-200 p-2 space-y-2">
+            <div className="border-t border-gray-200 p-2 space-y-2 flex-shrink-0">
               <HelpSystem
                 currentPhase={getCurrentPhase()}
                 nextStep={getNextStep()}
@@ -320,8 +320,8 @@ function LayoutContent({ children }) {
                 <AccountDropdown isMobile={false} />
               </div>
             </div>
-          </aside>
-        )}
+            </aside>
+            )}
 
         {/* Mobile Menu - Only show if not landing/waitlist */}
         {showAppUI && (
@@ -457,7 +457,7 @@ function LayoutContent({ children }) {
           </>
         )}
 
-        <main className={`flex-1 flex flex-col overflow-x-hidden ${showAppUI ? '' : 'w-full'}`}>
+        <main className={`flex-1 flex flex-col overflow-x-hidden ${showAppUI ? 'md:ml-64' : 'w-full'}`}>
           {/* Mobile Header - Only show if not landing/waitlist */}
           {showAppUI && (
             <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
