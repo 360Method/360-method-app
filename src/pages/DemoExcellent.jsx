@@ -161,53 +161,42 @@ export default function DemoExcellent() {
           </Button>
         </div>
         
-        {/* Property Header */}
-        <Card className="mb-8 bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="text-4xl">🏆</div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{demoData.name}</h1>
-                    <div className="flex items-center gap-2 text-gray-600 mt-1">
-                      <Home className="w-4 h-4" />
-                      <span>{demoData.location}</span>
-                      <span>•</span>
-                      <Calendar className="w-4 h-4" />
-                      <span>Built {demoData.built}</span>
-                    </div>
-                  </div>
-                </div>
-                <Badge className="bg-yellow-500 text-white text-lg px-4 py-1">
-                  ⭐⭐⭐ Gold Certified
-                </Badge>
+        {/* HERO SECTION - Above Fold */}
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-50 p-8">
+          <div className="text-center max-w-2xl">
+            <div className="text-6xl mb-4">🏆</div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">{demoData.name}</h1>
+            <p className="text-xl text-gray-600 mb-2">{demoData.location}</p>
+            <p className="text-lg text-gray-500 mb-8">Built {demoData.built}</p>
+            
+            <div className="border-t-2 border-gray-300 my-8"></div>
+            
+            {/* Score Display */}
+            <div className="mb-6">
+              <p className="text-gray-600 text-lg mb-2">YOUR SCORE:</p>
+              <div className="text-8xl md:text-9xl font-bold text-yellow-600 mb-4">
+                {demoData.totalScore}<span className="text-5xl text-gray-400">/100</span>
               </div>
-              <ScoreBadgeDemo 
-                score={demoData.totalScore} 
-                size="large"
-                showLabel={false}
-                showPercentile={true}
-              />
+              <Progress value={demoData.totalScore} className="h-6 mb-4" />
+              <Badge className="bg-yellow-500 text-white text-xl px-6 py-2">
+                ⭐⭐⭐ GOLD CERTIFIED
+              </Badge>
             </div>
             
-            <div className="mt-4 p-4 bg-white rounded-lg">
-              <div className="flex items-start gap-2">
-                <Crown className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-gray-900 font-semibold">What this score means:</p>
-                  <p className="text-gray-700 mt-1">
-                    You're in the TOP 5% of all homes. Elite maintenance. Exceptional care.
-                  </p>
-                  <p className="text-sm text-yellow-700 font-medium mt-2 flex items-center gap-2">
-                    <Star className="w-4 h-4 fill-yellow-600" />
-                    Better than 95 out of 100 homes
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="text-xl text-gray-700 mb-2">Top 5% of all homes.</p>
+            <p className="text-2xl font-bold text-gray-900 mb-8">Elite homeowner status!</p>
+            
+            <Button 
+              size="lg"
+              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+            >
+              See Your Journey to Excellence ↓
+            </Button>
+          </div>
+        </div>
+        
+        <div id="breakdown" className="py-8"></div>
         
         {/* What This Score Means */}
         <Card className="mb-8">

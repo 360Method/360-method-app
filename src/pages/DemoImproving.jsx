@@ -147,47 +147,42 @@ export default function DemoImproving() {
           </Button>
         </div>
         
-        {/* Property Header */}
-        <Card className="mb-8 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="text-4xl">😊</div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{demoData.name}</h1>
-                    <div className="flex items-center gap-2 text-gray-600 mt-1">
-                      <Home className="w-4 h-4" />
-                      <span>{demoData.location}</span>
-                      <span>•</span>
-                      <Calendar className="w-4 h-4" />
-                      <span>Built {demoData.built}</span>
-                    </div>
-                  </div>
-                </div>
-                <Badge className="bg-amber-600 text-white text-lg px-4 py-1">
-                  ⭐ Bronze Certified
-                </Badge>
+        {/* HERO SECTION - Above Fold */}
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50 p-8">
+          <div className="text-center max-w-2xl">
+            <div className="text-6xl mb-4">😊</div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">{demoData.name}</h1>
+            <p className="text-xl text-gray-600 mb-2">{demoData.location}</p>
+            <p className="text-lg text-gray-500 mb-8">Built {demoData.built}</p>
+            
+            <div className="border-t-2 border-gray-300 my-8"></div>
+            
+            {/* Score Display */}
+            <div className="mb-6">
+              <p className="text-gray-600 text-lg mb-2">YOUR SCORE:</p>
+              <div className="text-8xl md:text-9xl font-bold text-amber-600 mb-4">
+                {demoData.totalScore}<span className="text-5xl text-gray-400">/100</span>
               </div>
-              <ScoreBadgeDemo 
-                score={demoData.totalScore} 
-                size="large"
-                showLabel={false}
-                showPercentile={true}
-              />
+              <Progress value={demoData.totalScore} className="h-6 mb-4" />
+              <Badge className="bg-amber-600 text-white text-xl px-6 py-2">
+                ⭐ BRONZE CERTIFIED
+              </Badge>
             </div>
             
-            <div className="mt-4 p-4 bg-white rounded-lg">
-              <p className="text-gray-700 font-medium">
-                You're maintaining systematically. Better than 65% of all homes.
-              </p>
-              <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                Score improving from 68 → 78 this year
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="text-xl text-gray-700 mb-2">Better than 65 out of 100 homes.</p>
+            <p className="text-2xl font-bold text-gray-900 mb-8">You're on the right track!</p>
+            
+            <Button 
+              size="lg"
+              onClick={() => document.getElementById('breakdown')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-amber-600 hover:bg-amber-700 text-white text-xl px-12 py-6 rounded-full shadow-2xl"
+            >
+              See Your Path to Silver ↓
+            </Button>
+          </div>
+        </div>
+        
+        <div id="breakdown" className="py-8"></div>
         
         {/* What This Score Means */}
         <Card className="mb-8">
