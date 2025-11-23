@@ -282,7 +282,7 @@ export default function DemoPortfolio() {
             </div>
             <div className="mt-4 pt-4 border-t border-blue-300">
               <p className="text-sm font-semibold text-blue-900">
-                Portfolio improving: 84 → 88 (Bronze → Silver)
+                Portfolio improving: {portfolioScore} → 85 ({getTier(portfolioScore)} → Silver)
               </p>
             </div>
           </CardContent>
