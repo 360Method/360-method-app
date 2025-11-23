@@ -136,8 +136,17 @@ export default function DemoPortfolio() {
                 {portfolioData.portfolioScore}<span className="text-5xl text-gray-400">/100</span>
               </div>
               <Progress value={portfolioData.portfolioScore} className="h-6 mb-4" />
-              <Badge className="bg-amber-600 text-white text-xl px-6 py-2">
-                ⭐ BRONZE PORTFOLIO
+              <Badge className={`text-white text-xl px-6 py-2 ${
+                portfolioScore >= 90 ? 'bg-yellow-500' :
+                portfolioScore >= 85 ? 'bg-gray-400' :
+                portfolioScore >= 75 ? 'bg-amber-600' :
+                'bg-orange-500'
+              }`}>
+                {portfolioScore >= 96 ? '👑 PLATINUM' :
+                 portfolioScore >= 90 ? '⭐⭐⭐ GOLD' :
+                 portfolioScore >= 85 ? '⭐⭐ SILVER' :
+                 portfolioScore >= 75 ? '⭐ BRONZE' :
+                 'FAIR'} PORTFOLIO
               </Badge>
             </div>
             
