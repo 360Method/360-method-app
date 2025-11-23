@@ -125,15 +125,34 @@ export default function PropertyScore() {
             Back
           </Button>
           
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-gray-900">360° Property Score</h1>
-            {isCertified && (
-              <Badge className={`bg-gradient-to-r ${level.color} text-white`}>
-                {level.label} Certified
-              </Badge>
-            )}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">360° Property Score</h1>
+                {isCertified && (
+                  <Badge 
+                    className="text-white"
+                    style={{
+                      background: score >= 96 ? 'linear-gradient(to right, #A855F7, #9333EA)' :
+                        score >= 90 ? 'linear-gradient(to right, #FACC15, #EAB308)' :
+                        score >= 85 ? 'linear-gradient(to right, #9CA3AF, #6B7280)' :
+                        'linear-gradient(to right, #F59E0B, #D97706)'
+                    }}
+                  >
+                    {level.label} Certified
+                  </Badge>
+                )}
+              </div>
+              <p className="text-gray-600">{property.address || property.street_address}</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/score360?property_id=' + (propertyIdFromParams || property.id))}
+              className="gap-2"
+            >
+              View Full Report
+            </Button>
           </div>
-          <p className="text-gray-600 mt-2">{property.address}</p>
         </div>
         
         {/* Overall Score Card */}
@@ -166,8 +185,8 @@ export default function PropertyScore() {
               
               <div className="flex-shrink-0">
                 <ScoreBadge 
-                  score={property.totalScore} 
-                  certificationLevel={property.certificationLevel}
+                  score={score} 
+                  certificationLevel={certLevel}
                   size="xl"
                   showTrend
                   showPercentile
@@ -179,9 +198,13 @@ export default function PropertyScore() {
         
         {/* Next Milestone */}
         <NextMilestone 
-          currentScore={property.totalScore}
-          certificationLevel={property.certificationLevel}
-          quickWins={property.quickWins || []}
+          currentScore={score}
+          certificationLevel={certLevel}
+          quickWins={[
+            { action: 'Complete system baseline', points: Math.max(40 - breakdown.condition, 0), cost: 'Free' },
+            { action: 'Schedule seasonal inspection', points: Math.max(35 - breakdown.maintenance, 0), cost: '$200' },
+            { action: 'Add strategic upgrades', points: Math.max(25 - breakdown.improvement, 0), cost: '$500+' }
+          ].filter(w => w.points > 0)}
         />
         
         {/* Score Breakdown */}
