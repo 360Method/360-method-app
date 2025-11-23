@@ -459,7 +459,7 @@ export default function DemoExcellent() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg"
-                className="bg-white text-blue-600 hover:bg-gray-100 font-bold"
+                className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold"
                 onClick={() => navigate(createPageUrl('Waitlist'))}
               >
                 Join Waitlist

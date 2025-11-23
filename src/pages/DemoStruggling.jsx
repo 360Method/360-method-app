@@ -718,7 +718,7 @@ export default function DemoStruggling() {
             <Button 
               size="lg"
               onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="bg-white text-blue-600 hover:bg-gray-100 font-bold text-2xl px-16 py-8 rounded-full shadow-2xl mb-12"
+              className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold text-2xl px-16 py-8 rounded-full shadow-2xl mb-12"
             >
               JOIN WAITLIST
             </Button>
