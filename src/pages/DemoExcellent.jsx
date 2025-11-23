@@ -203,7 +203,7 @@ export default function DemoExcellent() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + `?property_id=demo-homeowner-001`)}
+                onClick={() => navigate(createPageUrl('Score360') + '?property_id=demo-excellent-001')}
                 className="border-2 border-yellow-600 text-yellow-600 hover:bg-yellow-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report
