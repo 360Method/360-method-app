@@ -688,67 +688,39 @@ export default function DemoStruggling() {
         </div>
         
         {/* SECTION 9: THE CALL TO ACTION */}
-        <div className="py-20 px-8 bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-5xl font-bold mb-8">READY TO GO FROM 62 TO 75?</h2>
+        <div className="py-16 px-8 bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Go From 62 to 75?</h2>
             
-            <p className="text-2xl mb-4">We're launching in Clark County.</p>
-            <p className="text-2xl mb-12">Join the waitlist now.</p>
+            <p className="text-lg mb-8 opacity-90">
+              We're launching in Clark County. Join the waitlist now.
+            </p>
             
-            <Card className="bg-white text-gray-900 mb-8">
-              <CardContent className="p-8">
-                <p className="text-xl font-bold mb-6">When you join, you'll get:</p>
-                <ul className="space-y-4 text-lg text-left max-w-xl mx-auto">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                    <span>Your actual starting score</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                    <span>Your personalized 3-step plan</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                    <span>First access when we launch</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/20">
+              <p className="font-bold mb-4">When you join, you'll get:</p>
+              <ul className="space-y-3 text-sm text-left max-w-md mx-auto">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <span>Your actual starting score</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <span>Your personalized 3-step plan</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <span>First access when we launch</span>
+                </li>
+              </ul>
+            </div>
             
             <Button 
               size="lg"
               onClick={() => navigate(createPageUrl('Waitlist'))}
-              className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold text-2xl px-16 py-8 rounded-full shadow-2xl mb-12"
+              className="bg-yellow-400 text-gray-900 hover:bg-yellow-300 font-bold text-xl px-12 py-6 rounded-full shadow-2xl"
             >
-              JOIN WAITLIST
+              Join Waitlist
             </Button>
-            
-            <div className="border-t-2 border-white/30 pt-8">
-              <p className="text-xl mb-6">Or explore another demo:</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/10"
-                  onClick={() => navigate(createPageUrl('DemoImproving'))}
-                >
-                  78 - Already Improving
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/10"
-                  onClick={() => navigate(createPageUrl('DemoExcellent'))}
-                >
-                  92 - Crushing It
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/10"
-                  onClick={() => navigate(createPageUrl('DemoPortfolio'))}
-                >
-                  84 - Portfolio
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
