@@ -19,6 +19,21 @@ export default function Score360() {
   
   const propertyId = searchParams.get('property_id');
   
+  const handleBack = () => {
+    if (propertyId?.startsWith('demo-')) {
+      const parts = propertyId.split('-');
+      const demoType = parts[1]; // struggling, improving, excellent, investor
+      if (demoType === 'investor') {
+        navigate(createPageUrl('DemoPortfolio'));
+      } else {
+        const capitalizedType = demoType.charAt(0).toUpperCase() + demoType.slice(1);
+        navigate(createPageUrl(`Demo${capitalizedType}`));
+      }
+    } else {
+      navigate(createPageUrl('Properties'));
+    }
+  };
+  
   // Get property from demo data
   const getPropertyData = () => {
     if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
@@ -84,7 +99,7 @@ export default function Score360() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
