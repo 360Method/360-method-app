@@ -70,7 +70,7 @@ export default function Score360() {
   // Get property from demo data
   const getPropertyData = () => {
     // Portfolio view - return portfolio average as a virtual property
-    if (portfolioView && isPortfolio && !propertyId) {
+    if (portfolioView && isPortfolio) {
       return {
         id: 'portfolio',
         address: 'Portfolio Average',
