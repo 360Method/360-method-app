@@ -42,6 +42,11 @@ import PortalMenu from './pages/PortalMenu';
 import PortalMarketplace from './pages/PortalMarketplace';
 import PortalOnboarding from './pages/PortalOnboarding';
 import PortalBudget from './pages/PortalBudget';
+import OperatorDashboard from './pages/OperatorDashboard';
+import OperatorLeads from './pages/OperatorLeads';
+import OperatorInspection from './pages/OperatorInspection';
+import OperatorWorkOrders from './pages/OperatorWorkOrders';
+import OperatorMarketplaceProfile from './pages/OperatorMarketplaceProfile';
 import __Layout from './Layout.jsx';
 
 
@@ -90,6 +95,11 @@ export const PAGES = {
     "PortalMarketplace": PortalMarketplace,
     "PortalOnboarding": PortalOnboarding,
     "PortalBudget": PortalBudget,
+    "OperatorDashboard": OperatorDashboard,
+    "OperatorLeads": OperatorLeads,
+    "OperatorInspection": OperatorInspection,
+    "OperatorWorkOrders": OperatorWorkOrders,
+    "OperatorMarketplaceProfile": OperatorMarketplaceProfile,
 }
 
 export const pagesConfig = {
