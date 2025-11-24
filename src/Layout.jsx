@@ -30,6 +30,7 @@ import BottomNav from "./components/navigation/BottomNav";
 import CartDrawer from "./components/cart/CartDrawer";
 import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
+import NotificationCenter from "./components/notifications/NotificationCenter";
 import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
@@ -377,19 +378,23 @@ function LayoutContent({ children }) {
             <div className="border-t border-gray-200 p-2 space-y-2 flex-shrink-0">
               {!sidebarCollapsed ? (
                 <>
-                  <HelpSystem
-                    currentPhase={getCurrentPhase()}
-                    nextStep={getNextStep()}
-                    selectedProperty={selectedProperty}
-                    systems={systems}
-                    tasks={tasks}
-                  />
+                  <div className="flex items-center gap-1 px-1">
+                    <NotificationCenter />
+                    <HelpSystem
+                      currentPhase={getCurrentPhase()}
+                      nextStep={getNextStep()}
+                      selectedProperty={selectedProperty}
+                      systems={systems}
+                      tasks={tasks}
+                    />
+                  </div>
                   <div className="px-1">
                     <AccountDropdown isMobile={false} />
                   </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-2">
+                  <NotificationCenter />
                   <HelpSystem
                     currentPhase={getCurrentPhase()}
                     nextStep={getNextStep()}
@@ -556,6 +561,7 @@ function LayoutContent({ children }) {
                   <p className="text-xs text-gray-500">Asset Command Center</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  <NotificationCenter />
                   <HelpSystem
                     currentPhase={getCurrentPhase()}
                     nextStep={getNextStep()}

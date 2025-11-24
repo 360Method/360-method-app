@@ -62,6 +62,7 @@ import AcceptInvitation from './pages/AcceptInvitation';
 import PaymentMethods from './pages/PaymentMethods';
 import OperatorEarnings from './pages/OperatorEarnings';
 import OwnerInvoices from './pages/OwnerInvoices';
+import NotificationSettings from './pages/NotificationSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -130,6 +131,7 @@ export const PAGES = {
     "PaymentMethods": PaymentMethods,
     "OperatorEarnings": OperatorEarnings,
     "OwnerInvoices": OwnerInvoices,
+    "NotificationSettings": NotificationSettings,
 }
 
 export const pagesConfig = {
