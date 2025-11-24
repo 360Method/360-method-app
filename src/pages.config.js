@@ -47,6 +47,11 @@ import OperatorLeads from './pages/OperatorLeads';
 import OperatorInspection from './pages/OperatorInspection';
 import OperatorWorkOrders from './pages/OperatorWorkOrders';
 import OperatorMarketplaceProfile from './pages/OperatorMarketplaceProfile';
+import OperatorClients from './pages/OperatorClients';
+import OperatorInvoices from './pages/OperatorInvoices';
+import OperatorInvoiceCreate from './pages/OperatorInvoiceCreate';
+import OperatorContractors from './pages/OperatorContractors';
+import OperatorReportBuilder from './pages/OperatorReportBuilder';
 import __Layout from './Layout.jsx';
 
 
@@ -100,6 +105,11 @@ export const PAGES = {
     "OperatorInspection": OperatorInspection,
     "OperatorWorkOrders": OperatorWorkOrders,
     "OperatorMarketplaceProfile": OperatorMarketplaceProfile,
+    "OperatorClients": OperatorClients,
+    "OperatorInvoices": OperatorInvoices,
+    "OperatorInvoiceCreate": OperatorInvoiceCreate,
+    "OperatorContractors": OperatorContractors,
+    "OperatorReportBuilder": OperatorReportBuilder,
 }
 
 export const pagesConfig = {
