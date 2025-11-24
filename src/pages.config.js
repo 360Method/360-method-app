@@ -56,6 +56,7 @@ import ContractorDashboard from './pages/ContractorDashboard';
 import ContractorJobDetail from './pages/ContractorJobDetail';
 import ContractorMessages from './pages/ContractorMessages';
 import ContractorProfile from './pages/ContractorProfile';
+import ContractorOnboarding from './pages/ContractorOnboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -118,6 +119,7 @@ export const PAGES = {
     "ContractorJobDetail": ContractorJobDetail,
     "ContractorMessages": ContractorMessages,
     "ContractorProfile": ContractorProfile,
+    "ContractorOnboarding": ContractorOnboarding,
 }
 
 export const pagesConfig = {

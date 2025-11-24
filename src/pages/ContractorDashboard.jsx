@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
+import ContractorBottomNav from '../components/contractor/BottomNav';
 import {
   Wrench,
   MapPin,
@@ -125,7 +126,7 @@ export default function ContractorDashboard() {
       </div>
 
       {/* Jobs List */}
-      <div className="p-4 space-y-3 pb-20">
+      <div className="p-4 space-y-3 pb-24">
         {filteredJobs.length === 0 ? (
           <Card className="p-12 text-center">
             <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -197,6 +198,8 @@ export default function ContractorDashboard() {
           })
         )}
       </div>
+
+      <ContractorBottomNav />
     </div>
   );
 }

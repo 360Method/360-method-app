@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import ContractorBottomNav from '../components/contractor/BottomNav';
 import { MessageCircle, Send, ArrowLeft } from 'lucide-react';
 
 export default function ContractorMessages() {
@@ -131,7 +132,7 @@ export default function ContractorMessages() {
       </div>
 
       {/* Thread List */}
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-3 pb-24">
         {threads.length === 0 ? (
           <Card className="p-12 text-center">
             <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -177,6 +178,8 @@ export default function ContractorMessages() {
           ))
         )}
       </div>
+
+      <ContractorBottomNav />
     </div>
   );
 }

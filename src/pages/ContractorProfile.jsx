@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import ContractorBottomNav from '../components/contractor/BottomNav';
 import {
   User,
   Building2,
@@ -94,7 +95,7 @@ export default function ContractorProfile() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -294,6 +295,8 @@ export default function ContractorProfile() {
           </div>
         </Card>
       </div>
+
+      <ContractorBottomNav />
     </div>
   );
 }
