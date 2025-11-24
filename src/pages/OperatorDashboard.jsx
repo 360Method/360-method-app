@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import StripeConnectCard from '../components/operator/StripeConnectCard';
 import { createPageUrl } from '@/utils';
 import {
   Users,
@@ -21,6 +22,15 @@ export default function OperatorDashboard() {
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me()
+  });
+
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator'],
+    queryFn: async () => {
+      const operators = await base44.entities.Operator.filter({ created_by: user?.email });
+      return operators[0] || null;
+    },
+    enabled: !!user
   });
 
   // Mock data - replace with actual queries
@@ -42,7 +52,7 @@ export default function OperatorDashboard() {
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Operator Dashboard
           </h1>
@@ -50,6 +60,13 @@ export default function OperatorDashboard() {
             Welcome back, {user?.full_name || 'Operator'}
           </p>
         </div>
+
+        {/* Stripe Connect Card */}
+        {myOperator && (
+          <div className="mb-6">
+            <StripeConnectCard operatorId={myOperator.id} />
+          </div>
+        )}
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">

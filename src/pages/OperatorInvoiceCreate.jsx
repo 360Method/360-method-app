@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, FileText, Send, Save } from 'lucide-react';
+import { Plus, X, FileText, Send, Save, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { createPageUrl } from '@/utils';
+import StripeSetupNotice from '../components/payments/StripeSetupNotice';
 
 export default function OperatorInvoiceCreate() {
   const [selectedClient, setSelectedClient] = useState(null);
@@ -54,7 +58,7 @@ export default function OperatorInvoiceCreate() {
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedClient) {
       toast.error('Please select a client');
       return;
@@ -63,16 +67,56 @@ export default function OperatorInvoiceCreate() {
       toast.error('Please fill in all line items');
       return;
     }
-    toast.success('Invoice sent successfully');
+
+    // Check Stripe connection
+    if (myOperator) {
+      const stripeAccounts = await base44.entities.OperatorStripeAccount.filter({
+        operator_id: myOperator.id
+      });
+
+      if (!stripeAccounts || stripeAccounts.length === 0 || !stripeAccounts[0].charges_enabled) {
+        toast.error('Please connect your Stripe account to receive payments');
+        return;
+      }
+    }
+
+    // Create invoice
+    await base44.entities.ServicePackage.create({
+      property_id: selectedClient.property_id || 'mock-property',
+      package_name: `Invoice - ${new Date().toLocaleDateString()}`,
+      item_count: lineItems.length,
+      total_estimated_cost_max: total,
+      final_cost_max: total,
+      actual_cost: total,
+      status: 'quoted',
+      operator_id: myOperator?.id,
+      payment_status: 'unpaid',
+      payment_due_date: paymentDueDate,
+      operator_quote: {
+        total_cost: total,
+        breakdown: lineItems,
+        notes: paymentTerms
+      }
+    });
+
+    toast.success('Invoice created successfully!');
+    window.location.href = createPageUrl('OperatorInvoices');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       <div className="max-w-4xl mx-auto p-4 md:p-6">
-        <div className="mb-8">
+        <Button variant="ghost" onClick={() => window.history.back()} className="mb-4 gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Invoice</h1>
           <p className="text-gray-600">Generate and send an invoice to your client</p>
         </div>
+
+        {myOperator && <StripeSetupNotice operatorId={myOperator.id} />}
 
         <Card className="p-6 mb-6">
           <div className="mb-6">
@@ -162,6 +206,9 @@ export default function OperatorInvoiceCreate() {
                   value={taxRate}
                   onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
                   className="w-24 text-right"
+                  min="0"
+                  max="100"
+                  step="0.1"
                 />
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -176,6 +223,30 @@ export default function OperatorInvoiceCreate() {
                   ${total.toFixed(2)}
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-6 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Payment Due Date
+              </label>
+              <Input
+                type="date"
+                value={paymentDueDate}
+                onChange={(e) => setPaymentDueDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Payment Terms
+              </label>
+              <Input
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+                placeholder="Due upon receipt"
+              />
             </div>
           </div>
         </Card>
