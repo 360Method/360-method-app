@@ -59,6 +59,9 @@ import ContractorProfile from './pages/ContractorProfile';
 import ContractorOnboarding from './pages/ContractorOnboarding';
 import PropertyAccessSettings from './pages/PropertyAccessSettings';
 import AcceptInvitation from './pages/AcceptInvitation';
+import PaymentMethods from './pages/PaymentMethods';
+import OperatorEarnings from './pages/OperatorEarnings';
+import OwnerInvoices from './pages/OwnerInvoices';
 import __Layout from './Layout.jsx';
 
 
@@ -124,6 +127,9 @@ export const PAGES = {
     "ContractorOnboarding": ContractorOnboarding,
     "PropertyAccessSettings": PropertyAccessSettings,
     "AcceptInvitation": AcceptInvitation,
+    "PaymentMethods": PaymentMethods,
+    "OperatorEarnings": OperatorEarnings,
+    "OwnerInvoices": OwnerInvoices,
 }
 
 export const pagesConfig = {
