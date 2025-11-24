@@ -7,10 +7,25 @@ import { toast } from 'sonner';
 
 export default function OperatorInvoiceCreate() {
   const [selectedClient, setSelectedClient] = useState(null);
+
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const operators = await base44.entities.Operator.filter({ created_by: user.email });
+      return operators[0] || null;
+    }
+  });
   const [lineItems, setLineItems] = useState([
     { description: '', quantity: 1, rate: 0, amount: 0 }
   ]);
   const [taxRate, setTaxRate] = useState(0);
+  const [paymentDueDate, setPaymentDueDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date.toISOString().split('T')[0];
+  });
+  const [paymentTerms, setPaymentTerms] = useState('Due upon receipt');
 
   const clients = [
     { id: '1', name: 'Sarah Johnson', property: '123 Oak St' },
