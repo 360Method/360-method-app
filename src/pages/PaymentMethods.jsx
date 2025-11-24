@@ -14,7 +14,7 @@ export default function PaymentMethods() {
   const { data: paymentMethods = [], isLoading } = useQuery({
     queryKey: ['paymentMethods'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('listPaymentMethods');
+      const { data } = await base44.functions.invoke('syncPaymentMethodsFromStripe');
       return data.payment_methods || [];
     }
   });
@@ -51,15 +51,9 @@ export default function PaymentMethods() {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('setup') === 'complete') {
-      const setupIntentId = urlParams.get('setup_intent');
-      if (setupIntentId) {
-        base44.functions.invoke('confirmPaymentMethodSetup', { setup_intent_id: setupIntentId })
-          .then(() => {
-            queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
-            toast.success('Payment method added successfully');
-            window.history.replaceState({}, '', window.location.pathname);
-          });
-      }
+      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+      toast.success('Payment method added successfully');
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 

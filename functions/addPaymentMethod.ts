@@ -36,7 +36,10 @@ Deno.serve(async (req) => {
       mode: 'setup',
       payment_method_types: ['card'],
       success_url: return_url,
-      cancel_url: return_url.replace('setup=complete', 'setup=cancelled')
+      cancel_url: return_url.replace('setup=complete', 'setup=cancelled'),
+      metadata: {
+        user_id: user.id
+      }
     });
 
     return Response.json({

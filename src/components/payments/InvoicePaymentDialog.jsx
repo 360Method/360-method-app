@@ -14,7 +14,7 @@ export default function InvoicePaymentDialog({ invoice, open, onClose }) {
   const { data: paymentMethods = [] } = useQuery({
     queryKey: ['paymentMethods'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('listPaymentMethods');
+      const { data } = await base44.functions.invoke('syncPaymentMethodsFromStripe');
       return data.payment_methods || [];
     },
     enabled: open
