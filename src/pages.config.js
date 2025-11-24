@@ -52,6 +52,10 @@ import OperatorInvoices from './pages/OperatorInvoices';
 import OperatorInvoiceCreate from './pages/OperatorInvoiceCreate';
 import OperatorContractors from './pages/OperatorContractors';
 import OperatorReportBuilder from './pages/OperatorReportBuilder';
+import ContractorDashboard from './pages/ContractorDashboard';
+import ContractorJobDetail from './pages/ContractorJobDetail';
+import ContractorMessages from './pages/ContractorMessages';
+import ContractorProfile from './pages/ContractorProfile';
 import __Layout from './Layout.jsx';
 
 
@@ -110,6 +114,10 @@ export const PAGES = {
     "OperatorInvoiceCreate": OperatorInvoiceCreate,
     "OperatorContractors": OperatorContractors,
     "OperatorReportBuilder": OperatorReportBuilder,
+    "ContractorDashboard": ContractorDashboard,
+    "ContractorJobDetail": ContractorJobDetail,
+    "ContractorMessages": ContractorMessages,
+    "ContractorProfile": ContractorProfile,
 }
 
 export const pagesConfig = {
