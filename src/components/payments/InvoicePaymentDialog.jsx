@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { loadStripe } from 'npm:@stripe/stripe-js';
 
 export default function InvoicePaymentDialog({ invoice, open, onClose }) {
   const [processing, setProcessing] = useState(false);
@@ -27,33 +26,19 @@ export default function InvoicePaymentDialog({ invoice, open, onClose }) {
     try {
       setProcessing(true);
 
-      // Create PaymentIntent
-      const { data: intentData } = await base44.functions.invoke('createInvoicePaymentIntent', {
+      // Process payment via backend
+      const { data: result } = await base44.functions.invoke('processInvoicePayment', {
         invoice_id: invoice.id,
         payment_method_id: defaultMethod?.stripe_payment_method_id
       });
 
-      // Confirm payment with Stripe
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-      const { error, paymentIntent } = await stripe.confirmCardPayment(intentData.client_secret);
-
-      if (error) {
-        toast.error(error.message);
-        setProcessing(false);
-        return;
-      }
-
-      if (paymentIntent.status === 'succeeded') {
-        // Confirm in our system
-        await base44.functions.invoke('confirmInvoicePayment', {
-          transaction_id: intentData.transaction_id
-        });
-
+      if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['invoices'] });
         queryClient.invalidateQueries({ queryKey: ['invoice', invoice.id] });
-        
         toast.success('Payment successful!');
         onClose();
+      } else {
+        toast.error(result.error || 'Payment failed');
       }
     } catch (error) {
       console.error('Payment error:', error);

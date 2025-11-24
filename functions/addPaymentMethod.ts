@@ -30,15 +30,18 @@ Deno.serve(async (req) => {
       await base44.auth.updateMe({ stripe_customer_id: customerId });
     }
 
-    // Create SetupIntent
-    const setupIntent = await stripe.setupIntents.create({
+    // Create Checkout Session for setup
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      mode: 'setup',
       payment_method_types: ['card'],
-      usage: 'off_session'
+      success_url: return_url,
+      cancel_url: return_url.replace('setup=complete', 'setup=cancelled')
     });
 
     return Response.json({
-      setup_intent_client_secret: setupIntent.client_secret,
+      setup_url: session.url,
+      session_id: session.id,
       stripe_customer_id: customerId
     });
   } catch (error) {

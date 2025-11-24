@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Plus, Trash2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { loadStripe } from 'npm:@stripe/stripe-js';
 
 export default function PaymentMethods() {
   const [addingCard, setAddingCard] = useState(false);
@@ -24,16 +23,12 @@ export default function PaymentMethods() {
     mutationFn: async () => {
       const returnUrl = window.location.origin + window.location.pathname + '?setup=complete';
       const { data } = await base44.functions.invoke('addPaymentMethod', { return_url: returnUrl });
+      
+      // Redirect to Stripe-hosted setup page
+      if (data.setup_url) {
+        window.location.href = data.setup_url;
+      }
       return data;
-    },
-    onSuccess: async (data) => {
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-      await stripe.confirmSetup({
-        clientSecret: data.setup_intent_client_secret,
-        confirmParams: {
-          return_url: window.location.origin + window.location.pathname + '?setup=complete'
-        }
-      });
     }
   });
 
