@@ -112,7 +112,7 @@ export default function DashboardInvestor() {
               Your Command Center
             </p>
             <p className="text-sm text-gray-500">
-              {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} units • Clark County, WA
+              {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} {typeof portfolioStats.totalUnits === 'number' ? 'units' : ''} • Clark County, WA
             </p>
           </>
         ) : (
@@ -121,7 +121,7 @@ export default function DashboardInvestor() {
               Portfolio Command Center 📊
             </h1>
             <p className="text-gray-600">
-              {portfolioStats.totalProperties} properties • {portfolioStats.totalUnits} units • Clark County, WA
+              {portfolioStats.totalProperties} properties • {typeof portfolioStats.totalUnits === 'number' ? portfolioStats.totalUnits : 0} units • Clark County, WA
             </p>
           </>
         )}
@@ -372,12 +372,12 @@ function PropertyCard({ property, navigate }) {
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-bold text-gray-900 text-lg mb-1">{property.name}</h3>
-          <p className="text-sm text-gray-600">{property.type} • {property.units} unit{property.units > 1 ? 's' : ''}</p>
+          <h3 className="font-bold text-gray-900 text-lg mb-1">{property.name || property.address}</h3>
+          <p className="text-sm text-gray-600">{property.type || property.property_type} • {typeof property.units === 'number' ? property.units : property.door_count || 1} unit{(property.units > 1 || property.door_count > 1) ? 's' : ''}</p>
         </div>
         <div className={`w-12 h-12 ${healthColorClasses[healthColor].bg} rounded-full flex items-center justify-center`}>
           <span className={`text-lg font-bold ${healthColorClasses[healthColor].text}`}>
-            {property.healthScore}
+            {property.healthScore || property.health_score || 0}
           </span>
         </div>
       </div>
