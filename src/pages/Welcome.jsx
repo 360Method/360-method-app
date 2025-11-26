@@ -31,19 +31,28 @@ export default function Welcome() {
           </h1>
           
           <p className="text-lg md:text-xl text-gray-700 mb-10 leading-relaxed">
-            Most property owners are one surprise away from a $10,000 emergency. See how the 3-phase system prevents this.
+            Most property owners are one surprise away from a $10,000 emergency. The 360° Method prevents this—and you can start free today.
           </p>
           
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry'))}
-            className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg transition-colors mb-3 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-            style={{ minHeight: '60px', minWidth: '280px' }}
-          >
-            Explore Demo Properties
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-3">
+            <button
+              onClick={() => base44.auth.redirectToLogin()}
+              className="px-8 py-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold text-lg transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+              style={{ minHeight: '60px', minWidth: '280px' }}
+            >
+              Start Free Today
+            </button>
+            <button
+              onClick={() => navigate(createPageUrl('DemoEntry'))}
+              className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 font-semibold text-lg transition-colors"
+              style={{ minHeight: '60px', minWidth: '280px' }}
+            >
+              Explore Demo First →
+            </button>
+          </div>
           
           <p className="text-sm text-gray-500 mb-12">
-            No sign-up • Real examples • Choose your path
+            Free forever for 1 property • No credit card required
           </p>
         </div>
         
@@ -175,14 +184,25 @@ export default function Welcome() {
         {/* Bottom CTA */}
         <div className="text-center pb-12">
           <p className="text-gray-600 mb-6 text-lg">
-            Ready to see how the 360° Method works?
+            Ready to protect your property?
           </p>
-          <button
-            onClick={() => navigate(createPageUrl('DemoEntry'))}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg inline-flex items-center gap-2"
-          >
-            Explore the Demo →
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => base44.auth.redirectToLogin()}
+              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-xl text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg inline-flex items-center justify-center gap-2"
+            >
+              Create Free Account
+            </button>
+            <button
+              onClick={() => navigate(createPageUrl('DemoEntry'))}
+              className="px-8 py-4 border-2 border-gray-300 text-gray-700 font-bold rounded-xl text-lg hover:border-gray-400 transition-all inline-flex items-center justify-center gap-2"
+            >
+              Explore the Demo →
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-4">
+            No credit card required • Free forever for 1 property
+          </p>
         </div>
 
       </div>

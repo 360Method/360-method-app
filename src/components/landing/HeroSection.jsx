@@ -2,8 +2,9 @@ import React from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 
-export default function HeroSection({ onJoinWaitlist }) {
+export default function HeroSection() {
   const navigate = useNavigate();
 
   return (
@@ -54,24 +55,24 @@ export default function HeroSection({ onJoinWaitlist }) {
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
-            onClick={onJoinWaitlist}
+            onClick={() => base44.auth.redirectToLogin()}
             className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             style={{ minHeight: '56px' }}
           >
-            Join the Waitlist – It's Free
+            Start Free Today
           </button>
           <button 
             onClick={() => navigate(createPageUrl('DemoEntry'))}
             className="w-full sm:w-auto border-2 border-white/30 hover:border-white/50 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all"
             style={{ minHeight: '56px' }}
           >
-            Explore Demo Properties →
+            Explore Demo First →
           </button>
         </div>
         
         {/* Microcopy */}
         <p className="mt-4 text-sm text-slate-500">
-          No credit card required • Get early access + free training
+          Free forever for 1 property • No credit card required
         </p>
       </div>
       

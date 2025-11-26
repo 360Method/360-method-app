@@ -34,7 +34,7 @@ import NotificationCenter from "./components/notifications/NotificationCenter";
 import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
-import FloatingWaitlistCTA from "./components/demo/FloatingWaitlistCTA";
+import FloatingSignupCTA from "./components/demo/FloatingSignupCTA";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
 import DemoAIChat from "./components/demo/DemoAIChat";
 
@@ -591,7 +591,7 @@ function LayoutContent({ children }) {
 
         {showAppUI && !demoMode && <CartDrawer />}
         {demoMode && <DemoAIChat />}
-        <FloatingWaitlistCTA />
+        <FloatingSignupCTA />
         <ExitIntentPopup />
         </div>
 

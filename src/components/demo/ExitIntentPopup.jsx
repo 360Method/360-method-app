@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { X, Rocket } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 import { useDemo } from '../shared/DemoContext';
 
 export default function ExitIntentPopup() {
-  const navigate = useNavigate();
   const { demoMode } = useDemo();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -45,19 +43,19 @@ export default function ExitIntentPopup() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Wait! Before You Go...
+            Don't Leave Your Property Unprotected
           </h2>
           <p className="text-gray-700 mb-6">
             You've seen how the 360° Method prevents disasters and builds wealth. 
-            Join our waitlist to be notified when we launch in your area.
+            Create your free account and start protecting your property today.
           </p>
 
           <button
-            onClick={() => navigate(createPageUrl('Waitlist'))}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition-all mb-3"
+            onClick={() => base44.auth.redirectToLogin()}
+            className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 active:scale-95 transition-all mb-3"
             style={{ minHeight: '44px', pointerEvents: 'auto', cursor: 'pointer' }}
           >
-            Join Waitlist (2 minutes)
+            Start Free Today
           </button>
 
           <button
@@ -70,6 +68,10 @@ export default function ExitIntentPopup() {
           >
             Continue exploring demo
           </button>
+          
+          <p className="text-xs text-gray-400 text-center mt-4">
+            Free forever for 1 property • No credit card required
+          </p>
         </div>
       </div>
     </div>
