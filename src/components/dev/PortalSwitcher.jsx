@@ -4,51 +4,80 @@ import { createPageUrl } from '@/utils';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 
 const PORTALS = {
-  homeowner: {
-    name: 'HOMEOWNER',
-    pages: [
-      { name: 'HomeownerDashboard', url: 'HomeownerDashboard' },
-      { name: 'HomeownerProperties', url: 'HomeownerProperties' },
-      { name: 'HomeownerBaseline', url: 'HomeownerBaseline' },
-      { name: 'HomeownerInspect', url: 'HomeownerInspect' },
-      { name: 'HomeownerTrack', url: 'HomeownerTrack' },
-      { name: 'HomeownerPrioritize', url: 'HomeownerPrioritize' },
-      { name: 'HomeownerSchedule', url: 'HomeownerSchedule' },
-      { name: 'HomeownerExecute', url: 'HomeownerExecute' },
-      { name: 'HomeownerPreserve', url: 'HomeownerPreserve' },
-      { name: 'HomeownerUpgrade', url: 'HomeownerUpgrade' },
-      { name: 'HomeownerPropertyScore', url: 'HomeownerPropertyScore' },
-      { name: 'HomeownerScore360', url: 'HomeownerScore360' },
-      { name: 'HomeownerExploreTemplates', url: 'HomeownerExploreTemplates' },
-      { name: 'HomeownerTemplateDetail', url: 'HomeownerTemplateDetail' },
-      { name: 'HomeownerResourceGuides', url: 'HomeownerResourceGuides' },
-      { name: 'HomeownerVideoTutorials', url: 'HomeownerVideoTutorials' },
-      { name: 'HomeownerROICalculators', url: 'HomeownerROICalculators' },
-      { name: 'HomeownerCartReview', url: 'HomeownerCartReview' },
-      { name: 'HomeownerUpgradeProjectDetail', url: 'HomeownerUpgradeProjectDetail' },
-      { name: 'HomeownerServices', url: 'HomeownerServices' },
-      { name: 'HomeownerHomeCare', url: 'HomeownerHomeCare' },
-      { name: 'HomeownerPropertyCare', url: 'HomeownerPropertyCare' },
-      { name: 'HomeownerCheckout', url: 'HomeownerCheckout' },
-      { name: 'HomeownerPaymentMethods', url: 'HomeownerPaymentMethods' },
-      { name: 'HomeownerInvoices', url: 'HomeownerInvoices' },
-      { name: 'HomeownerSettings', url: 'HomeownerSettings' },
-      { name: 'HomeownerSecuritySettings', url: 'HomeownerSecuritySettings' },
-      { name: 'HomeownerNotificationSettings', url: 'HomeownerNotificationSettings' },
-      { name: 'HomeownerPropertyAccessSettings', url: 'HomeownerPropertyAccessSettings' }
-    ]
-  },
-  investor: {
-    name: 'INVESTOR',
-    pages: [
-      { name: 'InvestorDashboard', url: 'InvestorDashboard' },
-      { name: 'InvestorScale', url: 'InvestorScale' },
-      { name: 'InvestorPortalDashboard', url: 'InvestorPortalDashboard' },
-      { name: 'InvestorPortalMenu', url: 'InvestorPortalMenu' },
-      { name: 'InvestorPortalMarketplace', url: 'InvestorPortalMarketplace' },
-      { name: 'InvestorPortalOnboarding', url: 'InvestorPortalOnboarding' },
-      { name: 'InvestorPortalBudget', url: 'InvestorPortalBudget' }
-    ]
+  property_owner: {
+    name: 'PROPERTY OWNER',
+    sections: {
+      dashboards: {
+        name: 'Dashboards',
+        pages: [
+          { name: 'Dashboard (current)', url: 'Dashboard' },
+          { name: 'PortalDashboard (unified/mobile)', url: 'PortalDashboard' }
+        ]
+      },
+      aware: {
+        name: 'AWARE Phase',
+        pages: [
+          { name: 'Properties', url: 'Properties' },
+          { name: 'Baseline', url: 'Baseline' },
+          { name: 'Inspect', url: 'Inspect' },
+          { name: 'Track', url: 'Track' },
+          { name: 'Budget', url: 'PortalBudget' }
+        ]
+      },
+      act: {
+        name: 'ACT Phase',
+        pages: [
+          { name: 'Prioritize', url: 'Prioritize' },
+          { name: 'Schedule', url: 'Schedule' },
+          { name: 'Execute', url: 'Execute' }
+        ]
+      },
+      advance: {
+        name: 'ADVANCE Phase',
+        pages: [
+          { name: 'Preserve', url: 'Preserve' },
+          { name: 'Upgrade', url: 'Upgrade' },
+          { name: 'Scale', url: 'Scale' }
+        ]
+      },
+      services: {
+        name: 'Services & Marketplace',
+        pages: [
+          { name: 'Services', url: 'Services' },
+          { name: 'HomeCare', url: 'HomeCare' },
+          { name: 'PropertyCare', url: 'PropertyCare' },
+          { name: 'FindOperator', url: 'FindOperator' },
+          { name: 'ExploreTemplates', url: 'ExploreTemplates' },
+          { name: 'TemplateDetail', url: 'TemplateDetail' },
+          { name: 'CartReview', url: 'CartReview' },
+          { name: 'UpgradeProjectDetail', url: 'UpgradeProjectDetail' },
+          { name: 'Checkout', url: 'Checkout' }
+        ]
+      },
+      resources: {
+        name: 'Resources',
+        pages: [
+          { name: 'ResourceGuides', url: 'ResourceGuides' },
+          { name: 'VideoTutorials', url: 'VideoTutorials' },
+          { name: 'ROICalculators', url: 'ROICalculators' },
+          { name: 'PropertyScore', url: 'PropertyScore' },
+          { name: 'Score360', url: 'Score360' }
+        ]
+      },
+      account: {
+        name: 'Account',
+        pages: [
+          { name: 'Settings', url: 'Settings' },
+          { name: 'SecuritySettings', url: 'SecuritySettings' },
+          { name: 'NotificationSettings', url: 'NotificationSettings' },
+          { name: 'PropertyAccessSettings', url: 'PropertyAccessSettings' },
+          { name: 'PaymentMethods', url: 'PaymentMethods' },
+          { name: 'OwnerInvoices', url: 'OwnerInvoices' },
+          { name: 'Onboarding', url: 'Onboarding' },
+          { name: 'Onboarding (Alternate)', url: 'PortalOnboarding' }
+        ]
+      }
+    }
   },
   operator: {
     name: 'OPERATOR',
@@ -103,11 +132,11 @@ const PORTALS = {
   other: {
     name: 'OTHER',
     pages: [
-      { name: 'Onboarding', url: 'Onboarding' },
       { name: 'AcceptInvitation', url: 'AcceptInvitation' },
       { name: 'Pricing', url: 'Pricing' },
-      { name: 'Resources', url: 'Resources' },
-      { name: 'LandingPage', url: 'LandingPage' }
+      { name: 'LandingPage', url: 'LandingPage' },
+      { name: 'Welcome', url: 'Welcome' },
+      { name: 'Waitlist', url: 'Waitlist' }
     ]
   }
 };
@@ -174,42 +203,76 @@ export default function PortalSwitcher() {
 
       {/* Portal List */}
       <div className="p-2">
-        {Object.entries(PORTALS).map(([key, portal]) => (
-          <div key={key} className="mb-1">
-            <button
-              onClick={() => togglePortal(key)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-800 rounded text-left text-xs font-semibold text-gray-300"
-            >
-              {expanded[key] ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-              {portal.name}
-              <span className="ml-auto text-[10px] text-gray-500">
-                {portal.pages.length}
-              </span>
-            </button>
+        {Object.entries(PORTALS).map(([key, portal]) => {
+          // Calculate total page count
+          const totalPages = portal.sections 
+            ? Object.values(portal.sections).reduce((sum, section) => sum + section.pages.length, 0)
+            : portal.pages.length;
 
-            {expanded[key] && (
-              <div className="ml-5 mt-0.5 space-y-0.5">
-                {portal.pages.map((page) => (
-                  <button
-                    key={page.url}
-                    onClick={() => navigateToPage(page.url)}
-                    className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
-                      isCurrentPage(page.url)
-                        ? 'bg-blue-600 text-white font-medium'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                    }`}
-                  >
-                    → {page.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          return (
+            <div key={key} className="mb-1">
+              <button
+                onClick={() => togglePortal(key)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-800 rounded text-left text-xs font-semibold text-gray-300"
+              >
+                {expanded[key] ? (
+                  <ChevronDown className="w-3 h-3" />
+                ) : (
+                  <ChevronRight className="w-3 h-3" />
+                )}
+                {portal.name}
+                <span className="ml-auto text-[10px] text-gray-500">
+                  {totalPages}
+                </span>
+              </button>
+
+              {expanded[key] && (
+                <div className="ml-3 mt-0.5 space-y-0.5">
+                  {/* Handle portals with sections (property_owner) */}
+                  {portal.sections ? (
+                    Object.entries(portal.sections).map(([sectionKey, section]) => (
+                      <div key={sectionKey} className="mb-2">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider px-2 py-1 font-semibold">
+                          {section.name}
+                        </div>
+                        <div className="space-y-0.5">
+                          {section.pages.map((page) => (
+                            <button
+                              key={page.url}
+                              onClick={() => navigateToPage(page.url)}
+                              className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ml-2 ${
+                                isCurrentPage(page.url)
+                                  ? 'bg-blue-600 text-white font-medium'
+                                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                              }`}
+                            >
+                              → {page.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    /* Handle portals without sections (operator, contractor, etc) */
+                    portal.pages.map((page) => (
+                      <button
+                        key={page.url}
+                        onClick={() => navigateToPage(page.url)}
+                        className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                          isCurrentPage(page.url)
+                            ? 'bg-blue-600 text-white font-medium'
+                            : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                        }`}
+                      >
+                        → {page.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
