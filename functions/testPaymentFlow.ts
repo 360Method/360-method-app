@@ -12,10 +12,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const isLiveMode = stripeKey.startsWith('sk_live_');
+    const stripe = getStripeClient();
+    const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+    const isLiveMode = stripeMode === 'live';
 
     const testResults = {
+      stripe_mode: stripeMode,
       mode: isLiveMode ? 'live' : 'test',
       step1_customer_creation: { status: 'pending' },
       step2_payment_method_setup: { status: 'pending' },

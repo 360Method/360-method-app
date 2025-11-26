@@ -30,8 +30,9 @@ Deno.serve(async (req) => {
     });
 
     const results = {
-      api_key_mode: isTestMode ? 'test' : isLiveMode ? 'live' : 'unknown',
-      api_key_format_valid: isTestMode || isLiveMode,
+      stripe_mode: stripeMode,
+      api_key_mode: isTestMode ? 'test' : 'live',
+      api_key_format_valid: true,
       api_key_valid: false,
       account_accessible: false,
       products_accessible: false,
