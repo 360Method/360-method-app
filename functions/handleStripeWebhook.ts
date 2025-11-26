@@ -32,6 +32,8 @@ Deno.serve(async (req) => {
     // Initialize Base44 client AFTER getting raw body
     const base44 = createClientFromRequest(req);
     
+    const stripe = getStripeClient();
+    
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     
     if (!webhookSecret) {
