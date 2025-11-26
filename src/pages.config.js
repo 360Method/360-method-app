@@ -69,6 +69,7 @@ import LandingPage from './pages/LandingPage';
 import SecuritySettings from './pages/SecuritySettings';
 import GitHubDemo from './pages/GitHubDemo';
 import AdminStripeDebug from './pages/AdminStripeDebug';
+import AdminEmailTest from './pages/AdminEmailTest';
 import __Layout from './Layout.jsx';
 
 
@@ -144,6 +145,7 @@ export const PAGES = {
     "SecuritySettings": SecuritySettings,
     "GitHubDemo": GitHubDemo,
     "AdminStripeDebug": AdminStripeDebug,
+    "AdminEmailTest": AdminEmailTest,
 }
 
 export const pagesConfig = {
