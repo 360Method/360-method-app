@@ -22,7 +22,8 @@ Deno.serve(async (req) => {
       related_entity_id,
       property_id,
       sender_user_id,
-      priority = 'normal'
+      priority = 'normal',
+      template_data
     } = await req.json();
 
     if (!user_id || !notification_type || !event_type || !title || !body) {
@@ -112,7 +113,8 @@ Deno.serve(async (req) => {
           title,
           body,
           action_url,
-          related_data: { related_entity_type, related_entity_id, property_id }
+          related_data: { related_entity_type, related_entity_id, property_id },
+          template_data
         });
         
         if (notification) {

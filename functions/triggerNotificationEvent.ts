@@ -12,6 +12,120 @@ Deno.serve(async (req) => {
 
     // Event templates defining notification content and recipients
     const eventTemplates = {
+      // Service Package events
+      service_package_submitted: {
+        type: 'work_order',
+        priority: 'high',
+        getRecipients: async (data) => {
+          // Notify the operator
+          const operators = await base44.asServiceRole.entities.Operator.filter({ id: data.operator_id });
+          return operators[0] ? [operators[0].created_by] : [];
+        },
+        getContent: (data) => ({
+          title: 'New Service Request',
+          body: `${data.customer_name} submitted a service request with ${data.item_count} items`,
+          icon: 'clipboard-list',
+          action_url: `/operator/leads?package=${data.package_id}`,
+          action_label: 'Review Request'
+        }),
+        getTemplateData: async (data, base44) => {
+          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          return {
+            customer_name: data.customer_name,
+            property_address: property[0]?.address || 'Unknown',
+            item_count: data.item_count,
+            total_cost_estimate: data.total_cost_estimate,
+            customer_notes: pkg[0]?.customer_notes || '',
+            review_url: `/operator/leads?package=${data.package_id}`
+          };
+        }
+      },
+
+      service_package_quoted: {
+        type: 'work_order',
+        priority: 'high',
+        getRecipients: async (data) => {
+          // Notify the homeowner
+          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          return properties[0] ? [properties[0].created_by] : [];
+        },
+        getContent: (data) => ({
+          title: 'Quote Ready',
+          body: `${data.operator_name} provided a quote: $${data.total_cost.toFixed(2)}`,
+          icon: 'file-text',
+          action_url: `/cart-review?package=${data.package_id}`,
+          action_label: 'Review Quote'
+        }),
+        getTemplateData: async (data, base44) => {
+          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+          return {
+            operator_name: data.operator_name,
+            package_name: pkg[0]?.package_name || 'Service Package',
+            total_cost: data.total_cost,
+            estimated_hours: data.estimated_hours,
+            valid_until: data.valid_until,
+            operator_notes: data.operator_notes,
+            approval_url: `/cart-review?package=${data.package_id}`
+          };
+        }
+      },
+
+      service_package_approved: {
+        type: 'work_order',
+        priority: 'high',
+        getRecipients: async (data) => {
+          // Notify the operator
+          const operators = await base44.asServiceRole.entities.Operator.filter({ id: data.operator_id });
+          return operators[0] ? [operators[0].created_by] : [];
+        },
+        getContent: (data) => ({
+          title: 'Quote Approved',
+          body: `${data.customer_name} approved your quote for $${data.approved_amount.toFixed(2)}`,
+          icon: 'check-circle',
+          action_url: `/operator/work-orders?package=${data.package_id}`,
+          action_label: 'View Work Order'
+        }),
+        getTemplateData: async (data, base44) => {
+          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          return {
+            customer_name: data.customer_name,
+            package_name: pkg[0]?.package_name || 'Service Package',
+            property_address: property[0]?.address || 'Unknown',
+            scheduled_date: data.scheduled_date,
+            approved_amount: data.approved_amount,
+            work_order_url: `/operator/work-orders?package=${data.package_id}`
+          };
+        }
+      },
+
+      inspection_due: {
+        type: 'inspection',
+        priority: 'normal',
+        getRecipients: async (data) => {
+          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          return properties[0] ? [properties[0].created_by] : [];
+        },
+        getContent: (data) => ({
+          title: `${data.season} Inspection Due`,
+          body: `Time for your seasonal inspection at ${data.property_address}`,
+          icon: 'clipboard-check',
+          action_url: `/inspect?property=${data.property_id}`,
+          action_label: 'Start Inspection'
+        }),
+        getTemplateData: async (data, base44) => {
+          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          return {
+            season: data.season,
+            property_address: property[0]?.address || 'Unknown',
+            recommended_date: data.recommended_date,
+            inspection_items: data.inspection_items,
+            inspection_url: `/inspect?property=${data.property_id}`
+          };
+        }
+      },
+
       // Payment events
       invoice_created: {
         type: 'payment',
@@ -36,22 +150,43 @@ Deno.serve(async (req) => {
         type: 'payment',
         priority: 'high',
         getRecipients: async (data) => {
-          const recipients = [];
-          // Notify owner
-          if (data.payer_user_id) recipients.push(data.payer_user_id);
-          // Notify operator
-          if (data.operator_id) {
-            const operators = await base44.asServiceRole.entities.Operator.filter({ id: data.operator_id });
-            if (operators[0]) recipients.push(operators[0].created_by);
-          }
-          return recipients;
+          // Only notify the payer (homeowner)
+          return data.payer_user_id ? [data.payer_user_id] : [];
         },
         getContent: (data) => ({
-          title: 'Payment Successful',
+          title: 'Payment Confirmed',
           body: `Payment of $${data.amount?.toFixed(2) || '0.00'} has been processed successfully.`,
           icon: 'check-circle',
           action_url: `/transactions/${data.transaction_id}`,
           action_label: 'View Receipt'
+        }),
+        getTemplateData: async (data, base44) => ({
+          amount: data.amount || 0,
+          description: data.description || 'Service payment',
+          payment_method_last4: data.payment_method_last4,
+          transaction_id: data.transaction_id,
+          receipt_url: `/transactions/${data.transaction_id}`
+        })
+      },
+
+      payment_failed: {
+        type: 'payment',
+        priority: 'urgent',
+        getRecipients: async (data) => {
+          return data.payer_user_id ? [data.payer_user_id] : [];
+        },
+        getContent: (data) => ({
+          title: 'Payment Failed',
+          body: `Unable to process payment of $${data.amount?.toFixed(2) || '0.00'}. Please update your payment method.`,
+          icon: 'alert-circle',
+          action_url: `/payment-methods`,
+          action_label: 'Update Payment Method'
+        }),
+        getTemplateData: async (data, base44) => ({
+          amount: data.amount || 0,
+          description: data.description || 'Service payment',
+          failure_reason: data.failure_reason,
+          payment_method_url: `/payment-methods`
         })
       },
 
@@ -198,6 +333,16 @@ Deno.serve(async (req) => {
     // Generate content
     const content = template.getContent(event_data);
 
+    // Generate template data for rich emails if available
+    let templateData = null;
+    if (template.getTemplateData) {
+      try {
+        templateData = await template.getTemplateData(event_data, base44);
+      } catch (error) {
+        console.error('Error generating template data:', error);
+      }
+    }
+
     // Create notifications for each recipient
     const notificationIds = [];
     for (const userId of recipients) {
@@ -215,7 +360,8 @@ Deno.serve(async (req) => {
           related_entity_id: event_data.related_entity_id,
           property_id: event_data.property_id,
           sender_user_id: event_data.sender_user_id,
-          priority: template.priority
+          priority: template.priority,
+          template_data: templateData
         });
         
         if (result.data?.notification_id) {

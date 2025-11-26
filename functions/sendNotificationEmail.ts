@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { emailTemplates } from './emailTemplates.js';
 
 Deno.serve(async (req) => {
   try {
@@ -11,7 +12,8 @@ Deno.serve(async (req) => {
       title,
       body,
       action_url,
-      related_data
+      related_data,
+      template_data
     } = await req.json();
 
     // Get user details
@@ -22,35 +24,49 @@ Deno.serve(async (req) => {
     
     const user = users[0];
 
-    // Build email body with HTML formatting
-    const emailBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1B365D;">${title}</h2>
-        <p style="font-size: 16px; line-height: 1.6; color: #333;">${body}</p>
-        ${action_url ? `
-          <div style="margin: 30px 0;">
-            <a href="${action_url}" 
-               style="background-color: #FF6B35; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
-              View Details
+    // Check if we have a rich template for this event
+    let emailSubject = title;
+    let emailBody;
+
+    if (emailTemplates[event_type] && template_data) {
+      // Use rich template
+      const template = emailTemplates[event_type]({
+        ...template_data,
+        unsubscribe_url: `${Deno.env.get('APP_URL') || ''}/settings/notifications?unsubscribe=true`
+      });
+      emailSubject = template.subject;
+      emailBody = template.html;
+    } else {
+      // Fallback to basic template
+      emailBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1B365D;">${title}</h2>
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">${body}</p>
+          ${action_url ? `
+            <div style="margin: 30px 0;">
+              <a href="${action_url}" 
+                 style="background-color: #FF6B35; color: white; padding: 12px 24px; 
+                        text-decoration: none; border-radius: 6px; display: inline-block;">
+                View Details
+              </a>
+            </div>
+          ` : ''}
+          <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 30px 0;">
+          <p style="font-size: 12px; color: #999;">
+            You received this notification because you're subscribed to ${notification_type} updates.
+            <br>
+            <a href="${Deno.env.get('APP_URL') || ''}/settings/notifications" style="color: #FF6B35;">
+              Manage notification preferences
             </a>
-          </div>
-        ` : ''}
-        <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 30px 0;">
-        <p style="font-size: 12px; color: #999;">
-          You received this notification because you're subscribed to ${notification_type} updates.
-          <br>
-          <a href="${Deno.env.get('APP_URL') || ''}/settings/notifications" style="color: #FF6B35;">
-            Manage notification preferences
-          </a>
-        </p>
-      </div>
-    `;
+          </p>
+        </div>
+      `;
+    }
 
     // Send via Core.SendEmail integration
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: user.email,
-      subject: title,
+      subject: emailSubject,
       body: emailBody,
       from_name: '360° Method'
     });
