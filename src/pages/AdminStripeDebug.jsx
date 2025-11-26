@@ -199,17 +199,108 @@ export default function AdminStripeDebug() {
         )}
       </Card>
 
+      {/* Webhook Configuration */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Phase 4: Webhook Configuration</CardTitle>
+          <p className="text-sm text-gray-600 mt-1">Configure Stripe webhooks to receive payment events</p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="font-semibold text-amber-900 mb-2">Manual Step Required:</p>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-amber-800">
+                <li>Go to <a href="https://dashboard.stripe.com/webhooks" target="_blank" className="underline">Stripe Dashboard → Webhooks</a></li>
+                <li>Click "Add endpoint"</li>
+                <li>Enter your webhook URL: <code className="bg-white px-2 py-1 rounded">{window.location.origin}/functions/handleStripeWebhook</code></li>
+                <li>Select events: <code>payment_intent.succeeded</code>, <code>payment_intent.payment_failed</code>, <code>account.updated</code></li>
+                <li>Copy the webhook signing secret and verify it matches STRIPE_WEBHOOK_SECRET</li>
+              </ol>
+            </div>
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-700">
+                <strong>Webhook URL:</strong> <code className="bg-white px-2 py-1 rounded ml-2">{window.location.origin}/functions/handleStripeWebhook</code>
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Diagnosis */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Quick Diagnosis</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">Run comprehensive check of all payment infrastructure</p>
+            </div>
+            <Button
+              onClick={() => runTest('diagnosis', 'diagnoseStripe')}
+              disabled={loading && activeTest === 'diagnosis'}
+              variant="outline"
+              className="gap-2"
+            >
+              {loading && activeTest === 'diagnosis' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              Run Diagnosis
+            </Button>
+          </div>
+        </CardHeader>
+        {testResults?.diagnosis && (
+          <CardContent>
+            {testResults.diagnosis.data?.diagnosis?.missing_infrastructure && (
+              <div className="space-y-2 mb-4">
+                <p className="font-semibold text-gray-900">Issues Found:</p>
+                {testResults.diagnosis.data.diagnosis.missing_infrastructure.map((issue, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-sm">
+                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{issue}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {testResults.diagnosis.data?.diagnosis?.recommendations && (
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">Recommendations:</p>
+                {testResults.diagnosis.data.diagnosis.recommendations.map((rec, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-sm">
+                    <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
       {/* Instructions */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Next Steps:</h3>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
-            <li>Run Connection Test to verify Stripe API access</li>
-            <li>If connection passes, run Product Setup to create HomeCare/PropertyCare products</li>
-            <li>Run Payment Flow Test to verify end-to-end payment processing</li>
-            <li>Configure webhooks in Stripe Dashboard (see functions/handleStripeWebhook)</li>
-            <li>Test operator onboarding and payouts separately</li>
-          </ol>
+          <h3 className="font-semibold text-blue-900 mb-3">🚀 Quick Start Guide:</h3>
+          <div className="space-y-3 text-sm text-blue-800">
+            <div>
+              <strong>Step 1:</strong> Run "Quick Diagnosis" to see what's missing
+            </div>
+            <div>
+              <strong>Step 2:</strong> Run "Connection Test" to verify Stripe API
+            </div>
+            <div>
+              <strong>Step 3:</strong> Run "Setup Products" to create HomeCare/PropertyCare catalog
+            </div>
+            <div>
+              <strong>Step 4:</strong> Run "Test Payment" to verify end-to-end flow
+            </div>
+            <div>
+              <strong>Step 5:</strong> Configure webhooks in Stripe Dashboard (see Phase 4 above)
+            </div>
+            <div className="pt-2 mt-2 border-t border-blue-200">
+              <strong>Note:</strong> Operator payouts require separate onboarding via createOperatorConnectAccount function
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
