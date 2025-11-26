@@ -63,6 +63,8 @@ import PaymentMethods from './pages/PaymentMethods';
 import OperatorEarnings from './pages/OperatorEarnings';
 import OwnerInvoices from './pages/OwnerInvoices';
 import NotificationSettings from './pages/NotificationSettings';
+import AdminJobQueue from './pages/AdminJobQueue';
+import AdminStripe from './pages/AdminStripe';
 import __Layout from './Layout.jsx';
 
 
@@ -132,6 +134,8 @@ export const PAGES = {
     "OperatorEarnings": OperatorEarnings,
     "OwnerInvoices": OwnerInvoices,
     "NotificationSettings": NotificationSettings,
+    "AdminJobQueue": AdminJobQueue,
+    "AdminStripe": AdminStripe,
 }
 
 export const pagesConfig = {
