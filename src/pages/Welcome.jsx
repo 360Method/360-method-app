@@ -1,10 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Building2, ArrowRight, Shield, TrendingUp, Award, Briefcase } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  useEffect(() => {
+    checkAuthAndRoute();
+  }, []);
+  
+  const checkAuthAndRoute = async () => {
+    try {
+      const user = await base44.auth.me();
+      
+      if (user) {
+        // User is authenticated - route them appropriately
+        if (!user.onboarding_completed) {
+          // New user - send to onboarding
+          navigate(createPageUrl('Onboarding'), { replace: true });
+          return;
+        }
+        
+        // Existing user - send to their dashboard
+        const userType = determineUserType(user);
+        const dashboard = getDashboardRoute(userType);
+        navigate(dashboard, { replace: true });
+        return;
+      }
+      
+      // Not authenticated - show landing page
+      setIsCheckingAuth(false);
+      
+    } catch (e) {
+      // Not authenticated - show landing page
+      setIsCheckingAuth(false);
+    }
+  };
+  
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-white">
@@ -208,4 +251,23 @@ export default function Welcome() {
       </div>
     </div>
   );
+}
+
+function determineUserType(user) {
+  if (user.role === 'admin') return 'admin';
+  if (user.is_operator || user.operator_id) return 'operator';
+  if (user.is_contractor || user.contractor_id) return 'contractor';
+  if (user.user_profile_type === 'investor' || user.property_use_type === 'rental') return 'investor';
+  return 'homeowner';
+}
+
+function getDashboardRoute(userType) {
+  const routes = {
+    admin: createPageUrl('AdminDashboard'),
+    operator: createPageUrl('OperatorDashboard'),
+    contractor: createPageUrl('ContractorDashboard'),
+    investor: createPageUrl('DashboardInvestor'),
+    homeowner: createPageUrl('Dashboard')
+  };
+  return routes[userType] || createPageUrl('Dashboard');
 }

@@ -6,7 +6,8 @@ import { Loader2 } from 'lucide-react';
 export default function RouteGuard({ 
   children, 
   allowedRoles = [],
-  portalType = null 
+  portalType = null,
+  allowIncompleteOnboarding = false
 }) {
   const location = useLocation();
   const [authState, setAuthState] = useState({
@@ -83,6 +84,11 @@ export default function RouteGuard({
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
+  }
+  
+  // Check if onboarding is required (only if not explicitly allowed to skip)
+  if (!allowIncompleteOnboarding && authState.user && !authState.user.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />;
   }
   
   if (allowedRoles.length > 0 && !allowedRoles.includes(authState.userType)) {
