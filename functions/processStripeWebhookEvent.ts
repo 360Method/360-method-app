@@ -35,6 +35,12 @@ Deno.serve(async (req) => {
     // Route to appropriate handler
     try {
       switch (webhookEvent.event_type) {
+        case 'checkout.session.completed':
+          await handleCheckoutSessionCompleted(base44, webhookEvent.payload);
+          break;
+        case 'invoice.paid':
+          await handleInvoicePaid(base44, webhookEvent.payload);
+          break;
         case 'payment_intent.succeeded':
           await handlePaymentIntentSucceeded(base44, webhookEvent.payload);
           break;
