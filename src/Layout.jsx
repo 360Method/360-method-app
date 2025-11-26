@@ -56,7 +56,7 @@ function LayoutContent({ children }) {
   }, [location.pathname]);
 
   // Determine if we should show the app UI (sidebar, header, etc.)
-  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
+  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome') || location.pathname === createPageUrl('LandingPage');
   const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
   const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
   const showAppUI = !isLandingPage && !isWaitlistPage && !isDemoEntryPage;
