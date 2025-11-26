@@ -19,7 +19,7 @@ export function DemoEngagementPopup({ trigger, context, onClose, onDismiss }) {
   
   const handleSignup = () => {
     // Redirect to signup
-    base44.auth.redirectToSignup();
+    base44.auth.redirectToLogin();
   };
   
   const handleClose = () => {

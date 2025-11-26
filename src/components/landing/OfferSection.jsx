@@ -64,7 +64,7 @@ export default function OfferSection() {
           
           {/* CTA Button */}
           <button
-            onClick={() => base44.auth.redirectToSignup()}
+            onClick={() => base44.auth.redirectToLogin()}
             className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 active:scale-95 transition-all shadow-lg mb-3"
             style={{ minHeight: '48px' }}
           >
