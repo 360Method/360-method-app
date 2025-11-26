@@ -131,15 +131,6 @@ export default function PortalSwitcher() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Always show in preview/development - hide only in production with custom domain
-  const isProduction = !window.location.hostname.includes('base44.app') && 
-                       !window.location.hostname.includes('localhost') &&
-                       !window.location.hostname.includes('127.0.0.1');
-  
-  if (isProduction) {
-    return null;
-  }
-
   if (!visible) {
     return (
       <button
