@@ -10,108 +10,129 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-
-    if (!stripeSecretKey) {
-      return Response.json({
-        success: false,
-        error: 'STRIPE_SECRET_KEY not configured',
-        recommendations: ['Set STRIPE_SECRET_KEY in environment variables']
-      });
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
-
-    const diagnostics = {
-      api_key_configured: !!stripeSecretKey,
-      webhook_secret_configured: !!stripeWebhookSecret,
-      api_key_type: stripeSecretKey.startsWith('sk_test_') ? 'test' : 
-                    stripeSecretKey.startsWith('sk_live_') ? 'live' : 'unknown',
-      account_info: null,
-      products: [],
-      prices: [],
-      errors: [],
-      recommendations: []
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+    
+    const diagnosis = {
+      timestamp: new Date().toISOString(),
+      stripe_configured: !!Deno.env.get('STRIPE_SECRET_KEY'),
+      webhook_secret_configured: !!Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+      database_checks: {},
+      stripe_checks: {},
+      missing_infrastructure: []
     };
 
-    // Test API connection
+    // Check database entities
     try {
-      const account = await stripe.accounts.retrieve();
-      diagnostics.account_info = {
-        id: account.id,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled,
-        country: account.country,
-        default_currency: account.default_currency,
-        email: account.email
+      const [transactions, packages, operators, webhooks, paymentMethods] = await Promise.all([
+        base44.asServiceRole.entities.Transaction.list('-created_date', 5),
+        base44.asServiceRole.entities.ServicePackage.list('-created_date', 5),
+        base44.asServiceRole.entities.OperatorStripeAccount.list('-created_date', 5),
+        base44.asServiceRole.entities.WebhookEvent.filter({ source: 'stripe' }),
+        base44.asServiceRole.entities.PaymentMethod.list('-created_date', 5)
+      ]);
+
+      diagnosis.database_checks = {
+        transactions_count: transactions.length,
+        service_packages_count: packages.length,
+        operator_accounts_count: operators.length,
+        stripe_webhooks_count: webhooks.length,
+        payment_methods_count: paymentMethods.length,
+        sample_package: packages[0] || null
       };
+
+      if (transactions.length === 0) {
+        diagnosis.missing_infrastructure.push('No transactions recorded - payment flow not tested');
+      }
+      if (packages.length === 0) {
+        diagnosis.missing_infrastructure.push('No service packages - no quotes/invoices created');
+      }
+      if (webhooks.length === 0) {
+        diagnosis.missing_infrastructure.push('No Stripe webhooks received - webhook endpoint not configured');
+      }
+      if (paymentMethods.length === 0) {
+        diagnosis.missing_infrastructure.push('No payment methods - users need to add cards');
+      }
     } catch (error) {
-      diagnostics.errors.push({
-        type: 'account_retrieval',
-        message: error.message
-      });
+      diagnosis.database_checks.error = error.message;
     }
 
-    // List products
+    // Check Stripe configuration
     try {
-      const products = await stripe.products.list({ limit: 10 });
-      diagnostics.products = products.data.map(p => ({
-        id: p.id,
-        name: p.name,
-        active: p.active,
-        created: new Date(p.created * 1000).toISOString()
-      }));
+      const [account, products, prices] = await Promise.all([
+        stripe.accounts.retrieve(),
+        stripe.products.list({ limit: 10 }),
+        stripe.prices.list({ limit: 10 })
+      ]);
+
+      diagnosis.stripe_checks = {
+        account_id: account.id,
+        account_email: account.email,
+        charges_enabled: account.charges_enabled,
+        products_count: products.data.length,
+        prices_count: prices.data.length,
+        products: products.data.map(p => ({
+          id: p.id,
+          name: p.name,
+          active: p.active
+        })),
+        prices: prices.data.map(p => ({
+          id: p.id,
+          product: p.product,
+          amount: p.unit_amount,
+          currency: p.currency,
+          recurring: p.recurring
+        }))
+      };
+
+      if (products.data.length === 0) {
+        diagnosis.missing_infrastructure.push('No Stripe products - run setupStripeProducts');
+      }
+      if (prices.data.length === 0) {
+        diagnosis.missing_infrastructure.push('No Stripe prices - run setupStripeProducts');
+      }
     } catch (error) {
-      diagnostics.errors.push({
-        type: 'product_listing',
-        message: error.message
-      });
+      diagnosis.stripe_checks.error = error.message;
+      diagnosis.missing_infrastructure.push(`Stripe API error: ${error.message}`);
     }
 
-    // List prices
+    // Check platform settings
     try {
-      const prices = await stripe.prices.list({ limit: 10 });
-      diagnostics.prices = prices.data.map(p => ({
-        id: p.id,
-        product: p.product,
-        unit_amount: p.unit_amount,
-        currency: p.currency,
-        type: p.type,
-        active: p.active
-      }));
-    } catch (error) {
-      diagnostics.errors.push({
-        type: 'price_listing',
-        message: error.message
+      const platformFee = await base44.asServiceRole.entities.PlatformSettings.filter({
+        setting_key: 'platform_fee_percent'
       });
+
+      diagnosis.platform_fee_configured = platformFee.length > 0;
+      diagnosis.platform_fee_value = platformFee[0]?.setting_value;
+
+      if (!diagnosis.platform_fee_configured) {
+        diagnosis.missing_infrastructure.push('Platform fee not configured in PlatformSettings');
+      }
+    } catch (error) {
+      diagnosis.platform_fee_error = error.message;
     }
 
-    // Recommendations
-    if (!stripeWebhookSecret) {
-      diagnostics.recommendations.push('Set STRIPE_WEBHOOK_SECRET for webhook signature verification');
+    // Generate recommendations
+    diagnosis.recommendations = [];
+    
+    if (diagnosis.missing_infrastructure.length > 0) {
+      diagnosis.recommendations.push('Run setupStripeProducts to create product catalog');
+      diagnosis.recommendations.push('Configure webhook endpoint in Stripe Dashboard');
+      diagnosis.recommendations.push('Test payment flow with testPaymentFlow function');
     }
 
-    if (diagnostics.products.length === 0) {
-      diagnostics.recommendations.push('No products found. Create products in Stripe Dashboard or via API');
-    }
-
-    if (diagnostics.prices.length === 0) {
-      diagnostics.recommendations.push('No prices found. Create prices for your products');
-    }
-
-    if (diagnostics.api_key_type === 'test') {
-      diagnostics.recommendations.push('Using test mode. Switch to live keys for production');
+    if (diagnosis.database_checks.operator_accounts_count === 0) {
+      diagnosis.recommendations.push('Test operator onboarding flow');
     }
 
     return Response.json({
-      success: true,
-      diagnostics
+      success: diagnosis.missing_infrastructure.length === 0,
+      diagnosis
     });
   } catch (error) {
     console.error('Error diagnosing Stripe:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ 
+      error: error.message,
+      stack: error.stack
+    }, { status: 500 });
   }
 });
