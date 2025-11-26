@@ -55,7 +55,7 @@ export default function HeroSection() {
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => base44.auth.redirectToSignup()}
             className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             style={{ minHeight: '56px' }}
           >

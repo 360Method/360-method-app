@@ -88,7 +88,7 @@ export default function FinalCTA() {
               </li>
             </ul>
             <button 
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => base44.auth.redirectToSignup()}
               className="w-full mt-8 py-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors shadow-lg"
               style={{ minHeight: '48px' }}
             >
