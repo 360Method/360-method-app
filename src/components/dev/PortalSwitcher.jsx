@@ -131,8 +131,12 @@ export default function PortalSwitcher() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Hide in production
-  if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('base44.app')) {
+  // Show in development environments
+  const isDevelopment = window.location.hostname === 'localhost' || 
+                        window.location.hostname.includes('base44.app') ||
+                        window.location.hostname.includes('127.0.0.1');
+  
+  if (!isDevelopment) {
     return null;
   }
 
@@ -140,7 +144,7 @@ export default function PortalSwitcher() {
     return (
       <button
         onClick={() => setVisible(true)}
-        className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-semibold z-[200] flex items-center gap-2 transition-all"
+        className="fixed bottom-20 right-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold z-[9999] flex items-center gap-2 transition-all border-2 border-purple-400"
         title="Open Portal Switcher"
       >
         🚀 Portals
