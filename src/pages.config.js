@@ -65,6 +65,7 @@ import OwnerInvoices from './pages/OwnerInvoices';
 import NotificationSettings from './pages/NotificationSettings';
 import AdminJobQueue from './pages/AdminJobQueue';
 import AdminStripe from './pages/AdminStripe';
+import LandingPage from './pages/LandingPage';
 import __Layout from './Layout.jsx';
 
 
@@ -136,6 +137,7 @@ export const PAGES = {
     "NotificationSettings": NotificationSettings,
     "AdminJobQueue": AdminJobQueue,
     "AdminStripe": AdminStripe,
+    "LandingPage": LandingPage,
 }
 
 export const pagesConfig = {
