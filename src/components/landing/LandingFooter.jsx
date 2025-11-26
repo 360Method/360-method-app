@@ -71,7 +71,7 @@ export default function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link to={createPageUrl('Services')} className="hover:text-white transition-colors">
+                <Link to={createPageUrl('Waitlist')} className="hover:text-white transition-colors">
                   Services
                 </Link>
               </li>
