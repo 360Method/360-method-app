@@ -197,19 +197,25 @@ export default function PortalSwitcher() {
 
             {expanded[key] && (
               <div className="ml-5 mt-0.5 space-y-0.5">
-                {portal.pages.map((page) => (
-                  <button
-                    key={page.url}
-                    onClick={() => navigateToPage(page.url)}
-                    className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
-                      isCurrentPage(page.url)
-                        ? 'bg-blue-600 text-white font-medium'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                    }`}
-                  >
-                    → {page.name}
-                  </button>
-                ))}
+                {portal.pages.map((page) => {
+                  const displayName = portal.name === 'OTHER' 
+                    ? page.name 
+                    : `${portal.name.charAt(0)}${portal.name.slice(1).toLowerCase()} - ${page.name}`;
+                  
+                  return (
+                    <button
+                      key={page.url}
+                      onClick={() => navigateToPage(page.url)}
+                      className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                        isCurrentPage(page.url)
+                          ? 'bg-blue-600 text-white font-medium'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      }`}
+                    >
+                      → {displayName}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
