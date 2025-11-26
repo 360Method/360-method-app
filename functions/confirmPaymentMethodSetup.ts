@@ -34,6 +34,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing setup_intent_id' }, { status: 400 });
     }
 
+    const stripe = getStripeClient();
+
     // Retrieve SetupIntent
     const setupIntent = await stripe.setupIntents.retrieve(setup_intent_id);
 
