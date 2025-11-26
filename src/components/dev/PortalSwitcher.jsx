@@ -7,47 +7,47 @@ const PORTALS = {
   homeowner: {
     name: 'HOMEOWNER',
     pages: [
-      { name: 'Dashboard', url: 'DashboardHomeowner' },
-      { name: 'Properties', url: 'Properties' },
-      { name: 'Baseline', url: 'Baseline' },
-      { name: 'Inspect', url: 'Inspect' },
-      { name: 'Track', url: 'Track' },
-      { name: 'Prioritize', url: 'Prioritize' },
-      { name: 'Schedule', url: 'Schedule' },
-      { name: 'Execute', url: 'Execute' },
-      { name: 'Preserve', url: 'Preserve' },
-      { name: 'Upgrade', url: 'Upgrade' },
-      { name: 'PropertyScore', url: 'PropertyScore' },
-      { name: 'Score360', url: 'Score360' },
-      { name: 'ExploreTemplates', url: 'ExploreTemplates' },
-      { name: 'TemplateDetail', url: 'TemplateDetail' },
-      { name: 'ResourceGuides', url: 'ResourceGuides' },
-      { name: 'VideoTutorials', url: 'VideoTutorials' },
-      { name: 'ROICalculators', url: 'ROICalculators' },
-      { name: 'CartReview', url: 'CartReview' },
-      { name: 'UpgradeProjectDetail', url: 'UpgradeProjectDetail' },
-      { name: 'Services', url: 'Services' },
-      { name: 'HomeCare', url: 'HomeCare' },
-      { name: 'PropertyCare', url: 'PropertyCare' },
-      { name: 'Checkout', url: 'Checkout' },
-      { name: 'PaymentMethods', url: 'PaymentMethods' },
-      { name: 'OwnerInvoices', url: 'OwnerInvoices' },
-      { name: 'Settings', url: 'Settings' },
-      { name: 'SecuritySettings', url: 'SecuritySettings' },
-      { name: 'NotificationSettings', url: 'NotificationSettings' },
-      { name: 'PropertyAccessSettings', url: 'PropertyAccessSettings' }
+      { name: 'HomeownerDashboard', url: 'HomeownerDashboard' },
+      { name: 'HomeownerProperties', url: 'HomeownerProperties' },
+      { name: 'HomeownerBaseline', url: 'HomeownerBaseline' },
+      { name: 'HomeownerInspect', url: 'HomeownerInspect' },
+      { name: 'HomeownerTrack', url: 'HomeownerTrack' },
+      { name: 'HomeownerPrioritize', url: 'HomeownerPrioritize' },
+      { name: 'HomeownerSchedule', url: 'HomeownerSchedule' },
+      { name: 'HomeownerExecute', url: 'HomeownerExecute' },
+      { name: 'HomeownerPreserve', url: 'HomeownerPreserve' },
+      { name: 'HomeownerUpgrade', url: 'HomeownerUpgrade' },
+      { name: 'HomeownerPropertyScore', url: 'HomeownerPropertyScore' },
+      { name: 'HomeownerScore360', url: 'HomeownerScore360' },
+      { name: 'HomeownerExploreTemplates', url: 'HomeownerExploreTemplates' },
+      { name: 'HomeownerTemplateDetail', url: 'HomeownerTemplateDetail' },
+      { name: 'HomeownerResourceGuides', url: 'HomeownerResourceGuides' },
+      { name: 'HomeownerVideoTutorials', url: 'HomeownerVideoTutorials' },
+      { name: 'HomeownerROICalculators', url: 'HomeownerROICalculators' },
+      { name: 'HomeownerCartReview', url: 'HomeownerCartReview' },
+      { name: 'HomeownerUpgradeProjectDetail', url: 'HomeownerUpgradeProjectDetail' },
+      { name: 'HomeownerServices', url: 'HomeownerServices' },
+      { name: 'HomeownerHomeCare', url: 'HomeownerHomeCare' },
+      { name: 'HomeownerPropertyCare', url: 'HomeownerPropertyCare' },
+      { name: 'HomeownerCheckout', url: 'HomeownerCheckout' },
+      { name: 'HomeownerPaymentMethods', url: 'HomeownerPaymentMethods' },
+      { name: 'HomeownerInvoices', url: 'HomeownerInvoices' },
+      { name: 'HomeownerSettings', url: 'HomeownerSettings' },
+      { name: 'HomeownerSecuritySettings', url: 'HomeownerSecuritySettings' },
+      { name: 'HomeownerNotificationSettings', url: 'HomeownerNotificationSettings' },
+      { name: 'HomeownerPropertyAccessSettings', url: 'HomeownerPropertyAccessSettings' }
     ]
   },
   investor: {
     name: 'INVESTOR',
     pages: [
-      { name: 'DashboardInvestor', url: 'DashboardInvestor' },
-      { name: 'Scale', url: 'Scale' },
-      { name: 'PortalDashboard', url: 'PortalDashboard' },
-      { name: 'PortalMenu', url: 'PortalMenu' },
-      { name: 'PortalMarketplace', url: 'PortalMarketplace' },
-      { name: 'PortalOnboarding', url: 'PortalOnboarding' },
-      { name: 'PortalBudget', url: 'PortalBudget' }
+      { name: 'InvestorDashboard', url: 'InvestorDashboard' },
+      { name: 'InvestorScale', url: 'InvestorScale' },
+      { name: 'InvestorPortalDashboard', url: 'InvestorPortalDashboard' },
+      { name: 'InvestorPortalMenu', url: 'InvestorPortalMenu' },
+      { name: 'InvestorPortalMarketplace', url: 'InvestorPortalMarketplace' },
+      { name: 'InvestorPortalOnboarding', url: 'InvestorPortalOnboarding' },
+      { name: 'InvestorPortalBudget', url: 'InvestorPortalBudget' }
     ]
   },
   operator: {
@@ -64,7 +64,7 @@ const PORTALS = {
       { name: 'OperatorContractors', url: 'OperatorContractors' },
       { name: 'OperatorReportBuilder', url: 'OperatorReportBuilder' },
       { name: 'OperatorEarnings', url: 'OperatorEarnings' },
-      { name: 'FindOperator', url: 'FindOperator' }
+      { name: 'OperatorFindOperator', url: 'OperatorFindOperator' }
     ]
   },
   contractor: {
@@ -89,15 +89,15 @@ const PORTALS = {
   demo: {
     name: 'DEMO',
     pages: [
-      { name: 'Welcome', url: 'Welcome' },
-      { name: 'Waitlist', url: 'Waitlist' },
+      { name: 'DemoWelcome', url: 'DemoWelcome' },
+      { name: 'DemoWaitlist', url: 'DemoWaitlist' },
       { name: 'DemoEntry', url: 'DemoEntry' },
       { name: 'DemoStruggling', url: 'DemoStruggling' },
       { name: 'DemoImproving', url: 'DemoImproving' },
       { name: 'DemoExcellent', url: 'DemoExcellent' },
       { name: 'DemoPortfolio', url: 'DemoPortfolio' },
-      { name: 'WelcomeDemo', url: 'WelcomeDemo' },
-      { name: 'GitHubDemo', url: 'GitHubDemo' }
+      { name: 'DemoWelcomeDemo', url: 'DemoWelcomeDemo' },
+      { name: 'DemoGitHub', url: 'DemoGitHub' }
     ]
   },
   other: {
@@ -106,7 +106,8 @@ const PORTALS = {
       { name: 'Onboarding', url: 'Onboarding' },
       { name: 'AcceptInvitation', url: 'AcceptInvitation' },
       { name: 'Pricing', url: 'Pricing' },
-      { name: 'Resources', url: 'Resources' }
+      { name: 'Resources', url: 'Resources' },
+      { name: 'LandingPage', url: 'LandingPage' }
     ]
   }
 };
@@ -197,25 +198,19 @@ export default function PortalSwitcher() {
 
             {expanded[key] && (
               <div className="ml-5 mt-0.5 space-y-0.5">
-                {portal.pages.map((page) => {
-                  const displayName = portal.name === 'OTHER' 
-                    ? page.name 
-                    : `${portal.name.charAt(0)}${portal.name.slice(1).toLowerCase()} - ${page.name}`;
-                  
-                  return (
-                    <button
-                      key={page.url}
-                      onClick={() => navigateToPage(page.url)}
-                      className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
-                        isCurrentPage(page.url)
-                          ? 'bg-blue-600 text-white font-medium'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                      }`}
-                    >
-                      → {displayName}
-                    </button>
-                  );
-                })}
+                {portal.pages.map((page) => (
+                  <button
+                    key={page.url}
+                    onClick={() => navigateToPage(page.url)}
+                    className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                      isCurrentPage(page.url)
+                        ? 'bg-blue-600 text-white font-medium'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
+                  >
+                    → {page.name}
+                  </button>
+                ))}
               </div>
             )}
           </div>
