@@ -11,9 +11,9 @@ export default function PersonaPathsSection() {
       icon: Home,
       iconColor: 'bg-red-100 text-red-600',
       title: 'The Overwhelmed Owner',
-      currentState: '"I have no idea what's about to break"',
+      currentState: 'I have no idea what\'s about to break',
       currentStateColor: 'text-red-600',
-      dreamState: '"Nothing surprises you anymore"',
+      dreamState: 'Nothing surprises you anymore',
       journey: 'See transformation (62 → 80)',
       demoType: 'homeowner',
       demoScore: 'struggling'
@@ -22,9 +22,9 @@ export default function PersonaPathsSection() {
       icon: Shield,
       iconColor: 'bg-orange-100 text-orange-600',
       title: 'The Organized Owner',
-      currentState: '"I maintain, but could do better"',
+      currentState: 'I maintain, but could do better',
       currentStateColor: 'text-orange-600',
-      dreamState: '"Systems last 30% longer, home worth 5% more"',
+      dreamState: 'Systems last 30% longer, home worth 5% more',
       journey: 'See the upgrade (78 → 85)',
       demoType: 'homeowner',
       demoScore: 'improving'
@@ -33,9 +33,9 @@ export default function PersonaPathsSection() {
       icon: Award,
       iconColor: 'bg-green-100 text-green-600',
       title: 'The Elite Owner',
-      currentState: '"My home is dialed in"',
+      currentState: 'My home is dialed in',
       currentStateColor: 'text-green-600',
-      dreamState: '"Maintain excellence effortlessly"',
+      dreamState: 'Maintain excellence effortlessly',
       journey: 'See elite maintenance (92)',
       demoType: 'homeowner',
       demoScore: 'excellent'
@@ -44,9 +44,9 @@ export default function PersonaPathsSection() {
       icon: Briefcase,
       iconColor: 'bg-purple-100 text-purple-600',
       title: 'The Portfolio Builder',
-      currentState: '"Tired of emergency calls and chaos"',
+      currentState: 'Tired of emergency calls and chaos',
       currentStateColor: 'text-purple-600',
-      dreamState: '"Professional operation, phone stops buzzing"',
+      dreamState: 'Professional operation, phone stops buzzing',
       journey: 'See portfolio control (3 properties, 79 avg)',
       demoType: 'investor',
       demoScore: 'improving'
@@ -86,7 +86,7 @@ export default function PersonaPathsSection() {
                     <div className="space-y-3">
                       <div>
                         <p className={`text-sm font-semibold ${persona.currentStateColor} mb-1`}>Current State:</p>
-                        <p className="text-gray-700">{persona.currentState}</p>
+                        <p className="text-gray-700">"{persona.currentState}"</p>
                       </div>
                       <div className="flex items-center gap-2 text-gray-400">
                         <div className="flex-1 h-px bg-gray-200"></div>
@@ -95,7 +95,7 @@ export default function PersonaPathsSection() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-green-600 mb-1">Dream State:</p>
-                        <p className="text-gray-700">{persona.dreamState}</p>
+                        <p className="text-gray-700">"{persona.dreamState}"</p>
                       </div>
                     </div>
                     <div className="mt-4 text-sm text-gray-500">
