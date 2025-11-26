@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json(pmRecord);
+    return Response.json({
+      success: true,
+      payment_method_id: paymentMethod.id,
+      payment_method: pmRecord
+    });
   } catch (error) {
     console.error('Error confirming payment method setup:', error);
     return Response.json({ error: error.message }, { status: 500 });
