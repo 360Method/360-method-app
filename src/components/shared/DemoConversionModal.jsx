@@ -2,8 +2,9 @@ import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Lock, Sparkles } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
-export default function DemoConversionModal({ open, onClose, onCreateAccount }) {
+export default function DemoConversionModal({ open, onClose }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -36,12 +37,12 @@ export default function DemoConversionModal({ open, onClose, onCreateAccount }) 
           </div>
           
           <Button 
-            onClick={onCreateAccount}
-            className="w-full bg-blue-600 hover:bg-blue-700 mb-3 gap-2"
+            onClick={() => base44.auth.redirectToLogin()}
+            className="w-full bg-orange-500 hover:bg-orange-600 mb-3 gap-2"
             style={{ minHeight: '48px' }}
           >
             <Sparkles className="w-4 h-4" />
-            Create Free Account
+            Start Free Today
           </Button>
           <Button
             onClick={onClose}

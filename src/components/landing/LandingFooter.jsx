@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Linkedin, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 
 export default function LandingFooter() {
   return (
@@ -50,9 +51,12 @@ export default function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link to={createPageUrl('Waitlist')} className="hover:text-white transition-colors">
-                  Waitlist
-                </Link>
+                <button 
+                  onClick={() => base44.auth.redirectToLogin()}
+                  className="hover:text-white transition-colors"
+                >
+                  Sign Up Free
+                </button>
               </li>
             </ul>
           </div>
