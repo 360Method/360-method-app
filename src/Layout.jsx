@@ -590,9 +590,9 @@ function LayoutContent({ children }) {
         )}
 
         {showAppUI && !demoMode && <CartDrawer />}
-        {demoMode && <DemoAIChat />}
-        <FloatingSignupCTA />
-        <ExitIntentPopup />
+        {showAppUI && demoMode && <DemoAIChat />}
+        {showAppUI && <FloatingSignupCTA />}
+        {showAppUI && <ExitIntentPopup />}
         </div>
 
       <style>{`
