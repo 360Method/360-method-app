@@ -47,7 +47,7 @@ export default function DemoEntry() {
           {/* Header */}
           <div className="text-center mb-8">
             <button
-              onClick={() => navigate(createPageUrl('Welcome'))}
+              onClick={() => navigate('/')}
               className="text-blue-600 hover:text-blue-700 mb-4 inline-flex items-center gap-2"
             >
               ← Back
