@@ -1,41 +1,39 @@
 import React from 'react';
 import { Rocket, Star, Zap, TrendingUp, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 
 const CTA_VARIANTS = {
   dashboard: {
     icon: Shield,
     title: "Want This Peace of Mind for Your Home?",
-    subtitle: "Join 1,247+ homeowners on the waitlist",
-    buttonText: "Get Early Access",
+    subtitle: "Join 400+ property owners protecting their investments",
+    buttonText: "Start Free Today",
     color: "green"
   },
   scale: {
     icon: TrendingUp,
     title: "Ready to Build Long-Term Wealth?",
     subtitle: "Start your 360° Method journey today",
-    buttonText: "Join Waitlist",
+    buttonText: "Create Free Account",
     color: "purple"
   },
   preserve: {
     icon: Zap,
     title: "Unlock Premium Features",
     subtitle: "Full resource library, advanced analytics, and more",
-    buttonText: "Get Early Access",
+    buttonText: "Start Free Today",
     color: "blue"
   },
   default: {
     icon: Rocket,
     title: "Love What You See?",
-    subtitle: "Be first to know when we launch in your area",
-    buttonText: "Join Waitlist",
+    subtitle: "Create your free account and get started",
+    buttonText: "Start Free Today",
     color: "blue"
   }
 };
 
 export default function ContextualWaitlistCTA({ variant = 'default', className = '' }) {
-  const navigate = useNavigate();
   const config = CTA_VARIANTS[variant] || CTA_VARIANTS.default;
   const IconComponent = config.icon;
 
@@ -85,7 +83,7 @@ export default function ContextualWaitlistCTA({ variant = 'default', className =
         </div>
 
         <button
-          onClick={() => navigate(createPageUrl('Waitlist'))}
+          onClick={() => base44.auth.redirectToLogin()}
           className={`${colors.buttonBg} ${colors.buttonText} px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg ${colors.buttonHover} active:scale-95 transition-all shadow-lg whitespace-nowrap flex items-center gap-2`}
           style={{ minWidth: '44px', minHeight: '44px' }}
         >
