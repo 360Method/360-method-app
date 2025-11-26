@@ -24,7 +24,7 @@ export default function ProductSection() {
     {
       icon: TrendingUp,
       title: 'Maintenance Timeline',
-      description: 'See what's coming. Plan ahead. No more surprise expenses.',
+      description: 'See what\'s coming. Plan ahead. No more surprise expenses.',
       color: 'orange'
     },
     {
