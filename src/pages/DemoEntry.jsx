@@ -60,7 +60,7 @@ export default function DemoEntry() {
               Pick the situation that feels most like you.
             </p>
             <p className="text-base text-gray-500">
-              See how others transformed from there.
+              Explore real examples, then create your free account when ready.
             </p>
           </div>
           

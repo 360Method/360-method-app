@@ -1,9 +1,25 @@
-import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Sparkles, Shield, TrendingUp, Clock, Mail, Lock, Check } from 'lucide-react';
+import React, { useEffect } from 'react';
 import { base44 } from "@/api/base44Client";
-import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from 'lucide-react';
 
 export default function Waitlist() {
+  // Redirect all waitlist traffic to signup
+  useEffect(() => {
+    base44.auth.redirectToLogin();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600">Redirecting to signup...</p>
+      </div>
+    </div>
+  );
+}
+
+/* LEGACY WAITLIST CODE - Archived for reference
+export default function WaitlistLegacy() {
   const urlParams = new URLSearchParams(window.location.search);
   const source = urlParams.get('source');
   
@@ -206,7 +222,7 @@ export default function Waitlist() {
     );
   }
 
-  const scrollToForm = () => {
+  const scrollToFormLegacy = () => {
     const formElement = document.getElementById('waitlist-form');
     if (formElement) {
       formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
