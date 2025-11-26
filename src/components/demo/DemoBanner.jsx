@@ -58,7 +58,8 @@ export function DemoBanner({ onAddProperty }) {
               style={{ minHeight: '40px', fontSize: '14px', fontWeight: '700' }}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Start Free</span>
+              <span className="hidden sm:inline">Start Free</span>
+              <span className="sm:hidden">Sign Up</span>
             </Button>
             <Button
               onClick={handleBackToLanding}
