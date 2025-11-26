@@ -1,7 +1,22 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import Stripe from 'npm:stripe@14.11.0';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+function getStripeClient() {
+  const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+  const isTestMode = stripeMode === 'test';
+  
+  const stripeSecretKey = isTestMode 
+    ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
+    : Deno.env.get('STRIPE_SECRET_KEY');
+  
+  if (!stripeSecretKey) {
+    throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
+  }
+  
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  });
+}
 
 Deno.serve(async (req) => {
   try {
@@ -17,6 +32,8 @@ Deno.serve(async (req) => {
     if (!return_url) {
       return Response.json({ error: 'Missing return_url' }, { status: 400 });
     }
+
+    const stripe = getStripeClient();
 
     // Ensure user has Stripe Customer
     let customerId = user.stripe_customer_id;
