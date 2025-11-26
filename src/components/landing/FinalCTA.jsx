@@ -1,7 +1,8 @@
 import React from 'react';
 import { X, CheckCircle } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
-export default function FinalCTA({ onJoinWaitlist }) {
+export default function FinalCTA() {
   return (
     <section className="py-24 bg-slate-100">
       <div className="max-w-5xl mx-auto px-6">
@@ -87,10 +88,11 @@ export default function FinalCTA({ onJoinWaitlist }) {
               </li>
             </ul>
             <button 
-              onClick={onJoinWaitlist}
+              onClick={() => base44.auth.redirectToLogin()}
               className="w-full mt-8 py-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors shadow-lg"
+              style={{ minHeight: '48px' }}
             >
-              Join the Waitlist →
+              Start Free Today →
             </button>
           </div>
           
