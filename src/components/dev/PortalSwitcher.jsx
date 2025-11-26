@@ -82,61 +82,59 @@ const PORTALS = {
   operator: {
     name: 'OPERATOR',
     pages: [
-      { name: 'OperatorDashboard', url: 'OperatorDashboard' },
-      { name: 'OperatorLeads', url: 'OperatorLeads' },
-      { name: 'OperatorInspection', url: 'OperatorInspection' },
-      { name: 'OperatorWorkOrders', url: 'OperatorWorkOrders' },
-      { name: 'OperatorMarketplaceProfile', url: 'OperatorMarketplaceProfile' },
-      { name: 'OperatorClients', url: 'OperatorClients' },
-      { name: 'OperatorInvoices', url: 'OperatorInvoices' },
-      { name: 'OperatorInvoiceCreate', url: 'OperatorInvoiceCreate' },
-      { name: 'OperatorContractors', url: 'OperatorContractors' },
-      { name: 'OperatorReportBuilder', url: 'OperatorReportBuilder' },
-      { name: 'OperatorEarnings', url: 'OperatorEarnings' },
-      { name: 'OperatorFindOperator', url: 'OperatorFindOperator' }
+      { name: 'Dashboard', url: 'OperatorDashboard' },
+      { name: 'Leads', url: 'OperatorLeads' },
+      { name: 'Inspection', url: 'OperatorInspection' },
+      { name: 'Work Orders', url: 'OperatorWorkOrders' },
+      { name: 'Marketplace Profile', url: 'OperatorMarketplaceProfile' },
+      { name: 'Clients', url: 'OperatorClients' },
+      { name: 'Invoices', url: 'OperatorInvoices' },
+      { name: 'Create Invoice', url: 'OperatorInvoiceCreate' },
+      { name: 'Contractors', url: 'OperatorContractors' },
+      { name: 'Report Builder', url: 'OperatorReportBuilder' },
+      { name: 'Earnings', url: 'OperatorEarnings' }
     ]
   },
   contractor: {
     name: 'CONTRACTOR',
     pages: [
-      { name: 'ContractorDashboard', url: 'ContractorDashboard' },
-      { name: 'ContractorJobDetail', url: 'ContractorJobDetail' },
-      { name: 'ContractorMessages', url: 'ContractorMessages' },
-      { name: 'ContractorProfile', url: 'ContractorProfile' },
-      { name: 'ContractorOnboarding', url: 'ContractorOnboarding' }
+      { name: 'Dashboard', url: 'ContractorDashboard' },
+      { name: 'Job Detail', url: 'ContractorJobDetail' },
+      { name: 'Messages', url: 'ContractorMessages' },
+      { name: 'Profile', url: 'ContractorProfile' },
+      { name: 'Onboarding', url: 'ContractorOnboarding' }
     ]
   },
   admin: {
     name: 'ADMIN',
     pages: [
-      { name: 'AdminJobQueue', url: 'AdminJobQueue' },
-      { name: 'AdminStripe', url: 'AdminStripe' },
-      { name: 'AdminStripeDebug', url: 'AdminStripeDebug' },
-      { name: 'AdminEmailTest', url: 'AdminEmailTest' }
+      { name: 'Job Queue', url: 'AdminJobQueue' },
+      { name: 'Stripe', url: 'AdminStripe' },
+      { name: 'Stripe Debug', url: 'AdminStripeDebug' },
+      { name: 'Email Test', url: 'AdminEmailTest' }
     ]
   },
   demo: {
     name: 'DEMO',
     pages: [
-      { name: 'DemoWelcome', url: 'DemoWelcome' },
-      { name: 'DemoWaitlist', url: 'DemoWaitlist' },
+      { name: 'Welcome', url: 'Welcome' },
+      { name: 'Waitlist', url: 'Waitlist' },
       { name: 'DemoEntry', url: 'DemoEntry' },
       { name: 'DemoStruggling', url: 'DemoStruggling' },
       { name: 'DemoImproving', url: 'DemoImproving' },
       { name: 'DemoExcellent', url: 'DemoExcellent' },
       { name: 'DemoPortfolio', url: 'DemoPortfolio' },
-      { name: 'DemoWelcomeDemo', url: 'DemoWelcomeDemo' },
-      { name: 'DemoGitHub', url: 'DemoGitHub' }
+      { name: 'WelcomeDemo', url: 'WelcomeDemo' },
+      { name: 'GitHubDemo', url: 'GitHubDemo' }
     ]
   },
   other: {
     name: 'OTHER',
     pages: [
-      { name: 'AcceptInvitation', url: 'AcceptInvitation' },
+      { name: 'Accept Invitation', url: 'AcceptInvitation' },
       { name: 'Pricing', url: 'Pricing' },
-      { name: 'LandingPage', url: 'LandingPage' },
-      { name: 'Welcome', url: 'Welcome' },
-      { name: 'Waitlist', url: 'Waitlist' }
+      { name: 'Landing Page', url: 'LandingPage' },
+      { name: 'Resources', url: 'Resources' }
     ]
   }
 };
