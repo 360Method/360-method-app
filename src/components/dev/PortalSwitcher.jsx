@@ -140,10 +140,10 @@ export default function PortalSwitcher() {
     return (
       <button
         onClick={() => setVisible(true)}
-        className="fixed bottom-4 right-4 bg-gray-900/90 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-gray-800 text-xs font-mono z-[200] backdrop-blur-sm"
-        title="Press Ctrl+Shift+D to toggle"
+        className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-semibold z-[200] flex items-center gap-2 transition-all"
+        title="Open Portal Switcher"
       >
-        🔧 DEV
+        🚀 Portals
       </button>
     );
   }
