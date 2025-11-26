@@ -210,7 +210,111 @@ async function handleAccountUpdated(base44, account) {
   }
 }
 
+async function handleCheckoutSessionCompleted(base44, session) {
+  console.log('Checkout session completed:', session.id);
+
+  // Handle subscription checkout
+  if (session.mode === 'subscription' && session.subscription) {
+    // Update user subscription status
+    const customers = await base44.asServiceRole.entities.User.filter({
+      stripe_customer_id: session.customer
+    });
+
+    if (customers && customers.length > 0) {
+      const user = customers[0];
+      await base44.asServiceRole.entities.User.update(user.id, {
+        subscription_status: 'active',
+        subscription_id: session.subscription
+      });
+
+      // Create notification
+      await base44.asServiceRole.functions.invoke('triggerNotificationEvent', {
+        event_type: 'subscription_activated',
+        event_data: {
+          user_id: user.id,
+          subscription_id: session.subscription
+        }
+      });
+    }
+  }
+
+  // Handle payment checkout (one-time or invoice payment)
+  if (session.mode === 'payment' && session.payment_intent) {
+    // Payment intent will be handled by payment_intent.succeeded webhook
+    console.log('Payment checkout completed, waiting for payment_intent.succeeded');
+  }
+
+  // Handle setup mode (payment method setup)
+  if (session.mode === 'setup' && session.setup_intent) {
+    console.log('Setup completed, payment method attached');
+  }
+}
+
+async function handleInvoicePaid(base44, invoice) {
+  console.log('Invoice paid:', invoice.id);
+
+  if (invoice.subscription) {
+    // Update subscription status
+    const customers = await base44.asServiceRole.entities.User.filter({
+      stripe_customer_id: invoice.customer
+    });
+
+    if (customers && customers.length > 0) {
+      await base44.asServiceRole.entities.User.update(customers[0].id, {
+        subscription_status: 'active',
+        last_payment_date: new Date().toISOString()
+      });
+    }
+  }
+}
+
 async function handleSubscriptionEvent(base44, eventType, subscription) {
   console.log(`Handling subscription event: ${eventType}`, subscription.id);
-  // Subscription handling to be implemented when subscription features are added
+
+  const customers = await base44.asServiceRole.entities.User.filter({
+    stripe_customer_id: subscription.customer
+  });
+
+  if (!customers || customers.length === 0) {
+    console.log('User not found for subscription:', subscription.id);
+    return;
+  }
+
+  const user = customers[0];
+
+  switch (eventType) {
+    case 'customer.subscription.created':
+      await base44.asServiceRole.entities.User.update(user.id, {
+        subscription_status: 'active',
+        subscription_id: subscription.id
+      });
+      break;
+
+    case 'customer.subscription.updated':
+      const status = subscription.status === 'active' ? 'active' : 
+                     subscription.status === 'past_due' ? 'past_due' :
+                     subscription.status === 'canceled' ? 'canceled' : 'inactive';
+      
+      await base44.asServiceRole.entities.User.update(user.id, {
+        subscription_status: status,
+        subscription_id: subscription.id
+      });
+      break;
+
+    case 'customer.subscription.deleted':
+      await base44.asServiceRole.entities.User.update(user.id, {
+        subscription_status: 'canceled',
+        subscription_id: null
+      });
+
+      // Notify user
+      await base44.asServiceRole.functions.invoke('triggerNotificationEvent', {
+        event_type: 'subscription_canceled',
+        event_data: {
+          user_id: user.id,
+          subscription_id: subscription.id
+        }
+      });
+      break;
+  }
 }
