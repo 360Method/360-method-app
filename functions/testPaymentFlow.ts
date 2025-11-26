@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
     const isLiveMode = stripeMode === 'live';
 
     const testResults = {
-      stripe_mode: stripeMode,
-      mode: isLiveMode ? 'live' : 'test',
+      stripe_mode: { status: 'success', value: stripeMode },
+      mode: { status: 'success', value: isLiveMode ? 'live' : 'test' },
       step1_customer_creation: { status: 'pending' },
       step2_payment_method_setup: { status: 'pending' },
       step3_test_charge: { status: 'pending' },
