@@ -10,23 +10,35 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    // Get Stripe mode and key
+    const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+    const isTestMode = stripeMode === 'test';
+    
+    const stripeSecretKey = isTestMode 
+      ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
+      : Deno.env.get('STRIPE_SECRET_KEY');
     
     if (!stripeSecretKey) {
       return Response.json({ 
         success: false, 
-        error: 'STRIPE_SECRET_KEY not configured' 
+        error: `STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured. Set STRIPE_MODE=${stripeMode}` 
       });
     }
 
-    // Check if key is test or live mode
-    const isTestMode = stripeSecretKey.startsWith('sk_test_');
-    const isLiveMode = stripeSecretKey.startsWith('sk_live_');
+    // Validate key format matches mode
+    const keyPrefix = stripeSecretKey.substring(0, 8);
+    const expectedPrefix = isTestMode ? 'sk_test_' : 'sk_live_';
+    if (!keyPrefix.startsWith(expectedPrefix)) {
+      return Response.json({ 
+        success: false, 
+        error: `Key mismatch: STRIPE_MODE=${stripeMode} but key starts with ${keyPrefix}. Expected ${expectedPrefix}` 
+      });
+    }
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
-      maxNetworkRetries: 0, // Disable retries for faster diagnosis
-      timeout: 10000 // 10 second timeout
+      maxNetworkRetries: 0,
+      timeout: 10000
     });
 
     const results = {

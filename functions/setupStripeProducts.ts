@@ -1,7 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import Stripe from 'npm:stripe@14.11.0';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+// Get Stripe client based on mode
+function getStripeClient() {
+  const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+  const isTestMode = stripeMode === 'test';
+  
+  const stripeSecretKey = isTestMode 
+    ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
+    : Deno.env.get('STRIPE_SECRET_KEY');
+  
+  if (!stripeSecretKey) {
+    throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
+  }
+  
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  });
+}
 
 Deno.serve(async (req) => {
   try {
@@ -12,7 +28,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
+    const stripe = getStripeClient();
+    const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+
     const results = {
+      stripe_mode: stripeMode,
       products_created: [],
       prices_created: [],
       errors: []
