@@ -1,5 +1,4 @@
 import React from 'react';
-import LandingHeader from '../components/landing/LandingHeader';
 import HeroSection from '../components/landing/HeroSection';
 import SocialProofBar from '../components/landing/SocialProofBar';
 import PainSection from '../components/landing/PainSection';
@@ -23,7 +22,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <LandingHeader />
       <HeroSection onJoinWaitlist={scrollToOffer} />
       <SocialProofBar />
       <PainSection />
