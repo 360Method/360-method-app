@@ -68,6 +68,7 @@ import AdminStripe from './pages/AdminStripe';
 import LandingPage from './pages/LandingPage';
 import SecuritySettings from './pages/SecuritySettings';
 import GitHubDemo from './pages/GitHubDemo';
+import AdminStripeDebug from './pages/AdminStripeDebug';
 import __Layout from './Layout.jsx';
 
 
@@ -142,6 +143,7 @@ export const PAGES = {
     "LandingPage": LandingPage,
     "SecuritySettings": SecuritySettings,
     "GitHubDemo": GitHubDemo,
+    "AdminStripeDebug": AdminStripeDebug,
 }
 
 export const pagesConfig = {
