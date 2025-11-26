@@ -10,7 +10,8 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
