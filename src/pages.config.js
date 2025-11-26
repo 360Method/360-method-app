@@ -66,6 +66,7 @@ import NotificationSettings from './pages/NotificationSettings';
 import AdminJobQueue from './pages/AdminJobQueue';
 import AdminStripe from './pages/AdminStripe';
 import LandingPage from './pages/LandingPage';
+import SecuritySettings from './pages/SecuritySettings';
 import __Layout from './Layout.jsx';
 
 
@@ -138,6 +139,7 @@ export const PAGES = {
     "AdminJobQueue": AdminJobQueue,
     "AdminStripe": AdminStripe,
     "LandingPage": LandingPage,
+    "SecuritySettings": SecuritySettings,
 }
 
 export const pagesConfig = {
