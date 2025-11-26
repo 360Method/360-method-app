@@ -13,16 +13,9 @@ import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
 
 export default function LandingPage() {
-  const scrollToOffer = () => {
-    const element = document.getElementById('offer');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white">
-      <HeroSection onJoinWaitlist={scrollToOffer} />
+      <HeroSection />
       <SocialProofBar />
       <PainSection />
       <StorySection />
@@ -32,7 +25,7 @@ export default function LandingPage() {
       <PersonaPathsSection />
       <OfferSection />
       <FAQSection />
-      <FinalCTA onJoinWaitlist={scrollToOffer} />
+      <FinalCTA />
       <LandingFooter />
     </div>
   );
