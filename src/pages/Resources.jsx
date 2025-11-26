@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 import DemoCTA from '../components/demo/DemoCTA';
 
 export default function Resources() {
@@ -72,11 +73,11 @@ export default function Resources() {
                     </li>
                   </ul>
                   <Button
-                    onClick={() => navigate(createPageUrl('Waitlist'))}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                    onClick={() => base44.auth.redirectToLogin()}
+                    className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600"
                     style={{ minHeight: '48px' }}
                   >
-                    Join Waitlist to Unlock All Resources
+                    Start Free to Unlock All Resources
                   </Button>
                 </div>
               </div>
@@ -685,21 +686,21 @@ function DemoNavGuideModal({ onClose }) {
             </div>
 
             {/* CTA */}
-            <Card className="bg-gradient-to-r from-blue-600 to-purple-600 border-none">
+            <Card className="bg-gradient-to-r from-orange-500 to-orange-600 border-none">
               <CardContent className="p-4 md:p-6 text-center text-white">
-                <h3 className="text-lg md:text-xl font-bold mb-2">Ready to Use This for Your Own Properties?</h3>
-                <p className="text-sm md:text-base text-blue-100 mb-4">
-                  Join the waitlist and get early access when we launch
+                <h3 className="text-lg md:text-xl font-bold mb-2">Ready to Protect Your Own Property?</h3>
+                <p className="text-sm md:text-base text-orange-100 mb-4">
+                  Create your free account and start the 360° Method today
                 </p>
                 <Button
                   onClick={() => {
                     onClose();
-                    window.location.href = createPageUrl('Waitlist');
+                    base44.auth.redirectToLogin();
                   }}
-                  className="bg-white text-blue-600 hover:bg-gray-100 font-semibold"
+                  className="bg-white text-orange-600 hover:bg-gray-100 font-semibold"
                   style={{ minHeight: '48px' }}
                 >
-                  Join Waitlist
+                  Start Free Today
                 </Button>
               </CardContent>
             </Card>
