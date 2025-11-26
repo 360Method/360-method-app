@@ -4,22 +4,21 @@ import { Button } from '@/components/ui/button';
 import { useDemo } from '../shared/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 
 export function DemoBanner({ onAddProperty }) {
   const { demoMode } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show on landing/welcome/demoentry/waitlist pages
+  // Don't show on landing/welcome/demoentry pages
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
-  const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
   const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
   
-  if (!demoMode || isLandingPage || isWaitlistPage || isDemoEntryPage) return null;
+  if (!demoMode || isLandingPage || isDemoEntryPage) return null;
 
-  const handleJoinWaitlist = () => {
-    sessionStorage.setItem('navigatedFromDemo', 'true');
-    navigate(createPageUrl('Waitlist'));
+  const handleStartFree = () => {
+    base44.auth.redirectToLogin();
   };
 
   const handleBackToLanding = () => {
@@ -53,13 +52,13 @@ export function DemoBanner({ onAddProperty }) {
           {/* Right side - CTAs */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
-              onClick={handleJoinWaitlist}
+              onClick={handleStartFree}
               size="sm"
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white gap-2 shadow-lg border border-blue-700"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white gap-2 shadow-lg border border-orange-700"
               style={{ minHeight: '40px', fontSize: '14px', fontWeight: '700' }}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Join Waitlist</span>
+              <span>Start Free</span>
             </Button>
             <Button
               onClick={handleBackToLanding}
