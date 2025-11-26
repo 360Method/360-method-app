@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 
 const PORTALS = {
   homeowner: {
-    name: '🏠 Homeowner Portal',
+    name: 'HOMEOWNER',
     pages: [
       { name: 'Dashboard', url: 'DashboardHomeowner' },
       { name: 'Properties', url: 'Properties' },
@@ -17,74 +17,96 @@ const PORTALS = {
       { name: 'Execute', url: 'Execute' },
       { name: 'Preserve', url: 'Preserve' },
       { name: 'Upgrade', url: 'Upgrade' },
-      { name: 'Property Score', url: 'PropertyScore' },
-      { name: 'Score 360', url: 'Score360' },
+      { name: 'PropertyScore', url: 'PropertyScore' },
+      { name: 'Score360', url: 'Score360' },
+      { name: 'ExploreTemplates', url: 'ExploreTemplates' },
+      { name: 'TemplateDetail', url: 'TemplateDetail' },
+      { name: 'ResourceGuides', url: 'ResourceGuides' },
+      { name: 'VideoTutorials', url: 'VideoTutorials' },
+      { name: 'ROICalculators', url: 'ROICalculators' },
+      { name: 'CartReview', url: 'CartReview' },
+      { name: 'UpgradeProjectDetail', url: 'UpgradeProjectDetail' },
       { name: 'Services', url: 'Services' },
       { name: 'HomeCare', url: 'HomeCare' },
       { name: 'PropertyCare', url: 'PropertyCare' },
-      { name: 'Cart Review', url: 'CartReview' },
-      { name: 'Payment Methods', url: 'PaymentMethods' },
-      { name: 'Invoices', url: 'OwnerInvoices' },
-      { name: 'Settings', url: 'Settings' }
+      { name: 'Checkout', url: 'Checkout' },
+      { name: 'PaymentMethods', url: 'PaymentMethods' },
+      { name: 'OwnerInvoices', url: 'OwnerInvoices' },
+      { name: 'Settings', url: 'Settings' },
+      { name: 'SecuritySettings', url: 'SecuritySettings' },
+      { name: 'NotificationSettings', url: 'NotificationSettings' },
+      { name: 'PropertyAccessSettings', url: 'PropertyAccessSettings' }
     ]
   },
   investor: {
-    name: '🏢 Investor Portal',
+    name: 'INVESTOR',
     pages: [
-      { name: 'Dashboard', url: 'DashboardInvestor' },
+      { name: 'DashboardInvestor', url: 'DashboardInvestor' },
       { name: 'Scale', url: 'Scale' },
-      { name: 'Portal Dashboard', url: 'PortalDashboard' },
-      { name: 'Portal Menu', url: 'PortalMenu' },
-      { name: 'Portal Marketplace', url: 'PortalMarketplace' },
-      { name: 'Portal Budget', url: 'PortalBudget' }
+      { name: 'PortalDashboard', url: 'PortalDashboard' },
+      { name: 'PortalMenu', url: 'PortalMenu' },
+      { name: 'PortalMarketplace', url: 'PortalMarketplace' },
+      { name: 'PortalOnboarding', url: 'PortalOnboarding' },
+      { name: 'PortalBudget', url: 'PortalBudget' }
     ]
   },
   operator: {
-    name: '🔧 Operator Portal',
+    name: 'OPERATOR',
     pages: [
-      { name: 'Dashboard', url: 'OperatorDashboard' },
-      { name: 'Leads', url: 'OperatorLeads' },
-      { name: 'Work Orders', url: 'OperatorWorkOrders' },
-      { name: 'Inspections', url: 'OperatorInspection' },
-      { name: 'Clients', url: 'OperatorClients' },
-      { name: 'Invoices', url: 'OperatorInvoices' },
-      { name: 'Create Invoice', url: 'OperatorInvoiceCreate' },
-      { name: 'Contractors', url: 'OperatorContractors' },
-      { name: 'Reports', url: 'OperatorReportBuilder' },
-      { name: 'Earnings', url: 'OperatorEarnings' },
-      { name: 'Profile', url: 'OperatorMarketplaceProfile' }
+      { name: 'OperatorDashboard', url: 'OperatorDashboard' },
+      { name: 'OperatorLeads', url: 'OperatorLeads' },
+      { name: 'OperatorInspection', url: 'OperatorInspection' },
+      { name: 'OperatorWorkOrders', url: 'OperatorWorkOrders' },
+      { name: 'OperatorMarketplaceProfile', url: 'OperatorMarketplaceProfile' },
+      { name: 'OperatorClients', url: 'OperatorClients' },
+      { name: 'OperatorInvoices', url: 'OperatorInvoices' },
+      { name: 'OperatorInvoiceCreate', url: 'OperatorInvoiceCreate' },
+      { name: 'OperatorContractors', url: 'OperatorContractors' },
+      { name: 'OperatorReportBuilder', url: 'OperatorReportBuilder' },
+      { name: 'OperatorEarnings', url: 'OperatorEarnings' },
+      { name: 'FindOperator', url: 'FindOperator' }
     ]
   },
   contractor: {
-    name: '👷 Contractor Portal',
+    name: 'CONTRACTOR',
     pages: [
-      { name: 'Dashboard', url: 'ContractorDashboard' },
-      { name: 'Job Detail', url: 'ContractorJobDetail' },
-      { name: 'Messages', url: 'ContractorMessages' },
-      { name: 'Profile', url: 'ContractorProfile' },
-      { name: 'Onboarding', url: 'ContractorOnboarding' }
+      { name: 'ContractorDashboard', url: 'ContractorDashboard' },
+      { name: 'ContractorJobDetail', url: 'ContractorJobDetail' },
+      { name: 'ContractorMessages', url: 'ContractorMessages' },
+      { name: 'ContractorProfile', url: 'ContractorProfile' },
+      { name: 'ContractorOnboarding', url: 'ContractorOnboarding' }
     ]
   },
   admin: {
-    name: '⚙️ Admin Portal',
+    name: 'ADMIN',
     pages: [
-      { name: 'Job Queue', url: 'AdminJobQueue' },
-      { name: 'Stripe', url: 'AdminStripe' },
-      { name: 'Stripe Debug', url: 'AdminStripeDebug' },
-      { name: 'Email Test', url: 'AdminEmailTest' }
+      { name: 'AdminJobQueue', url: 'AdminJobQueue' },
+      { name: 'AdminStripe', url: 'AdminStripe' },
+      { name: 'AdminStripeDebug', url: 'AdminStripeDebug' },
+      { name: 'AdminEmailTest', url: 'AdminEmailTest' }
     ]
   },
   demo: {
-    name: '🎭 Demo Pages',
+    name: 'DEMO',
     pages: [
-      { name: 'Demo Entry', url: 'DemoEntry' },
-      { name: 'Struggling', url: 'DemoStruggling' },
-      { name: 'Improving', url: 'DemoImproving' },
-      { name: 'Excellent', url: 'DemoExcellent' },
-      { name: 'Portfolio', url: 'DemoPortfolio' },
       { name: 'Welcome', url: 'Welcome' },
-      { name: 'Landing', url: 'LandingPage' },
-      { name: 'Waitlist', url: 'Waitlist' }
+      { name: 'Waitlist', url: 'Waitlist' },
+      { name: 'DemoEntry', url: 'DemoEntry' },
+      { name: 'DemoStruggling', url: 'DemoStruggling' },
+      { name: 'DemoImproving', url: 'DemoImproving' },
+      { name: 'DemoExcellent', url: 'DemoExcellent' },
+      { name: 'DemoPortfolio', url: 'DemoPortfolio' },
+      { name: 'WelcomeDemo', url: 'WelcomeDemo' },
+      { name: 'GitHubDemo', url: 'GitHubDemo' }
+    ]
+  },
+  other: {
+    name: 'OTHER',
+    pages: [
+      { name: 'Onboarding', url: 'Onboarding' },
+      { name: 'AcceptInvitation', url: 'AcceptInvitation' },
+      { name: 'Pricing', url: 'Pricing' },
+      { name: 'Resources', url: 'Resources' }
     ]
   }
 };
@@ -93,6 +115,7 @@ export default function PortalSwitcher() {
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState({});
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Toggle visibility with Ctrl+Shift+D
   useEffect(() => {
@@ -116,10 +139,10 @@ export default function PortalSwitcher() {
     return (
       <button
         onClick={() => setVisible(true)}
-        className="fixed bottom-4 right-4 bg-purple-600 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-purple-700 text-xs font-mono z-[200]"
+        className="fixed bottom-4 right-4 bg-gray-900/90 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-gray-800 text-xs font-mono z-[200] backdrop-blur-sm"
         title="Press Ctrl+Shift+D to toggle"
       >
-        DEV 🚀
+        🔧 DEV
       </button>
     );
   }
@@ -133,50 +156,58 @@ export default function PortalSwitcher() {
     setVisible(false);
   };
 
+  const isCurrentPage = (pageUrl) => {
+    return location.pathname === createPageUrl(pageUrl);
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 bg-white border-2 border-purple-600 rounded-lg shadow-2xl w-80 max-h-[600px] overflow-y-auto z-[200]">
+    <div className="fixed bottom-4 right-4 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl w-80 max-h-[600px] overflow-y-auto z-[200]">
       {/* Header */}
-      <div className="sticky top-0 bg-purple-600 text-white px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 bg-gray-950 text-white px-4 py-2 flex items-center justify-between border-b border-gray-700">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm">PORTAL SWITCHER</span>
-          <span className="text-xs opacity-75">(Ctrl+Shift+D)</span>
+          <span className="font-mono text-xs font-bold">DEV PORTAL</span>
+          <span className="text-[10px] text-gray-400">(Ctrl+Shift+D)</span>
         </div>
         <button
           onClick={() => setVisible(false)}
-          className="hover:bg-purple-700 p-1 rounded"
+          className="hover:bg-gray-800 p-1 rounded"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3 h-3" />
         </button>
       </div>
 
       {/* Portal List */}
       <div className="p-2">
         {Object.entries(PORTALS).map(([key, portal]) => (
-          <div key={key} className="mb-2">
+          <div key={key} className="mb-1">
             <button
               onClick={() => togglePortal(key)}
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded text-left text-sm font-semibold"
+              className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-800 rounded text-left text-xs font-semibold text-gray-300"
             >
               {expanded[key] ? (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3" />
               ) : (
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3 h-3" />
               )}
               {portal.name}
-              <span className="ml-auto text-xs text-gray-500">
+              <span className="ml-auto text-[10px] text-gray-500">
                 {portal.pages.length}
               </span>
             </button>
 
             {expanded[key] && (
-              <div className="ml-6 mt-1 space-y-1">
+              <div className="ml-5 mt-0.5 space-y-0.5">
                 {portal.pages.map((page) => (
                   <button
                     key={page.url}
                     onClick={() => navigateToPage(page.url)}
-                    className="block w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 rounded"
+                    className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                      isCurrentPage(page.url)
+                        ? 'bg-blue-600 text-white font-medium'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
                   >
-                    {page.name}
+                    → {page.name}
                   </button>
                 ))}
               </div>
