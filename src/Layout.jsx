@@ -37,6 +37,7 @@ import { DemoBanner } from "./components/demo/DemoBanner";
 import FloatingSignupCTA from "./components/demo/FloatingSignupCTA";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
 import DemoAIChat from "./components/demo/DemoAIChat";
+import PortalSwitcher from "./components/dev/PortalSwitcher";
 
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -593,6 +594,7 @@ function LayoutContent({ children }) {
         {showAppUI && demoMode && <DemoAIChat />}
         {showAppUI && <FloatingSignupCTA />}
         {showAppUI && <ExitIntentPopup />}
+        <PortalSwitcher />
         </div>
 
       <style>{`
