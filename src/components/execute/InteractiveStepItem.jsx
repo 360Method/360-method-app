@@ -58,97 +58,104 @@ export default function InteractiveStepItem({
         ${isCompleted ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:bg-gray-50'}
       `}>
         {/* Step Header */}
-        <div className="p-3 flex items-start gap-3">
+        <div className="p-4 flex items-start gap-3">
           <Checkbox
             checked={isCompleted}
             onCheckedChange={onToggle}
-            className="mt-1 flex-shrink-0"
+            className="mt-1 flex-shrink-0 h-5 w-5"
           />
           
           <CollapsibleTrigger className="flex-1 text-left min-w-0">
             {editMode ? (
-              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
                 <Input
                   value={editedText}
                   onChange={(e) => setEditedText(e.target.value)}
-                  className="flex-1"
+                  className="w-full"
+                  style={{ minHeight: '44px' }}
                   autoFocus
                 />
-                <Button size="sm" onClick={handleSaveEdit}>Save</Button>
-                <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveEdit} style={{ minHeight: '40px' }}>Save</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditMode(false)} style={{ minHeight: '40px' }}>Cancel</Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-start justify-between gap-2">
-                <p className={`text-sm flex-1 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                <p className={`text-base flex-1 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                   <span className="font-semibold">{stepIndex + 1}.</span> {step}
                 </p>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {stepPhotos.length > 0 && (
                     <Badge variant="outline" className="text-xs">
                       <Camera className="w-3 h-3 mr-1" />
                       {stepPhotos.length}
                     </Badge>
                   )}
-                  {expanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                  {expanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
                 </div>
               </div>
             )}
           </CollapsibleTrigger>
           
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex flex-col gap-1 flex-shrink-0">
             {canMoveUp && (
               <button
                 onClick={() => onMoveUp(stepIndex)}
-                className="p-1 hover:bg-gray-200 rounded"
+                className="p-2 hover:bg-gray-200 rounded"
                 title="Move up"
+                style={{ minHeight: '40px', minWidth: '40px' }}
               >
-                <ChevronUpIcon className="w-4 h-4 text-gray-600" />
+                <ChevronUpIcon className="w-5 h-5 text-gray-600" />
               </button>
             )}
             {canMoveDown && (
               <button
                 onClick={() => onMoveDown(stepIndex)}
-                className="p-1 hover:bg-gray-200 rounded"
+                className="p-2 hover:bg-gray-200 rounded"
                 title="Move down"
+                style={{ minHeight: '40px', minWidth: '40px' }}
               >
-                <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+                <ChevronDownIcon className="w-5 h-5 text-gray-600" />
               </button>
             )}
             <button
               onClick={() => setEditMode(true)}
-              className="p-1 hover:bg-gray-200 rounded"
+              className="p-2 hover:bg-gray-200 rounded"
               title="Edit"
+              style={{ minHeight: '40px', minWidth: '40px' }}
             >
-              <Edit2 className="w-4 h-4 text-gray-600" />
+              <Edit2 className="w-5 h-5 text-gray-600" />
             </button>
             <button
               onClick={() => onDelete && onDelete(stepIndex)}
-              className="p-1 hover:bg-red-100 rounded"
+              className="p-2 hover:bg-red-100 rounded"
               title="Delete"
+              style={{ minHeight: '40px', minWidth: '40px' }}
             >
-              <Trash2 className="w-4 h-4 text-red-600" />
+              <Trash2 className="w-5 h-5 text-red-600" />
             </button>
           </div>
         </div>
 
         {/* Expanded Content */}
         <CollapsibleContent>
-          <div className="px-3 pb-3 space-y-3 border-t border-gray-200 pt-3">
+          <div className="px-4 pb-4 space-y-4 border-t border-gray-200 pt-4">
             {/* Photos */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <Camera className="w-3 h-3" />
+              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Camera className="w-4 h-4" />
                 Photos:
               </label>
               {stepPhotos.length > 0 && (
-                <div className="flex gap-2 flex-wrap mb-2">
+                <div className="grid grid-cols-3 gap-2 mb-3">
                   {stepPhotos.map((url, idx) => (
                     <img
                       key={idx}
                       src={url}
                       alt={`Step ${stepIndex + 1} photo ${idx + 1}`}
-                      className="w-20 h-20 object-cover rounded border-2 border-gray-300 cursor-pointer hover:opacity-80"
+                      className="w-full aspect-square object-cover rounded border-2 border-gray-300 cursor-pointer hover:opacity-80"
                       onClick={() => window.open(url, '_blank')}
                     />
                   ))}
@@ -157,19 +164,19 @@ export default function InteractiveStepItem({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => document.getElementById(`step-photo-${stepIndex}`).click()}
                 disabled={uploadingPhotos}
-                className="gap-2 text-xs"
+                className="w-full gap-2"
+                style={{ minHeight: '48px' }}
               >
                 {uploadingPhotos ? (
                   <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     Uploading...
                   </>
                 ) : (
                   <>
-                    <Upload className="w-3 h-3" />
+                    <Upload className="w-5 h-5" />
                     Add Photo
                   </>
                 )}
@@ -187,7 +194,7 @@ export default function InteractiveStepItem({
 
             {/* Notes */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Notes:
               </label>
               <textarea
@@ -195,21 +202,22 @@ export default function InteractiveStepItem({
                 onChange={(e) => setLocalNotes(e.target.value)}
                 onBlur={handleNotesBlur}
                 placeholder="Add notes about this step..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                rows={2}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-base"
+                rows={3}
+                style={{ minHeight: '80px' }}
               />
             </div>
 
             {/* Completion Info */}
             {isCompleted && completion && (
-              <div className="bg-green-100 rounded p-2 text-xs text-green-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>
+              <div className="bg-green-100 rounded-lg p-3 text-sm text-green-800">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  <span className="flex-1">
                     Completed: {new Date(completion.completedAt).toLocaleString()}
                   </span>
                   {completion.timeSpentSeconds && (
-                    <span className="ml-auto">
+                    <span className="font-semibold">
                       ({Math.floor(completion.timeSpentSeconds / 60)} min)
                     </span>
                   )}

@@ -361,32 +361,33 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0">
         {/* Header with Back Button */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10 flex items-center justify-between gap-3">
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10 flex items-center justify-between gap-3 flex-wrap">
           <Button
             variant="ghost"
             onClick={onClose}
             className="gap-2"
-            style={{ minHeight: '44px' }}
+            style={{ minHeight: '48px' }}
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Tasks
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Back to Tasks</span>
+            <span className="sm:hidden">Back</span>
           </Button>
           
           <div className="flex items-center gap-2">
-            <Badge className="bg-green-600 text-white">
+            <Badge className="bg-green-600 text-white text-sm px-3 py-1">
               {task.execution_method || 'DIY'}
             </Badge>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Task Title & Meta */}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2" style={{ color: '#1B365D' }}>
-              <Wrench className="w-7 h-7 flex-shrink-0" />
-              {task.title}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 flex items-start gap-2" style={{ color: '#1B365D' }}>
+              <Wrench className="w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 mt-1" />
+              <span className="flex-1">{task.title}</span>
             </h1>
-            <div className="flex items-center gap-3 flex-wrap text-sm text-gray-600">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
                 {task.system_type}
@@ -394,7 +395,8 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
               {task.scheduled_date && (
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Scheduled: {new Date(task.scheduled_date).toLocaleDateString()}
+                  <span className="hidden sm:inline">Scheduled: </span>
+                  {new Date(task.scheduled_date).toLocaleDateString()}
                 </span>
               )}
               <Badge className={
@@ -791,32 +793,32 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
           {/* TIMER & STEPS */}
           <Card className="border-2 border-green-200">
             <CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="font-bold text-lg text-gray-900">STEPS</h3>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between sm:justify-end gap-3">
                   <div className="text-right">
                     <div className="text-xs text-gray-600">Timer:</div>
-                    <div className="text-lg font-mono font-bold text-gray-900">
+                    <div className="text-xl sm:text-lg font-mono font-bold text-gray-900">
                       {formatTime(elapsedSeconds)}
                     </div>
                   </div>
                   {!timerRunning ? (
                     <Button
                       onClick={() => setTimerRunning(true)}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 gap-1"
+                      className="bg-green-600 hover:bg-green-700 gap-2"
+                      style={{ minHeight: '48px' }}
                     >
-                      <Play className="w-4 h-4" />
-                      Start
+                      <Play className="w-5 h-5" />
+                      <span className="hidden sm:inline">Start</span>
                     </Button>
                   ) : (
                     <Button
                       onClick={() => setTimerRunning(false)}
-                      size="sm"
-                      className="bg-yellow-600 hover:bg-yellow-700 gap-1"
+                      className="bg-yellow-600 hover:bg-yellow-700 gap-2"
+                      style={{ minHeight: '48px' }}
                     >
-                      <Pause className="w-4 h-4" />
-                      Pause
+                      <Pause className="w-5 h-5" />
+                      <span className="hidden sm:inline">Pause</span>
                     </Button>
                   )}
                 </div>
@@ -855,8 +857,9 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
                 variant="outline"
                 onClick={handleAddStep}
                 className="w-full gap-2 border-dashed"
+                style={{ minHeight: '48px' }}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
                 Add Custom Step
               </Button>
 
@@ -1001,7 +1004,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
           {(completionPhotos.length > 0 || stepCompletions.some(s => s.photos?.length > 0) || task.photo_urls?.length > 0) && (
             <Card className="border-2 border-gray-200">
               <CardContent className="p-4">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-base sm:text-lg">
                   <Camera className="w-5 h-5" />
                   PHOTOS ({
                     (task.photo_urls?.length || 0) + 
@@ -1010,17 +1013,17 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
                   })
                 </h3>
                 
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {/* Before Photos */}
                   {task.photo_urls && task.photo_urls.map((url, idx) => (
                     <div key={`before-${idx}`} className="relative">
                       <img
                         src={url}
                         alt={`Before ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                        className="w-full aspect-square object-cover rounded-lg border-2 cursor-pointer hover:opacity-80"
                         onClick={() => window.open(url, '_blank')}
                       />
-                      <Badge className="absolute bottom-1 left-1 text-xs bg-blue-600">Before</Badge>
+                      <Badge className="absolute bottom-2 left-2 text-xs bg-blue-600">Before</Badge>
                     </div>
                   ))}
                   
@@ -1031,10 +1034,10 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
                         <img
                           src={url}
                           alt={`Step ${completion.stepIndex + 1}`}
-                          className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                          className="w-full aspect-square object-cover rounded-lg border-2 cursor-pointer hover:opacity-80"
                           onClick={() => window.open(url, '_blank')}
                         />
-                        <Badge className="absolute bottom-1 left-1 text-xs bg-purple-600">
+                        <Badge className="absolute bottom-2 left-2 text-xs bg-purple-600">
                           Step {completion.stepIndex + 1}
                         </Badge>
                       </div>
@@ -1047,10 +1050,10 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
                       <img
                         src={url}
                         alt={`After ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                        className="w-full aspect-square object-cover rounded-lg border-2 cursor-pointer hover:opacity-80"
                         onClick={() => window.open(url, '_blank')}
                       />
-                      <Badge className="absolute bottom-1 left-1 text-xs bg-green-600">After</Badge>
+                      <Badge className="absolute bottom-2 left-2 text-xs bg-green-600">After</Badge>
                     </div>
                   ))}
                 </div>
