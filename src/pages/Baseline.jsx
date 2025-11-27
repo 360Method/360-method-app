@@ -455,15 +455,15 @@ export default function Baseline() {
   React.useEffect(() => {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
-      if (property && property.baseline_completion !== overallProgress && !demoMode) {
+      if (property && property.baseline_completion !== essentialProgress && !demoMode) {
         base44.entities.Property.update(selectedProperty, {
-          baseline_completion: overallProgress
+          baseline_completion: essentialProgress
         }).then(() => {
           queryClient.invalidateQueries({ queryKey: ['properties'] });
         });
       }
     }
-  }, [overallProgress, selectedProperty, properties, queryClient, demoMode]);
+  }, [essentialProgress, selectedProperty, properties, queryClient, demoMode]);
 
   const handleEditSystem = (system) => {
     if (demoMode) {
