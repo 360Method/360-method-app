@@ -216,6 +216,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
       } else if (currentSystem.id === 'electrical') {
         await createSystemMutation.mutateAsync({
           ...baseData,
+          installation_year: parseInt(systemData.panel_year) || null,
           key_components: {
             panel_capacity: systemData.panel_capacity || '',
             wiring_type: systemData.wiring_type || ''
