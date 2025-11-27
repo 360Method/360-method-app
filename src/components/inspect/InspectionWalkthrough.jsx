@@ -164,6 +164,8 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
   const [completedZones, setCompletedZones] = React.useState([]);
   const [isCompleting, setIsCompleting] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [showIncompleteWarning, setShowIncompleteWarning] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -261,8 +263,21 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     setCurrentAreaIndex(null);
   };
 
-  const handleSaveAndComplete = async () => {
+  const handleSaveAndFinish = async () => {
+    const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
+    
+    // Show warning if not 100% complete
+    if (completionPercent < 100) {
+      setShowIncompleteWarning(true);
+      return;
+    }
+
+    await completeInspection();
+  };
+
+  const completeInspection = async () => {
     setIsCompleting(true);
+    setShowIncompleteWarning(false);
 
     try {
       const allIssues = Object.values(inspectionData).flat();
@@ -353,6 +368,26 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
       alert('Failed to complete inspection. Please try again.');
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    setIsSaving(true);
+    try {
+      const allIssues = Object.values(inspectionData).flat();
+      const issuesCount = allIssues.length;
+      const completionPercent = Math.round((Object.keys(inspectionData).length / INSPECTION_AREAS.length) * 100);
+
+      await saveInspectionMutation.mutateAsync({
+        checklist_items: allIssues,
+        issues_found: issuesCount,
+        completion_percentage: completionPercent,
+        status: 'In Progress'
+      });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -540,24 +575,46 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             )}
 
             {progress.completed > 0 && (
-              <Button
-                onClick={handleSaveAndComplete}
-                className="w-full gap-2"
-                style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
-                disabled={isCompleting}
-              >
-                {isCompleting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Completing & Creating Tasks...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    Save & Complete Inspection Now
-                  </>
-                )}
-              </Button>
+              <>
+                <Button
+                  onClick={handleSaveProgress}
+                  variant="outline"
+                  className="w-full gap-2"
+                  style={{ minHeight: '48px' }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Progress
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleSaveAndFinish}
+                  className="w-full gap-2"
+                  style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                  disabled={isCompleting}
+                >
+                  {isCompleting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Completing & Creating Tasks...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      Finish Inspection
+                    </>
+                  )}
+                </Button>
+              </>
             )}
 
             {progress.completed > 0 && (
@@ -586,6 +643,19 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
               confirmText="Yes, Delete"
               cancelText="Cancel"
               variant="destructive"
+            />
+          )}
+
+          {showIncompleteWarning && (
+            <ConfirmDialog
+              open={showIncompleteWarning}
+              onClose={() => setShowIncompleteWarning(false)}
+              onConfirm={completeInspection}
+              title="Inspection Not Complete"
+              message={`This inspection is only ${progress.percent}% complete (${progress.completed} of ${progress.total} areas checked). You can finish it now and create tasks from the issues found, or continue inspecting to get full coverage.\n\nDo you want to finish the inspection now with partial completion?`}
+              confirmText="Yes, Finish Now"
+              cancelText="Continue Inspecting"
+              variant="default"
             />
           )}
         </div>
@@ -702,24 +772,46 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
           )}
 
           {progress.completed > 0 && (
-            <Button
-              onClick={handleSaveAndComplete}
-              className="w-full gap-2"
-              style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
-              disabled={isCompleting}
-            >
-              {isCompleting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Completing & Creating Tasks...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Save & Complete Inspection Now
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                onClick={handleSaveProgress}
+                variant="outline"
+                className="w-full gap-2"
+                style={{ minHeight: '48px' }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Progress
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleSaveAndFinish}
+                className="w-full gap-2"
+                style={{ backgroundColor: '#28A745', minHeight: '56px', fontSize: '16px' }}
+                disabled={isCompleting}
+              >
+                {isCompleting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Completing & Creating Tasks...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Finish Inspection
+                  </>
+                )}
+              </Button>
+            </>
           )}
 
           {progress.completed > 0 && (
@@ -748,6 +840,19 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
             confirmText="Yes, Delete"
             cancelText="Cancel"
             variant="destructive"
+          />
+        )}
+
+        {showIncompleteWarning && (
+          <ConfirmDialog
+            open={showIncompleteWarning}
+            onClose={() => setShowIncompleteWarning(false)}
+            onConfirm={completeInspection}
+            title="Inspection Not Complete"
+            message={`This inspection is only ${progress.percent}% complete (${progress.completed} of ${progress.total} areas checked). You can finish it now and create tasks from the issues found, or continue inspecting to get full coverage.\n\nDo you want to finish the inspection now with partial completion?`}
+            confirmText="Yes, Finish Now"
+            cancelText="Continue Inspecting"
+            variant="default"
           />
         )}
       </div>
