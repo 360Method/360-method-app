@@ -24,7 +24,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { format, addDays } from "date-fns";
-import DIYExecutionModal from "./DIYExecutionModal";
+import EnhancedTaskExecutionView from "./EnhancedTaskExecutionView";
 import ContractorExecutionCard from "./ContractorExecutionCard";
 import OperatorTaskCard from "./OperatorTaskCard";
 import QuickCompleteModal from "./QuickCompleteModal";
@@ -51,7 +51,7 @@ const METHOD_ICONS = {
 
 export default function ExecuteTaskCard({ task, urgency = 'today', properties = [] }) {
   const queryClient = useQueryClient();
-  const [showDIYModal, setShowDIYModal] = useState(false);
+  const [showEnhancedView, setShowEnhancedView] = useState(false);
   const [showQuickComplete, setShowQuickComplete] = useState(false);
   const [showAlreadyDone, setShowAlreadyDone] = useState(false);
   
@@ -179,7 +179,7 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
           
           <div className="flex gap-2 flex-wrap">
             <Button
-              onClick={() => setShowDIYModal(true)}
+              onClick={() => setShowEnhancedView(true)}
               className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
               style={{ minHeight: '48px' }}
             >
@@ -243,12 +243,12 @@ export default function ExecuteTaskCard({ task, urgency = 'today', properties = 
         </CardContent>
       </Card>
 
-      {showDIYModal && (
-        <DIYExecutionModal
+      {showEnhancedView && (
+        <EnhancedTaskExecutionView
           task={task}
-          open={showDIYModal}
-          onClose={() => setShowDIYModal(false)}
-          onComplete={() => setShowDIYModal(false)}
+          open={showEnhancedView}
+          onClose={() => setShowEnhancedView(false)}
+          onComplete={() => setShowEnhancedView(false)}
         />
       )}
       
