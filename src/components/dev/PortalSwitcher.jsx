@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { useDemo } from '../shared/DemoContext';
 
 const PORTALS = {
   property_owner: {
@@ -144,6 +145,7 @@ export default function PortalSwitcher() {
   const [expanded, setExpanded] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
+  const { enterDemoMode, exitDemoMode } = useDemo();
 
   // Toggle visibility with Ctrl+Shift+D
   useEffect(() => {
@@ -175,7 +177,40 @@ export default function PortalSwitcher() {
   };
 
   const navigateToPage = (pageUrl) => {
-    navigate(createPageUrl(pageUrl));
+    const path = createPageUrl(pageUrl);
+    
+    // Check if destination is a demo page
+    const isDemoPage = 
+      pageUrl === 'Welcome' ||
+      pageUrl === 'Waitlist' ||
+      pageUrl === 'DemoEntry' ||
+      pageUrl === 'DemoStruggling' ||
+      pageUrl === 'DemoImproving' ||
+      pageUrl === 'DemoExcellent' ||
+      pageUrl === 'DemoPortfolio' ||
+      pageUrl === 'WelcomeDemo' ||
+      pageUrl === 'GitHubDemo' ||
+      pageUrl.startsWith('Demo');
+    
+    // Toggle demo mode based on destination
+    if (isDemoPage) {
+      // Determine which demo mode based on page name
+      if (pageUrl === 'DemoStruggling') {
+        enterDemoMode('homeowner', 'struggling');
+      } else if (pageUrl === 'DemoImproving') {
+        enterDemoMode('homeowner', 'improving');
+      } else if (pageUrl === 'DemoExcellent') {
+        enterDemoMode('homeowner', 'excellent');
+      } else if (pageUrl === 'DemoPortfolio') {
+        enterDemoMode('investor');
+      } else {
+        enterDemoMode('homeowner');
+      }
+    } else {
+      exitDemoMode();
+    }
+    
+    navigate(path);
     setVisible(false);
   };
 
