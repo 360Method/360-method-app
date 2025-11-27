@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, AlertTriangle, Trash2, Save } from "lucide-react";
 import AreaInspection from "./AreaInspection";
-import ConfirmDialog from "../ui/confirm-dialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { format } from 'date-fns';
 
 // Physical zone-based routing for efficient inspection
