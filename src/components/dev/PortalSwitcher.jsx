@@ -145,7 +145,7 @@ export default function PortalSwitcher() {
   const [expanded, setExpanded] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
-  const { enterDemoMode, exitDemoMode } = useDemo();
+  const { enterDemoMode, clearDemoMode } = useDemo();
 
   // Toggle visibility with Ctrl+Shift+D
   useEffect(() => {
@@ -207,10 +207,8 @@ export default function PortalSwitcher() {
         enterDemoMode('homeowner');
       }
     } else {
-      // Clear demo mode without redirecting - just clear session storage
-      sessionStorage.removeItem('demoMode');
-      sessionStorage.removeItem('demoWizardSeen');
-      sessionStorage.removeItem('demoVisitedSteps');
+      // Clear demo mode without redirecting
+      clearDemoMode();
     }
     
     navigate(path);

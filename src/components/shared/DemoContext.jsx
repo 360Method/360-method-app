@@ -60,18 +60,23 @@ export function DemoProvider({ children }) {
     }
   };
   
-  const exitDemoMode = () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔴 DEMO CONTEXT: Exiting demo mode');
-    console.log('🔴 DEMO CONTEXT: Setting demoMode to null');
+  const clearDemoMode = () => {
+    // Clear demo mode WITHOUT redirecting (for portal switcher)
+    console.log('🔄 Clearing demo mode (no redirect)');
     setDemoMode(null);
     setDemoData(null);
     setShowWizard(false);
     setVisitedSteps([]);
-    console.log('🔴 DEMO CONTEXT: Clearing sessionStorage');
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
     sessionStorage.removeItem('demoVisitedSteps');
+  };
+  
+  const exitDemoMode = () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔴 DEMO CONTEXT: Exiting demo mode');
+    console.log('🔴 DEMO CONTEXT: Setting demoMode to null');
+    clearDemoMode();
     console.log('🔴 DEMO CONTEXT: Redirecting to Waitlist');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     // Force reload to clear all cached data
@@ -143,6 +148,7 @@ export function DemoProvider({ children }) {
       visitedSteps,
       enterDemoMode,
       exitDemoMode,
+      clearDemoMode,
       markStepVisited,
       isHomeowner,
       isInvestor
