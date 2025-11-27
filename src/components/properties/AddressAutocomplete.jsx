@@ -115,6 +115,28 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
     zip_code: ""
   });
 
+  // Ensure Google autocomplete dropdown appears above modal
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .pac-container {
+        z-index: 10000 !important;
+        border-radius: 8px !important;
+        margin-top: 4px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+      }
+      .pac-item {
+        padding: 10px 12px !important;
+        cursor: pointer !important;
+      }
+      .pac-item:hover {
+        background-color: #f3f4f6 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   // Update input value when initialValue changes
   useEffect(() => {
     if (initialValue) {
