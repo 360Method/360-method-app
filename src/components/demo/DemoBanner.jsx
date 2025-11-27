@@ -7,23 +7,26 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 
 export function DemoBanner({ onAddProperty }) {
-  const { demoMode } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show on landing/welcome/demoentry pages or any non-demo pages
-  const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
-  const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
+  // Only show on specific demo pages - use route-based logic instead of global flag
+  const isDemoPage = 
+    location.pathname === '/' ||
+    location.pathname === '/welcome' ||
+    location.pathname === createPageUrl('Welcome') ||
+    location.pathname === createPageUrl('Waitlist') ||
+    location.pathname === createPageUrl('DemoEntry') ||
+    location.pathname === createPageUrl('DemoStruggling') ||
+    location.pathname === createPageUrl('DemoImproving') ||
+    location.pathname === createPageUrl('DemoExcellent') ||
+    location.pathname === createPageUrl('DemoPortfolio') ||
+    location.pathname === createPageUrl('WelcomeDemo') ||
+    location.pathname === createPageUrl('GitHubDemo') ||
+    location.pathname.startsWith('/demo-') ||
+    location.pathname.includes('/demo-');
   
-  // Don't show on admin, operator, contractor, or any non-demo pages
-  const isAdminPage = location.pathname.includes('/admin-');
-  const isOperatorPage = location.pathname.includes('/operator-');
-  const isContractorPage = location.pathname.includes('/contractor-');
-  const isSettingsPage = location.pathname.includes('/settings') || 
-                         location.pathname.includes('/payment-methods') || 
-                         location.pathname.includes('/notification-settings');
-  
-  if (!demoMode || isLandingPage || isDemoEntryPage || isAdminPage || isOperatorPage || isContractorPage || isSettingsPage) return null;
+  if (!isDemoPage) return null;
 
   const handleStartFree = () => {
     base44.auth.redirectToLogin();
