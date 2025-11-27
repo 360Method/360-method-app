@@ -22,7 +22,7 @@ import InspectionComplete from "../components/inspect/InspectionComplete";
 import InspectionReport from "../components/inspect/InspectionReport";
 import InspectionWizard from "../components/inspect/InspectionWizard";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
-import ConfirmDialog from "../components/ui/confirm-dialog";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import StepNavigation from "../components/navigation/StepNavigation";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
