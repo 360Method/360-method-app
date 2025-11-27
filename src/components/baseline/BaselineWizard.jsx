@@ -596,7 +596,8 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
               {currentSystem.id === 'electrical' && (
                 <>
                   <div>
-                    <Label>Panel Capacity</Label>
+                    <Label>Panel Capacity (Amps)</Label>
+                    <p className="text-xs text-gray-600 mb-2">This is the total electrical capacity of your home. Check the main breaker label in your electrical panel.</p>
                     <select
                       value={formData[currentSystem.id]?.panel_capacity || ''}
                       onChange={(e) => setFormData(prev => ({
@@ -609,14 +610,36 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
                       className="w-full p-3 border rounded"
                       style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
                     >
-                      <option value="">Select amperage...</option>
-                      <option value="100">100 Amp</option>
-                      <option value="150">150 Amp</option>
-                      <option value="200">200 Amp</option>
+                      <option value="">Select panel size...</option>
+                      <option value="60">60 Amp (Very old homes, needs upgrade)</option>
+                      <option value="100">100 Amp (Older homes, basic needs)</option>
+                      <option value="150">150 Amp (Standard modern home)</option>
+                      <option value="200">200 Amp (Modern home, most common)</option>
+                      <option value="400">400 Amp (Large home or multiple units)</option>
                     </select>
+                    {formData[currentSystem.id]?.panel_capacity && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700">
+                        {formData[currentSystem.id]?.panel_capacity === '60' && (
+                          <p>⚠️ <strong>60 Amp:</strong> Found in very old homes (pre-1960s). Not sufficient for modern appliances. Likely needs upgrade soon. Cannot support central AC or electric heating.</p>
+                        )}
+                        {formData[currentSystem.id]?.panel_capacity === '100' && (
+                          <p>💡 <strong>100 Amp:</strong> Common in older homes. Adequate for basic needs but may struggle with multiple large appliances running simultaneously (AC + dryer + oven). May need upgrade if adding electric vehicle or major appliances.</p>
+                        )}
+                        {formData[currentSystem.id]?.panel_capacity === '150' && (
+                          <p>✅ <strong>150 Amp:</strong> Good for most modern homes. Can handle standard appliances, AC, and electric heating comfortably. May be tight if adding EV charger.</p>
+                        )}
+                        {formData[currentSystem.id]?.panel_capacity === '200' && (
+                          <p>✅ <strong>200 Amp:</strong> Standard for modern homes. Plenty of capacity for all major appliances, AC, electric heating, and even an EV charger. Most common in homes built after 1990.</p>
+                        )}
+                        {formData[currentSystem.id]?.panel_capacity === '400' && (
+                          <p>✅ <strong>400 Amp:</strong> Large capacity for big homes, multiple units, or homes with extensive electrical needs (workshop, multiple EVs, large HVAC systems).</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label>Wiring Type</Label>
+                    <p className="text-xs text-gray-600 mb-2">The type of wiring in your home. Age of house is usually the best indicator if you're unsure.</p>
                     <select
                       value={formData[currentSystem.id]?.wiring_type || ''}
                       onChange={(e) => setFormData(prev => ({
@@ -629,11 +652,45 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
                       className="w-full p-3 border rounded"
                       style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
                     >
-                      <option value="">Select type...</option>
-                      <option value="copper">Copper (Modern)</option>
-                      <option value="aluminum">Aluminum (1960s-70s)</option>
-                      <option value="knob_tube">Knob & Tube (Pre-1950)</option>
+                      <option value="">Select wiring type...</option>
+                      <option value="copper">Modern Copper (1980s+) - Safe, standard</option>
+                      <option value="aluminum">Aluminum (1960s-70s) - Needs monitoring</option>
+                      <option value="knob_tube">Knob & Tube (Pre-1950) - Needs replacement</option>
+                      <option value="mixed">Mixed/Unsure</option>
                     </select>
+                    {formData[currentSystem.id]?.wiring_type && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700">
+                        {formData[currentSystem.id]?.wiring_type === 'copper' && (
+                          <p>✅ <strong>Modern Copper:</strong> This is the current standard and safest option. Copper wiring with plastic insulation (Romex). Found in homes built or rewired after 1980s. No concerns - this is what you want.</p>
+                        )}
+                        {formData[currentSystem.id]?.wiring_type === 'aluminum' && (
+                          <p>⚠️ <strong>Aluminum:</strong> Common in homes built 1965-1975 during copper shortage. Can be fire hazard at connections if not properly maintained. Look for: "AL" or "Aluminum" stamped on wires. Recommend inspection by electrician and special outlets/switches rated for aluminum.</p>
+                        )}
+                        {formData[currentSystem.id]?.wiring_type === 'knob_tube' && (
+                          <p>🚨 <strong>Knob & Tube:</strong> Found in homes built before 1950. Cloth-wrapped wires running through ceramic knobs. NOT GROUNDED - cannot safely power modern appliances. Major fire and insurance risk. Most insurance companies won't cover homes with active knob & tube. Plan for full rewiring ($8K-$15K).</p>
+                        )}
+                        {formData[currentSystem.id]?.wiring_type === 'mixed' && (
+                          <p>💡 <strong>Mixed/Unsure:</strong> Many older homes have been partially rewired over time. Recommend getting an electrician inspection to identify what wiring types you have and where. They can prioritize any needed upgrades.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Panel Age (Optional)</Label>
+                    <p className="text-xs text-gray-600 mb-2">When was your electrical panel last replaced? Check for a date sticker inside the panel door.</p>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 2010"
+                      value={formData[currentSystem.id]?.panel_year || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        [currentSystem.id]: {
+                          ...prev[currentSystem.id],
+                          panel_year: e.target.value
+                        }
+                      }))}
+                      style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
+                    />
                   </div>
                 </>
               )}
