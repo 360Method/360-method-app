@@ -456,7 +456,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
                     />
                   </div>
                   <div>
-                    <Label>Type</Label>
+                    <Label>Water Heater Type</Label>
                     <select
                       value={formData[currentSystem.id]?.water_heater_type || ''}
                       onChange={(e) => setFormData(prev => ({
@@ -470,8 +470,80 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
                       style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
                     >
                       <option value="">Select type...</option>
-                      <option value="tank">Tank</option>
-                      <option value="tankless">Tankless</option>
+                      <option value="tank_gas">Tank - Gas (40-80 gallons, most common)</option>
+                      <option value="tank_electric">Tank - Electric (40-80 gallons)</option>
+                      <option value="tankless_gas">Tankless - Gas (on-demand, wall-mounted)</option>
+                      <option value="tankless_electric">Tankless - Electric (on-demand, compact)</option>
+                      <option value="heat_pump">Heat Pump (hybrid electric, energy efficient)</option>
+                      <option value="indirect">Indirect (uses boiler for heating)</option>
+                    </select>
+                    {formData[currentSystem.id]?.water_heater_type && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700">
+                        {formData[currentSystem.id]?.water_heater_type === 'tank_gas' && (
+                          <p>💡 <strong>Tank Gas:</strong> Standard cylinder with gas burner underneath. Look for: tall cylindrical tank (40-80 gallons), gas line connection, flue pipe for exhaust. Lifespan: 8-12 years.</p>
+                        )}
+                        {formData[currentSystem.id]?.water_heater_type === 'tank_electric' && (
+                          <p>💡 <strong>Tank Electric:</strong> Similar cylinder but with electric elements inside. Look for: tall tank, no gas line, electrical connections at top. Lifespan: 10-15 years.</p>
+                        )}
+                        {formData[currentSystem.id]?.water_heater_type === 'tankless_gas' && (
+                          <p>💡 <strong>Tankless Gas:</strong> Small wall-mounted unit that heats water on demand. Look for: compact box on wall, gas line, no storage tank. Lifespan: 15-20 years.</p>
+                        )}
+                        {formData[currentSystem.id]?.water_heater_type === 'tankless_electric' && (
+                          <p>💡 <strong>Tankless Electric:</strong> Compact unit that heats water as it flows through. Look for: small wall box, electrical connection, no tank. Lifespan: 15-20 years.</p>
+                        )}
+                        {formData[currentSystem.id]?.water_heater_type === 'heat_pump' && (
+                          <p>💡 <strong>Heat Pump:</strong> Tall unit with fan on top that uses electricity to move heat. Look for: tall cylinder with fan/compressor on top, looks like AC unit on tank. 3x more efficient than standard electric. Lifespan: 10-15 years.</p>
+                        )}
+                        {formData[currentSystem.id]?.water_heater_type === 'indirect' && (
+                          <p>💡 <strong>Indirect:</strong> Storage tank connected to your boiler system. Look for: insulated storage tank, connections to boiler, no burner or heating element. Lifespan: 15-20 years.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Capacity (Optional)</Label>
+                    <select
+                      value={formData[currentSystem.id]?.capacity || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        [currentSystem.id]: {
+                          ...prev[currentSystem.id],
+                          capacity: e.target.value
+                        }
+                      }))}
+                      className="w-full p-3 border rounded"
+                      style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
+                    >
+                      <option value="">Select capacity...</option>
+                      <option value="30_gal">30 gallons (1-2 people)</option>
+                      <option value="40_gal">40 gallons (2-3 people)</option>
+                      <option value="50_gal">50 gallons (3-4 people)</option>
+                      <option value="60_gal">60 gallons (4-5 people)</option>
+                      <option value="75_gal">75 gallons (5-6 people)</option>
+                      <option value="80_gal">80+ gallons (6+ people)</option>
+                      <option value="tankless">Tankless (varies)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label>Fuel/Energy Source (Optional)</Label>
+                    <select
+                      value={formData[currentSystem.id]?.fuel_source || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        [currentSystem.id]: {
+                          ...prev[currentSystem.id],
+                          fuel_source: e.target.value
+                        }
+                      }))}
+                      className="w-full p-3 border rounded"
+                      style={{ minHeight: '48px', backgroundColor: '#FFFFFF' }}
+                    >
+                      <option value="">Select fuel source...</option>
+                      <option value="natural_gas">Natural Gas</option>
+                      <option value="propane">Propane (LP)</option>
+                      <option value="electric">Electric</option>
+                      <option value="oil">Oil</option>
+                      <option value="solar">Solar</option>
                     </select>
                   </div>
                 </>
