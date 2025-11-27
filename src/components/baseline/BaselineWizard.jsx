@@ -198,9 +198,11 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
       } else if (currentSystem.id === 'water_heater') {
         await createSystemMutation.mutateAsync({
           ...baseData,
+          installation_year: parseInt(systemData.water_heater_year) || null,
           key_components: {
-            water_heater_year: systemData.water_heater_year || '',
-            water_heater_type: systemData.water_heater_type || ''
+            water_heater_type: systemData.water_heater_type || '',
+            capacity: systemData.capacity || '',
+            fuel_source: systemData.fuel_source || ''
           }
         });
       } else if (currentSystem.id === 'roof') {
