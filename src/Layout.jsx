@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import BottomNav from "./components/navigation/BottomNav";
+
 import CartDrawer from "./components/cart/CartDrawer";
 import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
@@ -576,19 +576,12 @@ function LayoutContent({ children }) {
             </header>
           )}
 
-          <div className={`flex-1 overflow-auto overflow-x-hidden ${showAppUI ? (demoMode ? 'pt-[104px] md:pt-[48px]' : 'pt-[56px] pb-[80px] md:pt-0 md:pb-0') : ''}`}>
+          <div className={`flex-1 overflow-auto overflow-x-hidden ${showAppUI ? (demoMode ? 'pt-[104px] md:pt-[48px]' : 'pt-[56px] md:pt-0') : ''}`}>
             {children}
           </div>
         </main>
 
-        {/* Bottom Nav - Only show if not landing/waitlist/demoentry and not in demo mode */}
-        {showAppUI && !demoMode && (
-          <BottomNav
-            taskCount={urgentTasks?.length || 0}
-            onQuickAdd={() => setShowQuickAddMenu(true)}
-            selectedProperty={selectedProperty}
-          />
-        )}
+
 
         {showAppUI && !demoMode && <CartDrawer />}
         {showAppUI && demoMode && <DemoAIChat />}
