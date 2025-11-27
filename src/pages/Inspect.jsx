@@ -543,30 +543,6 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* Need Help Card - Demo Only */}
-        {demoMode && selectedPropertyId && hasBaselineSystems && (
-          <Card className="border-2 border-blue-300 bg-blue-50 shadow-lg mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <Wrench className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-lg font-semibold text-blue-900 mb-2">Need Help?</p>
-                  <p className="text-gray-700 mb-4">
-                    Reach out to your local 360° Operator for professional inspection services.
-                  </p>
-                  <Button
-                    onClick={() => window.location.href = createPageUrl('Waitlist')}
-                    variant="outline"
-                    className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                  >
-                    Find a Local Operator
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Why Inspections Matter - Condensed Educational Section */}
         <Card className="border-2 border-yellow-200 bg-yellow-50 shadow-lg mb-8">
           <CardContent className="p-6">
