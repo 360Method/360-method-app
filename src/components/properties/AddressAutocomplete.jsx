@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,17 +135,8 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
       }, 100);
     });
 
-    // Timeout fallback - enable manual entry after 8 seconds (REDUCED)
-    const timeout = setTimeout(() => {
-      if (!ready) {
-        console.error('❌ Timeout loading Google Maps - enabling manual entry');
-        setError(true);
-        setShowManualEntry(true);
-        toast.warning('Address verification timed out. You can enter manually or continue anyway.');
-      }
-    }, 8000);
-
-    return () => clearTimeout(timeout);
+    // No timeout - Google Maps autocomplete stays active indefinitely
+    // Users can always manually enter if autocomplete doesn't load
   }, []);
 
   const initAutocomplete = () => {
