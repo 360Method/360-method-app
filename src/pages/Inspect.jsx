@@ -359,100 +359,101 @@ export default function Inspect() {
 
         {/* MAIN METHOD SELECTOR - Clean, focused view */}
         {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
-          <Card className="border-2 border-purple-200 shadow-2xl mb-8">
+          <Card className="border-2 border-orange-200 shadow-2xl mb-8">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                Choose Your Documentation Method
+                Choose Your Inspection Method
               </CardTitle>
               <p className="text-gray-600 text-lg">Pick the approach that works best for you</p>
             </CardHeader>
             <CardContent className="pb-8">
               <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
-                {/* Quick Start Wizard */}
+                {/* Quick Inspection Wizard */}
                 <Card 
-                  className={`border-2 border-purple-300 transition-all group hover:shadow-xl bg-white ${
-                    canEdit ? 'hover:border-purple-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                  className={`border-2 border-orange-300 transition-all group hover:shadow-xl bg-white ${
+                    canEdit ? 'hover:border-orange-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
                   }`}
                   onClick={() => canEdit && setShowWizard(true)}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
-                        <Lightbulb className="w-10 h-10 text-white" />
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                        <Eye className="w-10 h-10 text-white" />
                       </div>
                       <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
-                        ⚡ Quick Start Wizard
+                        ⚡ Quick Inspection
                       </h3>
-                      <Badge className="bg-purple-600 text-white mb-4 text-sm px-3 py-1">
+                      <Badge className="bg-orange-600 text-white mb-4 text-sm px-3 py-1">
                         <Clock className="w-3 h-3 mr-1" />
-                        10-15 minutes
+                        15-20 minutes
                       </Badge>
                       <p className="text-gray-700 mb-6">
-                        Guided step-by-step documentation of your 4 most critical systems.
+                        Focused check of your 6 essential systems for critical issues.
                       </p>
                     </div>
                     
-                    <div className="bg-purple-50 rounded-lg p-4 mb-6 text-left">
-                      <p className="text-sm font-semibold text-purple-900 mb-3">✓ Perfect for:</p>
-                      <ul className="text-sm text-purple-800 space-y-2">
-                        <li>• First-time users</li>
-                        <li>• Digital-first approach</li>
-                        <li>• Quick essential coverage</li>
-                        <li>• Unlock ACT phase fast</li>
+                    <div className="bg-orange-50 rounded-lg p-4 mb-6 text-left">
+                      <p className="text-sm font-semibold text-orange-900 mb-3">✓ Perfect for:</p>
+                      <ul className="text-sm text-orange-800 space-y-2">
+                        <li>• Seasonal check-ins (quarterly)</li>
+                        <li>• Pre-winter/summer prep</li>
+                        <li>• Spot-checking critical systems</li>
+                        <li>• Quick issue identification</li>
                       </ul>
                     </div>
 
                     <Button 
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
-                      style={{ backgroundColor: '#9333EA', minHeight: '56px' }}
+                      style={{ backgroundColor: '#EA580C', minHeight: '56px' }}
                       disabled={!canEdit}
                     >
-                      <Lightbulb className="w-5 h-5" />
-                      Start Quick Setup →
+                      <Eye className="w-5 h-5" />
+                      Start Quick Inspection →
                     </Button>
                   </CardContent>
                 </Card>
 
-                {/* Physical Walkthrough */}
+                {/* Full Property Walkthrough */}
                 <Card 
-                  className={`border-2 border-green-300 transition-all group hover:shadow-xl bg-white ${
-                    canEdit ? 'hover:border-green-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                  className={`border-2 border-teal-300 transition-all group hover:shadow-xl bg-white ${
+                    canEdit ? 'hover:border-teal-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
                   }`}
                   onClick={() => canEdit && handleStartPhysicalInspection()}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                         <PlayCircle className="w-10 h-10 text-white" />
                       </div>
                       <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
-                        🏠 Physical Walkthrough
+                        🏠 Full Property Walkthrough
                       </h3>
-                      <Badge className="bg-green-600 text-white mb-4 text-sm px-3 py-1">
+                      <Badge className="bg-teal-600 text-white mb-4 text-sm px-3 py-1">
                         <Clock className="w-3 h-3 mr-1" />
                         30-45 minutes
                       </Badge>
                       <p className="text-gray-700 mb-6">
-                        Room-by-room route through your property.
+                        Comprehensive room-by-room inspection with detailed notes.
                       </p>
                     </div>
                     
-                    <div className="bg-green-50 rounded-lg p-4 mb-6 text-left">
-                      <p className="text-sm font-semibold text-green-900 mb-3">✓ Perfect for:</p>
-                      <ul className="text-sm text-green-800 space-y-2">
-                        <li>• Complete documentation</li>
-                        <li>• Physical inspection mindset</li>
-                        <li>• Mobile on-site use</li>
+                    <div className="bg-teal-50 rounded-lg p-4 mb-6 text-left">
+                      <p className="text-sm font-semibold text-teal-900 mb-3">✓ Perfect for:</p>
+                      <ul className="text-sm text-teal-800 space-y-2">
+                        <li>• Thorough seasonal inspections</li>
+                        <li>• Pre/post-tenant turnover</li>
+                        <li>• Post-storm assessments</li>
+                        <li>• Annual comprehensive review</li>
                       </ul>
                     </div>
 
                     <Button 
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
-                      style={{ backgroundColor: '#16A34A', minHeight: '56px' }}
+                      style={{ backgroundColor: '#0D9488', minHeight: '56px' }}
                       disabled={!canEdit}
                     >
                       <PlayCircle className="w-5 h-5" />
-                      Start Walkthrough →
+                      Start Full Walkthrough →
                     </Button>
                   </CardContent>
                 </Card>
@@ -460,7 +461,7 @@ export default function Inspect() {
 
               {/* Bottom option */}
               <div className="text-center">
-                <p className="text-gray-600 mb-4">Or document systems individually as you go →</p>
+                <p className="text-gray-600 mb-4">Or create a custom inspection checklist →</p>
                 <Button
                   onClick={handleStartTraditionalInspection}
                   variant="outline"
@@ -468,7 +469,7 @@ export default function Inspect() {
                   style={{ minHeight: '48px' }}
                   disabled={!canEdit}
                 >
-                  Scroll down to browse all system categories
+                  Build Custom Inspection
                 </Button>
               </div>
             </CardContent>
