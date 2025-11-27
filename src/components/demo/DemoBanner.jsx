@@ -7,26 +7,20 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 
 export function DemoBanner({ onAddProperty }) {
+  const { demoMode } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Only show on specific demo pages - use route-based logic instead of global flag
-  const isDemoPage = 
-    location.pathname === '/' ||
-    location.pathname === '/welcome' ||
-    location.pathname === createPageUrl('Welcome') ||
-    location.pathname === createPageUrl('Waitlist') ||
-    location.pathname === createPageUrl('DemoEntry') ||
-    location.pathname === createPageUrl('DemoStruggling') ||
-    location.pathname === createPageUrl('DemoImproving') ||
-    location.pathname === createPageUrl('DemoExcellent') ||
-    location.pathname === createPageUrl('DemoPortfolio') ||
-    location.pathname === createPageUrl('WelcomeDemo') ||
-    location.pathname === createPageUrl('GitHubDemo') ||
-    location.pathname.startsWith('/demo-') ||
-    location.pathname.includes('/demo-');
+  // Demo banner should show when:
+  // 1. User is in demo mode (session state)
+  // 2. NOT on landing/welcome pages (those have their own flows)
+  const isLandingPage = location.pathname === '/' || 
+                        location.pathname === '/welcome' || 
+                        location.pathname === createPageUrl('Welcome') ||
+                        location.pathname === createPageUrl('Waitlist');
   
-  if (!isDemoPage) return null;
+  // Hide banner if not in demo mode OR on landing pages
+  if (!demoMode || isLandingPage) return null;
 
   const handleStartFree = () => {
     base44.auth.redirectToLogin();
