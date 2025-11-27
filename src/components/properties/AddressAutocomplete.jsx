@@ -194,14 +194,11 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
         const addressData = parseAddress(place);
         console.log('✅ Parsed address:', addressData);
         
-        // Update input to show formatted address
+        // Update local state
         setInputValue(addressData.formatted_address);
         setSelectedAddress(addressData);
-        // Assuming setAddressVerified was meant to be here, though not defined.
-        // If this component manages a "verified" state internally, it should be added.
-        // For now, based on the diff, no `setAddressVerified` prop or state exists.
-        // If it's intended to be passed up, `onAddressSelect` handles it.
         
+        // Immediately notify parent
         if (onAddressSelect) {
           onAddressSelect(addressData);
         }
