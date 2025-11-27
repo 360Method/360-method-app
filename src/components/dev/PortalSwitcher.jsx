@@ -207,7 +207,10 @@ export default function PortalSwitcher() {
         enterDemoMode('homeowner');
       }
     } else {
-      exitDemoMode();
+      // Clear demo mode without redirecting - just clear session storage
+      sessionStorage.removeItem('demoMode');
+      sessionStorage.removeItem('demoWizardSeen');
+      sessionStorage.removeItem('demoVisitedSteps');
     }
     
     navigate(path);
