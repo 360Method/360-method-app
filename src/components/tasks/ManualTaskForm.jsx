@@ -268,7 +268,10 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     scheduled_date: prefilledDate || null,
     execution_type: "Not Decided",
     current_fix_cost: "",
-    urgency_timeline: ""
+    urgency_timeline: "",
+    cascade_risk_score: "",
+    cascade_risk_reason: "",
+    delayed_fix_cost: ""
   });
   const [selectedUnits, setSelectedUnits] = React.useState(
     editingTask?.unit_tag ? [editingTask.unit_tag] : []
@@ -382,7 +385,11 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       photo_urls: photos,
       current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
       urgency_timeline: formData.urgency_timeline || undefined,
-      scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined
+      scheduled_date: formData.scheduled_date ? format(new Date(formData.scheduled_date), 'yyyy-MM-dd') : undefined,
+      cascade_risk_score: formData.cascade_risk_score ? parseInt(formData.cascade_risk_score) : undefined,
+      cascade_risk_reason: formData.cascade_risk_reason || undefined,
+      delayed_fix_cost: formData.delayed_fix_cost ? parseFloat(formData.delayed_fix_cost) : undefined,
+      has_cascade_alert: formData.cascade_risk_score && parseInt(formData.cascade_risk_score) >= 7
     };
 
     let tasksToCreate = [];
@@ -761,7 +768,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             )}
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 3 • Fill in the details below
+            Step {step} of 4 • Fill in the details below
           </DialogDescription>
         </DialogHeader>
 
@@ -769,6 +776,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           <div className={`flex-1 h-2 rounded-full transition-all ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           <div className={`flex-1 h-2 rounded-full transition-all ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           <div className={`flex-1 h-2 rounded-full transition-all ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+          <div className={`flex-1 h-2 rounded-full transition-all ${step >= 4 ? 'bg-blue-600' : 'bg-gray-200'}`} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -1003,8 +1011,137 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           {step === 2 && (
             <div className="space-y-4">
               <div className="bg-orange-50 border-l-4 border-orange-600 p-4 rounded">
-                <p className="text-sm text-orange-900 font-semibold mb-1">📅 When and how?</p>
-                <p className="text-xs text-orange-800">Set timeline expectations and execution approach</p>
+                <p className="text-sm text-orange-900 font-semibold mb-1">🔥 Risk & Cost Details (Optional)</p>
+                <p className="text-xs text-orange-800">Manually set cascade risk or let AI analyze it for you</p>
+              </div>
+
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 space-y-4">
+                <h3 className="font-semibold text-red-900 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  Cascade Risk Analysis
+                </h3>
+
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Cascade Risk Score (1-10)
+                  </label>
+                  <Select
+                    value={formData.cascade_risk_score}
+                    onValueChange={(value) => setFormData({ ...formData, cascade_risk_score: value })}
+                  >
+                    <SelectTrigger style={{ minHeight: '48px' }}>
+                      <SelectValue placeholder="Select risk level (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Not Set (AI will analyze)</SelectItem>
+                      <SelectItem value="1">1 - Minimal Risk</SelectItem>
+                      <SelectItem value="2">2 - Very Low</SelectItem>
+                      <SelectItem value="3">3 - Low</SelectItem>
+                      <SelectItem value="4">4 - Below Average</SelectItem>
+                      <SelectItem value="5">5 - Moderate</SelectItem>
+                      <SelectItem value="6">6 - Above Average</SelectItem>
+                      <SelectItem value="7">7 - High Risk ⚠️</SelectItem>
+                      <SelectItem value="8">8 - Very High ⚠️</SelectItem>
+                      <SelectItem value="9">9 - Critical 🔥</SelectItem>
+                      <SelectItem value="10">10 - Urgent/Emergency 🔥</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-600 mt-1">
+                    How likely will this trigger other failures?
+                  </p>
+                </div>
+
+                {formData.cascade_risk_score && parseInt(formData.cascade_risk_score) >= 7 && (
+                  <div className="bg-red-100 border border-red-400 rounded p-3">
+                    <p className="text-sm font-bold text-red-900 flex items-center gap-2">
+                      <Flame className="w-4 h-4" />
+                      HIGH RISK - Cascade alert will be shown!
+                    </p>
+                  </div>
+                )}
+
+                {formData.cascade_risk_score && (
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                      Why is this a cascade risk?
+                    </label>
+                    <Textarea
+                      value={formData.cascade_risk_reason}
+                      onChange={(e) => setFormData({ ...formData, cascade_risk_reason: e.target.value })}
+                      placeholder="Explain what will fail next if this is ignored (e.g., 'Water damage will spread to ceiling, walls, and electrical')"
+                      rows={3}
+                      className="text-base"
+                      style={{ minHeight: '80px' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Current Fix Cost (optional)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="number"
+                      value={formData.current_fix_cost}
+                      onChange={(e) => setFormData({ ...formData, current_fix_cost: e.target.value })}
+                      placeholder="250"
+                      className="pl-9 text-base"
+                      style={{ minHeight: '48px' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">Estimated cost to fix now</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Delayed Fix Cost (optional)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="number"
+                      value={formData.delayed_fix_cost}
+                      onChange={(e) => setFormData({ ...formData, delayed_fix_cost: e.target.value })}
+                      placeholder="6000"
+                      className="pl-9 text-base"
+                      style={{ minHeight: '48px' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">Cost if you wait</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                  Urgency Timeline (optional)
+                </label>
+                <Input
+                  value={formData.urgency_timeline}
+                  onChange={(e) => setFormData({ ...formData, urgency_timeline: e.target.value })}
+                  placeholder="e.g., 1-2 weeks, 1-3 months, Immediate"
+                  className="text-base"
+                  style={{ minHeight: '48px' }}
+                />
+                <p className="text-xs text-gray-600 mt-1">When does this become critical?</p>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-600 p-3 rounded">
+                <p className="text-xs text-blue-900">
+                  💡 <strong>Tip:</strong> Leave fields empty if you want AI to analyze them automatically after saving
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
+                <p className="text-sm text-green-900 font-semibold mb-1">📅 When and how?</p>
+                <p className="text-xs text-green-800">Set timeline and execution approach</p>
               </div>
 
               <div>
@@ -1074,6 +1211,13 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
             </div>
           )}
 
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
+                <p className="text-sm text-green-900 font-semibold mb-1">✅ Review & Save</p>
+                <p className="text-xs text-green-800">Double-check everything before submitting - AI will enhance with missing details</p>
+              </div>
+
           {step === 3 && (
             <div className="space-y-4">
               <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
@@ -1133,6 +1277,20 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                       <span className="font-semibold text-gray-900">{photos.length} attached</span>
                     </div>
                   )}
+                  {formData.cascade_risk_score && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">Cascade Risk:</span>
+                      <Badge className={parseInt(formData.cascade_risk_score) >= 7 ? 'bg-red-600' : 'bg-orange-600'}>
+                        {formData.cascade_risk_score}/10
+                      </Badge>
+                    </div>
+                  )}
+                  {formData.current_fix_cost && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Fix Cost:</span>
+                      <span className="font-semibold text-gray-900">${formData.current_fix_cost}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1174,7 +1332,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                 ← Back
               </Button>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <Button
                 type="button"
                 onClick={() => setStep(step + 1)}
