@@ -928,9 +928,9 @@ export default function Baseline() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{overallProgress}%</p>
-                    <p className="text-sm text-gray-600">Overall Complete</p>
-                    <p className="text-xs text-gray-500 mt-1">{totalSystemTypes} of 16 types</p>
+                    <p className="text-3xl font-bold" style={{ color: '#1B365D' }}>{essentialProgress}%</p>
+                    <p className="text-sm text-gray-600">Essential Systems</p>
+                    <p className="text-xs text-gray-500 mt-1">{requiredComplete} of 6 documented</p>
                   </div>
                 </div>
               </CardContent>
