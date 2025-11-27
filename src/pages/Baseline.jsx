@@ -779,114 +779,161 @@ export default function Baseline() {
 
         {selectedProperty && (
           <>
-            <Card className="border-4 border-purple-400 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-2xl mb-6">
-              <CardHeader className="pb-4">
-                <div className="text-center">
-                  <CardTitle className="text-2xl md:text-3xl font-bold" style={{ color: '#1B365D' }}>
-                    Choose Your Documentation Method
-                  </CardTitle>
-                  <p className="text-gray-700">Pick the approach that works best for you</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card 
-                    className={`border-3 border-purple-300 hover:border-purple-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => !demoMode && setShowWizard(true)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="text-center space-y-4">
-                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <Sparkles className="w-10 h-10 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                            ⚡ Quick Start Wizard
-                          </h3>
-                          <Badge className="bg-purple-600 text-white mb-3">
-                            <Clock className="w-3 h-3 mr-1" />
-                            10-15 minutes
-                          </Badge>
-                          <p className="text-sm text-gray-700 mb-4">
-                            Guided step-by-step documentation of your 4 most critical systems.
-                          </p>
-                        </div>
-                        <div className="bg-purple-100 rounded-lg p-4 text-left">
-                          <p className="text-xs font-semibold text-purple-900 mb-2">✓ Perfect for:</p>
-                          <ul className="text-xs text-purple-800 space-y-1">
-                            <li>• First-time users</li>
-                            <li>• Digital-first approach</li>
-                            <li>• Quick essential coverage</li>
-                            <li>• Unlock ACT phase fast</li>
-                          </ul>
-                        </div>
-                        <Button 
-                          className="w-full gap-2 text-lg py-6"
-                          style={{ backgroundColor: '#8B5CF6', minHeight: '56px' }}
-                          disabled={demoMode}
-                        >
-                          <Sparkles className="w-5 h-5" />
-                          Start Quick Setup
-                          <ArrowRight className="w-5 h-5 ml-1" />
-                        </Button>
+            <Card className="border-2 border-purple-200 bg-white shadow-xl mb-8 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 p-1">
+                <div className="bg-white">
+                  <CardHeader className="pb-6 pt-8">
+                    <div className="text-center max-w-2xl mx-auto">
+                      <Badge className="bg-purple-600 text-white mb-4 px-4 py-1.5 text-sm">
+                        Phase I: AWARE
+                      </Badge>
+                      <CardTitle className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1B365D' }}>
+                        Document Your Property
+                      </CardTitle>
+                      <p className="text-lg text-gray-600">
+                        Before we can protect your home, we need to know what's in it. This takes 10-15 minutes with the Quick Start Wizard.
+                      </p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pb-8 px-6 md:px-12">
+                    <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                      {/* Quick Start Wizard */}
+                      <div 
+                        className={`group ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        onClick={() => !demoMode && setShowWizard(true)}
+                      >
+                        <Card className="border-2 border-purple-200 hover:border-purple-400 transition-all hover:shadow-2xl h-full bg-gradient-to-br from-purple-50 to-white">
+                          <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                              <div className="relative">
+                                <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all">
+                                  <Sparkles className="w-12 h-12 text-white" />
+                                </div>
+                                <div className="absolute -top-2 -right-2 bg-yellow-400 text-purple-900 text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                                  FASTEST
+                                </div>
+                              </div>
+                              <div>
+                                <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                                  ⚡ Quick Start Wizard
+                                </h3>
+                                <Badge className="bg-purple-600 text-white mb-4 text-sm px-3 py-1.5">
+                                  <Clock className="w-4 h-4 mr-1.5" />
+                                  10-15 minutes
+                                </Badge>
+                                <p className="text-base text-gray-700 leading-relaxed">
+                                  The Quick Start Wizard asks simple questions and uses AI to document your 4 most critical systems. Everything else builds on this foundation.
+                                </p>
+                              </div>
+                              <div className="bg-purple-100 rounded-xl p-5 text-left border border-purple-200">
+                                <p className="text-sm font-bold text-purple-900 mb-3 flex items-center gap-2">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  Perfect for:
+                                </p>
+                                <ul className="text-sm text-purple-800 space-y-2">
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-purple-600 mt-0.5">•</span>
+                                    <span>First-time users</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-purple-600 mt-0.5">•</span>
+                                    <span>Digital-first approach</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-purple-600 mt-0.5">•</span>
+                                    <span>Quick essential coverage</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-purple-600 mt-0.5">•</span>
+                                    <span>Unlock ACT phase fast</span>
+                                  </li>
+                                </ul>
+                              </div>
+                              <Button 
+                                className="w-full gap-2 text-lg py-7 font-semibold group-hover:scale-105 transition-transform shadow-lg"
+                                style={{ backgroundColor: '#8B5CF6', minHeight: '64px' }}
+                                disabled={demoMode}
+                              >
+                                <Sparkles className="w-6 h-6" />
+                                Start Quick Setup
+                                <ArrowRight className="w-6 h-6 ml-1" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </CardContent>
-                  </Card>
 
-                  <Card 
-                    className={`border-3 border-green-300 hover:border-green-500 transition-all group hover:shadow-xl ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => !demoMode && setShowPhysicalWalkthrough(true)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="text-center space-y-4">
-                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <MapPin className="w-10 h-10 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold mb-2" style={{ color: '#1B365D' }}>
-                            🏠 Physical Walkthrough
-                          </h3>
-                          <Badge className="bg-green-600 text-white mb-3">
-                            <Clock className="w-3 h-3 mr-1" />
-                            30-45 minutes
-                          </Badge>
-                          <p className="text-sm text-gray-700 mb-4">
-                            Room-by-room route through your property.
-                          </p>
-                        </div>
-                        <div className="bg-green-100 rounded-lg p-4 text-left">
-                          <p className="text-xs font-semibold text-green-900 mb-2">✓ Perfect for:</p>
-                          <ul className="text-xs text-green-800 space-y-1">
-                            <li>• Complete documentation</li>
-                            <li>• Physical inspection mindset</li>
-                            <li>• Mobile on-site use</li>
-                          </ul>
-                        </div>
-                        <Button 
-                          className="w-full gap-2 text-lg py-6"
-                          style={{ backgroundColor: '#28A745', minHeight: '56px' }}
-                          disabled={demoMode}
-                        >
-                          <Navigation className="w-5 h-5" />
-                          Start Walkthrough
-                          <ArrowRight className="w-5 h-5 ml-1" />
-                        </Button>
+                      {/* Physical Walkthrough */}
+                      <div 
+                        className={`group ${demoMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        onClick={() => !demoMode && setShowPhysicalWalkthrough(true)}
+                      >
+                        <Card className="border-2 border-green-200 hover:border-green-400 transition-all hover:shadow-2xl h-full bg-gradient-to-br from-green-50 to-white">
+                          <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                              <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all">
+                                <MapPin className="w-12 h-12 text-white" />
+                              </div>
+                              <div>
+                                <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B365D' }}>
+                                  🏠 Physical Walkthrough
+                                </h3>
+                                <Badge className="bg-green-600 text-white mb-4 text-sm px-3 py-1.5">
+                                  <Clock className="w-4 h-4 mr-1.5" />
+                                  30-45 minutes
+                                </Badge>
+                                <p className="text-base text-gray-700 leading-relaxed">
+                                  Room-by-room route through your property.
+                                </p>
+                              </div>
+                              <div className="bg-green-100 rounded-xl p-5 text-left border border-green-200">
+                                <p className="text-sm font-bold text-green-900 mb-3 flex items-center gap-2">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  Perfect for:
+                                </p>
+                                <ul className="text-sm text-green-800 space-y-2">
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-green-600 mt-0.5">•</span>
+                                    <span>Complete documentation</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-green-600 mt-0.5">•</span>
+                                    <span>Physical inspection mindset</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="text-green-600 mt-0.5">•</span>
+                                    <span>Mobile on-site use</span>
+                                  </li>
+                                </ul>
+                              </div>
+                              <Button 
+                                className="w-full gap-2 text-lg py-7 font-semibold group-hover:scale-105 transition-transform shadow-lg"
+                                style={{ backgroundColor: '#28A745', minHeight: '64px' }}
+                                disabled={demoMode}
+                              >
+                                <Navigation className="w-6 h-6" />
+                                Start Walkthrough
+                                <ArrowRight className="w-6 h-6 ml-1" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                    </div>
 
-                <div className="border-t pt-4">
-                  <p className="text-center text-sm text-gray-600 mb-3">
-                    Or document systems individually as you go →
-                  </p>
-                  <div className="text-center">
-                    <Badge variant="outline" className="text-xs text-gray-600">
-                      Scroll down to browse all system categories
-                    </Badge>
-                  </div>
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <p className="text-center text-base text-gray-600 mb-2">
+                        Or skip the wizards and document systems individually ↓
+                      </p>
+                      <div className="text-center">
+                        <Badge variant="outline" className="text-sm text-gray-600 px-4 py-1.5">
+                          Scroll down to browse all system categories
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
             <Card className={`border-2 ${statusBorderColor} mb-6`} style={{ backgroundColor: statusBgColor }}>
