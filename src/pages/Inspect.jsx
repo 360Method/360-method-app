@@ -567,146 +567,91 @@ export default function Inspect() {
           </Card>
         )}
 
-        {/* Why Inspections Matter - Educational Section */}
-        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-xl mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: '#1B365D' }}>
-              <Lightbulb className="w-8 h-8 text-yellow-600" />
-              Why Regular Inspections Matter
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Catch Early */}
-              <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                    <AlertTriangle className="w-6 h-6 text-red-600" />
-                  </div>
-                  <h3 className="font-bold text-red-900 text-lg">Catch Problems Early</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
-                    <span>Small issues become <strong>expensive disasters</strong> if ignored</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
-                    <span><strong>$200 repair</strong> now vs <strong>$8,000</strong> later</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
-                    <span>Seasonal changes reveal <strong>hidden problems</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-600 font-bold mt-0.5">•</span>
-                    <span>Track <strong>degradation over time</strong></span>
-                  </li>
-                </ul>
+        {/* Why Inspections Matter - Condensed Educational Section */}
+        <Card className="border-2 border-yellow-200 bg-yellow-50 shadow-lg mb-8">
+          <CardContent className="p-6">
+            <button
+              onClick={() => {
+                const whySection = document.getElementById('why-inspections-expanded');
+                if (whySection) {
+                  const isExpanded = whySection.style.display !== 'none';
+                  whySection.style.display = isExpanded ? 'none' : 'block';
+                }
+              }}
+              className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
+            >
+              <Lightbulb className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-900 text-lg mb-2">Why Regular Inspections Matter</h3>
+                <p className="text-gray-800 text-sm leading-relaxed">
+                  <strong>Seasonal inspections = predictable maintenance.</strong> Catch $200 issues before they become $8,000 emergencies. 
+                  Regular 20-minute check-ins prevent cascade failures and protect your home's value.
+                </p>
+                <p className="text-sm text-yellow-700 mt-2 font-semibold">
+                  ⚡ Recommended: Quarterly inspections (Spring, Summer, Fall, Winter)
+                </p>
               </div>
+              <ChevronDown className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-1" />
+            </button>
 
-              {/* Prevent Cascades */}
-              <div className="bg-white rounded-lg p-5 border-2 border-orange-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-orange-600" />
+            {/* Expandable Full Content */}
+            <div id="why-inspections-expanded" style={{ display: 'none' }} className="mt-6 space-y-6">
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* Catch Early */}
+                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <h4 className="font-bold text-red-900">Catch Problems Early</h4>
                   </div>
-                  <h3 className="font-bold text-orange-900 text-lg">Prevent Cascades</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-orange-600 font-bold mt-0.5">•</span>
-                    <span><strong>One failure</strong> triggers <strong>chain reactions</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-orange-600 font-bold mt-0.5">•</span>
-                    <span>Gutters → Foundation → Basement flooding</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-orange-600 font-bold mt-0.5">•</span>
-                    <span>Small roof leak → Rotted deck → Interior damage</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-orange-600 font-bold mt-0.5">•</span>
-                    <span>Stop problems <strong>before they spread</strong></span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Protect Value */}
-              <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-green-600" />
-                  </div>
-                  <h3 className="font-bold text-green-900 text-lg">Protect Value</h3>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-800">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
-                    <span>Well-maintained homes <strong>sell for 10-15% more</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
-                    <span>Inspection records prove <strong>proactive care</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
-                    <span><strong>Faster sales</strong> with documentation</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold mt-0.5">•</span>
-                    <span>Lower <strong>insurance premiums</strong> possible</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* The Bottom Line */}
-            <div className="bg-white rounded-lg p-5 border-2 border-purple-300">
-              <div className="flex items-start gap-3">
-                <BookOpen className="w-7 h-7 text-purple-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-purple-900 text-lg mb-2">The Bottom Line:</h3>
-                  <p className="text-gray-800 leading-relaxed">
-                    <strong>Seasonal inspections = predictable maintenance.</strong> Most homeowners only look at systems when 
-                    they fail—resulting in emergency repairs at 2-3X normal cost. Regular inspections let you spot the <em>"my HVAC 
-                    filter is dirty and airflow is reduced"</em> before it becomes <em>"my AC died in July and emergency replacement 
-                    costs $12,000."</em> A <strong>20-minute inspection</strong> every 3 months prevents thousands in emergency costs.
-                  </p>
-                  <div className="mt-4 p-3 bg-purple-50 rounded border border-purple-200">
-                    <p className="text-sm font-semibold text-purple-900">
-                      ⚡ <strong>Recommended:</strong> Spring (pre-AC season), Fall (pre-heating season), plus 2 mid-season checks.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Connection to Baseline */}
-            <div className="bg-white rounded-lg p-5 border-2 border-blue-300">
-              <h3 className="font-bold text-blue-900 text-lg mb-3 flex items-center gap-2">
-                <Eye className="w-6 h-6" />
-                How Baseline & Inspections Work Together:
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-800">
-                <div>
-                  <p className="font-semibold mb-2 text-blue-900">Baseline (One-Time):</p>
-                  <ul className="space-y-1 ml-4">
-                    <li>• Documents <strong>what you have</strong></li>
-                    <li>• Records initial condition</li>
-                    <li>• Sets reference point</li>
-                    <li>• Example: "HVAC installed 2015, working well"</li>
+                  <ul className="space-y-1 text-xs text-gray-800">
+                    <li>• $200 repair now vs $8,000 later</li>
+                    <li>• Seasonal changes reveal hidden problems</li>
+                    <li>• Track degradation over time</li>
                   </ul>
                 </div>
-                <div>
-                  <p className="font-semibold mb-2 text-blue-900">Inspections (Regular):</p>
-                  <ul className="space-y-1 ml-4">
-                    <li>• Tracks <strong>what's changed</strong></li>
-                    <li>• Identifies new issues</li>
-                    <li>• Updates system conditions</li>
-                    <li>• Example: "Filter dirty, airflow reduced 30%"</li>
+
+                {/* Prevent Cascades */}
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-5 h-5 text-orange-600" />
+                    <h4 className="font-bold text-orange-900">Prevent Cascades</h4>
+                  </div>
+                  <ul className="space-y-1 text-xs text-gray-800">
+                    <li>• One failure triggers chain reactions</li>
+                    <li>• Gutters → Foundation → Flooding</li>
+                    <li>• Stop problems before they spread</li>
                   </ul>
+                </div>
+
+                {/* Protect Value */}
+                <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5 text-green-600" />
+                    <h4 className="font-bold text-green-900">Protect Value</h4>
+                  </div>
+                  <ul className="space-y-1 text-xs text-gray-800">
+                    <li>• Homes sell for 10-15% more</li>
+                    <li>• Records prove proactive care</li>
+                    <li>• Lower insurance premiums</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* How They Work Together */}
+              <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
+                <h4 className="font-bold text-blue-900 text-sm mb-2 flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Baseline vs Inspections
+                </h4>
+                <div className="grid md:grid-cols-2 gap-3 text-xs text-gray-800">
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">Baseline (One-Time):</p>
+                    <p>Documents what you have, sets reference point</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">Inspections (Regular):</p>
+                    <p>Tracks what's changed, identifies new issues</p>
+                  </div>
                 </div>
               </div>
             </div>
