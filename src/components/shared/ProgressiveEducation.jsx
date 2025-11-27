@@ -10,44 +10,7 @@ function getEducationTriggers(user, properties, selectedProperty, location, syst
   return [
     // Removed welcome_tour trigger that was causing the loop
     
-    {
-      id: 'baseline_primer',
-      priority: 2,
-      condition: () => {
-        return location.pathname.includes('/baseline') &&
-               selectedProperty?.baseline_completion === 0 &&
-               systems?.length === 0 &&
-               !localStorage.getItem('seen_baseline_primer');
-      },
-      content: (onDismiss) => (
-        <Card className="border-blue-500 border-2 bg-blue-50 mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-blue-600" />
-              Start with Quick Wizard (Recommended)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm">
-              The Quick Start Wizard asks simple questions and uses AI to document your 
-              systems in 10-15 minutes.
-            </p>
-            <p className="text-sm text-gray-600">
-              This is your foundation. Everything else builds on this.
-            </p>
-            <Button 
-              size="sm"
-              onClick={() => {
-                localStorage.setItem('seen_baseline_primer', 'true');
-                onDismiss();
-              }}
-            >
-              Got it!
-            </Button>
-          </CardContent>
-        </Card>
-      )
-    },
+
     
     {
       id: 'first_system_celebration',
