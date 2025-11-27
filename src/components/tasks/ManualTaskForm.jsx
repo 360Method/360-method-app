@@ -27,7 +27,10 @@ import {
   Star,
   TrendingDown,
   BookOpen,
-  Clock
+  Clock,
+  Flame,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -1216,13 +1219,6 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
               <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
                 <p className="text-sm text-green-900 font-semibold mb-1">✅ Review & Save</p>
                 <p className="text-xs text-green-800">Double-check everything before submitting - AI will enhance with missing details</p>
-              </div>
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
-                <p className="text-sm text-green-900 font-semibold mb-1">✅ Review & Save</p>
-                <p className="text-xs text-green-800">Double-check everything before submitting - AI will analyze after you click the button below</p>
               </div>
 
               <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-sm">
