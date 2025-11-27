@@ -11,11 +11,19 @@ export function DemoBanner({ onAddProperty }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Don't show on landing/welcome/demoentry pages
+  // Don't show on landing/welcome/demoentry pages or any non-demo pages
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome');
   const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
   
-  if (!demoMode || isLandingPage || isDemoEntryPage) return null;
+  // Don't show on admin, operator, contractor, or any non-demo pages
+  const isAdminPage = location.pathname.includes('/admin-');
+  const isOperatorPage = location.pathname.includes('/operator-');
+  const isContractorPage = location.pathname.includes('/contractor-');
+  const isSettingsPage = location.pathname.includes('/settings') || 
+                         location.pathname.includes('/payment-methods') || 
+                         location.pathname.includes('/notification-settings');
+  
+  if (!demoMode || isLandingPage || isDemoEntryPage || isAdminPage || isOperatorPage || isContractorPage || isSettingsPage) return null;
 
   const handleStartFree = () => {
     base44.auth.redirectToLogin();
