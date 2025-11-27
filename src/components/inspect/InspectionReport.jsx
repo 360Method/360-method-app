@@ -46,14 +46,20 @@ export default function InspectionReport({ inspection, property, baselineSystems
   // Support both formats: checklist_items (real) and findings (demo)
   const allIssues = Array.isArray(inspection?.findings) ? inspection.findings : 
                     Array.isArray(inspection?.checklist_items) ? inspection.checklist_items : [];
-  const urgentIssues = allIssues.filter(i => i.severity === 'Critical' || i.severity === 'Urgent' || i.severity === 'Moderate');
-  const flagIssues = allIssues.filter(i => i.severity === 'Flag' || i.severity === 'Minor');
-  const monitorIssues = allIssues.filter(i => i.severity === 'Monitor' || i.severity === 'Pass' || i.severity === 'Documentation');
-  const completedQuickFixes = allIssues.filter(i => i.is_quick_fix && i.status === 'Completed');
-  const issuesWithPhotos = allIssues.filter(i => (i.photo_urls && i.photo_urls.length > 0) || (i.photos && i.photos.length > 0));
+  
+  // Filter out quick-fix issues that were resolved
+  const activeIssues = allIssues.filter(i => i.is_quick_fix !== true);
+  
+  const urgentIssues = activeIssues.filter(i => i.severity === 'Urgent');
+  const flagIssues = activeIssues.filter(i => i.severity === 'Flag');
+  const monitorIssues = activeIssues.filter(i => i.severity === 'Monitor');
+  const completedQuickFixes = allIssues.filter(i => i.is_quick_fix === true);
+  const issuesWithPhotos = activeIssues.filter(i => (i.photo_urls && i.photo_urls.length > 0) || (i.photos && i.photos.length > 0));
 
-  // Calculate costs
-  const totalEstimatedCost = allIssues.reduce((sum, issue) => {
+  // Calculate costs from current_fix_cost or estimated_cost
+  const totalEstimatedCost = activeIssues.reduce((sum, issue) => {
+    if (issue.current_fix_cost) return sum + issue.current_fix_cost;
+    
     const costMap = {
       'free': 0,
       '1-50': 25,
@@ -179,11 +185,11 @@ export default function InspectionReport({ inspection, property, baselineSystems
                 <Card className="border-2 border-gray-300">
                   <CardContent className="p-4 md:p-6">
                     <p className="text-sm text-gray-600 mb-1">Issues Found:</p>
-                    <p className="font-bold" style={{ color: '#1B365D', fontSize: '24px' }}>{allIssues.length}</p>
+                    <p className="font-bold" style={{ color: '#1B365D', fontSize: '24px' }}>{activeIssues.length}</p>
                     <div className="text-sm text-gray-700 mt-2 space-y-1">
-                      {urgentIssues.length > 0 && <p>• {urgentIssues.length} Urgent (safety)</p>}
-                      {flagIssues.length > 0 && <p>• {flagIssues.length} Flag (preventive)</p>}
-                      {monitorIssues.length > 0 && <p>• {monitorIssues.length} Monitor (planning)</p>}
+                      {urgentIssues.length > 0 && <p>• {urgentIssues.length} Urgent</p>}
+                      {flagIssues.length > 0 && <p>• {flagIssues.length} Flag</p>}
+                      {monitorIssues.length > 0 && <p>• {monitorIssues.length} Monitor</p>}
                       {completedQuickFixes.length > 0 && <p className="text-green-700">• {completedQuickFixes.length} Fixed during visit</p>}
                     </div>
                   </CardContent>
@@ -330,12 +336,16 @@ export default function InspectionReport({ inspection, property, baselineSystems
                     <CardContent className="p-4">
                       <p className="font-bold text-red-800 mb-2">THIS WEEK:</p>
                       <ol className="list-decimal ml-5 space-y-1">
-                        {urgentIssues.map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
-                            {issue.description && issue.description.length > 100 ? '...' : ''}
-                          </li>
-                        ))}
+                        {urgentIssues.map((issue, idx) => {
+                          const areaName = issue.area_name || issue.location || issue.area_id || 'Unknown';
+                          const description = issue.description || issue.notes || issue.item_name || 'No description';
+                          return (
+                            <li key={idx} className="text-sm text-gray-800">
+                              {areaName}: {description.substring(0, 100)}
+                              {description.length > 100 ? '...' : ''}
+                            </li>
+                          );
+                        })}
                       </ol>
                     </CardContent>
                   </Card>
@@ -346,12 +356,16 @@ export default function InspectionReport({ inspection, property, baselineSystems
                     <CardContent className="p-4">
                       <p className="font-bold text-orange-800 mb-2">NEXT 30-90 DAYS:</p>
                       <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + 1}>
-                        {flagIssues.map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
-                            {issue.description && issue.description.length > 100 ? '...' : ''}
-                          </li>
-                        ))}
+                        {flagIssues.map((issue, idx) => {
+                          const areaName = issue.area_name || issue.location || issue.area_id || 'Unknown';
+                          const description = issue.description || issue.notes || issue.item_name || 'No description';
+                          return (
+                            <li key={idx} className="text-sm text-gray-800">
+                              {areaName}: {description.substring(0, 100)}
+                              {description.length > 100 ? '...' : ''}
+                            </li>
+                          );
+                        })}
                       </ol>
                     </CardContent>
                   </Card>
@@ -362,12 +376,16 @@ export default function InspectionReport({ inspection, property, baselineSystems
                     <CardContent className="p-4">
                       <p className="font-bold text-green-800 mb-2">MONITOR AT NEXT INSPECTION:</p>
                       <ol className="list-decimal ml-5 space-y-1" start={urgentIssues.length + flagIssues.length + 1}>
-                        {monitorIssues.map((issue, idx) => (
-                          <li key={idx} className="text-sm text-gray-800">
-                            {issue.area}: {issue.description?.substring(0, 100) || 'No description'}
-                            {issue.description && issue.description.length > 100 ? '...' : ''}
-                          </li>
-                        ))}
+                        {monitorIssues.map((issue, idx) => {
+                          const areaName = issue.area_name || issue.location || issue.area_id || 'Unknown';
+                          const description = issue.description || issue.notes || issue.item_name || 'No description';
+                          return (
+                            <li key={idx} className="text-sm text-gray-800">
+                              {areaName}: {description.substring(0, 100)}
+                              {description.length > 100 ? '...' : ''}
+                            </li>
+                          );
+                        })}
                       </ol>
                     </CardContent>
                   </Card>
@@ -522,6 +540,13 @@ function FindingCard({ finding, number }) {
 
   const colors = severityColors[finding.severity] || severityColors['Monitor'];
 
+  // Support both field name formats
+  const areaName = finding.area_name || finding.location || finding.area_id || 'Unknown Area';
+  const issueTitle = finding.item_name || finding.issue || finding.description?.substring(0, 50) || 'Issue';
+  const issueDescription = finding.description || finding.notes || 'No description provided';
+  const photos = finding.photo_urls || finding.photos || [];
+  const estimatedCost = finding.current_fix_cost || finding.estimated_cost || 0;
+
   return (
     <Card className={`border-2 ${colors.border} ${colors.bg}`}>
       <CardContent className="p-4">
@@ -532,19 +557,19 @@ function FindingCard({ finding, number }) {
                 Finding #{number}
               </Badge>
               <Badge variant="outline">
-                {finding.location}
+                {areaName}
               </Badge>
               <Badge className={`${colors.text}`}>
                 {finding.severity}
               </Badge>
             </div>
             <p className="font-semibold text-gray-900 text-lg mb-1">
-              {finding.issue}
+              {issueTitle}
             </p>
           </div>
         </div>
 
-        <p className="text-gray-800 mb-2">{finding.description}</p>
+        <p className="text-gray-800 mb-2">{issueDescription}</p>
 
         {/* Recommendation */}
         {finding.recommendation && (
@@ -556,11 +581,18 @@ function FindingCard({ finding, number }) {
 
         {/* Cost and Risk */}
         <div className="flex flex-wrap gap-3 mb-3 text-sm">
-          {finding.estimated_cost > 0 && (
+          {estimatedCost > 0 && (
             <div className="flex items-center gap-1">
               <DollarSign className="w-4 h-4 text-gray-600" />
               <span className="font-semibold">Est. Cost:</span>
-              <span className="text-gray-800">${finding.estimated_cost}</span>
+              <span className="text-gray-800">${estimatedCost.toLocaleString()}</span>
+            </div>
+          )}
+          {finding.cascade_risk_score && finding.cascade_risk_score > 0 && (
+            <div className="flex items-center gap-1 text-orange-700">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-semibold">Risk Score:</span>
+              <span>{finding.cascade_risk_score}/10</span>
             </div>
           )}
           {finding.cascade_risk && finding.cascade_risk !== 'None' && (
@@ -573,14 +605,14 @@ function FindingCard({ finding, number }) {
         </div>
 
         {/* Photos */}
-        {finding.photos && finding.photos.length > 0 && (
+        {photos && photos.length > 0 && (
           <div>
             <p className="text-xs text-gray-600 mb-2 flex items-center gap-1">
               <Camera className="w-3 h-3" />
               Documentation Photos:
             </p>
             <div className="flex gap-2 flex-wrap">
-              {finding.photos.map((url, idx) => (
+              {photos.map((url, idx) => (
                 <img
                   key={idx}
                   src={url}
