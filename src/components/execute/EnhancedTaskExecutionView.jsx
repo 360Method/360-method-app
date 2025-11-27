@@ -14,23 +14,35 @@ import {
 } from "lucide-react";
 import CompletionCelebration from "./CompletionCelebration";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import InteractiveStepItem from "./InteractiveStepItem";
 
 export default function EnhancedTaskExecutionView({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
   
   // State for task execution
-  const [stepCompletions, setStepCompletions] = useState([]);
+  const [stepCompletions, setStepCompletions] = useState(task?.step_progress || []);
+  const [steps, setSteps] = useState([]);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [actualCost, setActualCost] = useState('');
-  const [completionPhotos, setCompletionPhotos] = useState([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(task?.actual_hours ? task.actual_hours * 3600 : 0);
+  const [actualCost, setActualCost] = useState(task?.actual_cost?.toString() || '');
+  const [completionPhotos, setCompletionPhotos] = useState(task?.completion_photos || []);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [completionNotes, setCompletionNotes] = useState('');
+  const [uploadingStepPhoto, setUploadingStepPhoto] = useState(false);
+  const [completionNotes, setCompletionNotes] = useState(task?.completion_notes || '');
   const [showCelebration, setShowCelebration] = useState(false);
+  const [toolsChecked, setToolsChecked] = useState(task?.tools_checklist || {});
+  const [materialsChecked, setMaterialsChecked] = useState(task?.materials_checklist || {});
+  const [customTools, setCustomTools] = useState(task?.custom_tools || []);
+  const [customMaterials, setCustomMaterials] = useState(task?.custom_materials || []);
+  const [addingTool, setAddingTool] = useState(false);
+  const [addingMaterial, setAddingMaterial] = useState(false);
+  const [newToolName, setNewToolName] = useState('');
+  const [newMaterialName, setNewMaterialName] = useState('');
   
   // Collapsible sections
   const [whyExpanded, setWhyExpanded] = useState(true);
   const [systemExpanded, setSystemExpanded] = useState(false);
+  const [needsExpanded, setNeedsExpanded] = useState(true);
   
   // Fetch related data
   const { data: property } = useQuery({
@@ -89,29 +101,194 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
     return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Parse AI-generated steps
-  const aiSteps = task?.ai_sow ? 
-    task.ai_sow.split('\n').filter(s => s.trim().length > 0 && !s.startsWith('#')).map(s => s.replace(/^\d+\.\s*/, '')) :
-    [];
+  // Initialize steps from task data
+  useEffect(() => {
+    const aiSteps = task?.ai_sow ? 
+      task.ai_sow.split('\n').filter(s => s.trim().length > 0 && !s.startsWith('#')).map(s => s.replace(/^\d+\.\s*/, '')) :
+      [];
 
-  const steps = aiSteps.length > 0 ? aiSteps : [
-    "Gather all necessary tools and materials",
-    "Follow the instructions carefully",
-    "Complete the task safely",
-    "Clean up work area"
-  ];
+    const defaultSteps = aiSteps.length > 0 ? aiSteps : [
+      "Gather all necessary tools and materials",
+      "Follow the instructions carefully",
+      "Complete the task safely",
+      "Clean up work area"
+    ];
+
+    // Merge with custom steps if any
+    const customSteps = task?.custom_steps || [];
+    const mergedSteps = [...defaultSteps];
+    customSteps.forEach(cs => {
+      if (cs.order < mergedSteps.length) {
+        mergedSteps.splice(cs.order, 0, cs.text);
+      } else {
+        mergedSteps.push(cs.text);
+      }
+    });
+
+    setSteps(mergedSteps);
+  }, [task]);
 
   const handleStepToggle = (stepIndex) => {
     const existing = stepCompletions.find(s => s.stepIndex === stepIndex);
     if (existing) {
-      setStepCompletions(stepCompletions.filter(s => s.stepIndex !== stepIndex));
+      const updated = stepCompletions.filter(s => s.stepIndex !== stepIndex);
+      setStepCompletions(updated);
+      saveProgress({ step_progress: updated });
     } else {
-      setStepCompletions([...stepCompletions, {
+      const updated = [...stepCompletions, {
         stepIndex,
+        stepText: steps[stepIndex],
         completedAt: new Date().toISOString(),
+        timeSpentSeconds: 0,
         notes: '',
         photos: []
-      }]);
+      }];
+      setStepCompletions(updated);
+      saveProgress({ step_progress: updated });
+    }
+  };
+
+  const handleStepPhotoUpload = async (stepIndex, files) => {
+    const fileArray = Array.from(files || []);
+    if (fileArray.length === 0) return;
+
+    setUploadingStepPhoto(true);
+    try {
+      const uploadPromises = fileArray.map(file =>
+        base44.integrations.Core.UploadFile({ file })
+      );
+      const results = await Promise.all(uploadPromises);
+      const urls = results.map(r => r.file_url);
+      
+      const updated = stepCompletions.map(s => {
+        if (s.stepIndex === stepIndex) {
+          return { ...s, photos: [...(s.photos || []), ...urls] };
+        }
+        return s;
+      });
+      
+      // If step not completed yet, create entry with photos
+      if (!updated.find(s => s.stepIndex === stepIndex)) {
+        updated.push({
+          stepIndex,
+          stepText: steps[stepIndex],
+          completedAt: null,
+          timeSpentSeconds: 0,
+          notes: '',
+          photos: urls
+        });
+      }
+      
+      setStepCompletions(updated);
+      saveProgress({ step_progress: updated });
+    } catch (error) {
+      console.error('Photo upload failed:', error);
+    } finally {
+      setUploadingStepPhoto(false);
+    }
+  };
+
+  const handleStepNotesChange = (stepIndex, notes) => {
+    const updated = stepCompletions.map(s => {
+      if (s.stepIndex === stepIndex) {
+        return { ...s, notes };
+      }
+      return s;
+    });
+    
+    // If step not in completions yet, create entry
+    if (!updated.find(s => s.stepIndex === stepIndex)) {
+      updated.push({
+        stepIndex,
+        stepText: steps[stepIndex],
+        completedAt: null,
+        timeSpentSeconds: 0,
+        notes,
+        photos: []
+      });
+    }
+    
+    setStepCompletions(updated);
+    saveProgress({ step_progress: updated });
+  };
+
+  const handleStepEdit = (stepIndex, newText) => {
+    const updatedSteps = [...steps];
+    updatedSteps[stepIndex] = newText;
+    setSteps(updatedSteps);
+    saveProgress({ ai_sow: updatedSteps.join('\n') });
+  };
+
+  const handleStepDelete = (stepIndex) => {
+    const updatedSteps = steps.filter((_, idx) => idx !== stepIndex);
+    setSteps(updatedSteps);
+    
+    // Update step_progress indices
+    const updatedProgress = stepCompletions
+      .filter(s => s.stepIndex !== stepIndex)
+      .map(s => ({
+        ...s,
+        stepIndex: s.stepIndex > stepIndex ? s.stepIndex - 1 : s.stepIndex
+      }));
+    
+    setStepCompletions(updatedProgress);
+    saveProgress({ 
+      ai_sow: updatedSteps.join('\n'),
+      step_progress: updatedProgress
+    });
+  };
+
+  const handleStepMoveUp = (stepIndex) => {
+    if (stepIndex === 0) return;
+    const updatedSteps = [...steps];
+    [updatedSteps[stepIndex - 1], updatedSteps[stepIndex]] = [updatedSteps[stepIndex], updatedSteps[stepIndex - 1]];
+    setSteps(updatedSteps);
+    
+    // Update indices in completions
+    const updatedProgress = stepCompletions.map(s => {
+      if (s.stepIndex === stepIndex) return { ...s, stepIndex: stepIndex - 1 };
+      if (s.stepIndex === stepIndex - 1) return { ...s, stepIndex: stepIndex };
+      return s;
+    });
+    setStepCompletions(updatedProgress);
+    
+    saveProgress({ ai_sow: updatedSteps.join('\n'), step_progress: updatedProgress });
+  };
+
+  const handleStepMoveDown = (stepIndex) => {
+    if (stepIndex === steps.length - 1) return;
+    const updatedSteps = [...steps];
+    [updatedSteps[stepIndex], updatedSteps[stepIndex + 1]] = [updatedSteps[stepIndex + 1], updatedSteps[stepIndex]];
+    setSteps(updatedSteps);
+    
+    // Update indices in completions
+    const updatedProgress = stepCompletions.map(s => {
+      if (s.stepIndex === stepIndex) return { ...s, stepIndex: stepIndex + 1 };
+      if (s.stepIndex === stepIndex + 1) return { ...s, stepIndex: stepIndex };
+      return s;
+    });
+    setStepCompletions(updatedProgress);
+    
+    saveProgress({ ai_sow: updatedSteps.join('\n'), step_progress: updatedProgress });
+  };
+
+  const handleAddStep = () => {
+    const newStep = "New step - click edit to customize";
+    const updatedSteps = [...steps, newStep];
+    setSteps(updatedSteps);
+    saveProgress({ ai_sow: updatedSteps.join('\n') });
+  };
+
+  const saveProgress = async (updates) => {
+    try {
+      await base44.entities.MaintenanceTask.update(task.id, {
+        ...updates,
+        status: 'In Progress',
+        actual_hours: elapsedSeconds / 3600
+      });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
     }
   };
 
@@ -354,101 +531,262 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
           )}
 
           {/* WHAT YOU'LL NEED */}
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-4 space-y-4">
-              <h3 className="font-bold text-lg text-gray-900">WHAT YOU'LL NEED</h3>
+          <Collapsible open={needsExpanded} onOpenChange={setNeedsExpanded}>
+            <Card className="border-2 border-gray-200">
+              <CollapsibleTrigger className="w-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg text-gray-900">WHAT YOU'LL NEED</h3>
+                    {needsExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </CardContent>
+              </CollapsibleTrigger>
               
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Tools */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wrench className="w-4 h-4 text-gray-600" />
-                    <h4 className="font-semibold text-gray-700">Tools:</h4>
+              <CollapsibleContent>
+                <CardContent className="px-4 pb-4 pt-0 space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Tools */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Wrench className="w-4 h-4 text-gray-600" />
+                          <h4 className="font-semibold text-gray-700">Tools:</h4>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {/* AI Tools */}
+                        {task.ai_tools_needed && task.ai_tools_needed.length > 0 && task.ai_tools_needed.map((tool, idx) => (
+                          <label key={`ai-tool-${idx}`} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <Checkbox
+                              checked={toolsChecked[tool] || false}
+                              onCheckedChange={(checked) => {
+                                const updated = { ...toolsChecked, [tool]: checked };
+                                setToolsChecked(updated);
+                                saveProgress({ tools_checklist: updated });
+                              }}
+                            />
+                            <span className={toolsChecked[tool] ? 'line-through text-gray-500' : 'text-gray-800'}>
+                              {tool}
+                            </span>
+                            {toolsChecked[tool] && <Badge variant="outline" className="ml-auto text-xs">✓ have it</Badge>}
+                          </label>
+                        ))}
+                        
+                        {/* Custom Tools */}
+                        {customTools.map((tool, idx) => (
+                          <label key={`custom-tool-${idx}`} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <Checkbox
+                              checked={toolsChecked[tool] || false}
+                              onCheckedChange={(checked) => {
+                                const updated = { ...toolsChecked, [tool]: checked };
+                                setToolsChecked(updated);
+                                saveProgress({ tools_checklist: updated });
+                              }}
+                            />
+                            <span className={toolsChecked[tool] ? 'line-through text-gray-500' : 'text-gray-800'}>
+                              {tool}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const updated = customTools.filter((_, i) => i !== idx);
+                                setCustomTools(updated);
+                                saveProgress({ custom_tools: updated });
+                              }}
+                              className="ml-auto text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </label>
+                        ))}
+                        
+                        {/* Add Tool */}
+                        {addingTool ? (
+                          <div className="flex gap-2">
+                            <Input
+                              value={newToolName}
+                              onChange={(e) => setNewToolName(e.target.value)}
+                              placeholder="Tool name"
+                              className="text-sm"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (newToolName.trim()) {
+                                  const updated = [...customTools, newToolName.trim()];
+                                  setCustomTools(updated);
+                                  saveProgress({ custom_tools: updated });
+                                  setNewToolName('');
+                                  setAddingTool(false);
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setAddingTool(false)}>Cancel</Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddingTool(true)}
+                            className="w-full gap-2"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add Tool
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Materials */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-gray-600" />
+                          <h4 className="font-semibold text-gray-700">Materials:</h4>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {/* AI Materials */}
+                        {task.ai_materials_needed && task.ai_materials_needed.length > 0 && task.ai_materials_needed.map((material, idx) => (
+                          <label key={`ai-mat-${idx}`} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <Checkbox
+                              checked={materialsChecked[material] || false}
+                              onCheckedChange={(checked) => {
+                                const updated = { ...materialsChecked, [material]: checked };
+                                setMaterialsChecked(updated);
+                                saveProgress({ materials_checklist: updated });
+                              }}
+                            />
+                            <span className={materialsChecked[material] ? 'line-through text-gray-500' : 'text-gray-800'}>
+                              {material}
+                            </span>
+                            {materialsChecked[material] && <Badge variant="outline" className="ml-auto text-xs">✓ have it</Badge>}
+                          </label>
+                        ))}
+                        
+                        {/* Custom Materials */}
+                        {customMaterials.map((material, idx) => (
+                          <label key={`custom-mat-${idx}`} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <Checkbox
+                              checked={materialsChecked[material] || false}
+                              onCheckedChange={(checked) => {
+                                const updated = { ...materialsChecked, [material]: checked };
+                                setMaterialsChecked(updated);
+                                saveProgress({ materials_checklist: updated });
+                              }}
+                            />
+                            <span className={materialsChecked[material] ? 'line-through text-gray-500' : 'text-gray-800'}>
+                              {material}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const updated = customMaterials.filter((_, i) => i !== idx);
+                                setCustomMaterials(updated);
+                                saveProgress({ custom_materials: updated });
+                              }}
+                              className="ml-auto text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </label>
+                        ))}
+                        
+                        {/* Add Material */}
+                        {addingMaterial ? (
+                          <div className="flex gap-2">
+                            <Input
+                              value={newMaterialName}
+                              onChange={(e) => setNewMaterialName(e.target.value)}
+                              placeholder="Material name (cost)"
+                              className="text-sm"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (newMaterialName.trim()) {
+                                  const updated = [...customMaterials, newMaterialName.trim()];
+                                  setCustomMaterials(updated);
+                                  saveProgress({ custom_materials: updated });
+                                  setNewMaterialName('');
+                                  setAddingMaterial(false);
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setAddingMaterial(false)}>Cancel</Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddingMaterial(true)}
+                            className="w-full gap-2"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add Material
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {task.ai_tools_needed && task.ai_tools_needed.length > 0 ? (
-                    <ul className="space-y-1">
-                      {task.ai_tools_needed.map((tool, idx) => (
-                        <li key={idx} className="text-sm text-gray-800 flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                          {tool}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-gray-500">No specific tools listed</p>
+
+                  {/* Cost & Time Estimates */}
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
+                    <div className="flex items-center justify-between text-sm flex-wrap gap-2">
+                      <div>
+                        <span className="text-gray-600">Est. Cost:</span>
+                        <span className="ml-2 font-bold text-gray-900">
+                          ${task.diy_cost || 'Unknown'} DIY
+                        </span>
+                        {task.contractor_cost && (
+                          <span className="ml-2 text-gray-600">
+                            | ${task.contractor_cost} Contractor
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Est. Time:</span>
+                        <span className="ml-2 font-bold text-gray-900">
+                          {task.diy_time_hours || task.estimated_hours || '?'} hours
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Video Tutorials */}
+                  {task.ai_video_tutorials && task.ai_video_tutorials.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Video className="w-4 h-4 text-red-600" />
+                        <h4 className="font-semibold text-gray-700">Watch:</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {task.ai_video_tutorials.map((video, idx) => (
+                          <a
+                            key={idx}
+                            href={video.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            <Video className="w-4 h-4" />
+                            {video.title}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </div>
-
-                {/* Materials */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Package className="w-4 h-4 text-gray-600" />
-                    <h4 className="font-semibold text-gray-700">Materials:</h4>
-                  </div>
-                  {task.ai_materials_needed && task.ai_materials_needed.length > 0 ? (
-                    <ul className="space-y-1">
-                      {task.ai_materials_needed.map((material, idx) => (
-                        <li key={idx} className="text-sm text-gray-800 flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                          {material}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-gray-500">No specific materials listed</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Cost & Time Estimates */}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
-                <div className="flex items-center justify-between text-sm">
-                  <div>
-                    <span className="text-gray-600">Est. Cost:</span>
-                    <span className="ml-2 font-bold text-gray-900">
-                      ${task.diy_cost || 'Unknown'} DIY
-                    </span>
-                    {task.contractor_cost && (
-                      <span className="ml-2 text-gray-600">
-                        | ${task.contractor_cost} Contractor
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Est. Time:</span>
-                    <span className="ml-2 font-bold text-gray-900">
-                      {task.diy_time_hours || task.estimated_hours || '?'} hours
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Video Tutorials */}
-              {task.ai_video_tutorials && task.ai_video_tutorials.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Video className="w-4 h-4 text-red-600" />
-                    <h4 className="font-semibold text-gray-700">Watch:</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {task.ai_video_tutorials.map((video, idx) => (
-                      <a
-                        key={idx}
-                        href={video.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        <Video className="w-4 h-4" />
-                        {video.title}
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* TIMER & STEPS */}
           <Card className="border-2 border-green-200">
@@ -487,36 +825,40 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
               {/* Steps List */}
               <div className="space-y-2">
                 {steps.map((step, idx) => {
-                  const isCompleted = stepCompletions.some(s => s.stepIndex === idx);
+                  const completion = stepCompletions.find(s => s.stepIndex === idx);
+                  const isCompleted = completion && completion.completedAt;
+                  
                   return (
-                    <div
+                    <InteractiveStepItem
                       key={idx}
-                      className={`
-                        border-2 rounded-lg p-4 transition-all
-                        ${isCompleted ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:bg-gray-50'}
-                      `}
-                    >
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <Checkbox
-                          checked={isCompleted}
-                          onCheckedChange={() => handleStepToggle(idx)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <p className={`text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                            <span className="font-semibold">{idx + 1}.</span> {step}
-                          </p>
-                          {isCompleted && (
-                            <p className="text-xs text-green-700 mt-1">
-                              ✓ Completed {new Date(stepCompletions.find(s => s.stepIndex === idx).completedAt).toLocaleTimeString()}
-                            </p>
-                          )}
-                        </div>
-                      </label>
-                    </div>
+                      step={step}
+                      stepIndex={idx}
+                      isCompleted={isCompleted}
+                      completion={completion}
+                      onToggle={() => handleStepToggle(idx)}
+                      onPhotoUpload={handleStepPhotoUpload}
+                      onNotesChange={handleStepNotesChange}
+                      onEdit={handleStepEdit}
+                      onDelete={handleStepDelete}
+                      onMoveUp={handleStepMoveUp}
+                      onMoveDown={handleStepMoveDown}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx < steps.length - 1}
+                      uploadingPhotos={uploadingStepPhoto}
+                    />
                   );
                 })}
               </div>
+
+              {/* Add Step Button */}
+              <Button
+                variant="outline"
+                onClick={handleAddStep}
+                className="w-full gap-2 border-dashed"
+              >
+                <Plus className="w-4 h-4" />
+                Add Custom Step
+              </Button>
 
               {/* Progress */}
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
@@ -655,10 +997,74 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
             </Card>
           )}
 
+          {/* Photo Gallery */}
+          {(completionPhotos.length > 0 || stepCompletions.some(s => s.photos?.length > 0) || task.photo_urls?.length > 0) && (
+            <Card className="border-2 border-gray-200">
+              <CardContent className="p-4">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
+                  PHOTOS ({
+                    (task.photo_urls?.length || 0) + 
+                    (completionPhotos.length) + 
+                    stepCompletions.reduce((sum, s) => sum + (s.photos?.length || 0), 0)
+                  })
+                </h3>
+                
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                  {/* Before Photos */}
+                  {task.photo_urls && task.photo_urls.map((url, idx) => (
+                    <div key={`before-${idx}`} className="relative">
+                      <img
+                        src={url}
+                        alt={`Before ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                      <Badge className="absolute bottom-1 left-1 text-xs bg-blue-600">Before</Badge>
+                    </div>
+                  ))}
+                  
+                  {/* Step Photos */}
+                  {stepCompletions.filter(s => s.photos?.length > 0).map((completion) =>
+                    completion.photos.map((url, photoIdx) => (
+                      <div key={`step-${completion.stepIndex}-${photoIdx}`} className="relative">
+                        <img
+                          src={url}
+                          alt={`Step ${completion.stepIndex + 1}`}
+                          className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                          onClick={() => window.open(url, '_blank')}
+                        />
+                        <Badge className="absolute bottom-1 left-1 text-xs bg-purple-600">
+                          Step {completion.stepIndex + 1}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                  
+                  {/* After Photos */}
+                  {completionPhotos.map((url, idx) => (
+                    <div key={`after-${idx}`} className="relative">
+                      <img
+                        src={url}
+                        alt={`After ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                      <Badge className="absolute bottom-1 left-1 text-xs bg-green-600">After</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Save & Exit */}
           <div className="flex gap-3">
             <Button
-              onClick={onClose}
+              onClick={() => {
+                saveProgress({ actual_hours: elapsedSeconds / 3600 });
+                onClose();
+              }}
               variant="outline"
               className="flex-1"
               style={{ minHeight: '48px' }}
