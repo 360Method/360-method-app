@@ -1299,22 +1299,21 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
                   <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-purple-900 mb-1">
-                      🤖 After You Submit, AI Will Analyze:
+                      🤖 After You Submit, AI Will Fill Missing Details:
                     </p>
                     <ul className="text-xs text-purple-800 leading-relaxed space-y-1">
-                      <li>• <strong>DIY vs. Contractor vs. 360° Operator costs</strong> - See all your options</li>
-                      <li>• <strong>Cascade risk score (1-10)</strong> - What will fail next if ignored</li>
-                      <li>• <strong>Delayed fix cost</strong> - What it costs if you wait 6-12 months</li>
-                      <li>• <strong>Urgency timeline</strong> and why waiting costs more</li>
-                      <li>• Time estimation, tools needed, & video tutorials</li>
+                      <li>• <strong>DIY vs. Contractor vs. 360° Operator costs</strong></li>
+                      <li>• <strong>Cascade risk</strong> (if you didn't set it manually)</li>
+                      <li>• <strong>Cost estimates & timelines</strong></li>
+                      <li>• Tools needed & video tutorials</li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border-l-4 border-yellow-600 p-4 rounded">
+              <div className="bg-yellow-50 border-l-4 border-yellow-600 p-3 rounded">
                 <p className="text-xs text-yellow-900 font-semibold">
-                  ⏱️ After clicking the button below, please wait for AI analysis results. This helps you understand the true cost and urgency of this maintenance item.
+                  ⏱️ AI analysis takes ~5-10 seconds. Manual entries will be preserved.
                 </p>
               </div>
             </div>
