@@ -200,49 +200,51 @@ export default function CalendarView({ tasks = [], allTasks = [], viewMode = 'mo
                 <span className="text-sm text-gray-600">{range.hours}</span>
               </div>
 
-              {range.tasks.length > 0 ? (
-                <div className="space-y-2">
-                  {range.tasks.map(task => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task)}
-                      onClick={() => onTaskClick && onTaskClick(task)}
-                      className={`p-3 rounded-lg cursor-move ${getTaskColor(task.execution_method)} hover:opacity-80 transition-all`}
-                    >
-                      <div className="font-semibold mb-1">{task.title}</div>
-                      <div className="flex items-center gap-2 flex-wrap text-xs">
-                        {task.unit_tag && (
-                          <Badge className="bg-purple-600 text-white">{task.unit_tag}</Badge>
-                        )}
-                        {task.estimated_hours && (
-                          <span>⏱️ {task.estimated_hours}h</span>
-                        )}
-                        {task.current_fix_cost > 0 && (
-                          <span>💰 ${task.current_fix_cost}</span>
-                        )}
-                        {task.priority && (
-                          <Badge className={
-                            task.priority === 'High' ? 'bg-red-600' :
-                            task.priority === 'Medium' ? 'bg-yellow-600' : 'bg-blue-600'
-                          }>{task.priority}</Badge>
-                        )}
-                        {task.cascade_risk_score >= 7 && (
-                          <Badge className="bg-red-600">⚠️ High Risk</Badge>
-                        )}
+              <div 
+                onDrop={(e) => handleTimeRangeDrop(e, range.value)}
+                onDragOver={handleDragOver}
+                className="min-h-[80px]"
+              >
+                {range.tasks.length > 0 ? (
+                  <div className="space-y-2">
+                    {range.tasks.map(task => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task)}
+                        onClick={() => onTaskClick && onTaskClick(task)}
+                        className={`p-3 rounded-lg cursor-move ${getTaskColor(task.execution_method)} hover:opacity-80 transition-all`}
+                      >
+                        <div className="font-semibold mb-1">{task.title}</div>
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          {task.unit_tag && (
+                            <Badge className="bg-purple-600 text-white">{task.unit_tag}</Badge>
+                          )}
+                          {task.estimated_hours && (
+                            <span>⏱️ {task.estimated_hours}h</span>
+                          )}
+                          {task.current_fix_cost > 0 && (
+                            <span>💰 ${task.current_fix_cost}</span>
+                          )}
+                          {task.priority && (
+                            <Badge className={
+                              task.priority === 'High' ? 'bg-red-600' :
+                              task.priority === 'Medium' ? 'bg-yellow-600' : 'bg-blue-600'
+                            }>{task.priority}</Badge>
+                          )}
+                          {task.cascade_risk_score >= 7 && (
+                            <Badge className="bg-red-600">⚠️ High Risk</Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div 
-                  onDrop={(e) => handleTimeRangeDrop(e, range.value)}
-                  onDragOver={handleDragOver}
-                  className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg"
-                >
-                  Drag tasks here to schedule for {range.label.toLowerCase()}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    Drag tasks here to schedule for {range.label.toLowerCase()}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
