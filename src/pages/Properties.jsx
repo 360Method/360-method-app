@@ -143,15 +143,12 @@ export default function Properties() {
     if (demoMode) return;
     if (!completeId) return;
     
-    // Only open if not already showing and we have a valid property
-    if (!showProfileWizard && !completingProperty) {
-      const property = properties.find(p => p.id === completeId);
-      if (property) {
-        setCompletingProperty(property);
-        setShowProfileWizard(true);
-      }
+    const property = properties.find(p => p.id === completeId);
+    if (property && !showProfileWizard) {
+      setCompletingProperty(property);
+      setShowProfileWizard(true);
     }
-  }, [completeId, properties, demoMode]);
+  }, [completeId, properties, demoMode, showProfileWizard]);
 
   const handleAddProperty = (mode = 'quick') => {
     if (demoMode) return; // Don't allow adding in demo mode
