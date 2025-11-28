@@ -145,6 +145,8 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
             body: { address: address.formatted_address }
           });
 
+          console.log('Zillow API response:', response);
+
           if (response.data?.success && response.data?.data) {
             fetchedData = response.data.data;
           }
@@ -152,30 +154,33 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
           console.log('Property data fetch failed, will use manual entry:', fetchError);
         }
 
-        // 2. Create the property
+        // 2. Create the property - only include fields that exist in the database
         const propertyPayload = {
           address: address.formatted_address,
-          street_address: address.street_address,
-          unit_number: address.unit_number,
-          city: address.city,
-          state: address.state,
-          zip_code: address.zip_code,
-          county: address.county,
+          street_address: address.street_address || '',
+          city: address.city || '',
+          state: address.state || '',
+          zip_code: address.zip_code || '',
           formatted_address: address.formatted_address,
-          place_id: address.place_id,
-          coordinates: address.coordinates,
-          address_verified: true,
-          verification_source: "google_maps",
-          climate_zone: address.climate_zone,
           property_type: fetchedData?.property_type || "Single-Family Home",
           year_built: fetchedData?.year_built || null,
           square_footage: fetchedData?.square_footage || null,
           bedrooms: fetchedData?.bedrooms || null,
-          bathrooms: fetchedData?.bathrooms || null,
-          door_count: 1,
-          setup_completed: false,
-          baseline_completion: 0
+          bathrooms: fetchedData?.bathrooms || null
         };
+
+        // Only add optional fields if they have values
+        if (address.unit_number) propertyPayload.unit_number = address.unit_number;
+        if (address.county) propertyPayload.county = address.county;
+        if (address.place_id) propertyPayload.place_id = address.place_id;
+        if (address.climate_zone) propertyPayload.climate_zone = address.climate_zone;
+
+        // Handle coordinates - convert to proper format if needed
+        if (address.coordinates) {
+          propertyPayload.coordinates = JSON.stringify(address.coordinates);
+        }
+
+        console.log('Creating property with payload:', propertyPayload);
 
         const newProperty = await Property.create(propertyPayload);
         setCreatedProperty(newProperty);
@@ -203,7 +208,8 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
         setIsLoading(false);
       } catch (err) {
         console.error('Error in onboarding:', err);
-        setError('Failed to set up your property. Please try again.');
+        console.error('Error details:', err?.message, err?.code, err?.details);
+        setError(`Failed to set up your property: ${err?.message || 'Unknown error'}. Please try again.`);
         setIsLoading(false);
       }
     }
