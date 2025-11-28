@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MaintenanceTask, auth, storage } from "@/api/supabaseClient";
+import { MaintenanceTask, auth, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -219,7 +219,7 @@ Estimated Time: ${task.estimated_hours || task.diy_time_hours || 'TBD'} hours
 Estimated Cost: $${task.current_fix_cost || task.diy_cost || task.contractor_cost || 'TBD'}
     `;
 
-    await base44.integrations.Core.SendEmail({
+    await integrations.SendEmail({
       to: user.email,
       subject: `Work Order: ${task.title}`,
       body: emailBody

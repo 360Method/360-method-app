@@ -25,6 +25,10 @@ export const getDemoPropertyStruggling = () => ({
     baseline_completion: 20,
     health_score: 62,
     last_inspection_date: null,
+    // Financial fields for Scale page
+    current_value: 340000,
+    mortgage_balance: 198000,
+    monthly_mortgage_payment: 1350,
     total_maintenance_spent: 0,
     estimated_disasters_prevented: 0,
     certificationLevel: null,
@@ -555,6 +559,39 @@ export const getDemoPropertyStruggling = () => ({
       notes: 'URGENT - Life safety issue. Must be completed immediately.'
     }
   ],
+
+  portfolioMetrics: {
+    total_properties: 1,
+    total_units: 1,
+    current_property_value: 340000,
+    outstanding_mortgage: 198000,
+    current_equity: 142000,
+    loan_to_value_ratio: 58.2,
+
+    average_health_score: 62,
+    total_maintenance_invested: 0,
+    total_savings_from_prevention: 0,
+
+    projected_value_10yr: 475000,
+    projected_equity_10yr: 350000,
+    equity_growth_10yr: 208000,
+
+    recommendation: 'Act Now',
+    recommendation_reasoning: `Your property is at risk. Without intervention, you'll face $17K-$22K in emergency repairs over the next 2-3 years.
+
+But here's the opportunity: Fix $2,650 now → Prevent $22,350 in emergencies → Build $208K in equity over 10 years.
+
+The 360° Method transforms reactive owners into proactive asset managers. Start today.`,
+
+    scale_message: `You're not ready for "Scale" thinking yet - and that's okay.
+
+Right now, focus on:
+1. Critical safety fixes (CO detectors, GFCI)
+2. Stopping the bleeding (roof, HVAC)
+3. Building your first maintenance rhythm
+
+Once you hit 75+, you'll unlock the full wealth-building view. For now, see what's possible if you follow through.`
+  },
 
   stats: {
     total_systems: 6,

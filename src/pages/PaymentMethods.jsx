@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ export default function PaymentMethods() {
   const { data: paymentMethods = [], isLoading } = useQuery({
     queryKey: ['paymentMethods'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('syncPaymentMethodsFromStripe');
+      const { data } = await functions.invoke('syncPaymentMethodsFromStripe');
       return data.payment_methods || [];
     }
   });
@@ -22,8 +22,8 @@ export default function PaymentMethods() {
   const addPaymentMutation = useMutation({
     mutationFn: async () => {
       const returnUrl = window.location.origin + window.location.pathname + '?setup=complete';
-      const { data } = await base44.functions.invoke('addPaymentMethod', { return_url: returnUrl });
-      
+      const { data } = await functions.invoke('addPaymentMethod', { return_url: returnUrl });
+
       // Redirect to Stripe-hosted setup page
       if (data.setup_url) {
         window.location.href = data.setup_url;
@@ -33,7 +33,7 @@ export default function PaymentMethods() {
   });
 
   const removePaymentMutation = useMutation({
-    mutationFn: (paymentMethodId) => base44.functions.invoke('removePaymentMethod', { payment_method_id: paymentMethodId }),
+    mutationFn: (paymentMethodId) => functions.invoke('removePaymentMethod', { payment_method_id: paymentMethodId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
       toast.success('Payment method removed');
@@ -41,7 +41,7 @@ export default function PaymentMethods() {
   });
 
   const setDefaultMutation = useMutation({
-    mutationFn: (paymentMethodId) => base44.functions.invoke('setDefaultPaymentMethod', { payment_method_id: paymentMethodId }),
+    mutationFn: (paymentMethodId) => functions.invoke('setDefaultPaymentMethod', { payment_method_id: paymentMethodId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
       toast.success('Default payment method updated');

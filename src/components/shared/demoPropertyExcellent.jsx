@@ -25,6 +25,10 @@ export const getDemoPropertyExcellent = () => ({
     baseline_completion: 100,
     health_score: 92,
     last_inspection_date: '2025-10-15',
+    // Financial fields for Scale page
+    current_value: 550000,
+    mortgage_balance: 300000,
+    monthly_mortgage_payment: 2100,
     total_maintenance_spent: 8400,
     estimated_disasters_prevented: 28600,
     certificationLevel: 'gold',

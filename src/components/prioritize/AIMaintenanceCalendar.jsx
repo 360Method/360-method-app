@@ -1,6 +1,6 @@
 
 import React from "react";
-import { auth, MaintenanceTask, CartItem } from "@/api/supabaseClient";
+import { auth, MaintenanceTask, CartItem, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -363,7 +363,7 @@ Generate 6-10 suggestions. Be specific. Avoid duplicates with existing tasks. Fo
 
 Return JSON with "suggestions" array.`;
 
-        const result = await base44.integrations.Core.InvokeLLM({
+        const result = await integrations.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
             type: "object",

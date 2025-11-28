@@ -1,12 +1,20 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     const url = new URL(req.url);
@@ -16,7 +24,7 @@ Deno.serve(async (req) => {
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Build filter
-    const filter = {
+    const filter: Record<string, any> = {
       user_id: user.id,
       dismissed: false
     };
@@ -30,7 +38,7 @@ Deno.serve(async (req) => {
     }
 
     // Get notifications
-    const allNotifications = await base44.entities.Notification.filter(filter, '-created_date');
+    const allNotifications = await helper.entities.Notification.filter(filter, '-created_at');
 
     // Apply pagination
     const notifications = allNotifications.slice(offset, offset + limit);
@@ -42,9 +50,12 @@ Deno.serve(async (req) => {
       has_more: hasMore,
       limit,
       offset
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error getting notifications:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

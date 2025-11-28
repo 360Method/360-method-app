@@ -1,8 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     const url = new URL(req.url);
     const method = req.method;
 
@@ -10,22 +15,23 @@ Deno.serve(async (req) => {
     if (method === 'GET') {
       const limit = parseInt(url.searchParams.get('limit') || '50');
       const sinceDate = url.searchParams.get('since');
-      
-      let query = {};
-      if (sinceDate) {
-        query.created_date = { $gte: sinceDate };
-      }
 
-      const waitlistEntries = await base44.asServiceRole.entities.Waitlist.filter(
-        query,
-        '-created_date',
-        limit
-      );
+      let waitlistEntries: any[];
+      if (sinceDate) {
+        // Filter by date - need to get all and filter in memory
+        const allEntries = await helper.asServiceRole.entities.Waitlist.filter({});
+        waitlistEntries = allEntries
+          .filter((e: any) => new Date(e.created_at) >= new Date(sinceDate))
+          .slice(0, limit);
+      } else {
+        waitlistEntries = await helper.asServiceRole.entities.Waitlist.filter({});
+        waitlistEntries = waitlistEntries.slice(0, limit);
+      }
 
       return Response.json({
         success: true,
         count: waitlistEntries.length,
-        entries: waitlistEntries.map(entry => ({
+        entries: waitlistEntries.map((entry: any) => ({
           id: entry.id,
           first_name: entry.first_name,
           last_name: entry.last_name,
@@ -40,10 +46,10 @@ Deno.serve(async (req) => {
           notes: entry.notes,
           source: entry.source,
           marketing_consent: entry.marketing_consent,
-          created_date: entry.created_date,
-          updated_date: entry.updated_date
+          created_at: entry.created_at,
+          updated_at: entry.updated_at
         }))
-      });
+      }, { headers: corsHeaders });
     }
 
     // POST: Receive webhook notification for new entry
@@ -55,19 +61,19 @@ Deno.serve(async (req) => {
         return Response.json({
           success: false,
           error: 'entry_id is required'
-        }, { status: 400 });
+        }, { status: 400, headers: corsHeaders });
       }
 
-      const entry = await base44.asServiceRole.entities.Waitlist.filter({ id: entryId });
-      
+      const entry = await helper.asServiceRole.entities.Waitlist.filter({ id: entryId });
+
       if (!entry || entry.length === 0) {
         return Response.json({
           success: false,
           error: 'Entry not found'
-        }, { status: 404 });
+        }, { status: 404, headers: corsHeaders });
       }
 
-      const waitlistEntry = entry[0];
+      const waitlistEntry = entry[0] as any;
 
       return Response.json({
         success: true,
@@ -87,20 +93,20 @@ Deno.serve(async (req) => {
           source: waitlistEntry.source,
           marketing_consent: waitlistEntry.marketing_consent,
           consent_timestamp: waitlistEntry.consent_timestamp,
-          created_date: waitlistEntry.created_date
+          created_at: waitlistEntry.created_at
         }
-      });
+      }, { headers: corsHeaders });
     }
 
     return Response.json({
       success: false,
       error: 'Method not allowed. Use GET to fetch entries or POST to retrieve specific entry.'
-    }, { status: 405 });
+    }, { status: 405, headers: corsHeaders });
 
-  } catch (error) {
+  } catch (error: any) {
     return Response.json({
       success: false,
       error: error.message
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 });

@@ -23,14 +23,19 @@ const getClimateZone = (state) => {
   return climateMap[stateUpper] || 'Midwest';
 };
 
-export default function OnboardingAddressInput({ onNext, user }) {
+export default function OnboardingAddressInput({ onNext, onSkip, user }) {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddressSelect = (place) => {
-    // Only accept verified addresses (from Google Places selection)
-    // Ignore unverified addresses from typing
-    if (!place?.address_verified || place.verification_source === 'manual_entry' && !place.street_address) {
+    // Handle clear/reset - set selectedPlace to null
+    if (!place?.address_verified) {
+      setSelectedPlace(null);
+      return;
+    }
+
+    // Reject manual entries without street address
+    if (place.verification_source === 'manual_entry' && !place.street_address) {
       return;
     }
 
@@ -152,6 +157,16 @@ export default function OnboardingAddressInput({ onNext, user }) {
       <p className="text-center text-sm text-slate-500 mt-6">
         Your data is private and secure. We never share your information.
       </p>
+
+      {/* Skip Option */}
+      {onSkip && (
+        <button
+          onClick={onSkip}
+          className="w-full text-center text-sm text-slate-500 hover:text-slate-700 mt-4 py-2 transition-colors"
+        >
+          Skip for now and add a property later
+        </button>
+      )}
     </div>
   );
 }

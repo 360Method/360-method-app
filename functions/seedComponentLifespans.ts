@@ -1,12 +1,17 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403, headers: corsHeaders });
     }
 
     const lifespanData = [
@@ -47,7 +52,7 @@ Deno.serve(async (req) => {
         cost_last_updated: new Date().toISOString().split('T')[0],
         data_source: 'industry_standards'
       },
-      
+
       // HVAC
       {
         component_category: 'hvac',
@@ -103,7 +108,7 @@ Deno.serve(async (req) => {
         cost_last_updated: new Date().toISOString().split('T')[0],
         data_source: 'industry_standards'
       },
-      
+
       // Plumbing
       {
         component_category: 'plumbing',
@@ -141,7 +146,7 @@ Deno.serve(async (req) => {
         cost_last_updated: new Date().toISOString().split('T')[0],
         data_source: 'industry_standards'
       },
-      
+
       // Appliances
       {
         component_category: 'appliances',
@@ -179,7 +184,7 @@ Deno.serve(async (req) => {
         cost_last_updated: new Date().toISOString().split('T')[0],
         data_source: 'industry_standards'
       },
-      
+
       // Exterior
       {
         component_category: 'exterior',
@@ -219,19 +224,19 @@ Deno.serve(async (req) => {
       }
     ];
 
-    const created = [];
+    const created: string[] = [];
     for (const data of lifespanData) {
-      const record = await base44.asServiceRole.entities.ComponentLifespan.create(data);
-      created.push(record.id);
+      const record = await helper.asServiceRole.entities.ComponentLifespan.create(data);
+      created.push((record as any).id);
     }
 
     return Response.json({
       success: true,
       message: `Seeded ${created.length} component lifespan records`,
       created_ids: created
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error seeding component lifespans:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

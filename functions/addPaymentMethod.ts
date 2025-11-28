@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import Stripe from 'npm:stripe@14.11.0';
 
 function getStripeClient() {
@@ -19,32 +19,43 @@ function getStripeClient() {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401, 
+        headers: corsHeaders 
+      });
     }
 
     const { return_url } = await req.json();
 
     if (!return_url) {
-      return Response.json({ error: 'Missing return_url' }, { status: 400 });
+      return Response.json({ error: 'Missing return_url' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     const stripe = getStripeClient();
 
     // Ensure user has Stripe Customer
-    let customerId = user.stripe_customer_id;
+    let customerId = user.user_metadata?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
-        name: user.full_name,
+        name: user.user_metadata?.full_name,
         metadata: { user_id: user.id }
       });
       customerId = customer.id;
-      await base44.auth.updateMe({ stripe_customer_id: customerId });
+      await helper.auth.updateMe({ stripe_customer_id: customerId });
     }
 
     // Create Checkout Session for setup
@@ -63,9 +74,12 @@ Deno.serve(async (req) => {
       setup_url: session.url,
       session_id: session.id,
       stripe_customer_id: customerId
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error adding payment method:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

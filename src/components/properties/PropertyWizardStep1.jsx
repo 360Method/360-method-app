@@ -8,6 +8,7 @@ import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench } from
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 import { checkServiceAvailability } from "../shared/ServiceAreaChecker";
+import { integrations } from "@/api/supabaseClient";
 
 // Climate zone mapping function
 const getClimateZone = (state) => {
@@ -167,7 +168,7 @@ For garage, look for:
 
 Return ONLY the data you can confirm from reliable sources. Use null for missing data.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await integrations.InvokeLLM({
         prompt: prompt,
         add_context_from_internet: true,
         response_json_schema: {

@@ -11,7 +11,21 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(timeout /t 2 /nobreak)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(ping:*)",
+      "Bash(cat:*)",
+      "Bash(pkill:*)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(git checkout:*)",
+      "Bash(dir \"C:\\Users\\help\\Documents\\App_Build\\360°-Method-App\\functions\")",
+      "Bash(dir /s \"C:\\Users\\help\\Documents\\App_Build\\360°-Method-App\\supabase\\migrations\")",
+      "Bash(netstat:*)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command \"Get-ItemProperty -Path ''HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings'' | Select-Object ProxyEnable, ProxyServer, ProxyOverride\")",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

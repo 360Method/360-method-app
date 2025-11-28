@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { Upgrade } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +38,7 @@ export default function MilestonesTab({ project, onUpdate }) {
                                progressPercent > 0 ? 'In Progress' : 
                                project.status;
 
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         milestones: updatedMilestones,
         progress_percentage: progressPercent,
         current_milestone: currentMilestone,
@@ -155,7 +155,7 @@ function MilestoneCard({
         m.id === milestone.id ? { ...m, ...editData } : m
       );
 
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         milestones: updatedMilestones
       });
 
@@ -180,7 +180,7 @@ function MilestoneCard({
         ? Math.round((completedCount / updatedMilestones.length) * 100) 
         : 0;
 
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         milestones: updatedMilestones,
         progress_percentage: progressPercent
       });
@@ -473,7 +473,7 @@ function AddMilestoneForm({ project, onSave, onCancel }) {
 
       const updatedMilestones = [...(project.milestones || []), newMilestone];
 
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         milestones: updatedMilestones
       });
 

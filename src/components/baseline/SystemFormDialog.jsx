@@ -1,6 +1,6 @@
 
 import React from "react";
-import { SystemBaseline, storage } from "@/api/supabaseClient";
+import { SystemBaseline, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -494,7 +494,7 @@ Provide:
 
 Be specific, practical, and focus on preventing expensive failures.`;
 
-      const analysis = await base44.integrations.Core.InvokeLLM({
+      const analysis = await integrations.InvokeLLM({
         prompt: analysisPrompt,
         response_json_schema: {
           type: "object",
@@ -666,7 +666,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
       const { file_url } = await storage.uploadFile(file);
 
       // Use AI to extract product info from data plate
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: `You are analyzing a product data plate or model label. Extract the following information:
 
         1. Brand/Manufacturer name

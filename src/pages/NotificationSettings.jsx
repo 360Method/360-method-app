@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ export default function NotificationSettings() {
   const { data: settingsData } = useQuery({
     queryKey: ['notificationSettings'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getUserNotificationSettings');
+      const { data } = await functions.invoke('getUserNotificationSettings');
       return data.settings;
     }
   });
@@ -31,14 +31,14 @@ export default function NotificationSettings() {
   const { data: preferencesData } = useQuery({
     queryKey: ['notificationPreferences'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getNotificationPreferences');
+      const { data } = await functions.invoke('getNotificationPreferences');
       return data.preferences || [];
     }
   });
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
-    mutationFn: (updates) => base44.functions.invoke('updateUserNotificationSettings', updates),
+    mutationFn: (updates) => functions.invoke('updateUserNotificationSettings', updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notificationSettings'] });
       toast.success('Settings updated');
@@ -47,8 +47,8 @@ export default function NotificationSettings() {
 
   // Update preference mutation
   const updatePreferenceMutation = useMutation({
-    mutationFn: ({ notification_category, ...updates }) => 
-      base44.functions.invoke('updateNotificationPreference', { notification_category, ...updates }),
+    mutationFn: ({ notification_category, ...updates }) =>
+      functions.invoke('updateNotificationPreference', { notification_category, ...updates }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notificationPreferences'] });
       toast.success('Preference updated');

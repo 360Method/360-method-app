@@ -1,9 +1,10 @@
 import React from "react";
-import { auth } from "@/api/supabaseClient";
 import { Property } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { useAuth } from "@/lib/AuthContext";
+import { useUser } from "@clerk/clerk-react";
 
 // New streamlined onboarding components (3-click flow)
 import OnboardingAddressInput from "../components/onboarding/OnboardingAddressInput";
@@ -34,23 +35,28 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [onboardingData, setOnboardingData] = React.useState({});
   const [showContent, setShowContent] = React.useState(false);
-  const checkedRef = React.useRef(false);
 
   const navigate = useNavigate();
 
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => auth.me(),
-    retry: 1,
-    staleTime: 30000,
-  });
+  // Use Clerk auth instead of Supabase auth
+  const { user, isLoadingAuth } = useAuth();
+  const { user: clerkUser } = useUser(); // For updating metadata
+  const userLoading = isLoadingAuth;
 
-  const { data: properties = [], isLoading: propertiesLoading, refetch: refetchProperties } = useQuery({
+  const { data: properties = [], isLoading: propertiesLoading, error: propertiesError } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => Property.list(),
+    queryFn: async () => {
+      try {
+        const result = await Property.list();
+        return result || [];
+      } catch (err) {
+        console.error('Error fetching properties:', err);
+        return []; // Return empty array on error so onboarding can proceed
+      }
+    },
     enabled: !!user,
     retry: 1,
-    staleTime: 5000, // Shorter stale time to catch newly created properties
+    staleTime: 5000,
   });
 
   // Load saved onboarding progress from localStorage
@@ -88,25 +94,71 @@ export default function Onboarding() {
     }
   }, [user?.id, currentStep, onboardingData]);
 
-  // Check onboarding status once
+  // Check onboarding status and decide what to show
   React.useEffect(() => {
-    if (checkedRef.current) return;
-    if (userLoading || propertiesLoading) return;
+    // Already showing content, nothing to do
+    if (showContent) return;
 
-    checkedRef.current = true;
+    // Still loading auth, wait
+    if (userLoading) {
+      console.log('Onboarding: waiting for auth...');
+      return;
+    }
 
-    // If user already has properties, skip to dashboard
-    // The property data is already saved - no need to re-enter
+    // No user - show content anyway (RouteGuard handles redirect)
+    if (!user) {
+      console.log('Onboarding: no user, showing content');
+      setShowContent(true);
+      return;
+    }
+
+    // Still loading properties, wait
+    if (propertiesLoading) {
+      console.log('Onboarding: waiting for properties...');
+      return;
+    }
+
+    // All data loaded - make decision
+    console.log('Onboarding: all loaded, properties count:', properties.length);
+
     if (properties.length > 0) {
-      // Clear onboarding progress since they have a property
-      if (user?.id) {
-        localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+      // User has properties - mark onboarding complete and skip to dashboard
+      console.log('Onboarding: user has properties, marking complete and redirecting to dashboard');
+      localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+
+      // Mark onboarding as completed - use localStorage immediately, then update Clerk
+      // localStorage is synchronous and prevents redirect loop
+      localStorage.setItem(`onboarding_completed_${user.id}`, 'true');
+
+      // Also update Clerk metadata (async, but localStorage already prevents loop)
+      if (clerkUser && !clerkUser.publicMetadata?.onboarding_completed) {
+        clerkUser.update({
+          publicMetadata: {
+            ...clerkUser.publicMetadata,
+            onboarding_completed: true
+          }
+        }).catch(err => console.error('Failed to update onboarding status:', err));
       }
+
       navigate(createPageUrl("Dashboard"), { replace: true });
     } else {
+      // No properties - show onboarding
+      console.log('Onboarding: no properties, showing onboarding flow');
       setShowContent(true);
     }
-  }, [user, properties, userLoading, propertiesLoading, navigate]);
+  }, [user, clerkUser, properties, userLoading, propertiesLoading, navigate, showContent]);
+
+  // Timeout fallback - if still loading after 3 seconds, show content anyway
+  React.useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!showContent) {
+        console.log('Onboarding: timeout reached, forcing content display');
+        setShowContent(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   // New streamlined 3-step flow
   const steps = [
@@ -152,6 +204,39 @@ export default function Onboarding() {
     }
   };
 
+  const handleSkip = () => {
+    // Mark onboarding as complete and go to properties page
+    if (user?.id) {
+      localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+      localStorage.setItem(`onboarding_completed_${user.id}`, 'true');
+    }
+
+    // Also update Clerk metadata
+    if (clerkUser) {
+      clerkUser.update({
+        publicMetadata: {
+          ...clerkUser.publicMetadata,
+          onboarding_completed: true
+        }
+      }).catch(err => console.error('Failed to update onboarding status:', err));
+    }
+
+    // Navigate to properties page so they can add a property manually
+    navigate(createPageUrl("Properties"), { replace: true });
+  };
+
+  // Debug log
+  React.useEffect(() => {
+    console.log('Onboarding state:', {
+      showContent,
+      userLoading,
+      propertiesLoading,
+      hasUser: !!user,
+      userId: user?.id,
+      propertiesCount: properties.length
+    });
+  }, [showContent, userLoading, propertiesLoading, user, properties]);
+
   // Loading state
   if (!showContent) {
     return (
@@ -162,6 +247,12 @@ export default function Onboarding() {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Loading...</h2>
           <p className="text-gray-600">Preparing your experience</p>
+          {/* Debug info */}
+          <p className="text-xs text-gray-400 mt-4">
+            Auth: {userLoading ? 'loading' : 'ready'} |
+            Props: {propertiesLoading ? 'loading' : 'ready'} |
+            User: {user ? 'yes' : 'no'}
+          </p>
         </div>
       </div>
     );
@@ -192,6 +283,7 @@ export default function Onboarding() {
           onNext={handleStepComplete}
           onBack={currentStep > 0 ? handleBack : null}
           onComplete={handleComplete}
+          onSkip={currentStep === 0 ? handleSkip : null}
           data={onboardingData}
           user={user}
         />

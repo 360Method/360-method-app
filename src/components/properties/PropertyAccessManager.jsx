@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, PropertyAccess } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +46,7 @@ export default function PropertyAccessManager({ property, currentUserRole }) {
   const { data: accessList = [] } = useQuery({
     queryKey: ['propertyAccess', property.id],
     queryFn: async () => {
-      const list = await base44.entities.PropertyAccess.filter({
+      const list = await PropertyAccess.filter({
         property_id: property.id,
         status: { $in: ['active', 'invited', 'pending'] }
       });
@@ -65,9 +65,9 @@ export default function PropertyAccessManager({ property, currentUserRole }) {
 
       const permissions = getDefaultPermissions(data.role);
 
-      const user = await base44.auth.me();
+      const user = await auth.me();
 
-      return base44.entities.PropertyAccess.create({
+      return PropertyAccess.create({
         property_id: property.id,
         user_email: data.email,
         role: data.role,
@@ -88,8 +88,8 @@ export default function PropertyAccessManager({ property, currentUserRole }) {
 
   const removeAccessMutation = useMutation({
     mutationFn: async (accessId) => {
-      const user = await base44.auth.me();
-      return base44.entities.PropertyAccess.update(accessId, {
+      const user = await auth.me();
+      return PropertyAccess.update(accessId, {
         status: 'removed',
         removed_date: new Date().toISOString(),
         removed_by: user.email

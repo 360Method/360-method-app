@@ -43,15 +43,17 @@ The app follows a **3-phase methodology** with **3 steps in each phase**:
 |------|------|-------------|------|
 | 1 | **BASELINE** | Document all home systems (HVAC, roof, plumbing, electrical, etc.) with age, condition, brand, model, photos | `/Baseline` |
 | 2 | **INSPECT** | Regular walkthrough inspections to catch issues early. Room-by-room guided inspections | `/Inspect` |
-| 3 | **ASSESS** | AI analyzes all systems and generates a 360° Health Score (0-100) | `/Score360` |
+| 3 | **TRACK** | Maintenance log and history report. Record all work done, view past maintenance, track spending | `/Track` |
+
+> **360° Health Score** (`/Score360`) - AI analyzes all systems and generates a comprehensive property health score (0-100). Standalone page accessible from dashboard.
 
 ### PHASE 2: ACT (Take Action)
 
 | Step | Name | Description | Page |
 |------|------|-------------|------|
 | 4 | **PRIORITIZE** | AI ranks tasks by urgency, cost impact, cascade risk. Shows what to fix first and why | `/Prioritize` |
-| 5 | **EXECUTE** | Take action: DIY guides, hire operators, or request quotes from marketplace | `/Execute` |
-| 6 | **TRACK** | Log completed work, costs, receipts. Build maintenance history | `/Track` |
+| 5 | **SCHEDULE** | Plan and schedule maintenance. DIY guides, hire operators, or request quotes from marketplace | `/Schedule` |
+| 6 | **EXECUTE** | Complete the work. Log costs, receipts, photos. Build maintenance history | `/Execute` |
 
 ### PHASE 3: ADVANCE (Build Wealth)
 
@@ -104,6 +106,7 @@ The app follows a **3-phase methodology** with **3 steps in each phase**:
 | Database | Supabase (PostgreSQL) | Data storage, real-time subscriptions |
 | Storage | Supabase Storage | Image/file uploads |
 | Icons | Lucide React | Icon library |
+| Analytics | Microsoft Clarity | Session recordings, heatmaps, user behavior |
 
 ### Key Files
 ```
@@ -113,6 +116,7 @@ src/
 ├── Layout.jsx           # App shell (nav, cart, portal)
 ├── lib/
 │   ├── AuthContext.jsx  # Auth state from Clerk
+│   ├── clarity.js       # Microsoft Clarity analytics
 │   └── query-client.js  # TanStack Query client
 ├── components/
 │   ├── auth/RouteGuard.jsx  # Protected route wrapper
@@ -167,7 +171,48 @@ function MyComponent() {
 
 ## Database Architecture
 
-### Core Principle: Standardized Address ID
+### Core Principle #1: Property ID is the Central Hub
+
+**Every piece of data ties back to a Property ID (UUID).** The property is the source of truth.
+
+```
+                              ┌─────────────────┐
+                              │   PROPERTY      │
+                              │   (UUID)        │
+                              └────────┬────────┘
+                                       │
+       ┌───────────────┬───────────────┼───────────────┬───────────────┐
+       │               │               │               │               │
+       ▼               ▼               ▼               ▼               ▼
+  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+  │ Systems │    │  Tasks  │    │Inspections│   │Work Orders│  │ Upgrades│
+  │(Baseline)│   │         │    │          │   │          │   │         │
+  └─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
+       │               │               │               │
+       ▼               ▼               ▼               ▼
+  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+  │ Photos  │    │ Receipts│    │ Issues  │    │Job Photos│
+  └─────────┘    └─────────┘    └─────────┘    └─────────┘
+```
+
+**All tables reference `property_id`:**
+- `system_baselines.property_id` → Systems documented for this property
+- `maintenance_tasks.property_id` → Tasks for this property
+- `inspections.property_id` → Inspections done on this property
+- `work_orders.property_id` → Work orders for this property
+- `upgrades.property_id` → Improvement projects for this property
+- `service_requests.property_id` → Service requests for this property
+- `proposals.property_id` → Proposals for this property
+
+**This means:**
+- Owner sees everything about THEIR properties
+- Operator sees properties they're assigned to service
+- Contractor sees properties where they have jobs
+- All history, costs, photos roll up to the property record
+
+---
+
+### Core Principle #2: Standardized Address ID
 Every physical property gets a unique, standardized address key for deduplication:
 
 ```sql
@@ -381,6 +426,7 @@ Gutter blockage → Foundation damage → $10,000+ repair
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_CLARITY_PROJECT_ID=your-clarity-id  # Microsoft Clarity analytics (clarity.microsoft.com)
 ```
 
 ---

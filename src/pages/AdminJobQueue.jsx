@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,14 +22,14 @@ export default function AdminJobQueue() {
   const { data: statusData, isLoading } = useQuery({
     queryKey: ['jobQueueStatus'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getJobQueueStatus');
+      const { data } = await functions.invoke('getJobQueueStatus');
       return data;
     },
     refetchInterval: 10000 // Refresh every 10 seconds
   });
 
   const runWorkerMutation = useMutation({
-    mutationFn: () => base44.functions.invoke('runJobWorker', { batch_size: 20 }),
+    mutationFn: () => functions.invoke('runJobWorker', { batch_size: 20 }),
     onSuccess: (result) => {
       toast.success(`Processed ${result.data.processed_count} jobs`);
       queryClient.invalidateQueries({ queryKey: ['jobQueueStatus'] });
@@ -37,7 +37,7 @@ export default function AdminJobQueue() {
   });
 
   const retryDeadMutation = useMutation({
-    mutationFn: (job_ids = null) => base44.functions.invoke('retryDeadJobs', { job_ids }),
+    mutationFn: (job_ids = null) => functions.invoke('retryDeadJobs', { job_ids }),
     onSuccess: (result) => {
       toast.success(`Retried ${result.data.retried_count} jobs`);
       queryClient.invalidateQueries({ queryKey: ['jobQueueStatus'] });

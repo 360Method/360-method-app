@@ -1,5 +1,5 @@
 import React from "react";
-import { auth } from "@/api/supabaseClient";
+import { auth, integrations } from "@/api/supabaseClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -49,7 +49,7 @@ export default function OperatorContactDialog({ operator, serviceTier, onClose }
   const contactOperatorMutation = useMutation({
     mutationFn: async (data) => {
       // Send email to operator
-      await base44.integrations.Core.SendEmail({
+      await integrations.SendEmail({
         from_name: '360° Command Center',
         to: operator.email,
         subject: `New Service Inquiry from ${data.name}`,
@@ -80,7 +80,7 @@ Please respond within 24 hours.
       });
 
       // Send confirmation to customer
-      await base44.integrations.Core.SendEmail({
+      await integrations.SendEmail({
         from_name: operator.company_name,
         to: data.email,
         subject: `Service Inquiry Received - ${operator.company_name}`,

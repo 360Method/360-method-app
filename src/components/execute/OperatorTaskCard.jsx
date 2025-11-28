@@ -4,7 +4,7 @@ import { Star, Phone, Mail, Clock, CheckCircle2, AlertCircle, Home, Building2 } 
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { MaintenanceTask } from '@/api/supabaseClient';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 const URGENCY_STYLES = {
@@ -32,7 +32,7 @@ export default function OperatorTaskCard({ task, urgency = 'today', properties =
   
   const completeTaskMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MaintenanceTask.update(task.id, data);
+      return await MaintenanceTask.update(task.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

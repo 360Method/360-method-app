@@ -1,13 +1,10 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+/**
+ * Base44 Compatibility Layer
+ * 
+ * This file provides backwards compatibility for code that imports from base44Client.
+ * All functionality is now provided by supabaseClient.js.
+ * 
+ * This is a TEMPORARY shim - new code should import directly from supabaseClient.js
+ */
 
-const { appId, serverUrl, token, functionsVersion } = appParams;
-
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  serverUrl,
-  token,
-  functionsVersion,
-  requiresAuth: false
-});
+export { base44 } from './supabaseClient';

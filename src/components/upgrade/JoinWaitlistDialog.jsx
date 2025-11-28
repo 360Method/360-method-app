@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Waitlist } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
 
   const waitlistMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Waitlist.create({
+      await Waitlist.create({
         first_name: firstName,
         last_name: lastName,
         email: email,

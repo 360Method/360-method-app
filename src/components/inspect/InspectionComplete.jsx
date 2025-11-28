@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb, Shield, DollarSign } from "lucide-react";
-import { SystemBaseline } from "@/api/supabaseClient";
+import { SystemBaseline, integrations } from "@/api/supabaseClient";
 import { generatePreservationRecommendations } from "../shared/PreservationAnalyzer";
 import { useQuery } from "@tanstack/react-query";
 
@@ -56,7 +56,7 @@ Provide:
 
 Be clear, actionable, and help the homeowner understand what matters most.`;
 
-        const summary = await base44.integrations.Core.InvokeLLM({
+        const summary = await integrations.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
             type: "object",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ export default function InvoicePaymentDialog({ invoice, open, onClose }) {
   const { data: paymentMethods = [] } = useQuery({
     queryKey: ['paymentMethods'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('syncPaymentMethodsFromStripe');
+      const { data } = await functions.invoke('syncPaymentMethodsFromStripe');
       return data.payment_methods || [];
     },
     enabled: open
@@ -27,7 +27,7 @@ export default function InvoicePaymentDialog({ invoice, open, onClose }) {
       setProcessing(true);
 
       // Process payment via backend
-      const { data: result } = await base44.functions.invoke('processInvoicePayment', {
+      const { data: result } = await functions.invoke('processInvoicePayment', {
         invoice_id: invoice.id,
         payment_method_id: defaultMethod?.stripe_payment_method_id
       });

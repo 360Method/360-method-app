@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Mail, Copy, CheckCircle2, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { integrations } from '@/api/supabaseClient';
 
 export default function ShareProjectDialog({ project, property, isOpen, onClose }) {
   const [emails, setEmails] = useState('');
@@ -45,9 +45,9 @@ ${project.milestones?.map((m, i) => `${i + 1}. ${m.title}`).join('\n') || 'No mi
 View full project details: ${shareableLink}
       `.trim();
 
-      // Send emails using Base44 integration
+      // Send emails using Supabase integration
       for (const email of emailList) {
-        await base44.integrations.Core.SendEmail({
+        await integrations.SendEmail({
           to: email,
           subject: `Project Quote Request: ${project.title}`,
           body: emailBody

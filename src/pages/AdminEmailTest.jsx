@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { auth, functions } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ export default function AdminEmailTest() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const emailTests = [
@@ -58,7 +58,7 @@ export default function AdminEmailTest() {
     setSending(prev => ({ ...prev, [eventType]: true }));
     
     try {
-      const { data } = await base44.functions.invoke('testEmailTemplate', {
+      const { data } = await functions.invoke('testEmailTemplate', {
         event_type: eventType
       });
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { useDemo } from '@/components/shared/DemoContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -44,31 +45,35 @@ export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const { demoMode } = useDemo();
+  const { isAuthenticated, isLoadingAuth } = useAuth();
 
-  // Get unread count - skip in demo mode
+  // Only enable queries when authenticated and not in demo mode
+  const shouldFetch = isAuthenticated && !demoMode && !isLoadingAuth;
+
+  // Get unread count - skip in demo mode or when not authenticated
   const { data: unreadData } = useQuery({
     queryKey: ['unreadNotificationCount'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getUnreadCount');
+      const { data } = await functions.invoke('getUnreadCount');
       return data.count || 0;
     },
-    refetchInterval: demoMode ? false : 30000, // Don't poll in demo mode
-    enabled: !demoMode // Skip entirely in demo mode
+    refetchInterval: shouldFetch ? 30000 : false, // Don't poll when not authenticated
+    enabled: shouldFetch
   });
 
-  // Get notifications - skip in demo mode
+  // Get notifications - skip in demo mode or when not authenticated
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getNotifications', { limit: 20 });
+      const { data } = await functions.invoke('getNotifications', { limit: 20 });
       return data.notifications || [];
     },
-    enabled: open && !demoMode // Skip in demo mode
+    enabled: open && shouldFetch
   });
 
   const markReadMutation = useMutation({
     mutationFn: (notification_id) => 
-      base44.functions.invoke('markNotificationRead', { notification_id }),
+      functions.invoke('markNotificationRead', { notification_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
@@ -77,7 +82,7 @@ export default function NotificationCenter() {
 
   const dismissMutation = useMutation({
     mutationFn: (notification_id) => 
-      base44.functions.invoke('dismissNotification', { notification_id }),
+      functions.invoke('dismissNotification', { notification_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
@@ -85,7 +90,7 @@ export default function NotificationCenter() {
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: () => base44.functions.invoke('markAllNotificationsRead'),
+    mutationFn: () => functions.invoke('markAllNotificationsRead'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });

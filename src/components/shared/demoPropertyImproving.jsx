@@ -25,6 +25,10 @@ export const getDemoPropertyImproving = () => ({
     baseline_completion: 87,
     health_score: 78,
     last_inspection_date: '2025-10-01',
+    // Financial fields for Scale page
+    current_value: 480000,
+    mortgage_balance: 220000,
+    monthly_mortgage_payment: 1650,
     total_maintenance_spent: 1850,
     estimated_disasters_prevented: 3200,
     certificationLevel: 'bronze',
@@ -566,15 +570,34 @@ export const getDemoPropertyImproving = () => ({
     outstanding_mortgage: 220000,
     current_equity: 260000,
     loan_to_value_ratio: 45.8,
-    
+
     average_health_score: 78,
     total_maintenance_invested: 1850,
     total_savings_from_prevention: 3200,
-    
+
     projected_value_10yr: 650000,
     projected_equity_10yr: 480000,
-    
-    recommendation: 'Hold'
+    equity_growth_10yr: 220000,
+
+    recommendation: 'Hold',
+    recommendation_reasoning: `You're doing good work - Bronze (78) puts you ahead of 70% of homeowners.
+
+The path to Silver (85+):
+• $1,910 in strategic PRESERVE interventions
+• Complete all 4 quarterly inspections
+• Smart upgrades ($420) with 1.5yr payback
+
+Your 10-year outlook: $480K equity from $260K today. Keep going.`,
+
+    scale_message: `You've unlocked basic wealth tracking!
+
+At 85+ (Silver), you'll access:
+• Full portfolio projections
+• Hold/sell/refinance recommendations
+• Investment property analysis
+• Equity leverage strategies
+
+You're 7 points away from the full CFO dashboard.`
   },
   
   stats: {

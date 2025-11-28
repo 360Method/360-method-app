@@ -38,6 +38,40 @@ import DemoExcellent from './pages/DemoExcellent';
 import DemoPortfolio from './pages/DemoPortfolio';
 import DemoSchedule from './pages/DemoSchedule';
 import DemoExecute from './pages/DemoExecute';
+// Overwhelmed Owner (struggling) demo pages
+import DemoOverwhelmedBaseline from './pages/DemoOverwhelmedBaseline';
+import DemoOverwhelmedInspect from './pages/DemoOverwhelmedInspect';
+import DemoOverwhelmedPrioritize from './pages/DemoOverwhelmedPrioritize';
+import DemoOverwhelmedSchedule from './pages/DemoOverwhelmedSchedule';
+import DemoOverwhelmedExecute from './pages/DemoOverwhelmedExecute';
+import DemoOverwhelmedPreserve from './pages/DemoOverwhelmedPreserve';
+import DemoOverwhelmedUpgrade from './pages/DemoOverwhelmedUpgrade';
+import DemoOverwhelmedScale from './pages/DemoOverwhelmedScale';
+// Improving demo pages
+import DemoImprovingBaseline from './pages/DemoImprovingBaseline';
+import DemoImprovingInspect from './pages/DemoImprovingInspect';
+import DemoImprovingPrioritize from './pages/DemoImprovingPrioritize';
+import DemoImprovingSchedule from './pages/DemoImprovingSchedule';
+import DemoImprovingExecute from './pages/DemoImprovingExecute';
+import DemoImprovingPreserve from './pages/DemoImprovingPreserve';
+import DemoImprovingUpgrade from './pages/DemoImprovingUpgrade';
+import DemoImprovingScale from './pages/DemoImprovingScale';
+// Excellent demo pages
+import DemoExcellentBaseline from './pages/DemoExcellentBaseline';
+import DemoExcellentInspect from './pages/DemoExcellentInspect';
+import DemoExcellentTrack from './pages/DemoExcellentTrack';
+import DemoExcellentSchedule from './pages/DemoExcellentSchedule';
+import DemoExcellentExecute from './pages/DemoExcellentExecute';
+import DemoExcellentPreserve from './pages/DemoExcellentPreserve';
+import DemoExcellentUpgrade from './pages/DemoExcellentUpgrade';
+import DemoExcellentScale from './pages/DemoExcellentScale';
+// Investor demo pages
+import DemoInvestorDashboard from './pages/DemoInvestorDashboard';
+import DemoInvestorProperties from './pages/DemoInvestorProperties';
+import DemoInvestorPrioritize from './pages/DemoInvestorPrioritize';
+import DemoInvestorSchedule from './pages/DemoInvestorSchedule';
+import DemoInvestorExecute from './pages/DemoInvestorExecute';
+import DemoInvestorScale from './pages/DemoInvestorScale';
 import Score360 from './pages/Score360';
 import PortalDashboard from './pages/PortalDashboard';
 import PortalMenu from './pages/PortalMenu';
@@ -54,8 +88,17 @@ import OperatorInvoices from './pages/OperatorInvoices';
 import OperatorInvoiceCreate from './pages/OperatorInvoiceCreate';
 import OperatorContractors from './pages/OperatorContractors';
 import OperatorReportBuilder from './pages/OperatorReportBuilder';
+import OperatorClientDetail from './pages/OperatorClientDetail';
+import OperatorMessages from './pages/OperatorMessages';
+import OperatorCalendar from './pages/OperatorCalendar';
+import OperatorAddClient from './pages/OperatorAddClient';
 import ContractorDashboard from './pages/ContractorDashboard';
 import ContractorJobDetail from './pages/ContractorJobDetail';
+import ContractorJobActive from './pages/ContractorJobActive';
+import ContractorJobComplete from './pages/ContractorJobComplete';
+import ContractorJobs from './pages/ContractorJobs';
+import ContractorSchedule from './pages/ContractorSchedule';
+import ContractorEarnings from './pages/ContractorEarnings';
 import ContractorMessages from './pages/ContractorMessages';
 import ContractorProfile from './pages/ContractorProfile';
 import ContractorOnboarding from './pages/ContractorOnboarding';
@@ -69,11 +112,30 @@ import AdminJobQueue from './pages/AdminJobQueue';
 import AdminStripe from './pages/AdminStripe';
 import LandingPage from './pages/LandingPage';
 import SecuritySettings from './pages/SecuritySettings';
-import GitHubDemo from './pages/GitHubDemo';
 import AdminStripeDebug from './pages/AdminStripeDebug';
 import AdminEmailTest from './pages/AdminEmailTest';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
+import PostLoginRedirect from './pages/PostLoginRedirect';
+// Operator Certification Flow
+import BecomeOperator from './pages/BecomeOperator';
+import OperatorApplication from './pages/OperatorApplication';
+import OperatorTraining from './pages/OperatorTraining';
+import OperatorPending from './pages/OperatorPending';
+// Contractor Invitation
+import ContractorAcceptInvitation from './pages/ContractorAcceptInvitation';
+// HQ Admin Portal
+import HQDashboard from './pages/HQDashboard';
+import HQUsers from './pages/HQUsers';
+import HQOperators from './pages/HQOperators';
+import HQContractors from './pages/HQContractors';
+import HQProperties from './pages/HQProperties';
+import HQRevenue from './pages/HQRevenue';
+import HQSupport from './pages/HQSupport';
+import HQSettings from './pages/HQSettings';
+import HQActivity from './pages/HQActivity';
+import HQReports from './pages/HQReports';
+import HQAlerts from './pages/HQAlerts';
 import __Layout from './Layout.jsx';
 
 
@@ -118,6 +180,40 @@ export const PAGES = {
     "DemoPortfolio": DemoPortfolio,
     "DemoSchedule": DemoSchedule,
     "DemoExecute": DemoExecute,
+    // Overwhelmed Owner (struggling) demo pages
+    "DemoOverwhelmedBaseline": DemoOverwhelmedBaseline,
+    "DemoOverwhelmedInspect": DemoOverwhelmedInspect,
+    "DemoOverwhelmedPrioritize": DemoOverwhelmedPrioritize,
+    "DemoOverwhelmedSchedule": DemoOverwhelmedSchedule,
+    "DemoOverwhelmedExecute": DemoOverwhelmedExecute,
+    "DemoOverwhelmedPreserve": DemoOverwhelmedPreserve,
+    "DemoOverwhelmedUpgrade": DemoOverwhelmedUpgrade,
+    "DemoOverwhelmedScale": DemoOverwhelmedScale,
+    // Improving demo pages
+    "DemoImprovingBaseline": DemoImprovingBaseline,
+    "DemoImprovingInspect": DemoImprovingInspect,
+    "DemoImprovingPrioritize": DemoImprovingPrioritize,
+    "DemoImprovingSchedule": DemoImprovingSchedule,
+    "DemoImprovingExecute": DemoImprovingExecute,
+    "DemoImprovingPreserve": DemoImprovingPreserve,
+    "DemoImprovingUpgrade": DemoImprovingUpgrade,
+    "DemoImprovingScale": DemoImprovingScale,
+    // Excellent demo pages
+    "DemoExcellentBaseline": DemoExcellentBaseline,
+    "DemoExcellentInspect": DemoExcellentInspect,
+    "DemoExcellentTrack": DemoExcellentTrack,
+    "DemoExcellentSchedule": DemoExcellentSchedule,
+    "DemoExcellentExecute": DemoExcellentExecute,
+    "DemoExcellentPreserve": DemoExcellentPreserve,
+    "DemoExcellentUpgrade": DemoExcellentUpgrade,
+    "DemoExcellentScale": DemoExcellentScale,
+    // Investor demo pages
+    "DemoInvestorDashboard": DemoInvestorDashboard,
+    "DemoInvestorProperties": DemoInvestorProperties,
+    "DemoInvestorPrioritize": DemoInvestorPrioritize,
+    "DemoInvestorSchedule": DemoInvestorSchedule,
+    "DemoInvestorExecute": DemoInvestorExecute,
+    "DemoInvestorScale": DemoInvestorScale,
     "Score360": Score360,
     "PortalDashboard": PortalDashboard,
     "PortalMenu": PortalMenu,
@@ -134,8 +230,17 @@ export const PAGES = {
     "OperatorInvoiceCreate": OperatorInvoiceCreate,
     "OperatorContractors": OperatorContractors,
     "OperatorReportBuilder": OperatorReportBuilder,
+    "OperatorClientDetail": OperatorClientDetail,
+    "OperatorMessages": OperatorMessages,
+    "OperatorCalendar": OperatorCalendar,
+    "OperatorAddClient": OperatorAddClient,
     "ContractorDashboard": ContractorDashboard,
     "ContractorJobDetail": ContractorJobDetail,
+    "ContractorJobActive": ContractorJobActive,
+    "ContractorJobComplete": ContractorJobComplete,
+    "ContractorJobs": ContractorJobs,
+    "ContractorSchedule": ContractorSchedule,
+    "ContractorEarnings": ContractorEarnings,
     "ContractorMessages": ContractorMessages,
     "ContractorProfile": ContractorProfile,
     "ContractorOnboarding": ContractorOnboarding,
@@ -149,11 +254,30 @@ export const PAGES = {
     "AdminStripe": AdminStripe,
     "LandingPage": LandingPage,
     "SecuritySettings": SecuritySettings,
-    "GitHubDemo": GitHubDemo,
     "AdminStripeDebug": AdminStripeDebug,
     "AdminEmailTest": AdminEmailTest,
     "Login": Login,
     "ForgotPassword": ForgotPassword,
+    "PostLoginRedirect": PostLoginRedirect,
+    // Operator Certification Flow
+    "BecomeOperator": BecomeOperator,
+    "OperatorApplication": OperatorApplication,
+    "OperatorTraining": OperatorTraining,
+    "OperatorPending": OperatorPending,
+    // Contractor Invitation
+    "ContractorAcceptInvitation": ContractorAcceptInvitation,
+    // HQ Admin Portal
+    "HQDashboard": HQDashboard,
+    "HQUsers": HQUsers,
+    "HQOperators": HQOperators,
+    "HQContractors": HQContractors,
+    "HQProperties": HQProperties,
+    "HQRevenue": HQRevenue,
+    "HQSupport": HQSupport,
+    "HQSettings": HQSettings,
+    "HQActivity": HQActivity,
+    "HQReports": HQReports,
+    "HQAlerts": HQAlerts,
 }
 
 // Pages that don't require authentication AND don't need Layout (landing pages, auth pages)
@@ -162,10 +286,57 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
     'Login',
     'Signup',
     'ForgotPassword',
+    'PostLoginRedirect',
     'LandingPage',
     'Waitlist',
     'DemoEntry',
     'AcceptInvitation',
+    // Operator Certification Flow (public landing + own layouts)
+    'BecomeOperator',
+    'OperatorApplication',
+    'OperatorTraining',
+    'OperatorPending',
+    // Contractor Invitation
+    'ContractorAcceptInvitation',
+    // Operator Portal (has its own OperatorLayout)
+    'OperatorDashboard',
+    'OperatorClients',
+    'OperatorClientDetail',
+    'OperatorLeads',
+    'OperatorMessages',
+    'OperatorCalendar',
+    'OperatorAddClient',
+    'OperatorInspection',
+    'OperatorWorkOrders',
+    'OperatorReportBuilder',
+    'OperatorInvoices',
+    'OperatorInvoiceCreate',
+    'OperatorContractors',
+    'OperatorEarnings',
+    'OperatorMarketplaceProfile',
+    // HQ Admin Portal (has its own HQLayout)
+    'HQDashboard',
+    'HQUsers',
+    'HQOperators',
+    'HQContractors',
+    'HQProperties',
+    'HQRevenue',
+    'HQSupport',
+    'HQSettings',
+    'HQActivity',
+    'HQReports',
+    'HQAlerts',
+    // Contractor Portal (has its own ContractorLayout)
+    'ContractorDashboard',
+    'ContractorJobDetail',
+    'ContractorJobActive',
+    'ContractorJobComplete',
+    'ContractorJobs',
+    'ContractorSchedule',
+    'ContractorEarnings',
+    'ContractorMessages',
+    'ContractorProfile',
+    'ContractorOnboarding',
 ];
 
 // Pages that don't require authentication BUT need Layout (demo app pages, resources)
@@ -184,7 +355,40 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     'DemoExecute',
     'ExploreTemplates',
     'TemplateDetail',
-    'GitHubDemo',
+    // Overwhelmed Owner (struggling) demo pages
+    'DemoOverwhelmedBaseline',
+    'DemoOverwhelmedInspect',
+    'DemoOverwhelmedPrioritize',
+    'DemoOverwhelmedSchedule',
+    'DemoOverwhelmedExecute',
+    'DemoOverwhelmedPreserve',
+    'DemoOverwhelmedUpgrade',
+    'DemoOverwhelmedScale',
+    // Improving demo pages
+    'DemoImprovingBaseline',
+    'DemoImprovingInspect',
+    'DemoImprovingPrioritize',
+    'DemoImprovingSchedule',
+    'DemoImprovingExecute',
+    'DemoImprovingPreserve',
+    'DemoImprovingUpgrade',
+    'DemoImprovingScale',
+    // Excellent demo pages
+    'DemoExcellentBaseline',
+    'DemoExcellentInspect',
+    'DemoExcellentTrack',
+    'DemoExcellentSchedule',
+    'DemoExcellentExecute',
+    'DemoExcellentPreserve',
+    'DemoExcellentUpgrade',
+    'DemoExcellentScale',
+    // Investor demo pages
+    'DemoInvestorDashboard',
+    'DemoInvestorProperties',
+    'DemoInvestorPrioritize',
+    'DemoInvestorSchedule',
+    'DemoInvestorExecute',
+    'DemoInvestorScale',
 ];
 
 // All public pages (no auth required)

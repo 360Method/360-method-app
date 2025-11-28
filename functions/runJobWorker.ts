@@ -1,16 +1,21 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    
+    const helper = createHelperFromRequest(req);
+
     const { batch_size = 10, queue = null } = await req.json();
 
     let processedCount = 0;
-    const results = [];
+    const results: any[] = [];
 
     for (let i = 0; i < batch_size; i++) {
-      const result = await base44.asServiceRole.functions.invoke('processNextJob', {
+      const result = await helper.asServiceRole.functions.invoke('processNextJob', {
         queue,
         worker_id: `worker-${Date.now()}-${i}`
       });
@@ -38,9 +43,9 @@ Deno.serve(async (req) => {
       success: true,
       processed_count: processedCount,
       results
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error running job worker:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Property, PropertyAccess } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import PropertyAccessManager from '../components/properties/PropertyAccessManager';
 import { ArrowLeft } from 'lucide-react';
@@ -11,20 +11,20 @@ export default function PropertyAccessSettings() {
 
   const { data: property } = useQuery({
     queryKey: ['property', propertyId],
-    queryFn: () => base44.entities.Property.filter({ id: propertyId }).then(p => p[0]),
+    queryFn: () => Property.get(propertyId),
     enabled: !!propertyId
   });
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: myAccess } = useQuery({
     queryKey: ['myPropertyAccess', propertyId, user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
-      const access = await base44.entities.PropertyAccess.filter({
+      const access = await PropertyAccess.filter({
         property_id: propertyId,
         user_email: user.email,
         status: 'active'

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Operator, OperatorStripeAccount, ServicePackage } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,8 @@ export default function OperatorInvoiceCreate() {
   const { data: myOperator } = useQuery({
     queryKey: ['myOperator'],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const operators = await base44.entities.Operator.filter({ created_by: user.email });
+      const user = await auth.me();
+      const operators = await Operator.filter({ created_by: user.email });
       return operators[0] || null;
     }
   });
@@ -70,7 +70,7 @@ export default function OperatorInvoiceCreate() {
 
     // Check Stripe connection
     if (myOperator) {
-      const stripeAccounts = await base44.entities.OperatorStripeAccount.filter({
+      const stripeAccounts = await OperatorStripeAccount.filter({
         operator_id: myOperator.id
       });
 
@@ -81,7 +81,7 @@ export default function OperatorInvoiceCreate() {
     }
 
     // Create invoice
-    await base44.entities.ServicePackage.create({
+    await ServicePackage.create({
       property_id: selectedClient.property_id || 'mock-property',
       package_name: `Invoice - ${new Date().toLocaleDateString()}`,
       item_count: lineItems.length,

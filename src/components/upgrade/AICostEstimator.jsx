@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { storage, integrations } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -25,9 +25,9 @@ export default function AICostEstimator({
     setError('');
 
     try {
-      // Upload files to Base44
+      // Upload files to Supabase Storage
       const uploadPromises = files.map(async (file) => {
-        const result = await base44.integrations.Core.UploadFile({ file });
+        const result = await storage.uploadFile(file);
         return {
           name: file.name,
           url: result.file_url
@@ -91,7 +91,7 @@ Provide your response as a structured estimate including:
 5. 3-5 key insights or recommendations
 6. Confidence level based on information provided`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: prompt,
         file_urls: fileUrls.length > 0 ? fileUrls : undefined,
         response_json_schema: {

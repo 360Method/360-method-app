@@ -1,6 +1,5 @@
 import React from "react";
-import { MaintenanceTask, storage } from "@/api/supabaseClient";
-import { InvokeLLM, UploadFile } from "@/api/integrations";
+import { MaintenanceTask, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +88,7 @@ ADDITIONAL INSIGHTS:
 
 Respond ONLY with valid JSON. No markdown, no explanation, just the JSON object.`;
 
-    const cascadeAnalysis = await InvokeLLM({
+    const cascadeAnalysis = await integrations.InvokeLLM({
       prompt: cascadeAnalysisPrompt,
       file_urls: hasPhotos ? photoUrls : undefined,
       response_json_schema: {
@@ -118,7 +117,7 @@ Respond ONLY with valid JSON. No markdown, no explanation, just the JSON object.
     });
 
     const [sowResult, toolsAndMaterials, videoResults] = await Promise.all([
-      InvokeLLM({
+      integrations.InvokeLLM({
         prompt: `Generate a concise Statement of Work (SOW) for this maintenance task:
 
 Title: "${title}"
@@ -138,7 +137,7 @@ Format as markdown. Be concise (3-5 sentences total).`,
         }
       }).catch(err => ({ sow: null })),
 
-      InvokeLLM({
+      integrations.InvokeLLM({
         prompt: `List the essential tools and materials needed for this maintenance task:
 
 Title: "${title}"
@@ -155,7 +154,7 @@ Provide two separate arrays: Tools (equipment) and Materials (consumables). Be s
         }
       }).catch(err => ({ tools: [], materials: [] })),
 
-      InvokeLLM({
+      integrations.InvokeLLM({
         prompt: `Find helpful YouTube video tutorials for this maintenance task:
 
 Title: "${title}"

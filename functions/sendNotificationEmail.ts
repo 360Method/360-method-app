@@ -1,9 +1,14 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { emailTemplates } from './emailTemplates.js';
+import { createHelperFromRequest, createServiceClient, corsHeaders } from './_shared/supabaseClient.ts';
+import { emailTemplates } from './emailTemplates.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     
     const {
       user_id,
@@ -16,13 +21,18 @@ Deno.serve(async (req) => {
       template_data
     } = await req.json();
 
-    // Get user details
-    const users = await base44.asServiceRole.entities.User.filter({ id: user_id });
-    if (!users || users.length === 0) {
-      return Response.json({ error: 'User not found' }, { status: 404 });
+    // Get user details from Supabase Auth
+    const serviceClient = createServiceClient();
+    const { data: userData, error: userError } = await serviceClient.auth.admin.getUserById(user_id);
+    
+    if (userError || !userData?.user) {
+      return Response.json({ error: 'User not found' }, { 
+        status: 404,
+        headers: corsHeaders 
+      });
     }
     
-    const user = users[0];
+    const user = userData.user;
 
     // Check if we have a rich template for this event
     let emailSubject = title;
@@ -63,17 +73,46 @@ Deno.serve(async (req) => {
       `;
     }
 
-    // Send via Core.SendEmail integration
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: user.email,
-      subject: emailSubject,
-      body: emailBody,
-      from_name: '360° Method'
-    });
+    // Send email using a service like Resend, SendGrid, etc.
+    // For now, we'll use Supabase's built-in email or log it
+    // You'll need to implement this based on your email provider
+    const emailApiKey = Deno.env.get('RESEND_API_KEY') || Deno.env.get('SENDGRID_API_KEY');
+    
+    if (emailApiKey && Deno.env.get('RESEND_API_KEY')) {
+      // Use Resend
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${emailApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: '360° Method <notifications@360method.com>',
+          to: [user.email],
+          subject: emailSubject,
+          html: emailBody,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Email send failed: ${error}`);
+      }
+    } else {
+      // Log for development
+      console.log('📧 Email would be sent:', {
+        to: user.email,
+        subject: emailSubject,
+        bodyPreview: emailBody.substring(0, 200)
+      });
+    }
 
-    return Response.json({ success: true });
+    return Response.json({ success: true }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error sending notification email:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

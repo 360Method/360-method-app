@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StrategicRecommendation } from "@/api/supabaseClient";
+import { StrategicRecommendation, PreservationRecommendation, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function StrategicAnalysisCard({ recommendations, equityData, pro
   const { data: preserveRecs = [] } = useQuery({
     queryKey: ['preserve-recs-for-analysis', selectedProperty],
     queryFn: () => selectedProperty && selectedProperty !== 'all'
-      ? base44.entities.PreservationRecommendation.filter({ 
+      ? PreservationRecommendation.filter({ 
           property_id: selectedProperty,
           status: 'PENDING'
         })
@@ -48,7 +48,7 @@ export default function StrategicAnalysisCard({ recommendations, equityData, pro
     mutationFn: async (propertyId) => {
       const equity = equityData.find(e => e.property_id === propertyId);
       const property = properties.find(p => p.id === propertyId);
-      const preserveData = await base44.entities.PreservationRecommendation.filter({ 
+      const preserveData = await PreservationRecommendation.filter({ 
         property_id: propertyId,
         status: 'PENDING'
       });
@@ -104,7 +104,7 @@ Provide strategic recommendation. Output JSON with:
 
 Be direct, data-driven, and actionable.`;
 
-      const analysis = await base44.integrations.Core.InvokeLLM({
+      const analysis = await integrations.InvokeLLM({
         prompt: prompt,
         response_json_schema: {
           type: "object",

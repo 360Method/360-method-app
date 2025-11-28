@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Property } from '@/api/supabaseClient';
 import { 
   Home, TrendingUp, DollarSign, AlertTriangle, CheckCircle,
   Building2, PieChart, Calendar, ArrowRight, Zap, Clock
@@ -23,7 +23,7 @@ export default function DashboardInvestor() {
   const { data: realProperties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list('-created_date');
+      const allProps = await Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     },
     enabled: !demoMode

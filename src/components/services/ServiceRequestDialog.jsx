@@ -1,5 +1,5 @@
 import React from "react";
-import { auth, Property, ServiceRequest } from "@/api/supabaseClient";
+import { auth, Property, ServiceRequest, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -121,7 +121,7 @@ ${safePrefilledData.photo_urls && safePrefilledData.photo_urls.length > 0 ? `\nP
 View in app: [Link to ServiceRequest #${serviceRequest.id}]
       `;
 
-      await base44.integrations.Core.SendEmail({
+      await integrations.SendEmail({
         from_name: 'Handy Pioneers App',
         to: 'services@handypioneers.com',
         subject: `New Service Request - ${data.urgency} Priority - ${property?.address || 'Property'}`,

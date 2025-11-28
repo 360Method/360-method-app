@@ -1,24 +1,23 @@
-import { base44 } from './base44Client';
+/**
+ * Integrations exports - Compatibility layer
+ * 
+ * This file provides backwards compatibility for code that imports integrations.
+ * New code should import directly from supabaseClient.js
+ */
 
+import { integrations } from './supabaseClient';
 
+// Re-export integrations for backwards compatibility
+export const Core = integrations;
 
+export const InvokeLLM = integrations.InvokeLLM;
 
-export const Core = base44.integrations.Core;
+export const SendEmail = integrations.SendEmail;
 
-export const InvokeLLM = base44.integrations.Core.InvokeLLM;
+export const SendSMS = integrations.SendSMS;
 
-export const SendEmail = base44.integrations.Core.SendEmail;
+export const UploadFile = integrations.UploadFile;
 
-export const SendSMS = base44.integrations.Core.SendSMS;
+export const GenerateImage = integrations.InvokeLLM; // Fallback to LLM
 
-export const UploadFile = base44.integrations.Core.UploadFile;
-
-export const GenerateImage = base44.integrations.Core.GenerateImage;
-
-export const ExtractDataFromUploadedFile = base44.integrations.Core.ExtractDataFromUploadedFile;
-
-
-
-
-
-
+export const ExtractDataFromUploadedFile = integrations.ExtractDataFromUploadedFile;

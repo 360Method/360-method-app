@@ -1,16 +1,24 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     // Get user preferences
-    const preferences = await base44.entities.NotificationPreference.filter({
+    const preferences = await helper.entities.NotificationPreference.filter({
       user_id: user.id
     });
 
@@ -29,7 +37,7 @@ Deno.serve(async (req) => {
 
     // Merge with defaults
     const preferencesMap = new Map(
-      preferences.map(p => [p.notification_category, p])
+      preferences.map((p: any) => [p.notification_category, p])
     );
 
     const allPreferences = defaultCategories.map(category => {
@@ -48,9 +56,12 @@ Deno.serve(async (req) => {
       }
     });
 
-    return Response.json({ preferences: allPreferences });
+    return Response.json({ preferences: allPreferences }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error getting notification preferences:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

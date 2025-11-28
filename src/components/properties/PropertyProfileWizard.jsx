@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, DollarSign, Home, TrendingUp, Receipt, ArrowRight, ArrowLeft } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Property, PortfolioEquity } from '@/api/supabaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function PropertyProfileWizard({ property, onComplete, onCancel }) {
@@ -42,12 +42,12 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       console.log('🟢 WIZARD: Data to save:', JSON.stringify(data, null, 2));
       
       // Step 1: Update property with financial data
-      const propertyResult = await base44.entities.Property.update(property.id, data);
+      const propertyResult = await Property.update(property.id, data);
       console.log('🟢 WIZARD: Property save result:', JSON.stringify(propertyResult, null, 2));
-      
+
       // Step 2: Create or update PortfolioEquity record
       console.log('🟢 WIZARD: Checking for existing PortfolioEquity...');
-      const existingEquity = await base44.entities.PortfolioEquity.filter({ property_id: property.id });
+      const existingEquity = await PortfolioEquity.filter({ property_id: property.id });
       console.log('🟢 WIZARD: Existing equity records:', existingEquity);
       
       const equityData = {
@@ -73,10 +73,10 @@ export default function PropertyProfileWizard({ property, onComplete, onCancel }
       let equityResult;
       if (existingEquity && existingEquity.length > 0) {
         console.log('🟢 WIZARD: Updating existing PortfolioEquity:', existingEquity[0].id);
-        equityResult = await base44.entities.PortfolioEquity.update(existingEquity[0].id, equityData);
+        equityResult = await PortfolioEquity.update(existingEquity[0].id, equityData);
       } else {
         console.log('🟢 WIZARD: Creating new PortfolioEquity');
-        equityResult = await base44.entities.PortfolioEquity.create(equityData);
+        equityResult = await PortfolioEquity.create(equityData);
       }
       console.log('🟢 WIZARD: PortfolioEquity result:', JSON.stringify(equityResult, null, 2));
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

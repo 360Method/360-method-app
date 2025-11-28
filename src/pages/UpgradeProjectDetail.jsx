@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Upgrade, Property } from '@/api/supabaseClient';
 import { createPageUrl } from '@/utils';
 import { 
   TrendingUp, DollarSign, Trash2, Lightbulb, ArrowLeft, Trophy, Zap
@@ -32,7 +32,7 @@ export default function UpgradeProjectDetail() {
   const { data: project, isLoading } = useQuery({
     queryKey: ['upgrade', projectId],
     queryFn: async () => {
-      const upgrades = await base44.entities.Upgrade.list();
+      const upgrades = await Upgrade.list();
       return upgrades.find(u => u.id === projectId);
     },
     enabled: !!projectId,
@@ -40,13 +40,13 @@ export default function UpgradeProjectDetail() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: () => Property.list(),
   });
 
   const property = properties.find(p => p.id === project?.property_id);
 
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.Upgrade.delete(projectId),
+    mutationFn: () => Upgrade.delete(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['upgrades'] });
       navigate(createPageUrl('Upgrade'));

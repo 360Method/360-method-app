@@ -1,47 +1,51 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    
+    const helper = createHelperFromRequest(req);
+
     const now = new Date();
-    
+
     // Find unpaid invoices past due date
-    const allPackages = await base44.asServiceRole.entities.ServicePackage.list('-created_date', 500);
-    
-    const overdueInvoices = allPackages.filter(pkg => {
+    const allPackages = await helper.asServiceRole.entities.ServicePackage.filter({});
+
+    const overdueInvoices = allPackages.filter((pkg: any) => {
       if (pkg.payment_status !== 'unpaid') return false;
       if (!pkg.payment_due_date) return false;
       return new Date(pkg.payment_due_date) < now;
     });
 
-    const results = [];
+    const results: any[] = [];
 
     for (const invoice of overdueInvoices) {
+      const invoiceData = invoice as any;
       try {
         // Update status to overdue
-        await base44.asServiceRole.entities.ServicePackage.update(invoice.id, {
+        await helper.asServiceRole.entities.ServicePackage.update(invoiceData.id, {
           payment_status: 'overdue',
           overdue_notice_sent_at: now.toISOString()
         });
 
         // Get property owner
-        const properties = await base44.asServiceRole.entities.Property.filter({
-          id: invoice.property_id
+        const properties = await helper.asServiceRole.entities.Property.filter({
+          id: invoiceData.property_id
         });
 
         if (properties && properties.length > 0) {
-          const ownerEmail = properties[0].created_by;
-
           // Queue notification
-          await base44.asServiceRole.functions.invoke('queueJob', {
+          await helper.asServiceRole.functions.invoke('queueJob', {
             job_type: 'send_notification',
             payload: {
               event_type: 'invoice_overdue',
               event_data: {
-                invoice_id: invoice.id,
-                property_id: invoice.property_id,
-                amount: invoice.final_cost_max || invoice.total_estimated_cost_max
+                invoice_id: invoiceData.id,
+                property_id: invoiceData.property_id,
+                amount: invoiceData.final_cost_max || invoiceData.total_estimated_cost_max
               }
             },
             queue: 'notifications',
@@ -50,12 +54,12 @@ Deno.serve(async (req) => {
         }
 
         results.push({
-          invoice_id: invoice.id,
+          invoice_id: invoiceData.id,
           status: 'notified'
         });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
-          invoice_id: invoice.id,
+          invoice_id: invoiceData.id,
           status: 'error',
           error: error.message
         });
@@ -67,9 +71,9 @@ Deno.serve(async (req) => {
       checked: allPackages.length,
       overdue_found: overdueInvoices.length,
       results
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error checking overdue invoices:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

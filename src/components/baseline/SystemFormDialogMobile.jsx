@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SystemBaseline, storage } from "@/api/supabaseClient";
+import { SystemBaseline, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import MobileWizardFlow from "./MobileWizardFlow";
@@ -114,7 +114,7 @@ export default function SystemFormDialogMobile({
     try {
       const { file_url } = await storage.uploadFile(file);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: `Extract information from this ${formData.system_type} photo. Look for model plates, serial numbers, installation dates, and any visible brand/model information. Return ONLY data you can clearly see.`,
         file_urls: file_url,
         response_json_schema: {

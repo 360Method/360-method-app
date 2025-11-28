@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, ClipboardList, ArrowRight, ArrowLeft, Calendar, MapPin } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Inspection } from '@/api/supabaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function InspectionWizard({ onComplete, onCancel, properties, selectedProperty }) {
@@ -33,7 +33,7 @@ export default function InspectionWizard({ onComplete, onCancel, properties, sel
 
   const createInspectionMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.Inspection.create(data);
+      return await Inspection.create(data);
     },
     onSuccess: (newInspection) => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });

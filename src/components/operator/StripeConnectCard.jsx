@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { OperatorStripeAccount, functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ export default function StripeConnectCard({ operatorId }) {
   const { data: stripeAccount, isLoading } = useQuery({
     queryKey: ['operatorStripeAccount', operatorId],
     queryFn: async () => {
-      const accounts = await base44.entities.OperatorStripeAccount.filter({
+      const accounts = await OperatorStripeAccount.filter({
         operator_id: operatorId
       });
       return accounts[0] || null;
@@ -24,8 +24,8 @@ export default function StripeConnectCard({ operatorId }) {
     mutationFn: async () => {
       const returnUrl = window.location.origin + '/operator-dashboard?stripe_setup=complete';
       const refreshUrl = window.location.origin + '/operator-dashboard?stripe_setup=refresh';
-      
-      const { data } = await base44.functions.invoke('createOperatorConnectAccount', {
+
+      const { data } = await functions.invoke('createOperatorConnectAccount', {
         operator_id: operatorId,
         return_url: returnUrl,
         refresh_url: refreshUrl
@@ -40,7 +40,7 @@ export default function StripeConnectCard({ operatorId }) {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('stripe_setup') === 'complete') {
-      base44.functions.invoke('completeOperatorOnboarding', { operator_id: operatorId })
+      functions.invoke('completeOperatorOnboarding', { operator_id: operatorId })
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['operatorStripeAccount'] });
           toast.success('Stripe account connected successfully!');

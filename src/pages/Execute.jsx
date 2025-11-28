@@ -78,7 +78,7 @@ export default function ExecutePage() {
         return await MaintenanceTask.filter({ property_id: selectedProperty }, '-scheduled_date');
       }
     },
-    enabled: demoMode || (properties.length > 0 && selectedProperty !== null)
+    enabled: !!demoMode || (properties.length > 0 && selectedProperty !== null)
   });
 
   const allTasks = realTasks;

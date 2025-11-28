@@ -1,5 +1,5 @@
 import React from "react";
-import { SystemBaseline, storage } from "@/api/supabaseClient";
+import { SystemBaseline, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     try {
       const { file_url } = await storage.uploadFile(file);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: `Extract information from this ${currentSystem.type} photo. Look for model plates, serial numbers, installation dates, and any visible brand/model information. Return ONLY data you can clearly see.`,
         file_urls: file_url,
         response_json_schema: {

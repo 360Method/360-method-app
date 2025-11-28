@@ -1,38 +1,43 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import Stripe from 'npm:stripe@14.11.0';
 
 // Get Stripe client based on mode
 function getStripeClient() {
   const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
   const isTestMode = stripeMode === 'test';
-  
-  const stripeSecretKey = isTestMode 
+
+  const stripeSecretKey = isTestMode
     ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
     : Deno.env.get('STRIPE_SECRET_KEY');
-  
+
   if (!stripeSecretKey) {
     throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
   }
-  
+
   return new Stripe(stripeSecretKey, {
     apiVersion: '2023-10-16',
   });
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403, headers: corsHeaders });
     }
 
     const stripe = getStripeClient();
     const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
     const isLiveMode = stripeMode === 'live';
 
-    const testResults = {
+    const testResults: any = {
       stripe_mode: { status: 'success', value: stripeMode },
       mode: { status: 'success', value: isLiveMode ? 'live' : 'test' },
       step1_customer_creation: { status: 'pending' },
@@ -53,12 +58,12 @@ Deno.serve(async (req) => {
         status: 'success',
         customer_id: testCustomer.id
       };
-    } catch (error) {
+    } catch (error: any) {
       testResults.step1_customer_creation = {
         status: 'failed',
         error: error.message
       };
-      return Response.json({ success: false, testResults });
+      return Response.json({ success: false, testResults }, { headers: corsHeaders });
     }
 
     // Step 2: Create test payment method (card)
@@ -88,7 +93,7 @@ Deno.serve(async (req) => {
           payment_method_id: testPaymentMethod.id
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       testResults.step2_payment_method_setup = {
         status: 'failed',
         error: error.message
@@ -129,7 +134,7 @@ Deno.serve(async (req) => {
           note: 'No payment method available'
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       testResults.step3_test_charge = {
         status: 'failed',
         error: error.message
@@ -143,22 +148,22 @@ Deno.serve(async (req) => {
         status: 'success',
         message: 'Test customer deleted'
       };
-    } catch (error) {
+    } catch (error: any) {
       testResults.step4_cleanup = {
         status: 'failed',
         error: error.message
       };
     }
 
-    const allSuccess = Object.values(testResults).every(r => r.status === 'success');
+    const allSuccess = Object.values(testResults).every((r: any) => r.status === 'success');
 
     return Response.json({
       success: allSuccess,
       message: allSuccess ? 'Payment flow test passed!' : 'Some tests failed',
       testResults
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error testing payment flow:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

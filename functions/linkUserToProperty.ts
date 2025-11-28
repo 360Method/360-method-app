@@ -1,15 +1,20 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
     }
 
-    const { 
+    const {
       canonical_property_id,
       raw_address,
       display_name,
@@ -27,28 +32,28 @@ Deno.serve(async (req) => {
 
     // If no canonical ID provided, find or create from address
     if (!finalCanonicalId && raw_address) {
-      const canonicalResult = await base44.functions.invoke('findOrCreateCanonicalProperty', {
+      const canonicalResult = await helper.asServiceRole.functions.invoke('findOrCreateCanonicalProperty', {
         raw_address
       });
 
       if (!canonicalResult.data?.success) {
-        return Response.json({ 
+        return Response.json({
           error: 'Failed to resolve canonical property',
-          details: canonicalResult.data 
-        }, { status: 400 });
+          details: canonicalResult.data
+        }, { status: 400, headers: corsHeaders });
       }
 
       finalCanonicalId = canonicalResult.data.canonical_property_id;
     }
 
     if (!finalCanonicalId) {
-      return Response.json({ 
-        error: 'Must provide either canonical_property_id or raw_address' 
-      }, { status: 400 });
+      return Response.json({
+        error: 'Must provide either canonical_property_id or raw_address'
+      }, { status: 400, headers: corsHeaders });
     }
 
     // Check if user already linked to this property
-    const existingLink = await base44.entities.UserProperty.filter({
+    const existingLink = await helper.entities.UserProperty.filter({
       canonical_property_id: finalCanonicalId,
       user_id: user.id
     });
@@ -57,13 +62,13 @@ Deno.serve(async (req) => {
       return Response.json({
         success: false,
         error: 'User already linked to this property',
-        user_property_id: existingLink[0].id,
+        user_property_id: (existingLink[0] as any).id,
         property: existingLink[0]
-      }, { status: 409 });
+      }, { status: 409, headers: corsHeaders });
     }
 
     // Create user property link
-    const userProperty = await base44.entities.UserProperty.create({
+    const userProperty = await helper.entities.UserProperty.create({
       canonical_property_id: finalCanonicalId,
       user_id: user.id,
       display_name,
@@ -82,23 +87,23 @@ Deno.serve(async (req) => {
     });
 
     // Get full property details for response
-    const canonicalProperties = await base44.asServiceRole.entities.CanonicalProperty.filter({
+    const canonicalProperties = await helper.asServiceRole.entities.CanonicalProperty.filter({
       id: finalCanonicalId
     });
-    
-    const publicData = await base44.asServiceRole.entities.PublicPropertyData.filter({
+
+    const publicData = await helper.asServiceRole.entities.PublicPropertyData.filter({
       canonical_property_id: finalCanonicalId
     });
 
     return Response.json({
       success: true,
-      user_property_id: userProperty.id,
+      user_property_id: (userProperty as any).id,
       user_property: userProperty,
       canonical_property: canonicalProperties[0] || null,
       public_data: publicData[0] || null
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error linking user to property:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

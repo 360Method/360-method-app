@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Upgrade } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +21,7 @@ export default function RequestOperatorQuoteDialog({
   const requestMutation = useMutation({
     mutationFn: async () => {
       // Update project with quote request
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         operator_quote_requested: true,
         operator_quote_requested_at: new Date().toISOString(),
         operator_quote_details: additionalDetails

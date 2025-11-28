@@ -1,20 +1,45 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import Stripe from 'npm:stripe@14.11.0';
 
+function getStripeClient() {
+  const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
+  const isTestMode = stripeMode === 'test';
+  
+  const stripeSecretKey = isTestMode 
+    ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
+    : Deno.env.get('STRIPE_SECRET_KEY');
+  
+  if (!stripeSecretKey) {
+    throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
+  }
+  
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  });
+}
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { 
+        status: 403,
+        headers: corsHeaders 
+      });
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+    const stripe = getStripeClient();
     
-    const diagnosis = {
+    const diagnosis: any = {
       timestamp: new Date().toISOString(),
-      stripe_configured: !!Deno.env.get('STRIPE_SECRET_KEY'),
+      stripe_configured: !!Deno.env.get('STRIPE_SECRET_KEY') || !!Deno.env.get('STRIPE_SECRET_KEY_TEST'),
       webhook_secret_configured: !!Deno.env.get('STRIPE_WEBHOOK_SECRET'),
       database_checks: {},
       stripe_checks: {},
@@ -24,11 +49,11 @@ Deno.serve(async (req) => {
     // Check database entities
     try {
       const [transactions, packages, operators, webhooks, paymentMethods] = await Promise.all([
-        base44.asServiceRole.entities.Transaction.list('-created_date', 5),
-        base44.asServiceRole.entities.ServicePackage.list('-created_date', 5),
-        base44.asServiceRole.entities.OperatorStripeAccount.list('-created_date', 5),
-        base44.asServiceRole.entities.WebhookEvent.filter({ source: 'stripe' }),
-        base44.asServiceRole.entities.PaymentMethod.list('-created_date', 5)
+        helper.asServiceRole.entities.Transaction.list('-created_at'),
+        helper.asServiceRole.entities.ServicePackage.list('-created_at'),
+        helper.asServiceRole.entities.OperatorStripeAccount.list('-created_at'),
+        helper.asServiceRole.entities.WebhookEvent.filter({ source: 'stripe' }),
+        helper.asServiceRole.entities.PaymentMethod.list('-created_at')
       ]);
 
       diagnosis.database_checks = {
@@ -66,8 +91,8 @@ Deno.serve(async (req) => {
 
       diagnosis.stripe_checks = {
         account_id: account.id,
-        account_email: account.email,
-        charges_enabled: account.charges_enabled,
+        account_email: (account as any).email,
+        charges_enabled: (account as any).charges_enabled,
         products_count: products.data.length,
         prices_count: prices.data.length,
         products: products.data.map(p => ({
@@ -97,7 +122,7 @@ Deno.serve(async (req) => {
 
     // Check platform settings
     try {
-      const platformFee = await base44.asServiceRole.entities.PlatformSettings.filter({
+      const platformFee = await helper.asServiceRole.entities.PlatformSettings.filter({
         setting_key: 'platform_fee_percent'
       });
 
@@ -127,12 +152,15 @@ Deno.serve(async (req) => {
     return Response.json({
       success: diagnosis.missing_infrastructure.length === 0,
       diagnosis
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error diagnosing Stripe:', error);
     return Response.json({ 
       error: error.message,
       stack: error.stack
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

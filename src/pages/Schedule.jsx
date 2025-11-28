@@ -90,7 +90,7 @@ export default function SchedulePage() {
       const allProps = await Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: demoMode || true // Always enabled, but queryFn handles demo mode check
+    enabled: true // Always enabled, queryFn handles demo mode check
   });
 
   React.useEffect(() => {
@@ -124,7 +124,7 @@ export default function SchedulePage() {
         return await MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: demoMode || (properties.length > 0 && selectedProperty !== null)
+    enabled: !!demoMode || (properties.length > 0 && selectedProperty !== null)
   });
 
   const allTasks = realTasks;

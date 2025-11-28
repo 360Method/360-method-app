@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { UpgradeTemplate, Upgrade } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ export default function UpgradeDialog({
   const { data: template } = useQuery({
     queryKey: ['upgradeTemplate', templateId],
     queryFn: async () => {
-      const templates = await base44.entities.UpgradeTemplate.list();
+      const templates = await UpgradeTemplate.list();
       return templates.find(t => t.id === templateId);
     },
     enabled: !!templateId && !project,
@@ -209,16 +209,16 @@ export default function UpgradeDialog({
         }
       }
 
-      console.log('💾 Calling base44.entities.Upgrade.' + (project?.id ? 'update' : 'create'));
+      console.log('💾 Calling Upgrade.' + (project?.id ? 'update' : 'create'));
       console.log('Final submit data:', submitData);
       console.log('Milestones to save:', submitData.milestones?.length || 0);
 
       let result;
       if (project?.id) {
-        result = await base44.entities.Upgrade.update(project.id, submitData);
+        result = await Upgrade.update(project.id, submitData);
         console.log('✅ Project updated:', result);
       } else {
-        result = await base44.entities.Upgrade.create(submitData);
+        result = await Upgrade.create(submitData);
         console.log('✅ Project created:', result);
         console.log('New project ID:', result.id);
         console.log('Milestones in saved project:', result.milestones?.length || 0);

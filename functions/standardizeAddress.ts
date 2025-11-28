@@ -1,19 +1,24 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import { createHash } from 'node:crypto';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    
-    const { 
-      raw_address, 
+    const helper = createHelperFromRequest(req);
+
+    const {
+      raw_address,
       street_number,
       street_name,
       street_suffix,
       unit_number,
       city,
       state,
-      zip_code 
+      zip_code
     } = await req.json();
 
     let parsedAddress;
@@ -40,11 +45,11 @@ Deno.serve(async (req) => {
     // Geocode via Google Maps if API key available
     let geocoded = null;
     const googleApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
-    
+
     if (googleApiKey) {
       try {
         geocoded = await geocodeAddress(standardized, googleApiKey);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Geocoding error:', error);
       }
     }
@@ -61,17 +66,17 @@ Deno.serve(async (req) => {
         unique_address_key,
         address_hash
       }
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error standardizing address:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });
 
-function parseRawAddress(raw) {
+function parseRawAddress(raw: string) {
   // Basic address parsing (can be enhanced)
   const parts = raw.trim().split(',').map(p => p.trim());
-  
+
   if (parts.length < 3) {
     throw new Error('Invalid address format. Expected: Street, City, State ZIP');
   }
@@ -100,8 +105,8 @@ function parseRawAddress(raw) {
   };
 }
 
-function standardizeComponents(address) {
-  const suffixMap = {
+function standardizeComponents(address: any) {
+  const suffixMap: Record<string, string> = {
     'avenue': 'Ave', 'ave': 'Ave', 'av': 'Ave',
     'street': 'St', 'st': 'St', 'str': 'St',
     'boulevard': 'Blvd', 'blvd': 'Blvd', 'boul': 'Blvd',
@@ -114,12 +119,7 @@ function standardizeComponents(address) {
     'place': 'Pl', 'pl': 'Pl'
   };
 
-  const directionalMap = {
-    'north': 'N', 'south': 'S', 'east': 'E', 'west': 'W',
-    'northeast': 'NE', 'northwest': 'NW', 'southeast': 'SE', 'southwest': 'SW'
-  };
-
-  const stateMap = {
+  const stateMap: Record<string, string> = {
     'california': 'CA', 'texas': 'TX', 'florida': 'FL', 'new york': 'NY',
     'pennsylvania': 'PA', 'illinois': 'IL', 'ohio': 'OH', 'georgia': 'GA',
     'north carolina': 'NC', 'michigan': 'MI', 'washington': 'WA'
@@ -138,17 +138,17 @@ function standardizeComponents(address) {
   };
 }
 
-async function geocodeAddress(address, apiKey) {
+async function geocodeAddress(address: any, apiKey: string) {
   const addressString = `${address.street_number} ${address.street_name} ${address.street_suffix}, ${address.city}, ${address.state} ${address.zip_code}`;
-  
+
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addressString)}&key=${apiKey}`;
-  
+
   const response = await fetch(url);
   const data = await response.json();
 
   if (data.status === 'OK' && data.results.length > 0) {
     const result = data.results[0];
-    
+
     return {
       latitude: result.geometry.location.lat,
       longitude: result.geometry.location.lng,
@@ -162,14 +162,14 @@ async function geocodeAddress(address, apiKey) {
   return null;
 }
 
-function extractCounty(components) {
-  const countyComponent = components.find(c => 
+function extractCounty(components: any[]) {
+  const countyComponent = components.find(c =>
     c.types.includes('administrative_area_level_2')
   );
   return countyComponent?.long_name || null;
 }
 
-function generateUniqueAddressKey(address) {
+function generateUniqueAddressKey(address: any) {
   const parts = [
     address.street_number,
     address.street_name,
@@ -187,17 +187,17 @@ function generateUniqueAddressKey(address) {
     .replace(/[^a-z0-9]/g, '');
 }
 
-function generateAddressHash(uniqueKey) {
+function generateAddressHash(uniqueKey: string) {
   return createHash('sha256').update(uniqueKey).digest('hex');
 }
 
-function getCityAbbreviation(city) {
+function getCityAbbreviation(city: string) {
   // Simple abbreviation - first 2-3 letters
   return city.toLowerCase().replace(/[^a-z]/g, '').substring(0, 3);
 }
 
-function toTitleCase(str) {
-  return str.replace(/\w\S*/g, txt => 
+function toTitleCase(str: string) {
+  return str.replace(/\w\S*/g, txt =>
     txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
   );
 }

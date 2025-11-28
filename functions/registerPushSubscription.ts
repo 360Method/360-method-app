@@ -1,22 +1,33 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     const { subscription, device_info } = await req.json();
 
     if (!subscription || !subscription.endpoint || !subscription.keys) {
-      return Response.json({ error: 'Invalid subscription data' }, { status: 400 });
+      return Response.json({ error: 'Invalid subscription data' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Check if subscription already exists
-    const existingSubs = await base44.entities.PushSubscription.filter({
+    const existingSubs = await helper.entities.PushSubscription.filter({
       user_id: user.id,
       endpoint: subscription.endpoint
     });
@@ -24,7 +35,7 @@ Deno.serve(async (req) => {
     let pushSubscription;
     if (existingSubs && existingSubs.length > 0) {
       // Update existing
-      pushSubscription = await base44.entities.PushSubscription.update(
+      pushSubscription = await helper.entities.PushSubscription.update(
         existingSubs[0].id,
         {
           keys_p256dh: subscription.keys.p256dh,
@@ -36,7 +47,7 @@ Deno.serve(async (req) => {
       );
     } else {
       // Create new
-      pushSubscription = await base44.entities.PushSubscription.create({
+      pushSubscription = await helper.entities.PushSubscription.create({
         user_id: user.id,
         endpoint: subscription.endpoint,
         keys_p256dh: subscription.keys.p256dh,
@@ -52,9 +63,12 @@ Deno.serve(async (req) => {
     return Response.json({ 
       success: true,
       subscription_id: pushSubscription.id 
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error registering push subscription:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

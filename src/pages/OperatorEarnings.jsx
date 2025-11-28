@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Operator, functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,12 +11,12 @@ export default function OperatorEarnings() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: operators = [] } = useQuery({
     queryKey: ['myOperators'],
-    queryFn: () => base44.entities.Operator.filter({ created_by: user?.email }),
+    queryFn: () => Operator.filter({ created_by: user?.email }),
     enabled: !!user
   });
 
@@ -29,7 +29,7 @@ export default function OperatorEarnings() {
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['operatorTransactions', operatorId],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getOperatorTransactionHistory', {
+      const { data } = await functions.invoke('getOperatorTransactionHistory', {
         operator_id: operatorId
       });
       return data.transactions || [];

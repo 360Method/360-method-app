@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Property, MaintenanceTask, SystemBaseline } from '@/api/supabaseClient';
 import BudgetTracking from '../components/portal/BudgetTracking';
 
 export default function PortalBudget() {
@@ -8,12 +8,12 @@ export default function PortalBudget() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date')
+    queryFn: () => Property.list('-created_date')
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', selectedProperty?.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({
+    queryFn: () => MaintenanceTask.filter({
       property_id: selectedProperty?.id,
       status: 'Completed'
     }),
@@ -22,7 +22,7 @@ export default function PortalBudget() {
 
   const { data: systems = [] } = useQuery({
     queryKey: ['systems', selectedProperty?.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({
+    queryFn: () => SystemBaseline.filter({
       property_id: selectedProperty?.id
     }),
     enabled: !!selectedProperty?.id

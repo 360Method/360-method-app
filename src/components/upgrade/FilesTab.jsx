@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { storage, Upgrade } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { 
   FileText, Image as ImageIcon, Upload, Trash2, 
@@ -20,9 +20,9 @@ export default function FilesTab({ project, onUpdate }) {
     try {
       console.log('📤 Uploading', uploadedFiles.length, 'file(s)...');
 
-      // Upload files to Base44
+      // Upload files to Supabase Storage
       const filePromises = uploadedFiles.map(async (file) => {
-        const result = await base44.integrations.Core.UploadFile({ file });
+        const result = await storage.uploadFile(file);
         return {
           name: file.name,
           url: result.file_url,
@@ -36,7 +36,7 @@ export default function FilesTab({ project, onUpdate }) {
       console.log('✅ Files uploaded:', newFiles);
 
       // Update project with new files
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         quote_documents: [...files, ...newFiles]
       });
 
@@ -57,7 +57,7 @@ export default function FilesTab({ project, onUpdate }) {
     try {
       const updatedFiles = files.filter((_, i) => i !== fileIndex);
       
-      await base44.entities.Upgrade.update(project.id, {
+      await Upgrade.update(project.id, {
         quote_documents: updatedFiles
       });
 

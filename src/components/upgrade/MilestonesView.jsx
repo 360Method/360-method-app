@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Upgrade } from '@/api/supabaseClient';
 import { CheckCircle2, Circle, Clock, Camera, MessageSquare, ChevronDown, ChevronRight, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ export default function MilestonesView({ project, onUpdate }) {
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Upgrade.update(project.id, data),
+    mutationFn: (data) => Upgrade.update(project.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['upgrade', project.id] });
       onUpdate?.();

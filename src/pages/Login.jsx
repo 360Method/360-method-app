@@ -1,7 +1,15 @@
 import { SignIn } from '@clerk/clerk-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
+
+  // Check for redirect URL to pass through to PostLoginRedirect
+  const redirectUrl = searchParams.get('redirect_url');
+  const afterSignInUrl = redirectUrl
+    ? `/PostLoginRedirect?redirect_url=${encodeURIComponent(redirectUrl)}`
+    : '/PostLoginRedirect';
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
       {/* Logo */}
@@ -21,8 +29,8 @@ export default function Login() {
         routing="path"
         path="/Login"
         signUpUrl="/Signup"
-        afterSignInUrl="/Properties"
-        fallbackRedirectUrl="/Properties"
+        afterSignInUrl={afterSignInUrl}
+        fallbackRedirectUrl="/PostLoginRedirect"
         appearance={{
           elements: {
             rootBox: "mx-auto",

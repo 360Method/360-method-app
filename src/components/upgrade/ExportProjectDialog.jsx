@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, integrations } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, Printer, Mail } from 'lucide-react';
@@ -10,7 +10,7 @@ export default function ExportProjectDialog({ project, property, isOpen, onClose
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const handleExportPDF = () => {
@@ -192,7 +192,7 @@ ${project.description || ''}
 View full details: ${shareableLink}
       `.trim();
 
-      await base44.integrations.Core.SendEmail({
+      await integrations.SendEmail({
         to: user.email,
         subject: `Your Project: ${project.title}`,
         body: emailBody

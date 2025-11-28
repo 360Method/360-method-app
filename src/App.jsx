@@ -49,13 +49,19 @@ const isPublicNoLayout = (pageName) => publicNoLayoutPages?.includes(pageName) ?
 const isPublicWithLayout = (pageName) => publicWithLayoutPages?.includes(pageName) ?? false;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth } = useAuth();
+  const { isLoadingAuth, user, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking auth
+  // Debug auth state
+  console.log('AuthenticatedApp state:', { isLoadingAuth, hasUser: !!user, isAuthenticated });
+
+  // Show loading spinner while checking auth (with timeout safety)
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-gray-400 mt-4">Loading auth...</p>
+        </div>
       </div>
     );
   }

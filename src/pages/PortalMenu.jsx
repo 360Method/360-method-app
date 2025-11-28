@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { createPageUrl } from '@/utils';
@@ -44,11 +44,11 @@ const MENU_SECTIONS = [
 export default function PortalMenu() {
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const handleLogout = () => {
-    base44.auth.logout();
+    auth.logout();
   };
 
   return (

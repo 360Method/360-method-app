@@ -70,7 +70,8 @@ export default function Welcome() {
     }
   }, [isLoadingAuth, isAuthenticated, user, navigate]);
 
-  if (isCheckingAuth) {
+  // Show loading spinner while checking auth OR if user is authenticated (will redirect)
+  if (isCheckingAuth || isLoadingAuth || isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
@@ -92,6 +93,12 @@ export default function Welcome() {
             <span className="font-semibold text-slate-900">360° Method</span>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/BecomeOperator')}
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
+            >
+              For Operators
+            </button>
             <button
               onClick={() => navigate('/Login')}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
@@ -533,6 +540,7 @@ export default function Welcome() {
             <div className="flex items-center gap-6 text-sm text-slate-500">
               <a href="#faq" className="hover:text-slate-700">FAQ</a>
               <a href="#about" className="hover:text-slate-700">About Us</a>
+              <button onClick={() => navigate('/BecomeOperator')} className="hover:text-slate-700">For Operators</button>
               <button onClick={() => navigate(createPageUrl('DemoEntry'))} className="hover:text-slate-700">Try Demo</button>
               <button onClick={() => navigate('/Login')} className="hover:text-slate-700">Log In</button>
             </div>

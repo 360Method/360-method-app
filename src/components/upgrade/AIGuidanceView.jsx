@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { integrations, Upgrade } from '@/api/supabaseClient';
 import { Lightbulb, AlertTriangle, Sparkles, RefreshCw, CheckCircle2, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ export default function AIGuidanceView({ project, onUpdate }) {
       setIsGenerating(true);
       
       // Call AI to generate project-specific guidance
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: `You are an expert home improvement advisor. Analyze this renovation project and provide guidance:
 
 Project: ${project.title}
@@ -50,7 +50,7 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
     },
     onSuccess: (result) => {
       // Update project with AI guidance
-      base44.entities.Upgrade.update(project.id, {
+      Upgrade.update(project.id, {
         ai_project_plan: result.project_plan,
         ai_recommendations: result.recommendations,
         ai_risk_alerts: result.risk_alerts

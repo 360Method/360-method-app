@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ export default function AdminStripeDebug() {
     setLoading(true);
     
     try {
-      const { data } = await base44.functions.invoke(functionName, {});
+      const { data } = await functions.invoke(functionName, {});
       
       setTestResults(prev => ({
         ...prev,

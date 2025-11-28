@@ -1,28 +1,33 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    
+    const helper = createHelperFromRequest(req);
+
     const addressInput = await req.json();
 
     // Step 1: Standardize the address
-    const standardizeResult = await base44.asServiceRole.functions.invoke(
+    const standardizeResult = await helper.asServiceRole.functions.invoke(
       'standardizeAddress',
       addressInput
     );
 
     if (!standardizeResult.data?.success) {
-      return Response.json({ 
+      return Response.json({
         error: 'Failed to standardize address',
-        details: standardizeResult.data 
-      }, { status: 400 });
+        details: standardizeResult.data
+      }, { status: 400, headers: corsHeaders });
     }
 
     const standardized = standardizeResult.data.standardized;
 
     // Step 2: Check if canonical property exists by hash
-    const existingProperties = await base44.asServiceRole.entities.CanonicalProperty.filter({
+    const existingProperties = await helper.asServiceRole.entities.CanonicalProperty.filter({
       address_hash: standardized.address_hash
     });
 
@@ -30,14 +35,14 @@ Deno.serve(async (req) => {
       // Property already exists
       return Response.json({
         success: true,
-        canonical_property_id: existingProperties[0].id,
+        canonical_property_id: (existingProperties[0] as any).id,
         is_new: false,
         property: existingProperties[0]
-      });
+      }, { headers: corsHeaders });
     }
 
     // Step 3: Create new canonical property
-    const newProperty = await base44.asServiceRole.entities.CanonicalProperty.create({
+    const newProperty = await helper.asServiceRole.entities.CanonicalProperty.create({
       unique_address_key: standardized.unique_address_key,
       address_hash: standardized.address_hash,
       street_number: standardized.street_number,
@@ -58,22 +63,22 @@ Deno.serve(async (req) => {
 
     // Step 4: Optionally fetch public data
     try {
-      await base44.asServiceRole.functions.invoke('fetchPublicPropertyData', {
-        canonical_property_id: newProperty.id,
+      await helper.asServiceRole.functions.invoke('fetchPublicPropertyData', {
+        canonical_property_id: (newProperty as any).id,
         address: standardized
       });
-    } catch (error) {
+    } catch (error: any) {
       console.log('Could not fetch public data (API may not be configured):', error.message);
     }
 
     return Response.json({
       success: true,
-      canonical_property_id: newProperty.id,
+      canonical_property_id: (newProperty as any).id,
       is_new: true,
       property: newProperty
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error finding or creating canonical property:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

@@ -1,36 +1,44 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, SupabaseHelper, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     
     const { event_type, event_data } = await req.json();
 
     if (!event_type) {
-      return Response.json({ error: 'Missing event_type' }, { status: 400 });
+      return Response.json({ error: 'Missing event_type' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Event templates defining notification content and recipients
-    const eventTemplates = {
+    const eventTemplates: Record<string, any> = {
       // Service Package events
       service_package_submitted: {
         type: 'work_order',
         priority: 'high',
-        getRecipients: async (data) => {
+        getRecipients: async (data: any) => {
           // Notify the operator
-          const operators = await base44.asServiceRole.entities.Operator.filter({ id: data.operator_id });
+          const operators = await helper.asServiceRole.entities.Operator.filter({ id: data.operator_id });
           return operators[0] ? [operators[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'New Service Request',
           body: `${data.customer_name} submitted a service request with ${data.item_count} items`,
           icon: 'clipboard-list',
           action_url: `/operator/leads?package=${data.package_id}`,
           action_label: 'Review Request'
         }),
-        getTemplateData: async (data, base44) => {
-          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
-          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getTemplateData: async (data: any) => {
+          const pkg = await helper.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+          const property = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return {
             customer_name: data.customer_name,
             property_address: property[0]?.address || 'Unknown',
@@ -45,20 +53,20 @@ Deno.serve(async (req) => {
       service_package_quoted: {
         type: 'work_order',
         priority: 'high',
-        getRecipients: async (data) => {
+        getRecipients: async (data: any) => {
           // Notify the homeowner
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Quote Ready',
           body: `${data.operator_name} provided a quote: $${data.total_cost.toFixed(2)}`,
           icon: 'file-text',
           action_url: `/cart-review?package=${data.package_id}`,
           action_label: 'Review Quote'
         }),
-        getTemplateData: async (data, base44) => {
-          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+        getTemplateData: async (data: any) => {
+          const pkg = await helper.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
           return {
             operator_name: data.operator_name,
             package_name: pkg[0]?.package_name || 'Service Package',
@@ -74,21 +82,21 @@ Deno.serve(async (req) => {
       service_package_approved: {
         type: 'work_order',
         priority: 'high',
-        getRecipients: async (data) => {
+        getRecipients: async (data: any) => {
           // Notify the operator
-          const operators = await base44.asServiceRole.entities.Operator.filter({ id: data.operator_id });
+          const operators = await helper.asServiceRole.entities.Operator.filter({ id: data.operator_id });
           return operators[0] ? [operators[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Quote Approved',
           body: `${data.customer_name} approved your quote for $${data.approved_amount.toFixed(2)}`,
           icon: 'check-circle',
           action_url: `/operator/work-orders?package=${data.package_id}`,
           action_label: 'View Work Order'
         }),
-        getTemplateData: async (data, base44) => {
-          const pkg = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
-          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getTemplateData: async (data: any) => {
+          const pkg = await helper.asServiceRole.entities.ServicePackage.filter({ id: data.package_id });
+          const property = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return {
             customer_name: data.customer_name,
             package_name: pkg[0]?.package_name || 'Service Package',
@@ -103,19 +111,19 @@ Deno.serve(async (req) => {
       inspection_due: {
         type: 'inspection',
         priority: 'normal',
-        getRecipients: async (data) => {
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getRecipients: async (data: any) => {
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: `${data.season} Inspection Due`,
           body: `Time for your seasonal inspection at ${data.property_address}`,
           icon: 'clipboard-check',
           action_url: `/inspect?property=${data.property_id}`,
           action_label: 'Start Inspection'
         }),
-        getTemplateData: async (data, base44) => {
-          const property = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getTemplateData: async (data: any) => {
+          const property = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return {
             season: data.season,
             property_address: property[0]?.address || 'Unknown',
@@ -130,14 +138,14 @@ Deno.serve(async (req) => {
       invoice_created: {
         type: 'payment',
         priority: 'normal',
-        getRecipients: async (data) => {
-          const packages = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.invoice_id });
+        getRecipients: async (data: any) => {
+          const packages = await helper.asServiceRole.entities.ServicePackage.filter({ id: data.invoice_id });
           if (!packages || packages.length === 0) return [];
           const pkg = packages[0];
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: pkg.property_id });
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: pkg.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'New Invoice Received',
           body: `You have a new invoice for ${data.package_name || 'services'}. Amount: $${data.amount?.toFixed(2) || '0.00'}`,
           icon: 'receipt',
@@ -149,18 +157,18 @@ Deno.serve(async (req) => {
       payment_succeeded: {
         type: 'payment',
         priority: 'high',
-        getRecipients: async (data) => {
+        getRecipients: async (data: any) => {
           // Only notify the payer (homeowner)
           return data.payer_user_id ? [data.payer_user_id] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Payment Confirmed',
           body: `Payment of $${data.amount?.toFixed(2) || '0.00'} has been processed successfully.`,
           icon: 'check-circle',
           action_url: `/transactions/${data.transaction_id}`,
           action_label: 'View Receipt'
         }),
-        getTemplateData: async (data, base44) => ({
+        getTemplateData: async (data: any) => ({
           amount: data.amount || 0,
           description: data.description || 'Service payment',
           payment_method_last4: data.payment_method_last4,
@@ -172,17 +180,17 @@ Deno.serve(async (req) => {
       payment_failed: {
         type: 'payment',
         priority: 'urgent',
-        getRecipients: async (data) => {
+        getRecipients: async (data: any) => {
           return data.payer_user_id ? [data.payer_user_id] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Payment Failed',
           body: `Unable to process payment of $${data.amount?.toFixed(2) || '0.00'}. Please update your payment method.`,
           icon: 'alert-circle',
           action_url: `/payment-methods`,
           action_label: 'Update Payment Method'
         }),
-        getTemplateData: async (data, base44) => ({
+        getTemplateData: async (data: any) => ({
           amount: data.amount || 0,
           description: data.description || 'Service payment',
           failure_reason: data.failure_reason,
@@ -193,14 +201,14 @@ Deno.serve(async (req) => {
       invoice_overdue: {
         type: 'payment',
         priority: 'urgent',
-        getRecipients: async (data) => {
-          const packages = await base44.asServiceRole.entities.ServicePackage.filter({ id: data.invoice_id });
+        getRecipients: async (data: any) => {
+          const packages = await helper.asServiceRole.entities.ServicePackage.filter({ id: data.invoice_id });
           if (!packages || packages.length === 0) return [];
           const pkg = packages[0];
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: pkg.property_id });
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: pkg.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Invoice Overdue',
           body: `Invoice #${data.invoice_id?.substring(0, 8)} is now overdue. Please pay as soon as possible.`,
           icon: 'alert-circle',
@@ -213,11 +221,11 @@ Deno.serve(async (req) => {
       inspection_scheduled: {
         type: 'inspection',
         priority: 'normal',
-        getRecipients: async (data) => {
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getRecipients: async (data: any) => {
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Inspection Scheduled',
           body: `${data.season} inspection scheduled for ${new Date(data.inspection_date).toLocaleDateString()}`,
           icon: 'clipboard-check',
@@ -229,11 +237,11 @@ Deno.serve(async (req) => {
       inspection_completed: {
         type: 'inspection',
         priority: 'high',
-        getRecipients: async (data) => {
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getRecipients: async (data: any) => {
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Inspection Complete',
           body: `${data.season} inspection completed. ${data.issues_found || 0} items need attention.`,
           icon: 'check-square',
@@ -246,14 +254,14 @@ Deno.serve(async (req) => {
       task_due_soon: {
         type: 'task',
         priority: 'high',
-        getRecipients: async (data) => {
-          const tasks = await base44.asServiceRole.entities.MaintenanceTask.filter({ id: data.task_id });
+        getRecipients: async (data: any) => {
+          const tasks = await helper.asServiceRole.entities.MaintenanceTask.filter({ id: data.task_id });
           if (!tasks || tasks.length === 0) return [];
           const task = tasks[0];
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: task.property_id });
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: task.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Task Due Soon',
           body: `"${data.task_title}" is due on ${new Date(data.scheduled_date).toLocaleDateString()}`,
           icon: 'clock',
@@ -265,14 +273,14 @@ Deno.serve(async (req) => {
       task_overdue: {
         type: 'task',
         priority: 'urgent',
-        getRecipients: async (data) => {
-          const tasks = await base44.asServiceRole.entities.MaintenanceTask.filter({ id: data.task_id });
+        getRecipients: async (data: any) => {
+          const tasks = await helper.asServiceRole.entities.MaintenanceTask.filter({ id: data.task_id });
           if (!tasks || tasks.length === 0) return [];
           const task = tasks[0];
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: task.property_id });
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: task.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Task Overdue',
           body: `"${data.task_title}" is now overdue. Take action to prevent cascading issues.`,
           icon: 'alert-triangle',
@@ -285,11 +293,11 @@ Deno.serve(async (req) => {
       property_score_critical: {
         type: 'property',
         priority: 'urgent',
-        getRecipients: async (data) => {
-          const properties = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+        getRecipients: async (data: any) => {
+          const properties = await helper.asServiceRole.entities.Property.filter({ id: data.property_id });
           return properties[0] ? [properties[0].created_by] : [];
         },
-        getContent: (data) => ({
+        getContent: (data: any) => ({
           title: 'Property Health Alert',
           body: `Property health score dropped to ${data.health_score}. Immediate attention required.`,
           icon: 'alert-circle',
@@ -302,8 +310,8 @@ Deno.serve(async (req) => {
       account_created: {
         type: 'system',
         priority: 'normal',
-        getRecipients: async (data) => [data.user_id],
-        getContent: (data) => ({
+        getRecipients: async (data: any) => [data.user_id],
+        getContent: (data: any) => ({
           title: 'Welcome to 360° Method!',
           body: 'Get started by adding your first property and documenting your baseline.',
           icon: 'home',
@@ -317,7 +325,10 @@ Deno.serve(async (req) => {
     if (!template) {
       return Response.json({ 
         error: `Unknown event type: ${event_type}` 
-      }, { status: 400 });
+      }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Get recipients
@@ -327,7 +338,7 @@ Deno.serve(async (req) => {
         success: true, 
         message: 'No recipients found',
         notification_ids: []
-      });
+      }, { headers: corsHeaders });
     }
 
     // Generate content
@@ -337,17 +348,17 @@ Deno.serve(async (req) => {
     let templateData = null;
     if (template.getTemplateData) {
       try {
-        templateData = await template.getTemplateData(event_data, base44);
+        templateData = await template.getTemplateData(event_data);
       } catch (error) {
         console.error('Error generating template data:', error);
       }
     }
 
     // Create notifications for each recipient
-    const notificationIds = [];
+    const notificationIds: string[] = [];
     for (const userId of recipients) {
       try {
-        const result = await base44.asServiceRole.functions.invoke('createNotification', {
+        const result = await helper.asServiceRole.functions.invoke('createNotification', {
           user_id: userId,
           notification_type: template.type,
           event_type,
@@ -364,8 +375,8 @@ Deno.serve(async (req) => {
           template_data: templateData
         });
         
-        if (result.data?.notification_id) {
-          notificationIds.push(result.data.notification_id);
+        if (result?.notification_id) {
+          notificationIds.push(result.notification_id);
         }
       } catch (error) {
         console.error(`Failed to create notification for user ${userId}:`, error);
@@ -376,9 +387,12 @@ Deno.serve(async (req) => {
       success: true,
       notification_ids: notificationIds,
       recipient_count: recipients.length
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error triggering notification event:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

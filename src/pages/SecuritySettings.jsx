@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { auth, functions, UserSecuritySettings } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,13 @@ export default function SecuritySettings() {
   
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
     queryKey: ['userSessions'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('getUserSessions', {});
+      const { data } = await functions.invoke('getUserSessions', {});
       return data.sessions || [];
     },
     enabled: !!user,
@@ -31,7 +31,7 @@ export default function SecuritySettings() {
   const { data: securitySettings } = useQuery({
     queryKey: ['securitySettings'],
     queryFn: async () => {
-      const settings = await base44.entities.UserSecuritySettings.filter({
+      const settings = await UserSecuritySettings.filter({
         user_id: user.id
       });
       return settings[0] || null;
@@ -40,7 +40,7 @@ export default function SecuritySettings() {
   });
 
   const terminateSessionMutation = useMutation({
-    mutationFn: (sessionId) => base44.functions.invoke('terminateSession', {
+    mutationFn: (sessionId) => functions.invoke('terminateSession', {
       session_id: sessionId,
       reason: 'user_action'
     }),
@@ -53,9 +53,9 @@ export default function SecuritySettings() {
   const updateSettingsMutation = useMutation({
     mutationFn: (data) => {
       if (securitySettings) {
-        return base44.entities.UserSecuritySettings.update(securitySettings.id, data);
+        return UserSecuritySettings.update(securitySettings.id, data);
       } else {
-        return base44.entities.UserSecuritySettings.create({
+        return UserSecuritySettings.create({
           user_id: user.id,
           ...data
         });
@@ -79,7 +79,7 @@ export default function SecuritySettings() {
       const otherSessions = sessionsData?.filter(s => !s.isCurrent) || [];
       
       for (const session of otherSessions) {
-        await base44.functions.invoke('terminateSession', {
+        await functions.invoke('terminateSession', {
           session_id: session.id,
           reason: 'user_action'
         });

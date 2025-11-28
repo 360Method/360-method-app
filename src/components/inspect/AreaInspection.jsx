@@ -6,6 +6,7 @@ import { ArrowLeft, Lightbulb, AlertTriangle, X, Edit, MapPin, Eye } from "lucid
 import IssueDocumentation from "./IssueDocumentation";
 import { INSPECTION_AREA_HELPERS } from "../baseline/systemMetadata";
 import SystemListItem from "./SystemListItem";
+import { integrations } from "@/api/supabaseClient";
 
 // Safe string truncation helper
 const safeSubstring = (str, maxLength) => {
@@ -146,7 +147,7 @@ Based on the documented systems (age, condition, type) and the current season ($
 
 Be concise, specific, and practical. Focus on preventing expensive failures and ensuring home safety. Do not invent systems or conditions not mentioned in the baseline. If no systems are documented, provide general advice for the area.`;
 
-        const suggestions = await base44.integrations.Core.InvokeLLM({
+        const suggestions = await integrations.InvokeLLM({
           prompt: prompt,
           response_json_schema: {
             type: "object",

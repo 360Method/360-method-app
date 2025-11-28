@@ -1,12 +1,20 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const currentUser = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const currentUser = await helper.auth.me();
     
     if (!currentUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     const {
@@ -27,11 +35,14 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     if (!user_id || !notification_type || !event_type || !title || !body) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      return Response.json({ error: 'Missing required fields' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Get user's notification settings
-    const settingsRecords = await base44.asServiceRole.entities.UserNotificationSettings.filter({
+    const settingsRecords = await helper.asServiceRole.entities.UserNotificationSettings.filter({
       user_id: user_id
     });
     
@@ -46,11 +57,11 @@ Deno.serve(async (req) => {
       return Response.json({ 
         success: false, 
         message: 'User has unsubscribed from notifications' 
-      });
+      }, { headers: corsHeaders });
     }
 
     // Map notification_type to category for preferences
-    const categoryMap = {
+    const categoryMap: Record<string, string> = {
       payment: 'payments',
       inspection: 'inspections',
       work_order: 'work_orders',
@@ -64,7 +75,7 @@ Deno.serve(async (req) => {
     const category = categoryMap[notification_type] || notification_type;
 
     // Get user's preferences for this category
-    const prefRecords = await base44.asServiceRole.entities.NotificationPreference.filter({
+    const prefRecords = await helper.asServiceRole.entities.NotificationPreference.filter({
       user_id: user_id,
       notification_category: category
     });
@@ -82,7 +93,7 @@ Deno.serve(async (req) => {
     // Create notification record if in-app enabled
     let notification = null;
     if (settings.in_app_notifications_enabled && preferences.in_app_enabled) {
-      notification = await base44.asServiceRole.entities.Notification.create({
+      notification = await helper.asServiceRole.entities.Notification.create({
         user_id,
         notification_type,
         event_type,
@@ -106,7 +117,7 @@ Deno.serve(async (req) => {
     // Send email if enabled and not in quiet hours
     if (settings.email_notifications_enabled && preferences.email_enabled && !isQuietHours) {
       try {
-        await base44.asServiceRole.functions.invoke('sendNotificationEmail', {
+        await helper.asServiceRole.functions.invoke('sendNotificationEmail', {
           user_id,
           notification_type,
           event_type,
@@ -118,7 +129,7 @@ Deno.serve(async (req) => {
         });
         
         if (notification) {
-          await base44.asServiceRole.entities.Notification.update(notification.id, {
+          await helper.asServiceRole.entities.Notification.update(notification.id, {
             email_sent: true
           });
         }
@@ -130,7 +141,7 @@ Deno.serve(async (req) => {
     // Send push if enabled and not in quiet hours
     if (settings.push_notifications_enabled && preferences.push_enabled && !isQuietHours) {
       try {
-        await base44.asServiceRole.functions.invoke('sendPushNotification', {
+        await helper.asServiceRole.functions.invoke('sendPushNotification', {
           user_id,
           title,
           body,
@@ -141,7 +152,7 @@ Deno.serve(async (req) => {
         });
         
         if (notification) {
-          await base44.asServiceRole.entities.Notification.update(notification.id, {
+          await helper.asServiceRole.entities.Notification.update(notification.id, {
             push_sent: true
           });
         }
@@ -158,9 +169,12 @@ Deno.serve(async (req) => {
         email: settings.email_notifications_enabled && preferences.email_enabled && !isQuietHours,
         push: settings.push_notifications_enabled && preferences.push_enabled && !isQuietHours
       }
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error creating notification:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

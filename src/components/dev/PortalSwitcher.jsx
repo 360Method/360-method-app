@@ -125,8 +125,7 @@ const PORTALS = {
       { name: 'DemoImproving', url: 'DemoImproving' },
       { name: 'DemoExcellent', url: 'DemoExcellent' },
       { name: 'DemoPortfolio', url: 'DemoPortfolio' },
-      { name: 'WelcomeDemo', url: 'WelcomeDemo' },
-      { name: 'GitHubDemo', url: 'GitHubDemo' }
+      { name: 'WelcomeDemo', url: 'WelcomeDemo' }
     ]
   },
   other: {
@@ -189,7 +188,6 @@ export default function PortalSwitcher() {
       pageUrl === 'DemoExcellent' ||
       pageUrl === 'DemoPortfolio' ||
       pageUrl === 'WelcomeDemo' ||
-      pageUrl === 'GitHubDemo' ||
       pageUrl.startsWith('Demo');
     
     // Toggle demo mode based on destination

@@ -1,37 +1,42 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import Stripe from 'npm:stripe@14.11.0';
 
 // Get Stripe client based on mode
 function getStripeClient() {
   const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
   const isTestMode = stripeMode === 'test';
-  
-  const stripeSecretKey = isTestMode 
+
+  const stripeSecretKey = isTestMode
     ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
     : Deno.env.get('STRIPE_SECRET_KEY');
-  
+
   if (!stripeSecretKey) {
     throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
   }
-  
+
   return new Stripe(stripeSecretKey, {
     apiVersion: '2023-10-16',
   });
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
     }
 
     const { operator_id, return_url, refresh_url } = await req.json();
 
     if (!operator_id || !return_url || !refresh_url) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      return Response.json({ error: 'Missing required fields' }, { status: 400, headers: corsHeaders });
     }
 
     const stripe = getStripeClient();
@@ -49,7 +54,7 @@ Deno.serve(async (req) => {
     });
 
     // Create OperatorStripeAccount record
-    await base44.asServiceRole.entities.OperatorStripeAccount.create({
+    await helper.asServiceRole.entities.OperatorStripeAccount.create({
       operator_id,
       user_id: user.id,
       stripe_account_id: account.id,
@@ -72,9 +77,9 @@ Deno.serve(async (req) => {
     return Response.json({
       onboarding_url: accountLink.url,
       stripe_account_id: account.id
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error creating operator connect account:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });

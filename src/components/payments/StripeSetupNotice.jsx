@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { OperatorStripeAccount } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function StripeSetupNotice({ operatorId }) {
   const { data: stripeAccount } = useQuery({
     queryKey: ['operatorStripeAccount', operatorId],
     queryFn: async () => {
-      const accounts = await base44.entities.OperatorStripeAccount.filter({
+      const accounts = await OperatorStripeAccount.filter({
         operator_id: operatorId
       });
       return accounts[0] || null;

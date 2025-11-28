@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import ScoreBadge from '@/components/score/ScoreBadge';
 import NextMilestone from '@/components/score/NextMilestone';
 import { useDemo } from '@/components/shared/DemoContext';
-import { base44 } from '@/api/base44Client';
+import { Property } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 
 const CERTIFICATION_LEVELS = {
@@ -37,11 +37,7 @@ export default function PropertyScore() {
   
   const { data: propertyFromDB } = useQuery({
     queryKey: ['property', propertyIdFromParams],
-    queryFn: async () => {
-      if (!propertyIdFromParams) return null;
-      const props = await base44.entities.Property.filter({ id: propertyIdFromParams });
-      return props[0] || null;
-    },
+    queryFn: () => Property.get(propertyIdFromParams),
     enabled: !!propertyIdFromParams
   });
   

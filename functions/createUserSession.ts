@@ -1,12 +1,20 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, SupabaseHelper, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      });
     }
 
     const payload = await req.json();
@@ -28,21 +36,21 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + sessionDuration * 60 * 1000);
 
     // Mark all other sessions as not current
-    const existingSessions = await base44.asServiceRole.entities.UserSession.filter({
+    const existingSessions = await helper.asServiceRole.entities.UserSession.filter({
       user_id: user.id,
       status: 'active'
     });
 
     for (const s of existingSessions) {
       if (s.is_current) {
-        await base44.asServiceRole.entities.UserSession.update(s.id, {
+        await helper.asServiceRole.entities.UserSession.update(s.id, {
           is_current: false
         });
       }
     }
 
     // Create new session
-    const session = await base44.asServiceRole.entities.UserSession.create({
+    const session = await helper.asServiceRole.entities.UserSession.create({
       user_id: user.id,
       session_token_hash,
       device_name: `${deviceInfo.browser} on ${deviceInfo.os}`,
@@ -58,10 +66,10 @@ Deno.serve(async (req) => {
     });
 
     // Check if new device
-    const isNewDevice = await checkIfNewDevice(base44, user.id, deviceInfo);
+    const isNewDevice = await checkIfNewDevice(helper, user.id, deviceInfo);
     
     if (isNewDevice) {
-      await base44.asServiceRole.functions.invoke('logAuthEvent', {
+      await helper.asServiceRole.functions.invoke('logAuthEvent', {
         event_type: 'new_device_login',
         user_id: user.id,
         email: user.email,
@@ -74,14 +82,17 @@ Deno.serve(async (req) => {
       success: true,
       session_id: session.id,
       expires_at: expiresAt.toISOString()
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('createUserSession error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });
 
-function parseUserAgent(ua) {
+function parseUserAgent(ua: string) {
   const mobile = /Mobile|Android|iPhone|iPad/i.test(ua);
   const tablet = /Tablet|iPad/i.test(ua);
   
@@ -105,8 +116,8 @@ function parseUserAgent(ua) {
   };
 }
 
-async function checkIfNewDevice(base44, userId, deviceInfo) {
-  const recentSessions = await base44.asServiceRole.entities.UserSession.filter({
+async function checkIfNewDevice(helper: SupabaseHelper, userId: string, deviceInfo: any): Promise<boolean> {
+  const recentSessions = await helper.asServiceRole.entities.UserSession.filter({
     user_id: userId,
     status: 'active'
   });
@@ -114,8 +125,8 @@ async function checkIfNewDevice(base44, userId, deviceInfo) {
   // Consider it new if no sessions in last 7 days with same device
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   
-  const matchingSessions = recentSessions.filter(s => {
-    const sessionDate = new Date(s.created_date);
+  const matchingSessions = recentSessions.filter((s: any) => {
+    const sessionDate = new Date(s.created_at);
     return sessionDate >= sevenDaysAgo && 
            s.browser === deviceInfo.browser && 
            s.operating_system === deviceInfo.os;

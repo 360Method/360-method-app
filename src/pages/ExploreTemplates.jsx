@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Property, UpgradeTemplate } from '@/api/supabaseClient';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import {
@@ -53,19 +53,19 @@ export default function ExploreTemplatesPage() {
   // Fetch user for member tier
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   // Fetch properties to get current property
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list()
+    queryFn: () => Property.list()
   });
 
   // Fetch upgrade templates
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['upgradeTemplates'],
-    queryFn: () => base44.entities.UpgradeTemplate.list()
+    queryFn: () => UpgradeTemplate.list()
   });
 
   // Get current property

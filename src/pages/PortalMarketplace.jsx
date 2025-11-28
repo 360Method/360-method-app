@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Operator } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,8 +30,8 @@ export default function PortalMarketplace() {
     queryKey: ['operators', zipCode],
     queryFn: async () => {
       if (!zipCode) return [];
-      const ops = await base44.entities.Operator.list();
-      return ops.filter(op => 
+      const ops = await Operator.list();
+      return ops.filter(op =>
         op.service_areas?.includes(zipCode) && op.accepting_new_clients
       );
     },

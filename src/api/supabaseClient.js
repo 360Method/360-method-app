@@ -10,13 +10,78 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // ============================================
+// HELPER: Apply filter condition to query
+// Supports MongoDB-style operators: $ne, $gt, $gte, $lt, $lte, $in, $nin, $like, $ilike
+// ============================================
+function applyFilterCondition(query, key, value) {
+  // If value is an object with operator keys, apply the appropriate Supabase method
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const operators = Object.keys(value);
+
+    for (const op of operators) {
+      const opValue = value[op];
+
+      switch (op) {
+        case '$ne':
+          query = query.neq(key, opValue);
+          break;
+        case '$gt':
+          query = query.gt(key, opValue);
+          break;
+        case '$gte':
+          query = query.gte(key, opValue);
+          break;
+        case '$lt':
+          query = query.lt(key, opValue);
+          break;
+        case '$lte':
+          query = query.lte(key, opValue);
+          break;
+        case '$in':
+          query = query.in(key, opValue);
+          break;
+        case '$nin':
+          // Supabase doesn't have a direct 'not in' - use filter with negation
+          query = query.not(key, 'in', `(${opValue.join(',')})`);
+          break;
+        case '$like':
+          query = query.like(key, opValue);
+          break;
+        case '$ilike':
+          query = query.ilike(key, opValue);
+          break;
+        case '$is':
+          query = query.is(key, opValue);
+          break;
+        case '$contains':
+          // For JSONB/array contains
+          query = query.contains(key, opValue);
+          break;
+        case '$containedBy':
+          query = query.containedBy(key, opValue);
+          break;
+        default:
+          // Unknown operator - treat as equality with nested object
+          query = query.eq(key, value);
+          break;
+      }
+    }
+  } else {
+    // Simple equality check
+    query = query.eq(key, value);
+  }
+
+  return query;
+}
+
+// ============================================
 // ENTITY WRAPPERS
-// These match the Base44 API pattern for easier migration
+// Provides a consistent API for database operations
 // ============================================
 
 /**
  * Property entity - wrapper around Supabase 'properties' table
- * Mirrors Base44's entity API: list(), filter(), create(), update(), delete()
+ * API: list(), filter(), create(), update(), delete()
  */
 export const Property = {
   /**
@@ -25,7 +90,7 @@ export const Property = {
    */
   async list(orderBy = '-created_at') {
     const ascending = !orderBy.startsWith('-');
-    // Map Base44 column names to Supabase column names
+    // Map column name aliases
     const column = orderBy
       .replace('-', '')
       .replace('created_date', 'created_at')
@@ -42,14 +107,31 @@ export const Property = {
 
   /**
    * Filter properties by conditions
-   * @param {Object} conditions - Key-value pairs to filter by (e.g., { user_id: '123', is_draft: false })
+   * Supports MongoDB-style operators: $ne, $gt, $gte, $lt, $lte, $in, $nin, $like, $ilike, $is, $contains
+   * @param {Object} conditions - Key-value pairs to filter by (e.g., { user_id: '123', status: { $ne: 'draft' } })
+   * @param {Object} options - Optional { orderBy: '-created_at', limit: 10 }
    */
-  async filter(conditions) {
+  async filter(conditions, options = {}) {
     let query = supabase.from('properties').select('*');
 
     Object.entries(conditions).forEach(([key, value]) => {
-      query = query.eq(key, value);
+      query = applyFilterCondition(query, key, value);
     });
+
+    // Apply optional ordering
+    if (options.orderBy) {
+      const ascending = !options.orderBy.startsWith('-');
+      const column = options.orderBy
+        .replace('-', '')
+        .replace('created_date', 'created_at')
+        .replace('updated_date', 'updated_at');
+      query = query.order(column, { ascending });
+    }
+
+    // Apply optional limit
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -138,12 +220,31 @@ export const SystemBaseline = {
     return data;
   },
 
-  async filter(conditions) {
+  /**
+   * Filter system baselines by conditions
+   * Supports MongoDB-style operators: $ne, $gt, $gte, $lt, $lte, $in, $nin, $like, $ilike, $is, $contains
+   */
+  async filter(conditions, options = {}) {
     let query = supabase.from('system_baselines').select('*');
 
     Object.entries(conditions).forEach(([key, value]) => {
-      query = query.eq(key, value);
+      query = applyFilterCondition(query, key, value);
     });
+
+    // Apply optional ordering
+    if (options.orderBy) {
+      const ascending = !options.orderBy.startsWith('-');
+      const column = options.orderBy
+        .replace('-', '')
+        .replace('created_date', 'created_at')
+        .replace('updated_date', 'updated_at');
+      query = query.order(column, { ascending });
+    }
+
+    // Apply optional limit
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -216,12 +317,58 @@ function createEntityWrapper(tableName) {
       return data;
     },
 
-    async filter(conditions) {
+    /**
+     * Filter entities by conditions
+     * Supports MongoDB-style operators:
+     * - $ne: not equal
+     * - $gt: greater than
+     * - $gte: greater than or equal
+     * - $lt: less than
+     * - $lte: less than or equal
+     * - $in: value in array
+     * - $nin: value not in array
+     * - $like: pattern match (case-sensitive)
+     * - $ilike: pattern match (case-insensitive)
+     * - $is: IS comparison (for null, true, false)
+     * - $contains: JSONB/array contains
+     *
+     * @example
+     * // Simple equality
+     * filter({ status: 'active' })
+     *
+     * // Not equal
+     * filter({ status: { $ne: 'Completed' } })
+     *
+     * // Greater than
+     * filter({ due_date: { $gte: '2024-01-01' } })
+     *
+     * // Multiple operators on same field
+     * filter({ priority: { $gte: 1, $lte: 5 } })
+     *
+     * // In array
+     * filter({ status: { $in: ['pending', 'in_progress'] } })
+     */
+    async filter(conditions, options = {}) {
       let query = supabase.from(tableName).select('*');
 
       Object.entries(conditions).forEach(([key, value]) => {
-        query = query.eq(key, value);
+        query = applyFilterCondition(query, key, value);
       });
+
+      // Apply optional ordering
+      if (options.orderBy) {
+        const ascending = !options.orderBy.startsWith('-');
+        const column = options.orderBy
+          .replace('-', '')
+          .replace('created_date', 'created_at')
+          .replace('updated_date', 'updated_at');
+        query = query.order(column, { ascending });
+      }
+
+      // Apply optional limit
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -300,9 +447,51 @@ export const VideoTutorial = createEntityWrapper('video_tutorials');
 export const ServiceRequest = createEntityWrapper('service_requests');
 export const ResourceGuide = createEntityWrapper('resource_guides');
 
+// NEW: Users table (synced from Clerk)
+export const User = createEntityWrapper('users');
+
 // NEW: Contractor tables
 export const Contractor = createEntityWrapper('contractors');
 export const ContractorJob = createEntityWrapper('contractor_jobs');
+
+// NEW: Notifications tables
+export const Notification = createEntityWrapper('notifications');
+export const NotificationPreference = createEntityWrapper('notification_preferences');
+export const PushSubscription = createEntityWrapper('push_subscriptions');
+
+// NEW: Operator tables (enhanced)
+export const OperatorProfile = createEntityWrapper('operators');
+export const OperatorServiceArea = createEntityWrapper('operator_service_areas');
+export const OperatorLicense = createEntityWrapper('operator_licenses');
+export const OperatorInsurance = createEntityWrapper('operator_insurance');
+export const OperatorTrainingProgress = createEntityWrapper('operator_training_progress');
+
+// NEW: Contractor relationship tables
+export const ContractorInvitation = createEntityWrapper('contractor_invitations');
+export const OperatorContractor = createEntityWrapper('operator_contractors');
+export const ContractorAvailability = createEntityWrapper('contractor_availability');
+export const ContractorReview = createEntityWrapper('contractor_reviews');
+
+// NEW: Proposal tables
+export const Proposal = createEntityWrapper('proposals');
+export const ProposalRevision = createEntityWrapper('proposal_revisions');
+export const ProposalTemplate = createEntityWrapper('proposal_templates');
+export const ProposalComment = createEntityWrapper('proposal_comments');
+
+// NEW: Work order tables
+export const WorkOrder = createEntityWrapper('work_orders');
+export const WorkOrderStatusHistory = createEntityWrapper('work_order_status_history');
+export const WorkOrderMessage = createEntityWrapper('work_order_messages');
+
+// NEW: Job documentation tables
+export const JobPhoto = createEntityWrapper('job_photos');
+export const ServiceRecord = createEntityWrapper('service_records');
+export const ServiceRecordTag = createEntityWrapper('service_record_tags');
+
+// NEW: Service package tables (enhanced)
+export const ServicePackageCategory = createEntityWrapper('service_package_categories');
+export const ServicePackageSeasonalPricing = createEntityWrapper('service_package_seasonal_pricing');
+export const DefaultServicePackage = createEntityWrapper('default_service_packages');
 
 // ============================================
 // NEW: Reference Data Tables (from data architecture restructure)
@@ -829,6 +1018,45 @@ export function getStandardizedAddressId(addressData) {
 }
 
 // ============================================
+// USER SYNC HELPER
+// Syncs Clerk user to Supabase users table
+// ============================================
+
+/**
+ * Sync the current Clerk user to the Supabase users table
+ * Creates the user if they don't exist, or updates if they do
+ * @param {Object} clerkUser - The Clerk user object
+ * @returns {Object} The synced user from the database
+ */
+export async function syncCurrentUser(clerkUser) {
+  if (!clerkUser?.id) return null;
+
+  const userData = {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress,
+    full_name: clerkUser.fullName,
+    first_name: clerkUser.firstName,
+    last_name: clerkUser.lastName,
+    image_url: clerkUser.imageUrl,
+    updated_at: new Date().toISOString()
+  };
+
+  // Upsert user (insert or update on conflict)
+  const { data, error } = await supabase
+    .from('users')
+    .upsert(userData, { onConflict: 'id' })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to sync user to database:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// ============================================
 // AUTHENTICATION HELPERS
 // ============================================
 
@@ -840,6 +1068,18 @@ export const auth = {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return user;
+  },
+
+  /**
+   * Update the current user's metadata
+   * @param {Object} data - User metadata to update
+   */
+  async updateMe(data) {
+    const { data: result, error } = await supabase.auth.updateUser({
+      data: data
+    });
+    if (error) throw error;
+    return result.user;
   },
 
   /**
@@ -922,4 +1162,174 @@ export const storage = {
     if (error) throw error;
     return true;
   }
+};
+
+// ============================================
+// INTEGRATIONS (AI, Email, etc.)
+// These call Supabase Edge Functions
+// ============================================
+
+export const integrations = {
+  /**
+   * Invoke an AI/LLM model via Edge Function
+   * @param {Object} options - Options including prompt, file_urls, response_json_schema
+   */
+  async InvokeLLM(options) {
+    const { data, error } = await supabase.functions.invoke('invokeClaude', {
+      body: options
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Send an email via Edge Function
+   * @param {Object} options - Email options (to, subject, body, etc.)
+   */
+  async SendEmail(options) {
+    const { data, error } = await supabase.functions.invoke('sendNotificationEmail', {
+      body: options
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Send an SMS via Edge Function
+   * @param {Object} options - SMS options (to, message, etc.)
+   */
+  async SendSMS(options) {
+    const { data, error } = await supabase.functions.invoke('sendSMS', {
+      body: options
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Upload a file - wrapper for storage.uploadFile
+   * @param {Object} options - { file: File }
+   */
+  async UploadFile({ file }) {
+    return storage.uploadFile(file);
+  },
+
+  /**
+   * Extract data from an uploaded file using AI
+   * @param {Object} options - { file_url: string }
+   */
+  async ExtractDataFromUploadedFile(options) {
+    const { data, error } = await supabase.functions.invoke('extractFileData', {
+      body: options
+    });
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ============================================
+// FUNCTIONS HELPER
+// Wrapper for calling Supabase Edge Functions
+// ============================================
+
+export const functions = {
+  /**
+   * Invoke a Supabase Edge Function
+   * @param {string} functionName - Name of the function to call
+   * @param {Object} body - Request body
+   */
+  async invoke(functionName, body = {}) {
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body
+    });
+
+    if (error) throw error;
+    return { data };
+  }
+};
+
+// ============================================
+// COMPATIBILITY LAYER
+// This provides backwards compatibility for code
+// that still imports from the old base44Client
+// ============================================
+
+export const base44 = {
+  // Entity wrappers - matches old base44.entities.XXX pattern
+  entities: {
+    Property,
+    SystemBaseline,
+    MaintenanceTask,
+    Inspection,
+    Upgrade,
+    CartItem,
+    PreservationRecommendation,
+    PortfolioEquity,
+    Operator,
+    PropertyAccess,
+    UpgradeTemplate,
+    UserSecuritySettings,
+    StrategicRecommendation,
+    ServicePackage,
+    OperatorStripeAccount,
+    MaintenanceTemplate,
+    WealthProjection,
+    Waitlist,
+    PreservationImpact,
+    PortfolioBenchmark,
+    CapitalAllocation,
+    VideoTutorial,
+    ServiceRequest,
+    ResourceGuide,
+    Contractor,
+    ContractorJob,
+    PublicPropertyData,
+    RegionalCosts,
+    SystemLifespans,
+    ContractorPricing,
+    // New entities from portal ecosystem
+    Notification,
+    NotificationPreference,
+    PushSubscription,
+    OperatorProfile,
+    OperatorServiceArea,
+    OperatorLicense,
+    OperatorInsurance,
+    OperatorTrainingProgress,
+    ContractorInvitation,
+    OperatorContractor,
+    ContractorAvailability,
+    ContractorReview,
+    Proposal,
+    ProposalRevision,
+    ProposalTemplate,
+    ProposalComment,
+    WorkOrder,
+    WorkOrderStatusHistory,
+    WorkOrderMessage,
+    JobPhoto,
+    ServiceRecord,
+    ServiceRecordTag,
+    ServicePackageCategory,
+    ServicePackageSeasonalPricing,
+    DefaultServicePackage
+  },
+
+  // Auth wrapper
+  auth,
+
+  // Functions wrapper
+  functions,
+
+  // Integrations wrapper - matches old base44.integrations.Core.XXX pattern
+  integrations: {
+    Core: integrations
+  },
+
+  // Storage wrapper
+  storage
 };

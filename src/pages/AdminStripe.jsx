@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { functions } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ export default function AdminStripe() {
   const { data: diagnostics, isLoading } = useQuery({
     queryKey: ['stripeDiagnostics'],
     queryFn: async () => {
-      const { data } = await base44.functions.invoke('diagnoseStripe');
+      const { data } = await functions.invoke('diagnoseStripe');
       return data.diagnostics;
     }
   });

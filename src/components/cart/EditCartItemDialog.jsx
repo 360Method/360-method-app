@@ -1,5 +1,5 @@
 import React from "react";
-import { auth, Property, CartItem, MaintenanceTask, storage } from "@/api/supabaseClient";
+import { auth, Property, CartItem, MaintenanceTask, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -272,8 +272,7 @@ PRICING MODIFIERS:
 
 Provide realistic, professional estimates. Be conservative - better to over-estimate slightly than under-deliver.`;
 
-      // TODO: Migrate base44.integrations.Core.InvokeLLM to Supabase Edge Function or alternative AI service
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await integrations.InvokeLLM({
         prompt: estimationPrompt,
         add_context_from_internet: false,
         file_urls: formData.photo_urls?.length > 0 ? formData.photo_urls : undefined,

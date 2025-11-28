@@ -1,22 +1,33 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
     
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { 
+        status: 403,
+        headers: corsHeaders 
+      });
     }
 
     const { event_type, test_data } = await req.json();
 
     if (!event_type) {
-      return Response.json({ error: 'Missing event_type' }, { status: 400 });
+      return Response.json({ error: 'Missing event_type' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Default test data for each event type
-    const defaultTestData = {
+    const defaultTestData: Record<string, any> = {
       service_package_submitted: {
         package_id: 'test_pkg_123',
         operator_id: 'test_op_123',
@@ -73,11 +84,14 @@ Deno.serve(async (req) => {
     if (!eventData) {
       return Response.json({ 
         error: `No test data for event type: ${event_type}. Supported: ${Object.keys(defaultTestData).join(', ')}` 
-      }, { status: 400 });
+      }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Trigger the notification event (will send to your email)
-    const result = await base44.asServiceRole.functions.invoke('triggerNotificationEvent', {
+    const result = await helper.asServiceRole.functions.invoke('triggerNotificationEvent', {
       event_type,
       event_data: {
         ...eventData,
@@ -91,10 +105,13 @@ Deno.serve(async (req) => {
       success: true,
       message: `Test email sent for ${event_type}`,
       sent_to: user.email,
-      result: result.data
-    });
+      result: result
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error sending test email:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

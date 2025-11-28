@@ -1,11 +1,9 @@
 import React from "react";
+import { integrations } from "@/api/supabaseClient";
 
 /**
  * AI-powered estimation for cart items
  * Estimates hours and cost ranges based on task details
- *
- * Note: This file uses base44.integrations.Core.InvokeLLM which needs to be migrated
- * to a Supabase Edge Function or alternative AI service implementation
  */
 export async function estimateCartItems(items, property) {
   const prompt = `You are a home service estimator. Analyze these service requests and provide realistic time and cost estimates.
@@ -65,7 +63,7 @@ All estimates are based on typical scenarios and standard rates. Actual costs ma
 Return JSON array with estimates for each item in order.`;
 
   try {
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await integrations.InvokeLLM({
       prompt: prompt,
       add_context_from_internet: false,
       response_json_schema: {

@@ -1,12 +1,17 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403, headers: corsHeaders });
     }
 
     const scheduledTasks = [
@@ -75,10 +80,10 @@ Deno.serve(async (req) => {
       }
     ];
 
-    const created = [];
+    const created: string[] = [];
     for (const taskData of scheduledTasks) {
       // Check if task already exists
-      const existing = await base44.asServiceRole.entities.ScheduledTask.filter({
+      const existing = await helper.asServiceRole.entities.ScheduledTask.filter({
         task_name: taskData.task_name
       });
 
@@ -87,40 +92,40 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const task = await base44.asServiceRole.entities.ScheduledTask.create(taskData);
-      created.push(task.id);
+      const task = await helper.asServiceRole.entities.ScheduledTask.create(taskData);
+      created.push((task as any).id);
     }
 
     return Response.json({
       success: true,
       message: `Initialized ${created.length} scheduled tasks`,
       created_ids: created
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error initializing scheduled tasks:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });
 
-function getNextDailyRun(hour, minute) {
+function getNextDailyRun(hour: number, minute: number) {
   const next = new Date();
   next.setHours(hour, minute, 0, 0);
-  
+
   // If time has passed today, schedule for tomorrow
   if (next <= new Date()) {
     next.setDate(next.getDate() + 1);
   }
-  
+
   return next.toISOString();
 }
 
-function getNextWeeklyRun(dayOfWeek, hour, minute) {
+function getNextWeeklyRun(dayOfWeek: number, hour: number, minute: number) {
   const next = new Date();
   const currentDay = next.getDay();
   const daysUntilTarget = (dayOfWeek - currentDay + 7) % 7 || 7;
-  
+
   next.setDate(next.getDate() + daysUntilTarget);
   next.setHours(hour, minute, 0, 0);
-  
+
   return next.toISOString();
 }

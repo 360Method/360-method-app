@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, ServicePackage } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,13 +21,13 @@ export default function OwnerInvoices() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['ownerInvoices'],
     queryFn: async () => {
-      const allInvoices = await base44.entities.ServicePackage.list('-created_date');
+      const allInvoices = await ServicePackage.list('-created_date');
       return allInvoices.filter(inv => inv.payment_status);
     }
   });

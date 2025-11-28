@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Property, SystemBaseline, MaintenanceTask } from '@/api/supabaseClient';
 import {
   Home, Shield, TrendingUp, AlertTriangle, CheckCircle,
   Clock, DollarSign, Calendar, Zap, ArrowRight
@@ -42,11 +42,11 @@ export default function DashboardHomeowner() {
     return () => clearTimeout(timer);
   }, [demoMode, ahaMoments]);
 
-  // Fetch real data
+  // Fetch real data using Supabase
   const { data: realProperties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list('-created_date');
+      const allProps = await Property.list('-created_at');
       return allProps.filter(p => !p.is_draft);
     },
     enabled: !demoMode
@@ -56,7 +56,7 @@ export default function DashboardHomeowner() {
 
   const { data: realSystems = [] } = useQuery({
     queryKey: ['systemBaselines', property?.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property?.id }),
+    queryFn: () => SystemBaseline.filter({ property_id: property?.id }),
     enabled: !demoMode && !!property?.id
   });
 
@@ -64,7 +64,7 @@ export default function DashboardHomeowner() {
 
   const { data: realTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', property?.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({ property_id: property?.id }),
+    queryFn: () => MaintenanceTask.filter({ property_id: property?.id }),
     enabled: !demoMode && !!property?.id
   });
 
@@ -72,9 +72,9 @@ export default function DashboardHomeowner() {
 
   const { data: realCompletedTasks = [] } = useQuery({
     queryKey: ['completedTasks', property?.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({ 
-      property_id: property?.id, 
-      status: 'Completed' 
+    queryFn: () => MaintenanceTask.filter({
+      property_id: property?.id,
+      status: 'Completed'
     }),
     enabled: !demoMode && !!property?.id
   });

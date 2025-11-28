@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Upgrade } from '@/api/supabaseClient';
 import { DollarSign, TrendingUp, AlertTriangle, Edit, Save, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ export default function BudgetTrackingView({ project, onUpdate }) {
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Upgrade.update(project.id, data),
+    mutationFn: (data) => Upgrade.update(project.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['upgrade', project.id] });
       setIsEditing(false);

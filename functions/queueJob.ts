@@ -1,8 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     
     const { 
       job_type, 
@@ -14,10 +19,13 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     if (!job_type || !payload) {
-      return Response.json({ error: 'Missing job_type or payload' }, { status: 400 });
+      return Response.json({ error: 'Missing job_type or payload' }, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
-    const job = await base44.asServiceRole.entities.Job.create({
+    const job = await helper.asServiceRole.entities.Job.create({
       job_type,
       status: 'pending',
       payload,
@@ -31,9 +39,12 @@ Deno.serve(async (req) => {
     return Response.json({ 
       success: true, 
       job_id: job.id 
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error queueing job:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

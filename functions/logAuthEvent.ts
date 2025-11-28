@@ -1,8 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     const payload = await req.json();
     
     const {
@@ -27,7 +32,7 @@ Deno.serve(async (req) => {
     const risk_score = calculateRiskScore(event_type, status);
 
     // Create auth event record
-    const authEvent = await base44.asServiceRole.entities.AuthEvent.create({
+    const authEvent = await helper.asServiceRole.entities.AuthEvent.create({
       event_type,
       user_id,
       email,
@@ -42,14 +47,17 @@ Deno.serve(async (req) => {
       metadata
     });
 
-    return Response.json({ success: true, event_id: authEvent.id });
+    return Response.json({ success: true, event_id: authEvent.id }, { headers: corsHeaders });
   } catch (error) {
     console.error('logAuthEvent error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });
 
-function parseUserAgent(ua) {
+function parseUserAgent(ua: string) {
   const mobile = /Mobile|Android|iPhone|iPad/i.test(ua);
   const tablet = /Tablet|iPad/i.test(ua);
   
@@ -73,7 +81,7 @@ function parseUserAgent(ua) {
   };
 }
 
-function calculateRiskScore(event_type, status) {
+function calculateRiskScore(event_type: string, status: string): number {
   let score = 0;
   
   if (status === 'failed') score += 20;

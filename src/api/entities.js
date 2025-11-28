@@ -1,9 +1,14 @@
-import { base44 } from './base44Client';
+/**
+ * Entity exports - Compatibility layer
+ * 
+ * This file provides backwards compatibility for code that imports entities.
+ * New code should import directly from supabaseClient.js
+ */
 
+import { base44, auth } from './supabaseClient';
 
-export const Query = base44.entities.Query;
-
-
+// Re-export entities for backwards compatibility
+export const Query = base44.entities;
 
 // auth sdk:
-export const User = base44.auth;
+export const User = auth;

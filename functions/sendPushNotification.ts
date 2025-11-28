@@ -1,9 +1,14 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 import webpush from 'npm:web-push@3.6.7';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
+    const helper = createHelperFromRequest(req);
     
     const {
       user_id,
@@ -16,7 +21,7 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     // Get user's push subscriptions
-    const subscriptions = await base44.asServiceRole.entities.PushSubscription.filter({
+    const subscriptions = await helper.asServiceRole.entities.PushSubscription.filter({
       user_id: user_id,
       active: true
     });
@@ -26,7 +31,7 @@ Deno.serve(async (req) => {
         success: true, 
         message: 'No active push subscriptions',
         delivered_count: 0 
-      });
+      }, { headers: corsHeaders });
     }
 
     // Configure web-push (requires VAPID keys in environment)
@@ -52,7 +57,7 @@ Deno.serve(async (req) => {
     });
 
     let successCount = 0;
-    const failedSubscriptions = [];
+    const failedSubscriptions: string[] = [];
 
     // Send to all subscriptions
     for (const subscription of subscriptions) {
@@ -68,17 +73,17 @@ Deno.serve(async (req) => {
         await webpush.sendNotification(pushSubscription, payload);
         
         // Update last_used_at
-        await base44.asServiceRole.entities.PushSubscription.update(subscription.id, {
+        await helper.asServiceRole.entities.PushSubscription.update(subscription.id, {
           last_used_at: new Date().toISOString()
         });
         
         successCount++;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Push failed for subscription:', subscription.id, error);
         
         // If subscription is no longer valid, mark as inactive
         if (error.statusCode === 410 || error.statusCode === 404) {
-          await base44.asServiceRole.entities.PushSubscription.update(subscription.id, {
+          await helper.asServiceRole.entities.PushSubscription.update(subscription.id, {
             active: false
           });
         }
@@ -92,9 +97,12 @@ Deno.serve(async (req) => {
       delivered_count: successCount,
       failed_count: failedSubscriptions.length,
       failed_subscriptions: failedSubscriptions
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error sending push notification:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { 
+      status: 500,
+      headers: corsHeaders 
+    });
   }
 });

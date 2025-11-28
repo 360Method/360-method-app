@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
 import DemoCTA from '../components/demo/DemoCTA';
 
 export default function Resources() {
@@ -73,7 +72,7 @@ export default function Resources() {
                     </li>
                   </ul>
                   <Button
-                    onClick={() => base44.auth.redirectToLogin()}
+                    onClick={() => navigate('/Login')}
                     className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600"
                     style={{ minHeight: '48px' }}
                   >
@@ -695,7 +694,7 @@ function DemoNavGuideModal({ onClose }) {
                 <Button
                   onClick={() => {
                     onClose();
-                    base44.auth.redirectToLogin();
+                    window.location.href = '/Login';
                   }}
                   className="bg-white text-orange-600 hover:bg-gray-100 font-semibold"
                   style={{ minHeight: '48px' }}

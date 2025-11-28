@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle, Lock } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Waitlist } from '@/api/supabaseClient';
 import { useMutation } from '@tanstack/react-query';
 
 export default function WaitlistInlineForm({ source = 'homepage_offer' }) {
@@ -9,7 +9,7 @@ export default function WaitlistInlineForm({ source = 'homepage_offer' }) {
 
   const submitMutation = useMutation({
     mutationFn: async (email) => {
-      await base44.entities.Waitlist.create({
+      await Waitlist.create({
         email,
         source,
         first_name: '',

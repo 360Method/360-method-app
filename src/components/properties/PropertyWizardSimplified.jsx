@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Property } from "@/api/supabaseClient";
+import { Property, integrations } from "@/api/supabaseClient";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +91,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
       // Search public listing sites
       const searchQuery = `${address.formatted_address} property details year built bedrooms bathrooms square feet`;
       
-      const searchResults = await base44.integrations.Core.InvokeLLM({
+      const searchResults = await integrations.InvokeLLM({
         prompt: `Find property details for this address: ${address.formatted_address}
 
 Please search for publicly available information about this property including:

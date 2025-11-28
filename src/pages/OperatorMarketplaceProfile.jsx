@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Operator } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,7 @@ export default function OperatorMarketplaceProfile() {
   const queryClient = useQueryClient();
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.entities.Operator.update('operator_id', data),
+    mutationFn: (data) => Operator.update('operator_id', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator'] });
       toast.success('Profile updated successfully');

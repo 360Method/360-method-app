@@ -1,20 +1,25 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createHelperFromRequest, corsHeaders } from './_shared/supabaseClient.ts';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    const helper = createHelperFromRequest(req);
+    const user = await helper.auth.me();
+
+    if (!user || user.user_metadata?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403, headers: corsHeaders });
     }
 
     const { dry_run = true, limit = 10 } = await req.json();
 
     // Get existing properties
-    const existingProperties = await base44.asServiceRole.entities.Property.list('-created_date', limit);
+    const existingProperties = await helper.asServiceRole.entities.Property.filter({});
 
-    const results = {
+    const results: any = {
       total_processed: 0,
       canonical_created: 0,
       user_properties_created: 0,
@@ -23,47 +28,50 @@ Deno.serve(async (req) => {
       duplicates_found: []
     };
 
-    for (const property of existingProperties) {
+    const propertiesToProcess = existingProperties.slice(0, limit);
+
+    for (const property of propertiesToProcess) {
       try {
+        const prop = property as any;
         results.total_processed++;
 
         // Skip if already migrated (has canonical_property_id field populated)
-        if (property.canonical_property_id) {
-          console.log(`Property ${property.id} already migrated`);
+        if (prop.canonical_property_id) {
+          console.log(`Property ${prop.id} already migrated`);
           continue;
         }
 
         // Build address from property data
         const addressInput = {
-          street_number: property.street_address?.split(' ')[0],
-          street_name: property.street_address?.split(' ').slice(1).join(' '),
-          city: property.city,
-          state: property.state,
-          zip_code: property.zip_code
+          street_number: prop.street_address?.split(' ')[0],
+          street_name: prop.street_address?.split(' ').slice(1).join(' '),
+          city: prop.city,
+          state: prop.state,
+          zip_code: prop.zip_code
         };
 
         if (!addressInput.city || !addressInput.state) {
           results.errors.push({
-            property_id: property.id,
+            property_id: prop.id,
             error: 'Missing required address fields'
           });
           continue;
         }
 
         if (dry_run) {
-          console.log(`Would migrate property ${property.id}:`, addressInput);
+          console.log(`Would migrate property ${prop.id}:`, addressInput);
           continue;
         }
 
         // Find or create canonical property
-        const canonicalResult = await base44.asServiceRole.functions.invoke(
+        const canonicalResult = await helper.asServiceRole.functions.invoke(
           'findOrCreateCanonicalProperty',
           addressInput
         );
 
         if (!canonicalResult.data?.success) {
           results.errors.push({
-            property_id: property.id,
+            property_id: prop.id,
             error: 'Failed to create canonical property',
             details: canonicalResult.data
           });
@@ -71,32 +79,32 @@ Deno.serve(async (req) => {
         }
 
         const canonical_property_id = canonicalResult.data.canonical_property_id;
-        
+
         if (canonicalResult.data.is_new) {
           results.canonical_created++;
         } else {
           results.duplicates_found.push({
-            property_id: property.id,
+            property_id: prop.id,
             canonical_property_id
           });
         }
 
         // Create UserProperty record
-        const userProperty = await base44.asServiceRole.entities.UserProperty.create({
+        const userProperty = await helper.asServiceRole.entities.UserProperty.create({
           canonical_property_id,
-          user_id: property.created_by, // Assuming created_by is user_id
-          display_name: property.address,
+          user_id: prop.created_by, // Assuming created_by is user_id
+          display_name: prop.address,
           property_status: 'active',
-          ownership_type: property.property_use_type || 'primary_residence',
-          acquisition_date: property.purchase_date,
-          acquisition_price: property.purchase_price,
-          current_estimated_value: property.current_value,
-          monthly_rent: property.monthly_rent,
-          management_type: property.property_manager ? 'property_manager' : 'self_managed',
-          operator_id: property.operator_id,
-          health_score: property.health_score || 0,
-          baseline_completed: property.setup_completed || false,
-          last_inspection_date: property.last_inspection_date,
+          ownership_type: prop.property_use_type || 'primary_residence',
+          acquisition_date: prop.purchase_date,
+          acquisition_price: prop.purchase_price,
+          current_estimated_value: prop.current_value,
+          monthly_rent: prop.monthly_rent,
+          management_type: prop.property_manager ? 'property_manager' : 'self_managed',
+          operator_id: prop.operator_id,
+          health_score: prop.health_score || 0,
+          baseline_completed: prop.setup_completed || false,
+          last_inspection_date: prop.last_inspection_date,
           notes: null,
           photo_urls: [],
           tags: []
@@ -105,14 +113,14 @@ Deno.serve(async (req) => {
         results.user_properties_created++;
 
         // Create PublicPropertyData from existing property data
-        const publicData = await base44.asServiceRole.entities.PublicPropertyData.create({
+        const publicData = await helper.asServiceRole.entities.PublicPropertyData.create({
           canonical_property_id,
-          bedrooms: property.bedrooms,
-          bathrooms: property.bathrooms,
-          square_footage: property.square_footage,
-          year_built: property.year_built,
-          stories: parseStories(property.stories),
-          property_type: mapPropertyType(property.property_type),
+          bedrooms: prop.bedrooms,
+          bathrooms: prop.bathrooms,
+          square_footage: prop.square_footage,
+          year_built: prop.year_built,
+          stories: parseStories(prop.stories),
+          property_type: mapPropertyType(prop.property_type),
           data_source: 'migration',
           last_refreshed_at: new Date().toISOString()
         });
@@ -120,15 +128,15 @@ Deno.serve(async (req) => {
         results.public_data_created++;
 
         // Update original Property with canonical_property_id reference
-        await base44.asServiceRole.entities.Property.update(property.id, {
+        await helper.asServiceRole.entities.Property.update(prop.id, {
           canonical_property_id,
           // Add migration_note to track this
-          notes: (property.notes || '') + `\n[Migrated to new data architecture on ${new Date().toISOString()}]`
+          notes: (prop.notes || '') + `\n[Migrated to new data architecture on ${new Date().toISOString()}]`
         });
 
-      } catch (error) {
+      } catch (error: any) {
         results.errors.push({
-          property_id: property.id,
+          property_id: (property as any).id,
           error: error.message
         });
       }
@@ -138,21 +146,21 @@ Deno.serve(async (req) => {
       success: true,
       dry_run,
       results
-    });
-  } catch (error) {
+    }, { headers: corsHeaders });
+  } catch (error: any) {
     console.error('Error migrating properties:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
   }
 });
 
-function parseStories(storiesStr) {
+function parseStories(storiesStr: string | null) {
   if (!storiesStr) return null;
   const match = storiesStr.match(/\d+/);
   return match ? parseInt(match[0]) : null;
 }
 
-function mapPropertyType(type) {
-  const typeMap = {
+function mapPropertyType(type: string) {
+  const typeMap: Record<string, string> = {
     'Single-Family Home': 'single_family',
     'Duplex': 'multi_family',
     'Triplex': 'multi_family',

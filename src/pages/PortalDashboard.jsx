@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Property, MaintenanceTask, Inspection } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,17 +25,17 @@ export default function PortalDashboard() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date')
+    queryFn: () => Property.list('-created_date')
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', selectedProperty?.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({
+    queryFn: () => MaintenanceTask.filter({
       property_id: selectedProperty?.id,
       status: { $ne: 'Completed' }
     }),
@@ -44,7 +44,7 @@ export default function PortalDashboard() {
 
   const { data: inspections = [] } = useQuery({
     queryKey: ['inspections', selectedProperty?.id],
-    queryFn: () => base44.entities.Inspection.filter({
+    queryFn: () => Inspection.filter({
       property_id: selectedProperty?.id
     }),
     enabled: !!selectedProperty?.id

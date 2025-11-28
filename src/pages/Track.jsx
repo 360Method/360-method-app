@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { Property, MaintenanceTask, Upgrade, SystemBaseline, Inspection, integrations } from '@/api/supabaseClient';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, TrendingUp, Calendar, Image as ImageIcon, Plus, Info
@@ -52,7 +52,7 @@ export default function TrackPage() {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return await base44.entities.Property.list('-created_date');
+      return await Property.list('-created_date');
     }
   });
 
@@ -77,7 +77,7 @@ export default function TrackPage() {
       }
       
       if (!selectedProperty || selectedProperty === 'first') return [];
-      return await base44.entities.MaintenanceTask.filter({ 
+      return await MaintenanceTask.filter({ 
         property_id: selectedProperty, 
         status: 'Completed' 
       }, '-completion_date');
@@ -97,7 +97,7 @@ export default function TrackPage() {
     queryKey: ['systemBaselines', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
-      return await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+      return await SystemBaseline.filter({ property_id: selectedProperty });
     },
     enabled: !demoMode && !!selectedProperty && selectedProperty !== 'first'
   });
@@ -111,7 +111,7 @@ export default function TrackPage() {
     queryKey: ['inspections', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
-      return await base44.entities.Inspection.filter({ 
+      return await Inspection.filter({ 
         property_id: selectedProperty, 
         status: 'Completed' 
       }, '-inspection_date');
@@ -128,7 +128,7 @@ export default function TrackPage() {
     queryKey: ['upgrades', selectedProperty],
     queryFn: async () => {
       if (!selectedProperty || selectedProperty === 'first') return [];
-      return await base44.entities.Upgrade.filter({ 
+      return await Upgrade.filter({ 
         property_id: selectedProperty, 
         status: 'Completed' 
       }, '-completion_date');
@@ -314,7 +314,7 @@ Provide comprehensive analysis with this structure:
 5. Proactive Actions for next 3-6 months
 6. Pattern Insights`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await integrations.InvokeLLM({
         prompt,
         response_json_schema: {
           type: "object",

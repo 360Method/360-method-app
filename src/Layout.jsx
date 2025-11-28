@@ -32,6 +32,7 @@ import CartDrawer from "./components/cart/CartDrawer";
 import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import NotificationCenter from "./components/notifications/NotificationCenter";
+import RoleSwitcher from "./components/shared/RoleSwitcher";
 import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
@@ -411,6 +412,12 @@ function LayoutContent({ children }) {
                       tasks={tasks}
                     />
                   </div>
+                  {/* Role Switcher - only show if user has multiple roles */}
+                  {!demoMode && user?.roles?.length > 1 && (
+                    <div className="px-1">
+                      <RoleSwitcher variant="compact" />
+                    </div>
+                  )}
                   <div className="px-1">
                     <AccountDropdown isMobile={false} />
                   </div>
@@ -425,6 +432,10 @@ function LayoutContent({ children }) {
                     systems={systems}
                     tasks={tasks}
                   />
+                  {/* Role Switcher - compact for collapsed sidebar */}
+                  {!demoMode && user?.roles?.length > 1 && (
+                    <RoleSwitcher variant="compact" />
+                  )}
                   <AccountDropdown isMobile={true} />
                 </div>
               )}
@@ -585,6 +596,9 @@ function LayoutContent({ children }) {
                   <p className="text-xs text-gray-500">Asset Command Center</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  {!demoMode && user?.roles?.length > 1 && (
+                    <RoleSwitcher variant="compact" showAddRole={false} />
+                  )}
                   <NotificationCenter />
                   <HelpSystem
                     currentPhase={getCurrentPhase()}

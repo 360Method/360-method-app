@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { auth, Property, PropertyAccess } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ export default function AcceptInvitation() {
   const { data: invitation } = useQuery({
     queryKey: ['invitation', token],
     queryFn: async () => {
-      const invitations = await base44.entities.PropertyAccess.filter({
+      const invitations = await PropertyAccess.filter({
         invitation_token: token,
         status: 'invited'
       });
@@ -28,7 +28,7 @@ export default function AcceptInvitation() {
 
   const { data: property } = useQuery({
     queryKey: ['property', invitation?.property_id],
-    queryFn: () => base44.entities.Property.filter({ id: invitation.property_id }).then(p => p[0]),
+    queryFn: () => Property.get(invitation.property_id),
     enabled: !!invitation?.property_id
   });
 
@@ -49,9 +49,9 @@ export default function AcceptInvitation() {
 
   const acceptMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      
-      return base44.entities.PropertyAccess.update(invitation.id, {
+      const user = await auth.me();
+
+      return PropertyAccess.update(invitation.id, {
         user_id: user.id,
         status: 'active',
         accepted_date: new Date().toISOString()
