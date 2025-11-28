@@ -15,10 +15,13 @@ import {
 import CompletionCelebration from "./CompletionCelebration";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import InteractiveStepItem from "./InteractiveStepItem";
+import DemoDIYAhaCard from "./DemoDIYAhaCard";
+import { useDemo } from "@/components/shared/DemoContext";
 
 export default function EnhancedTaskExecutionView({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
-  
+  const { demoMode } = useDemo();
+
   // State for task execution
   const [stepCompletions, setStepCompletions] = useState(task?.step_progress || []);
   const [steps, setSteps] = useState([]);
@@ -38,6 +41,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
   const [addingMaterial, setAddingMaterial] = useState(false);
   const [newToolName, setNewToolName] = useState('');
   const [newMaterialName, setNewMaterialName] = useState('');
+  const [showAhaCard, setShowAhaCard] = useState(true);
   
   // Collapsible sections
   const [whyExpanded, setWhyExpanded] = useState(true);
@@ -407,6 +411,15 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
               </Badge>
             </div>
           </div>
+
+          {/* DEMO AHA CARD - Shows why this is better than YouTube/Google */}
+          {demoMode && showAhaCard && (
+            <DemoDIYAhaCard
+              task={task}
+              systemInfo={systemBaseline}
+              onDismiss={() => setShowAhaCard(false)}
+            />
+          )}
 
           {/* WHY THIS MATTERS - Collapsible */}
           <Collapsible open={whyExpanded} onOpenChange={setWhyExpanded}>
