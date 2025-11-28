@@ -1,38 +1,39 @@
-import React from 'react';
-import { Info, Sparkles, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '../shared/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import DemoExitCTA from './DemoExitCTA';
 
 export function DemoBanner({ onAddProperty }) {
   const { demoMode } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showExitCTA, setShowExitCTA] = useState(false);
 
   // Demo banner should show when:
   // 1. User is in demo mode (session state)
   // 2. NOT on landing/welcome pages (those have their own flows)
-  const isLandingPage = location.pathname === '/' || 
-                        location.pathname === '/welcome' || 
+  const isLandingPage = location.pathname === '/' ||
+                        location.pathname === '/welcome' ||
                         location.pathname === createPageUrl('Welcome') ||
                         location.pathname === createPageUrl('Waitlist');
-  
+
   // Hide banner if not in demo mode OR on landing pages
   if (!demoMode || isLandingPage) return null;
 
   const handleStartFree = () => {
-    base44.auth.redirectToLogin();
+    navigate('/Signup');
   };
 
   const handleBackToLanding = () => {
-    navigate('/');
+    setShowExitCTA(true);
   };
 
   return (
-    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 fixed left-0 right-0 z-[45] shadow-sm top-[56px] md:top-0 transition-all duration-300"
-         style={{ left: '0', right: '0', width: '100%' }}>
+    <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-b-2 border-yellow-400 fixed right-0 z-[35] shadow-sm top-[56px] md:top-0 transition-all duration-300 left-0 md:left-64"
+         style={{ }}>
       <div className="px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Left side - Demo info */}
@@ -72,13 +73,20 @@ export function DemoBanner({ onAddProperty }) {
               size="sm"
               className="text-yellow-800 hover:text-yellow-900 hover:bg-yellow-100"
               style={{ minHeight: '40px' }}
-              title="Back to Landing"
+              title="Exit Demo"
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Exit CTA Modal */}
+      <DemoExitCTA
+        isOpen={showExitCTA}
+        onClose={() => setShowExitCTA(false)}
+        reason="exit"
+      />
     </div>
   );
 }

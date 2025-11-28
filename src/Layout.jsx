@@ -1,7 +1,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
+import { Property, SystemBaseline, MaintenanceTask } from "@/api/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import {
@@ -37,11 +38,14 @@ import { DemoBanner } from "./components/demo/DemoBanner";
 import FloatingSignupCTA from "./components/demo/FloatingSignupCTA";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
 import DemoAIChat from "./components/demo/DemoAIChat";
-import PortalSwitcher from "./components/dev/PortalSwitcher";
+import GuidedDemoTour from "./components/demo/GuidedDemoTour";
+import DemoIntroModal from "./components/demo/DemoIntroModal";
+import DemoHelpButton from "./components/demo/DemoHelpButton";
 
 function LayoutContent({ children }) {
   const location = useLocation();
   const { demoMode } = useDemo();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [openSections, setOpenSections] = React.useState({
@@ -62,43 +66,57 @@ function LayoutContent({ children }) {
   const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
   const showAppUI = !isLandingPage && !isWaitlistPage && !isDemoEntryPage;
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-    retry: false,
-  });
-
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list('-created_date');
+      const allProps = await Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     },
     retry: false,
+    enabled: !demoMode // Don't fetch from server in demo mode
   });
 
   const selectedProperty = properties[0];
 
   const { data: systems = [] } = useQuery({
     queryKey: ['systemBaselines', selectedProperty?.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({
+    queryFn: () => SystemBaseline.filter({
       property_id: selectedProperty?.id
     }),
-    enabled: !!selectedProperty?.id
+    enabled: !demoMode && !!selectedProperty?.id // Don't fetch in demo mode
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty?.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({
+    queryFn: () => MaintenanceTask.filter({
       property_id: selectedProperty?.id
     }),
-    enabled: !!selectedProperty?.id
+    enabled: !demoMode && !!selectedProperty?.id // Don't fetch in demo mode
   });
 
   const urgentTasks = tasks.filter(t =>
     (t.priority === 'High' || t.cascade_risk_score >= 7) &&
     t.status !== 'Completed'
   );
+
+  // Map regular pages to demo pages when in demo mode
+  const DEMO_PAGE_MAP = {
+    'Schedule': 'DemoSchedule',
+    'Execute': 'DemoExecute',
+  };
+
+  // Helper to get URL, using demo pages when appropriate
+  const getNavUrl = (originalUrl) => {
+    if (!demoMode) return originalUrl;
+
+    // Extract page name from URL and check if it should be a demo page
+    for (const [page, demoPage] of Object.entries(DEMO_PAGE_MAP)) {
+      if (originalUrl === createPageUrl(page)) {
+        return createPageUrl(demoPage);
+      }
+    }
+    return originalUrl;
+  };
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({
@@ -108,7 +126,7 @@ function LayoutContent({ children }) {
   };
 
   const handleLogout = () => {
-    base44.auth.logout();
+    logout();
   };
 
   const getCurrentPhase = () => {
@@ -292,14 +310,15 @@ function LayoutContent({ children }) {
                     {(section.section === "Core" || openSections[section.section]) && (
                       <div className="space-y-1">
                         {section.items.map((item) => {
-                          const isLocked = isNavItemLocked(item, selectedProperty);
-                          const isActive = location.pathname === item.url;
+                          const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
+                          const navUrl = getNavUrl(item.url);
+                          const isActive = location.pathname === item.url || location.pathname === navUrl;
                           const Icon = item.icon;
 
                           return (
                             <Link
                               key={item.id}
-                              to={isLocked ? '#' : item.url}
+                              to={isLocked ? '#' : navUrl}
                               data-tour={`sidebar-${item.id.toLowerCase()}`}
                               onClick={(e) => {
                                 if (isLocked) {
@@ -347,14 +366,15 @@ function LayoutContent({ children }) {
               ) : (
                 <div className="space-y-2">
                   {NAVIGATION_STRUCTURE.flatMap((section) => section.items).map((item) => {
-                    const isLocked = isNavItemLocked(item, selectedProperty);
-                    const isActive = location.pathname === item.url;
+                    const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
+                    const navUrl = getNavUrl(item.url);
+                    const isActive = location.pathname === item.url || location.pathname === navUrl;
                     const Icon = item.icon;
 
                     return (
                       <Link
                         key={item.id}
-                        to={isLocked ? '#' : item.url}
+                        to={isLocked ? '#' : navUrl}
                         onClick={(e) => {
                           if (isLocked) {
                             e.preventDefault();
@@ -476,14 +496,15 @@ function LayoutContent({ children }) {
                     {(section.section === "Core" || openSections[section.section]) && (
                       <div className="space-y-1 mt-2">
                         {section.items.map((item) => {
-                          const isLocked = isNavItemLocked(item, selectedProperty);
-                          const isActive = location.pathname === item.url;
+                          const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
+                          const navUrl = getNavUrl(item.url);
+                          const isActive = location.pathname === item.url || location.pathname === navUrl;
                           const Icon = item.icon;
 
                           return (
                             <Link
                               key={item.id}
-                              to={isLocked ? '#' : item.url}
+                              to={isLocked ? '#' : navUrl}
                               data-tour={`sidebar-${item.id.toLowerCase()}`}
                               onClick={(e) => {
                                 if (isLocked) {
@@ -585,10 +606,12 @@ function LayoutContent({ children }) {
 
         {showAppUI && !demoMode && <CartDrawer />}
         {showAppUI && demoMode && <DemoAIChat />}
+        {showAppUI && demoMode && <GuidedDemoTour />}
+        {showAppUI && demoMode && <DemoIntroModal />}
+        {showAppUI && demoMode && <DemoHelpButton />}
         {showAppUI && <FloatingSignupCTA />}
         {showAppUI && <ExitIntentPopup />}
-        <PortalSwitcher />
-        </div>
+      </div>
 
       <style>{`
         /* Interactive Tour Animations - Enhanced */

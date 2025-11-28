@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { ResourceGuide } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default function ResourceGuides() {
 
   const { data: guides = [] } = useQuery({
     queryKey: ['resource-guides'],
-    queryFn: () => base44.entities.ResourceGuide.list('sort_order'),
+    queryFn: () => ResourceGuide.list('sort_order'),
     initialData: [],
   });
 

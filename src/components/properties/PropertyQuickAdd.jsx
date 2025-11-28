@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { Property } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default function PropertyQuickAdd({ isOpen, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.Property.create({
+      return await Property.create({
         ...data,
         setup_completed: true,
         baseline_completion: 0,

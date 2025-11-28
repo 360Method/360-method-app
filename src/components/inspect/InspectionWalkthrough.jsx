@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, Inspection, MaintenanceTask } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,12 +171,12 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
 
   const { data: baselineSystems = [] } = useQuery({
     queryKey: ['systemBaselines', property.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+    queryFn: () => SystemBaseline.filter({ property_id: property.id }),
   });
 
   const saveInspectionMutation = useMutation({
     mutationFn: async (data) => {
-      return base44.entities.Inspection.update(inspection.id, data);
+      return Inspection.update(inspection.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
@@ -185,19 +185,19 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      return base44.entities.MaintenanceTask.create(taskData);
+      return MaintenanceTask.create(taskData);
     },
   });
 
   const updateSystemMutation = useMutation({
     mutationFn: async ({ systemId, updates }) => {
-      return base44.entities.SystemBaseline.update(systemId, updates);
+      return SystemBaseline.update(systemId, updates);
     },
   });
 
   const deleteInspectionMutation = useMutation({
     mutationFn: async () => {
-      return base44.entities.Inspection.delete(inspection.id);
+      return Inspection.delete(inspection.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });

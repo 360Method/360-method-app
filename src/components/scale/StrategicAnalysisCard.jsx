@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { StrategicRecommendation } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -140,7 +140,7 @@ Be direct, data-driven, and actionable.`;
       const capitalGainsTax = equity.is_rental ? (grossProceeds - (equity.purchase_price || grossProceeds)) * 0.15 : 0;
 
       // Create recommendation record
-      const recommendation = await base44.entities.StrategicRecommendation.create({
+      const recommendation = await StrategicRecommendation.create({
         property_id: propertyId,
         portfolio_equity_id: equity.id,
         recommendation: analysis.recommendation,

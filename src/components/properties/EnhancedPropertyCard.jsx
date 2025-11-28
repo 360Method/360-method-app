@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, MaintenanceTask, PreservationRecommendation, PortfolioEquity } from "@/api/supabaseClient";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,28 +26,28 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
   // Fetch related data - skip queries in demo mode
   const { data: systems = [] } = useQuery({
     queryKey: ['systems-count', property.id],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: property.id }),
+    queryFn: () => SystemBaseline.filter({ property_id: property.id }),
     enabled: !isDemo,
     initialData: isDemo && demoData ? (demoData.systems?.filter(s => s.property_id === property.id) || []) : []
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-count', property.id],
-    queryFn: () => base44.entities.MaintenanceTask.filter({ property_id: property.id, status: 'Identified' }),
+    queryFn: () => MaintenanceTask.filter({ property_id: property.id, status: 'Identified' }),
     enabled: !isDemo,
     initialData: isDemo && demoData ? (demoData.tasks?.filter(t => t.property_id === property.id && t.status === 'Identified') || []) : []
   });
 
   const { data: preserveRecs = [] } = useQuery({
     queryKey: ['preserve-count', property.id],
-    queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: property.id, status: 'PENDING' }),
+    queryFn: () => PreservationRecommendation.filter({ property_id: property.id, status: 'PENDING' }),
     enabled: !isDemo,
     initialData: isDemo && demoData ? (demoData.preserveSchedules?.[0]?.interventions?.filter(i => i.status === 'Recommended') || []) : []
   });
 
   const { data: equity } = useQuery({
     queryKey: ['equity-snapshot', property.id],
-    queryFn: () => base44.entities.PortfolioEquity.filter({ property_id: property.id }),
+    queryFn: () => PortfolioEquity.filter({ property_id: property.id }),
     enabled: !isDemo,
     initialData: isDemo && property.current_value ? [{
       current_market_value: property.current_value,

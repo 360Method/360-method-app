@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useDemo } from '@/components/shared/DemoContext';
-import { base44 } from '@/api/base44Client';
 
 export default function DemoCTA() {
   const navigate = useNavigate();
@@ -21,7 +20,7 @@ export default function DemoCTA() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <button 
             className="bg-orange-500 text-white hover:bg-orange-600 font-bold px-8 py-3 rounded-lg text-lg transition-colors"
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => navigate('/Login')}
             style={{ minHeight: '48px' }}
           >
             Start Free Today

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,7 +141,7 @@ export default function PhysicalWalkthroughWizard({ propertyId, property, onComp
   // Fetch existing systems to show what's already documented
   const { data: existingSystems = [] } = useQuery({
     queryKey: ['systemBaselines', propertyId],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: propertyId }),
+    queryFn: () => SystemBaseline.filter({ property_id: propertyId }),
     enabled: !!propertyId,
   });
 

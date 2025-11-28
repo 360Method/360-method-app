@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, AlertCircle } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Property, auth } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddressAutocomplete from "./AddressAutocomplete";
@@ -27,20 +27,20 @@ export default function QuickPropertyAdd({ open, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      return base44.entities.Property.create(data);
+      return Property.create(data);
     },
     onSuccess: async (property) => {
       // Update user's last property
-      await base44.auth.updateMe({ last_property_id: property.id });
-      
+      await auth.updateMe({ last_property_id: property.id });
+
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      
+
       toast.success('🎉 Property added! Let\'s document your systems.');
-      
+
       // Close modal
       onClose();
-      
+
       // Call success callback with property ID
       if (onSuccess) {
         onSuccess(property.id);

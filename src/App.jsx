@@ -7,10 +7,18 @@ import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
+import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import RouteGuard from '@/components/auth/RouteGuard';
+import { DemoProvider } from '@/components/shared/DemoContext';
 
-const { Pages, Layout, mainPage } = pagesConfig;
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!CLERK_PUBLISHABLE_KEY) {
+  console.error('Missing VITE_CLERK_PUBLISHABLE_KEY in environment variables');
+}
+
+const { Pages, Layout, mainPage, publicPages, publicNoLayoutPages, publicWithLayoutPages } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
@@ -18,11 +26,18 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+// Check if a page requires authentication
+const isPublicPage = (pageName) => publicPages?.includes(pageName) ?? false;
+// Check if a public page should NOT have layout
+const isPublicNoLayout = (pageName) => publicNoLayoutPages?.includes(pageName) ?? false;
+// Check if a public page SHOULD have layout
+const isPublicWithLayout = (pageName) => publicWithLayoutPages?.includes(pageName) ?? false;
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+const AuthenticatedApp = () => {
+  const { isLoadingAuth } = useAuth();
+
+  // Show loading spinner while checking auth
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -30,33 +45,74 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
-  }
-
   // Render the main app
   return (
     <Routes>
       <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
+        isPublicPage(mainPageKey) ? (
           <MainPage />
-        </LayoutWrapper>
+        ) : (
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        )
+      } />
+      {/* Clerk Sign In/Up pages with wildcard for SSO callbacks */}
+      <Route path="/Login/*" element={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <SignIn
+            routing="path"
+            path="/Login"
+            signUpUrl="/Signup"
+            afterSignInUrl="/Properties"
+            fallbackRedirectUrl="/Properties"
+            appearance={{
+              elements: {
+                rootBox: "mx-auto",
+                card: "shadow-lg",
+                socialButtonsBlockButton: "min-h-[44px]"
+              }
+            }}
+          />
+        </div>
+      } />
+      <Route path="/Signup/*" element={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <SignUp
+            routing="path"
+            path="/Signup"
+            signInUrl="/Login"
+            afterSignUpUrl="/Onboarding"
+            appearance={{
+              elements: {
+                rootBox: "mx-auto",
+                card: "shadow-lg"
+              }
+            }}
+          />
+        </div>
       } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
           path={`/${path}`}
           element={
-            <LayoutWrapper currentPageName={path}>
+            isPublicNoLayout(path) ? (
+              // Public page without layout (Welcome, Login, etc.)
               <Page />
-            </LayoutWrapper>
+            ) : isPublicWithLayout(path) ? (
+              // Public page with layout (Demo pages, Resources)
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            ) : (
+              // Protected page with layout (requires auth)
+              <RouteGuard allowIncompleteOnboarding={path === 'Onboarding'}>
+                <LayoutWrapper currentPageName={path}>
+                  <Page />
+                </LayoutWrapper>
+              </RouteGuard>
+            )
           }
         />
       ))}
@@ -67,18 +123,25 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-        <VisualEditAgent />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ClerkProvider
+      publishableKey={CLERK_PUBLISHABLE_KEY}
+      afterSignInUrl="/Properties"
+      afterSignUpUrl="/Onboarding"
+    >
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <DemoProvider>
+              <NavigationTracker />
+              <AuthenticatedApp />
+            </DemoProvider>
+          </Router>
+          <Toaster />
+          <VisualEditAgent />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ClerkProvider>
   )
 }
 

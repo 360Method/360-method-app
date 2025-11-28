@@ -1,6 +1,5 @@
 import React from 'react';
 import { X, CheckCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 export default function FinalCTA() {
   return (
@@ -88,7 +87,7 @@ export default function FinalCTA() {
               </li>
             </ul>
             <button 
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => navigate('/Login')}
               className="w-full mt-8 py-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors shadow-lg"
               style={{ minHeight: '48px' }}
             >

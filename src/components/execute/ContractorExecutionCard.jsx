@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ export default function ContractorExecutionCard({ task }) {
   const [rating, setRating] = useState(task.contractor_rating || 0);
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    mutationFn: ({ taskId, data }) => MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

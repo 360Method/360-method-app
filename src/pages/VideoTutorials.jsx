@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { VideoTutorial } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export default function VideoTutorials() {
 
   const { data: videos = [] } = useQuery({
     queryKey: ['video-tutorials'],
-    queryFn: () => base44.entities.VideoTutorial.list('sort_order'),
+    queryFn: () => VideoTutorial.list('sort_order'),
     initialData: [],
   });
 

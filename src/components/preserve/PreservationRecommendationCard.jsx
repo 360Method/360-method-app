@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, PreservationRecommendation, MaintenanceTask } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,10 @@ export default function PreservationRecommendationCard({ recommendation, systems
 
   const approveMutation = useMutation({
     mutationFn: async () => {
-      const currentUser = await base44.auth.me();
-      
+      const currentUser = await auth.me();
+
       // Update recommendation status
-      await base44.entities.PreservationRecommendation.update(recommendation.id, {
+      await PreservationRecommendation.update(recommendation.id, {
         status: 'APPROVED',
         decision_date: new Date().toISOString(),
         decision_by_user_id: currentUser.id
@@ -41,8 +41,8 @@ export default function PreservationRecommendationCard({ recommendation, systems
       // Create maintenance task
       const avgCost = (recommendation.estimated_cost_min + recommendation.estimated_cost_max) / 2;
       const systemName = system?.system_type || 'Unknown System';
-      
-      const task = await base44.entities.MaintenanceTask.create({
+
+      const task = await MaintenanceTask.create({
         property_id: recommendation.property_id,
         title: recommendation.title,
         description: `${recommendation.description}\n\n🛡️ PRESERVATION INVESTMENT:\nExtend ${systemName} life by ${recommendation.expected_lifespan_extension_years} years\nAvoid replacement cost: $${system?.replacement_cost_estimate?.toLocaleString() || 'TBD'}\nExpected ROI: ${recommendation.roi_multiple.toFixed(1)}x\n\nThis strategic intervention protects your capital investment.`,
@@ -66,7 +66,7 @@ export default function PreservationRecommendationCard({ recommendation, systems
   });
 
   const deferMutation = useMutation({
-    mutationFn: () => base44.entities.PreservationRecommendation.update(recommendation.id, {
+    mutationFn: () => PreservationRecommendation.update(recommendation.id, {
       status: 'DEFERRED',
       decision_date: new Date().toISOString()
     }),
@@ -76,7 +76,7 @@ export default function PreservationRecommendationCard({ recommendation, systems
   });
 
   const dismissMutation = useMutation({
-    mutationFn: () => base44.entities.PreservationRecommendation.update(recommendation.id, {
+    mutationFn: () => PreservationRecommendation.update(recommendation.id, {
       status: 'DISMISSED',
       decision_date: new Date().toISOString()
     }),

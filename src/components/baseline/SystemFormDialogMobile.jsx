@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import MobileWizardFlow from "./MobileWizardFlow";
@@ -49,9 +49,9 @@ export default function SystemFormDialogMobile({
       };
 
       if (editingSystem?.id) {
-        return base44.entities.SystemBaseline.update(editingSystem.id, submitData);
+        return SystemBaseline.update(editingSystem.id, submitData);
       } else {
-        return base44.entities.SystemBaseline.create(submitData);
+        return SystemBaseline.create(submitData);
       }
     },
     onSuccess: () => {
@@ -78,8 +78,8 @@ export default function SystemFormDialogMobile({
     const uploadToast = toast.loading('Uploading...', { icon: '📸' });
 
     try {
-      const uploadPromises = files.map(file => 
-        base44.integrations.Core.UploadFile({ file })
+      const uploadPromises = files.map(file =>
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
@@ -112,7 +112,7 @@ export default function SystemFormDialogMobile({
     const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' });
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await storage.uploadFile(file);
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Extract information from this ${formData.system_type} photo. Look for model plates, serial numbers, installation dates, and any visible brand/model information. Return ONLY data you can clearly see.`,

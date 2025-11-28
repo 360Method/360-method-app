@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, Property, CartItem, MaintenanceTask, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,13 +33,13 @@ export default function EditCartItemDialog({ open, onClose, item }) {
   // Get user for membership info
   const { data: user } = useQuery({
     queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   // Get property for estimation context
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: () => Property.list(),
   });
 
   const isMember = user && (
@@ -71,22 +71,22 @@ export default function EditCartItemDialog({ open, onClose, item }) {
 
   const updateCartItemMutation = useMutation({
     mutationFn: async (updates) => {
-      return base44.entities.CartItem.update(item.id, updates);
+      return CartItem.update(item.id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-      
+
       // Update original source if applicable
       if (item.source_type && item.source_id) {
         if (item.source_type === 'task') {
-          base44.entities.MaintenanceTask.update(item.source_id, {
+          MaintenanceTask.update(item.source_id, {
             title: formData.title,
             description: formData.description,
             priority: formData.priority
           }).catch(err => console.error('Failed to update source task:', err));
         }
       }
-      
+
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -101,7 +101,7 @@ export default function EditCartItemDialog({ open, onClose, item }) {
 
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);
@@ -272,6 +272,7 @@ PRICING MODIFIERS:
 
 Provide realistic, professional estimates. Be conservative - better to over-estimate slightly than under-deliver.`;
 
+      // TODO: Migrate base44.integrations.Core.InvokeLLM to Supabase Edge Function or alternative AI service
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: estimationPrompt,
         add_context_from_internet: false,

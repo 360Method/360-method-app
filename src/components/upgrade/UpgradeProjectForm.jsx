@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, Upgrade, UpgradeTemplate } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,14 +35,14 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: template } = useQuery({
     queryKey: ['upgrade-template', templateId],
     queryFn: async () => {
       if (!templateId) return null;
-      const templates = await base44.entities.UpgradeTemplate.list();
+      const templates = await UpgradeTemplate.list();
       return templates.find(t => t.id === templateId);
     },
     enabled: !!templateId,
@@ -74,9 +74,9 @@ export default function UpgradeProjectForm({ properties, project, templateId, me
   const projectMutation = useMutation({
     mutationFn: async (data) => {
       if (project) {
-        return await base44.entities.Upgrade.update(project.id, data);
+        return await Upgrade.update(project.id, data);
       } else {
-        return await base44.entities.Upgrade.create(data);
+        return await Upgrade.create(data);
       }
     },
     onSuccess: () => {

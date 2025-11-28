@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
-import { base44 } from "@/api/base44Client";
 import { checkServiceAvailability } from "../shared/ServiceAreaChecker";
 
 // Climate zone mapping function

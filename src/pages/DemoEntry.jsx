@@ -20,10 +20,10 @@ export default function DemoEntry() {
       enterDemoMode('struggling');
       navigate(createPageUrl('DemoStruggling'));
     } else if (score === 'improving') {
-      enterDemoMode('homeowner');
+      enterDemoMode('homeowner', 'improving');
       navigate(createPageUrl('DemoImproving'));
     } else if (score === 'excellent') {
-      enterDemoMode('homeowner');
+      enterDemoMode('homeowner', 'excellent');
       navigate(createPageUrl('DemoExcellent'));
     } else if (score === 'portfolio') {
       enterDemoMode('investor');

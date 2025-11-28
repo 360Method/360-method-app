@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function AlreadyDoneModal({ task, open, onClose, onComplete }) {
 
   const completeTaskMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MaintenanceTask.update(task.id, data);
+      return await MaintenanceTask.update(task.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

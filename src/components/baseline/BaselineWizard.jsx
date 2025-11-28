@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,13 +51,13 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
   // Fetch existing systems to check what's already documented
   const { data: existingSystems = [] } = useQuery({
     queryKey: ['systemBaselines', propertyId],
-    queryFn: () => base44.entities.SystemBaseline.filter({ property_id: propertyId }),
+    queryFn: () => SystemBaseline.filter({ property_id: propertyId }),
     enabled: !!propertyId,
   });
 
   const createSystemMutation = useMutation({
     mutationFn: async (data) => {
-      return base44.entities.SystemBaseline.create(data);
+      return SystemBaseline.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
@@ -82,7 +82,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     const uploadToast = toast.loading('Uploading photos...', { icon: '📸' });
 
     try {
-      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const uploadPromises = files.map(file => storage.uploadFile(file));
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
       
@@ -116,7 +116,7 @@ export default function BaselineWizard({ propertyId, property, onComplete, onSki
     const scanToast = toast.loading('AI scanning...', { icon: '🤖' });
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await storage.uploadFile(file);
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Extract information from this ${currentSystem.type} photo. Look for model plates, serial numbers, installation dates, and any visible brand/model information. Return ONLY data you can clearly see.`,

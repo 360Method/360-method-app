@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Rocket, X, ChevronUp } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDemo } from '../shared/DemoContext';
 
 export default function FloatingSignupCTA() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { demoMode } = useDemo();
   const [isMinimized, setIsMinimized] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -57,7 +57,7 @@ export default function FloatingSignupCTA() {
 
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => navigate('/Login')}
               className="bg-white text-orange-600 px-4 sm:px-6 py-3 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base hover:bg-gray-100 active:scale-95 transition-all shadow-lg whitespace-nowrap"
               style={{ minWidth: '44px', minHeight: '44px' }}
             >

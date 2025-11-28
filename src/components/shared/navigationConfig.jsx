@@ -1,13 +1,14 @@
-import { 
+import {
   LayoutDashboard,
-  Home, 
-  Search, 
-  Activity, 
-  ListOrdered, 
-  Calendar, 
+  Home,
+  ClipboardList,
+  ScanSearch,
+  Activity,
+  ListOrdered,
+  Calendar,
   CheckCircle2,
-  Shield, 
-  Lightbulb, 
+  Shield,
+  Lightbulb,
   Building2,
   BookOpen,
   Award
@@ -53,20 +54,20 @@ export const NAVIGATION_STRUCTURE = [
     sectionSubtitle: "Know Your Property",
     phase: 1,
     items: [
-      { 
+      {
         id: "baseline",
-        label: "Baseline", 
+        label: "Baseline",
         subtitle: "Document your systems",
         step: "1 of 9",
-        icon: Search,
+        icon: ClipboardList,
         url: createPageUrl("Baseline")
       },
-      { 
+      {
         id: "inspect",
-        label: "Inspect", 
+        label: "Inspect",
         subtitle: "Seasonal checkups",
         step: "2 of 9",
-        icon: Search,
+        icon: ScanSearch,
         url: createPageUrl("Inspect")
       },
       { 

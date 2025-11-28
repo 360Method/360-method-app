@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { storage, Upgrade } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,14 +42,14 @@ export default function UpgradeDocuments({ project, onUpdate }) {
 
   const uploadFileMutation = useMutation({
     mutationFn: async (file) => {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await storage.uploadFile(file);
       return result.file_url;
     }
   });
 
   const updateProjectMutation = useMutation({
     mutationFn: async (updatedDocs) => {
-      return await base44.entities.Upgrade.update(project.id, {
+      return await Upgrade.update(project.id, {
         quote_documents: updatedDocs
       });
     },

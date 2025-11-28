@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, SystemBaseline, PreservationRecommendation, PreservationImpact, auth } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,7 @@ export default function Preserve() {
         console.log('🔵 PRESERVE: Demo properties:', demoProps);
         return demoProps;
       }
-      const realProps = await base44.entities.Property.list();
+      const realProps = await Property.list();
       console.log('🔵 PRESERVE: Real properties:', realProps);
       return realProps;
     },
@@ -65,7 +65,7 @@ export default function Preserve() {
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: realSystems = [] } = useQuery({
@@ -83,7 +83,7 @@ export default function Preserve() {
         console.log('🔵 PRESERVE: Demo homeowner systems:', demoSystems);
         return demoSystems;
       }
-      const realSystems = await base44.entities.SystemBaseline.filter({ property_id: selectedProperty });
+      const realSystems = await SystemBaseline.filter({ property_id: selectedProperty });
       console.log('🔵 PRESERVE: Real systems:', realSystems);
       return realSystems;
     },
@@ -103,7 +103,7 @@ export default function Preserve() {
 
   const { data: realRecommendations = [] } = useQuery({
     queryKey: ['preservation-recommendations', selectedProperty],
-    queryFn: () => base44.entities.PreservationRecommendation.filter({ property_id: selectedProperty }),
+    queryFn: () => PreservationRecommendation.filter({ property_id: selectedProperty }),
     enabled: !demoMode && !!selectedProperty
   });
 
@@ -113,7 +113,7 @@ export default function Preserve() {
 
   const { data: realImpacts = [] } = useQuery({
     queryKey: ['preservation-impacts', selectedProperty],
-    queryFn: () => base44.entities.PreservationImpact.filter({ property_id: selectedProperty }),
+    queryFn: () => PreservationImpact.filter({ property_id: selectedProperty }),
     enabled: !demoMode && !!selectedProperty
   });
 

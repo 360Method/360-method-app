@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Inspection, MaintenanceTask, SystemBaseline, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,7 +30,7 @@ export default function InspectionTaskDetailView({ task, inspection, propertyId,
         item.condition_rating === 'Poor' || item.condition_rating === 'Urgent'
       ).length;
 
-      await base44.entities.Inspection.update(inspection.id, {
+      await Inspection.update(inspection.id, {
         checklist_items: updatedTasks,
         completion_percentage: completionPercentage,
         issues_found: issuesFound,
@@ -59,7 +59,7 @@ export default function InspectionTaskDetailView({ task, inspection, propertyId,
         const costs = costEstimates[systemType] || { current: 200, delayed: 2000 };
         const riskScore = cascadeRiskScores[systemType] || 5;
 
-        await base44.entities.MaintenanceTask.create({
+        await MaintenanceTask.create({
           property_id: propertyId,
           title: `${task.item_name}${system?.brand_model ? ` (${system.brand_model})` : ''}`,
           description: notes || `Issue found during ${inspection.season} inspection. Condition: ${selectedCondition}`,
@@ -90,7 +90,7 @@ export default function InspectionTaskDetailView({ task, inspection, propertyId,
 
     setUploading(true);
     try {
-      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const uploadPromises = files.map(file => storage.uploadFile(file));
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
       setPhotos(prev => [...prev, ...urls]);

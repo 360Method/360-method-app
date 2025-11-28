@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, MaintenanceTask, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -190,13 +190,13 @@ export default function IssueDocumentation({
 
   const { data: baselineSystems = [] } = useQuery({
     queryKey: ['systemBaselines', propertyId],
-    queryFn: () => base44.entities.SystemBaseline.list({ property_id: propertyId }),
+    queryFn: () => SystemBaseline.list({ property_id: propertyId }),
     enabled: !!propertyId,
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      return base44.entities.MaintenanceTask.create(taskData);
+      return MaintenanceTask.create(taskData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks', propertyId] });
@@ -205,7 +205,7 @@ export default function IssueDocumentation({
 
   const updateSystemMutation = useMutation({
     mutationFn: async ({ systemId, updates }) => {
-      return base44.entities.SystemBaseline.update(systemId, updates);
+      return SystemBaseline.update(systemId, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines', propertyId] });
@@ -218,7 +218,7 @@ export default function IssueDocumentation({
 
     setUploading(true);
     try {
-      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const uploadPromises = files.map(file => storage.uploadFile(file));
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);
       setPhotos(prev => [...prev, ...newUrls]);
@@ -248,7 +248,7 @@ export default function IssueDocumentation({
 
     setUploadingResolution(true);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await storage.uploadFile(file);
       setFormData(prev => ({
         ...prev,
         resolutionPhotoUrl: result.file_url

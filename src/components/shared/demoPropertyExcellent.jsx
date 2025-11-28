@@ -1,4 +1,10 @@
-export const DEMO_PROPERTY_EXCELLENT = {
+// Helper to get dates relative to today - called dynamically
+const getToday = () => new Date().toISOString().split('T')[0];
+const getDaysFromNow = (days) => new Date(Date.now() + 86400000 * days).toISOString().split('T')[0];
+const getDaysAgo = (days) => new Date(Date.now() - 86400000 * days).toISOString().split('T')[0];
+
+// Function that returns fresh demo data with dynamic dates
+export const getDemoPropertyExcellent = () => ({
   property: {
     id: 'demo-excellent-001',
     address: '2847 Maple Grove Lane',
@@ -314,29 +320,59 @@ export const DEMO_PROPERTY_EXCELLENT = {
   ],
 
   tasks: [
+    // PRIORITIZE PAGE - Excellent owners have minimal items here (proactive)
     {
       id: 'demo-e-task-001',
       property_id: 'demo-excellent-001',
-      title: 'Winter Quarterly Inspection',
-      description: 'Complete quarterly home systems walk-through inspection',
-      system_type: 'General',
-      priority: 'Routine',
-      current_fix_cost: 0,
-      diy_cost: 0,
-      diy_difficulty: 'Easy',
-      diy_time_hours: 1.5,
-      status: 'Scheduled',
-      scheduled_date: '2025-12-15',
-      execution_method: 'DIY',
-      seasonal: true,
-      recommended_completion_window: 'December 2025',
+      title: 'Consider Whole-House Surge Protector',
+      description: 'Optional upgrade: Install whole-house surge protection at main panel. Protects all electronics and appliances from power surges.',
+      system_type: 'Electrical',
+      priority: 'Low',
+      cascade_risk_score: 3,
+      current_fix_cost: 350,
+      delayed_fix_cost: 350,
+      contractor_cost: 350,
+      status: 'Identified',
+      execution_method: 'Contractor',
       created_date: '2025-11-01T00:00:00Z'
     },
+    // SCHEDULE PAGE - Future scheduled tasks
     {
       id: 'demo-e-task-002',
       property_id: 'demo-excellent-001',
-      title: 'HVAC Filter Change',
-      description: 'Replace monthly HVAC filter',
+      title: 'Spring HVAC Service',
+      description: 'Professional bi-annual heat pump maintenance. Technician will check refrigerant, clean coils, verify thermostat calibration.',
+      system_type: 'HVAC',
+      priority: 'Routine',
+      current_fix_cost: 165,
+      contractor_cost: 165,
+      status: 'Scheduled',
+      scheduled_date: getDaysFromNow(14), // 2 weeks from now
+      execution_method: 'Contractor',
+      seasonal: true,
+      created_date: '2025-11-01T00:00:00Z'
+    },
+    {
+      id: 'demo-e-task-003',
+      property_id: 'demo-excellent-001',
+      title: 'Annual Roof Inspection',
+      description: 'Professional roof inspection before rainy season. Check for damaged shingles, flashing integrity, and gutter condition.',
+      system_type: 'Roof',
+      priority: 'Routine',
+      current_fix_cost: 200,
+      contractor_cost: 200,
+      status: 'Scheduled',
+      scheduled_date: getDaysFromNow(21), // 3 weeks from now
+      execution_method: 'Contractor',
+      seasonal: true,
+      created_date: '2025-11-01T00:00:00Z'
+    },
+    // EXECUTE PAGE - Today's routine tasks (the rhythm of excellence)
+    {
+      id: 'demo-e-task-004',
+      property_id: 'demo-excellent-001',
+      title: 'Monthly HVAC Filter Change',
+      description: 'Replace monthly HVAC filter with new MERV-11 filter. Check filter housing for debris. Note filter condition for tracking.',
       system_type: 'HVAC',
       priority: 'Routine',
       current_fix_cost: 0,
@@ -344,42 +380,59 @@ export const DEMO_PROPERTY_EXCELLENT = {
       diy_difficulty: 'Easy',
       diy_time_hours: 0.25,
       status: 'Scheduled',
-      scheduled_date: '2025-12-01',
+      scheduled_date: getToday(), // Today
       execution_method: 'DIY',
       seasonal: false,
       created_date: '2025-11-01T00:00:00Z'
     },
     {
-      id: 'demo-e-task-003',
+      id: 'demo-e-task-005',
       property_id: 'demo-excellent-001',
       title: 'Test Smoke & CO Detectors',
-      description: 'Monthly safety device testing',
-      system_type: 'General',
+      description: 'Monthly safety device testing. Press test button on each detector, verify alarm sounds. Check battery backup indicators. Document any issues.',
+      system_type: 'Safety',
       priority: 'Routine',
       current_fix_cost: 0,
       diy_cost: 0,
       diy_difficulty: 'Easy',
       diy_time_hours: 0.5,
       status: 'Scheduled',
-      scheduled_date: '2025-12-01',
+      scheduled_date: getToday(), // Today
       execution_method: 'DIY',
       seasonal: false,
       created_date: '2025-11-01T00:00:00Z'
     },
     {
-      id: 'demo-e-task-004',
+      id: 'demo-e-task-006',
       property_id: 'demo-excellent-001',
-      title: 'Spring HVAC Service',
-      description: 'Professional bi-annual heat pump maintenance (Spring service)',
-      system_type: 'HVAC',
+      title: 'Check Water Heater Pressure Relief Valve',
+      description: 'Quarterly safety check. Lift and release the T&P valve lever briefly to ensure it operates freely. Water should discharge then stop when released.',
+      system_type: 'Plumbing',
       priority: 'Routine',
       current_fix_cost: 0,
-      contractor_cost: 165,
-      status: 'Identified',
-      recommended_completion_window: 'April 2026',
-      execution_method: 'Professional',
-      contractor_name: 'ABC Heating & Cooling',
-      contractor_phone: '(360) 555-0123',
+      diy_cost: 0,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.25,
+      status: 'Scheduled',
+      scheduled_date: getToday(), // Today
+      execution_method: 'DIY',
+      seasonal: false,
+      created_date: '2025-11-01T00:00:00Z'
+    },
+    {
+      id: 'demo-e-task-007',
+      property_id: 'demo-excellent-001',
+      title: 'Quarterly Gutter Inspection',
+      description: 'Walk around home and visually inspect gutters. Check for sagging, overflow marks, or debris buildup. Clear any minor debris found.',
+      system_type: 'Gutters',
+      priority: 'Routine',
+      current_fix_cost: 0,
+      diy_cost: 0,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.5,
+      status: 'Scheduled',
+      scheduled_date: getToday(), // Today
+      execution_method: 'DIY',
       seasonal: true,
       created_date: '2025-11-01T00:00:00Z'
     }
@@ -395,11 +448,88 @@ export const DEMO_PROPERTY_EXCELLENT = {
       inspection_date: '2025-10-15',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 0,
+      duration_minutes: 40,
+      issues_found: 6,
       urgent_count: 0,
       flag_count: 0,
-      notes: 'All systems performing excellently. No issues detected. Property in top condition.',
-      created_date: '2025-10-15T14:30:00Z'
+      monitor_count: 6,
+      notes: 'All systems performing excellently. No urgent issues. 6 items noted for monitoring - all normal wear. This is what proactive maintenance looks like.',
+      created_date: '2025-10-15T14:30:00Z',
+      findings: [
+        // ALL GREEN - Monitor Items (Excellent property has no red or yellow)
+        {
+          id: 'f-e-001',
+          area_name: 'HVAC System',
+          item_name: 'Heat Pump - Excellent Condition',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: '5-year-old Carrier Infinity system running at 98% efficiency per service tech. Filter changed 2 weeks ago. No unusual sounds or vibrations.',
+          recommendation: 'Continue bi-annual professional maintenance schedule. Next service due March 2026. Consider air duct cleaning in 2026.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - system in excellent condition'
+        },
+        {
+          id: 'f-e-002',
+          area_name: 'Roof System',
+          item_name: 'Roof - 10 Years Remaining Life',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: '10-year-old architectural shingles with 30-year warranty. No missing or damaged shingles. Flashing intact. Moss treatment applied last spring.',
+          recommendation: 'Annual visual inspection from ground level. Professional roof inspection recommended at year 15. Budget for replacement in 2035-2040.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - 10+ years of expected life remaining'
+        },
+        {
+          id: 'f-e-003',
+          area_name: 'Water Heater',
+          item_name: 'Tankless Water Heater - Excellent',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Rinnai tankless unit installed 2020. Descaled last spring. Providing endless hot water with 0.96 energy factor.',
+          recommendation: 'Annual descaling (completed May 2025). Next descale due May 2026. Expected life 20+ years with proper maintenance.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - tankless units have no catastrophic flood risk'
+        },
+        {
+          id: 'f-e-004',
+          area_name: 'Foundation/Drainage',
+          item_name: 'Foundation - No Issues',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'No cracks observed. Grade slopes properly away from foundation. French drains functioning. Sump pump tested and operational.',
+          recommendation: 'Test sump pump quarterly. Maintain positive drainage grade. Check after any earthquakes or extreme weather.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - drainage system protecting foundation effectively'
+        },
+        {
+          id: 'f-e-005',
+          area_name: 'Gutters & Downspouts',
+          item_name: 'Gutters - Clear with Guards',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'LeafFilter gutter guards installed 2021. Light debris on top of guards. Downspouts clear and draining to appropriate locations.',
+          recommendation: 'Visual check quarterly. Full cleaning once per year despite guards. Check downspout extensions before rainy season.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - guards preventing buildup'
+        },
+        {
+          id: 'f-e-006',
+          area_name: 'Safety Systems',
+          item_name: 'Smoke & CO Detectors - All Tested',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Nest Protect smart detectors (4 units) and First Alert CO detectors (3 units). Self-testing daily. All passed manual test today.',
+          recommendation: 'Monthly manual test. Annual battery replacement in March. Replace smoke detectors 2030 (10-year lifespan).',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - proactive testing catches any issues'
+        }
+      ]
     },
     {
       id: 'demo-e-insp-002',
@@ -410,11 +540,28 @@ export const DEMO_PROPERTY_EXCELLENT = {
       inspection_date: '2025-07-20',
       status: 'Completed',
       completion_percentage: 100,
+      duration_minutes: 35,
       issues_found: 1,
       urgent_count: 0,
-      flag_count: 1,
+      flag_count: 0,
+      monitor_count: 1,
       notes: 'Minor gutter debris noted and cleared immediately. All other systems excellent.',
-      created_date: '2025-07-20T10:15:00Z'
+      created_date: '2025-07-20T10:15:00Z',
+      findings: [
+        {
+          id: 'f-e-007',
+          area_name: 'Gutters',
+          item_name: 'Gutter Debris - Cleared During Inspection',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Light debris accumulation on gutter guards from spring pollen season. Cleared during walkthrough.',
+          recommendation: 'Already addressed. Continue quarterly checks.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 0,
+          cascade_risk: 'None - addressed immediately',
+          is_quick_fix: true
+        }
+      ]
     },
     {
       id: 'demo-e-insp-003',
@@ -425,11 +572,14 @@ export const DEMO_PROPERTY_EXCELLENT = {
       inspection_date: '2025-04-18',
       status: 'Completed',
       completion_percentage: 100,
+      duration_minutes: 38,
       issues_found: 0,
       urgent_count: 0,
       flag_count: 0,
-      notes: 'All systems ready for summer. No concerns.',
-      created_date: '2025-04-18T09:00:00Z'
+      monitor_count: 0,
+      notes: 'All systems ready for summer. AC tested and cooling properly. No concerns.',
+      created_date: '2025-04-18T09:00:00Z',
+      findings: []
     },
     {
       id: 'demo-e-insp-004',
@@ -440,11 +590,14 @@ export const DEMO_PROPERTY_EXCELLENT = {
       inspection_date: '2025-01-22',
       status: 'Completed',
       completion_percentage: 100,
+      duration_minutes: 42,
       issues_found: 0,
       urgent_count: 0,
       flag_count: 0,
-      notes: 'Heating system performing optimally. All winterization complete.',
-      created_date: '2025-01-22T11:30:00Z'
+      monitor_count: 0,
+      notes: 'Heating system performing optimally. All winterization complete. No pipe freeze concerns.',
+      created_date: '2025-01-22T11:30:00Z',
+      findings: []
     }
   ],
 
@@ -1010,4 +1163,7 @@ export const DEMO_PROPERTY_EXCELLENT = {
     quarterly_inspections_completed: 4,
     maintenance_events_last_year: 16
   }
-};
+});
+
+// Legacy export for backward compatibility - calls the function to get fresh data
+export const DEMO_PROPERTY_EXCELLENT = getDemoPropertyExcellent();

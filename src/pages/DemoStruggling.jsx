@@ -6,12 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useDemo } from '@/components/shared/DemoContext';
 
 export default function DemoStruggling() {
   const navigate = useNavigate();
+  const { enterDemoMode, demoMode } = useDemo();
   const [animatedScore, setAnimatedScore] = useState(0);
   const [showFloatingCTA, setShowFloatingCTA] = useState(false);
-  
+
+  // Ensure demo mode is set when landing on this page directly
+  useEffect(() => {
+    if (demoMode !== 'struggling') {
+      enterDemoMode('struggling');
+    }
+  }, []);
+
   // Animate score on load
   useEffect(() => {
     const timer = setTimeout(() => {

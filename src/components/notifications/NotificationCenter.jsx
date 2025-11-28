@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useDemo } from '@/components/shared/DemoContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -42,25 +43,27 @@ const iconMap = {
 export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { demoMode } = useDemo();
 
-  // Get unread count
+  // Get unread count - skip in demo mode
   const { data: unreadData } = useQuery({
     queryKey: ['unreadNotificationCount'],
     queryFn: async () => {
       const { data } = await base44.functions.invoke('getUnreadCount');
       return data.count || 0;
     },
-    refetchInterval: 30000 // Poll every 30 seconds
+    refetchInterval: demoMode ? false : 30000, // Don't poll in demo mode
+    enabled: !demoMode // Skip entirely in demo mode
   });
 
-  // Get notifications
+  // Get notifications - skip in demo mode
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const { data } = await base44.functions.invoke('getNotifications', { limit: 20 });
       return data.notifications || [];
     },
-    enabled: open
+    enabled: open && !demoMode // Skip in demo mode
   });
 
   const markReadMutation = useMutation({

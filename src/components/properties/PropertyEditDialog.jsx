@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -55,12 +55,12 @@ export default function PropertyEditDialog({ property, onClose }) {
   const updatePropertyMutation = useMutation({
     mutationFn: (data) => {
       const cleanedData = { ...data };
-      
+
       const numericFields = [
         'year_built', 'square_footage', 'bedrooms', 'bathrooms',
         'current_value', 'monthly_rent', 'door_count'
       ];
-      
+
       numericFields.forEach(field => {
         if (cleanedData[field] === '' || cleanedData[field] === null) {
           delete cleanedData[field];
@@ -68,8 +68,8 @@ export default function PropertyEditDialog({ property, onClose }) {
           cleanedData[field] = Number(cleanedData[field]);
         }
       });
-      
-      return base44.entities.Property.update(property.id, cleanedData);
+
+      return Property.update(property.id, cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });

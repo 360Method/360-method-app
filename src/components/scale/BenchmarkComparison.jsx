@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, MaintenanceTask, PreservationImpact, PortfolioBenchmark } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,12 @@ export default function BenchmarkComparison({ benchmarks, equityData, properties
 
   const { data: systems = [] } = useQuery({
     queryKey: ['all-systems'],
-    queryFn: () => base44.entities.SystemBaseline.list()
+    queryFn: () => SystemBaseline.list()
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['completed-tasks'],
-    queryFn: () => base44.entities.MaintenanceTask.filter({ 
+    queryFn: () => MaintenanceTask.filter({
       status: 'Completed',
       completion_date: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString() }
     })
@@ -56,7 +56,7 @@ export default function BenchmarkComparison({ benchmarks, equityData, properties
 
   const { data: preserveImpacts = [] } = useQuery({
     queryKey: ['all-preserve-impacts'],
-    queryFn: () => base44.entities.PreservationImpact.list()
+    queryFn: () => PreservationImpact.list()
   });
 
   const latestBenchmark = benchmarks[0];
@@ -112,7 +112,7 @@ export default function BenchmarkComparison({ benchmarks, equityData, properties
         }
       };
 
-      return await base44.entities.PortfolioBenchmark.create({
+      return await PortfolioBenchmark.create({
         overall_health_score: overallHealthScore,
         system_health_score: systemHealthScore,
         financial_health_score: financialHealthScore,

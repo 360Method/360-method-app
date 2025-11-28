@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Calendar, DollarSign, AlertTriangle, Wrench, Edit } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask } from "@/api/supabaseClient";
 
 export default function DayDetailsDialog({ date, tasks, open, onClose, onTaskClick }) {
   const queryClient = useQueryClient();
@@ -14,7 +14,7 @@ export default function DayDetailsDialog({ date, tasks, open, onClose, onTaskCli
   const [timeRange, setTimeRange] = useState('');
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    mutationFn: ({ taskId, data }) => MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       setEditingTaskId(null);

@@ -1,14 +1,15 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   ListTodo,
   PlusCircle,
   CalendarDays,
   Menu
 } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { useDemo } from "@/components/shared/DemoContext";
 
 const navItems = [
   {
@@ -45,9 +46,22 @@ const navItems = [
   }
 ];
 
+// Map regular pages to demo pages when in demo mode
+const DEMO_PAGE_MAP = {
+  'Schedule': 'DemoSchedule',
+  'Execute': 'DemoExecute',
+};
+
 export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { demoMode } = useDemo();
+
+  // Helper to get the correct page (demo or regular)
+  const getPageUrl = (page) => {
+    const targetPage = demoMode && DEMO_PAGE_MAP[page] ? DEMO_PAGE_MAP[page] : page;
+    return createPageUrl(targetPage);
+  };
 
   const handleItemClick = (item) => {
     // Handle Add button
@@ -55,15 +69,21 @@ export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty 
       onQuickAdd?.();
       return;
     }
-    
+
     // Smart routing for Tasks button
     if (item.id === "tasks") {
       const baselineComplete = selectedProperty?.baseline_completion >= 66;
-      const targetRoute = baselineComplete ? createPageUrl("Prioritize") : createPageUrl("Baseline");
+      const targetRoute = baselineComplete ? getPageUrl("Prioritize") : getPageUrl("Baseline");
       navigate(targetRoute);
       return;
     }
-    
+
+    // Calendar routing - use demo page in demo mode
+    if (item.id === "calendar") {
+      navigate(getPageUrl("Schedule"));
+      return;
+    }
+
     // Regular navigation
     if (item.url) {
       navigate(item.url);
@@ -76,10 +96,16 @@ export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty 
       return [
         createPageUrl("Baseline"),
         createPageUrl("Prioritize"),
-        createPageUrl("Execute")
+        createPageUrl("Execute"),
+        createPageUrl("DemoExecute")
       ].some(path => location.pathname === path);
     }
-    if (item.id === "calendar") return location.pathname === createPageUrl("Schedule");
+    if (item.id === "calendar") {
+      return [
+        createPageUrl("Schedule"),
+        createPageUrl("DemoSchedule")
+      ].some(path => location.pathname === path);
+    }
     if (item.id === "more") {
       return [
         createPageUrl("Properties"),

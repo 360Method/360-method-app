@@ -1,4 +1,5 @@
-import { base44 } from "@/api/base44Client";
+// MIGRATED: AI features will use OpenAI/Supabase Edge Functions
+// TODO: Connect to AI service for generateAIPreservationPlan
 
 // Preservation strategies database
 const PRESERVATION_STRATEGIES = {
@@ -224,18 +225,19 @@ Provide:
 
 Be persuasive but realistic. Focus on cost savings and disaster prevention.`;
 
-    const plan = await base44.integrations.Core.InvokeLLM({
-      prompt: prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          why_now: { type: "string" },
-          consequences_of_skipping: { type: "string" },
-          best_timing: { type: "string" },
-          preventive_tips: { type: "array", items: { type: "string" } }
-        }
-      }
-    });
+    // TODO: Replace with OpenAI or Supabase Edge Function call
+    // For now, return a static response based on the system data
+    const plan = {
+      why_now: `Your ${system.system_type} is ${preservationOpportunity.age} years old (${preservationOpportunity.percentLifespan}% of its expected lifespan). Acting now can extend its life by ${preservationOpportunity.extensionYears} years and save you $${preservationOpportunity.replacementCost.toLocaleString()} in replacement costs.`,
+      consequences_of_skipping: `Without preservation, your ${system.system_type} has a ${preservationOpportunity.failureRisk}% chance of failure in the next 2 years. Emergency replacements typically cost 20-40% more than planned ones.`,
+      best_timing: preservationOpportunity.priority === "HIGH" ? "Schedule within the next 30 days" : preservationOpportunity.priority === "MEDIUM" ? "Schedule within the next 3 months" : "Schedule within the next 6 months",
+      preventive_tips: [
+        "Schedule regular professional inspections",
+        "Keep maintenance records up to date",
+        "Address small issues before they become big problems",
+        "Follow manufacturer maintenance recommendations"
+      ]
+    };
 
     return plan;
   } catch (error) {

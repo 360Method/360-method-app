@@ -1,6 +1,5 @@
 import React from 'react';
 import { Rocket, Star, Zap, TrendingUp, Shield } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 const CTA_VARIANTS = {
   dashboard: {
@@ -83,7 +82,7 @@ export default function ContextualWaitlistCTA({ variant = 'default', className =
         </div>
 
         <button
-          onClick={() => base44.auth.redirectToLogin()}
+          onClick={() => navigate('/Login')}
           className={`${colors.buttonBg} ${colors.buttonText} px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg ${colors.buttonHover} active:scale-95 transition-all shadow-lg whitespace-nowrap flex items-center gap-2`}
           style={{ minWidth: '44px', minHeight: '44px' }}
         >

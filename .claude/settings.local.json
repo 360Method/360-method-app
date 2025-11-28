@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(echo:*)",
+      "Bash(node -e \"\nconst { createClient } = require(''@supabase/supabase-js'');\nconst supabase = createClient(\n  ''https://xrvguskdvrhcbjiejgqr.supabase.co'',\n  ''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhydmd1c2tkdnJoY2JqaWVqZ3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNjY1OTUsImV4cCI6MjA3OTg0MjU5NX0.jnB9BbbKNKikJ7NIgGfDmMRY_4KD8T2ZddtvDxGnDUQ''\n);\nsupabase.from(''properties'').select(''*'').then(({ data, error }) => {\n  if (error) console.log(''Error:'', error.message);\n  else console.log(''Success! Properties table exists. Rows:'', data.length);\n}).catch(e => console.log(''Connection failed:'', e.message));\n\")",
+      "Bash(node -e:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 2 /nobreak)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

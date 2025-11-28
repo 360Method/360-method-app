@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, PreservationRecommendation, Upgrade, PortfolioEquity, CapitalAllocation } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,22 +28,22 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: preserveRecs = [] } = useQuery({
     queryKey: ['preserve-recs-all'],
-    queryFn: () => base44.entities.PreservationRecommendation.filter({ status: 'PENDING' })
+    queryFn: () => PreservationRecommendation.filter({ status: 'PENDING' })
   });
 
   const { data: upgrades = [] } = useQuery({
     queryKey: ['upgrades-planned'],
-    queryFn: () => base44.entities.Upgrade.filter({ status: 'PLANNED' })
+    queryFn: () => Upgrade.filter({ status: 'PLANNED' })
   });
 
   const { data: equities = [] } = useQuery({
     queryKey: ['all-equities'],
-    queryFn: () => base44.entities.PortfolioEquity.list()
+    queryFn: () => PortfolioEquity.list()
   });
 
   // Generate allocation
@@ -209,7 +209,7 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         }
       }
 
-      return await base44.entities.CapitalAllocation.create({
+      return await CapitalAllocation.create({
         available_amount: amount,
         allocation_options: options,
         ai_optimal_allocation: {

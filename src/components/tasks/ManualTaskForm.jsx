@@ -1,5 +1,6 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask, storage } from "@/api/supabaseClient";
+import { InvokeLLM, UploadFile } from "@/api/integrations";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +89,7 @@ ADDITIONAL INSIGHTS:
 
 Respond ONLY with valid JSON. No markdown, no explanation, just the JSON object.`;
 
-    const cascadeAnalysis = await base44.integrations.Core.InvokeLLM({
+    const cascadeAnalysis = await InvokeLLM({
       prompt: cascadeAnalysisPrompt,
       file_urls: hasPhotos ? photoUrls : undefined,
       response_json_schema: {
@@ -117,7 +118,7 @@ Respond ONLY with valid JSON. No markdown, no explanation, just the JSON object.
     });
 
     const [sowResult, toolsAndMaterials, videoResults] = await Promise.all([
-      base44.integrations.Core.InvokeLLM({
+      InvokeLLM({
         prompt: `Generate a concise Statement of Work (SOW) for this maintenance task:
 
 Title: "${title}"
@@ -137,7 +138,7 @@ Format as markdown. Be concise (3-5 sentences total).`,
         }
       }).catch(err => ({ sow: null })),
 
-      base44.integrations.Core.InvokeLLM({
+      InvokeLLM({
         prompt: `List the essential tools and materials needed for this maintenance task:
 
 Title: "${title}"
@@ -154,7 +155,7 @@ Provide two separate arrays: Tools (equipment) and Materials (consumables). Be s
         }
       }).catch(err => ({ tools: [], materials: [] })),
 
-      base44.integrations.Core.InvokeLLM({
+      InvokeLLM({
         prompt: `Find helpful YouTube video tutorials for this maintenance task:
 
 Title: "${title}"
@@ -220,13 +221,13 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
       updateData.ai_video_tutorials = videoResults.videos.filter(v => v.title && v.url);
     }
 
-    await base44.entities.MaintenanceTask.update(taskId, updateData);
+    await MaintenanceTask.update(taskId, updateData);
     console.log(`Task ${taskId} successfully enriched with AI insights`);
     
     return cascadeAnalysis;
   } catch (error) {
     console.error('Error enriching task with AI:', error);
-    await base44.entities.MaintenanceTask.update(taskId, {
+    await MaintenanceTask.update(taskId, {
       ai_enrichment_completed: true
     }).catch(err => console.error('Failed to mark enrichment status:', err));
     return null;
@@ -303,13 +304,13 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const createTaskMutation = useMutation({
     mutationFn: async (tasksData) => {
       if (isEditing) {
-        return await base44.entities.MaintenanceTask.update(editingTask.id, tasksData[0]);
+        return await MaintenanceTask.update(editingTask.id, tasksData[0]);
       } else {
         if (tasksData.length === 1) {
-          return await base44.entities.MaintenanceTask.create(tasksData[0]);
+          return await MaintenanceTask.create(tasksData[0]);
         } else {
-          const createPromises = tasksData.map(taskData => 
-            base44.entities.MaintenanceTask.create(taskData)
+          const createPromises = tasksData.map(taskData =>
+            MaintenanceTask.create(taskData)
           );
           return await Promise.all(createPromises);
         }
@@ -341,7 +342,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     setUploadingPhotos(true);
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);

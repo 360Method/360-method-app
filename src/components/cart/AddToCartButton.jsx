@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { CartItem } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Check } from "lucide-react";
@@ -15,7 +15,7 @@ export default function AddToCartButton({
 
   const addToCartMutation = useMutation({
     mutationFn: async (cartItem) => {
-      return base44.entities.CartItem.create(cartItem);
+      return CartItem.create(cartItem);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });

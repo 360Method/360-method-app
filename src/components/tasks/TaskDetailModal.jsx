@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask, auth, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ export default function TaskDetailModal({
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    mutationFn: ({ taskId, data }) => MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
@@ -75,9 +75,9 @@ export default function TaskDetailModal({
 
   const uploadPhotoMutation = useMutation({
     mutationFn: async (file) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const file_url = await storage.uploadFile(file);
       const currentPhotos = task.photo_urls || [];
-      return base44.entities.MaintenanceTask.update(task.id, {
+      return MaintenanceTask.update(task.id, {
         photo_urls: [...currentPhotos, file_url]
       });
     },
@@ -89,9 +89,9 @@ export default function TaskDetailModal({
 
   const uploadFileMutation = useMutation({
     mutationFn: async ({ file, fileName }) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const file_url = await storage.uploadFile(file);
       const currentFiles = task.receipt_files || [];
-      return base44.entities.MaintenanceTask.update(task.id, {
+      return MaintenanceTask.update(task.id, {
         receipt_files: [...currentFiles, { name: fileName, url: file_url, uploaded_date: new Date().toISOString() }]
       });
     },
@@ -197,7 +197,7 @@ export default function TaskDetailModal({
   };
 
   const handleEmail = async () => {
-    const user = await base44.auth.me();
+    const user = await auth.me();
     const emailBody = `
 Work Order: ${task.title}
 

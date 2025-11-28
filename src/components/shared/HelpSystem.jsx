@@ -55,11 +55,11 @@ export default function HelpSystem({ currentPhase, nextStep, selectedProperty, s
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100"
-                  onClick={() => navigate(createPageUrl('Waitlist'))}
+                  className="w-full justify-start bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100"
+                  onClick={() => navigate('/Login')}
                 >
-                  <Rocket className="w-4 h-4 mr-2 text-blue-600" />
-                  <span className="font-semibold text-blue-700">Join Waitlist</span>
+                  <Rocket className="w-4 h-4 mr-2 text-green-600" />
+                  <span className="font-semibold text-green-700">Start Free Today</span>
                 </Button>
               )}
               

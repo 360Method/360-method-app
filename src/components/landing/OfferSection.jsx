@@ -1,6 +1,5 @@
 import React from 'react';
 import { CheckCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 export default function OfferSection() {
   const benefits = [
@@ -64,7 +63,7 @@ export default function OfferSection() {
           
           {/* CTA Button */}
           <button
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => navigate('/Login')}
             className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 active:scale-95 transition-all shadow-lg mb-3"
             style={{ minHeight: '48px' }}
           >

@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, UpgradeTemplate, Upgrade as UpgradeEntity, auth } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,18 +76,18 @@ export default function Upgrade() {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return base44.entities.Property.list();
+      return Property.list();
     }
   });
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: templates = [] } = useQuery({
     queryKey: ['upgradeTemplates'],
-    queryFn: () => base44.entities.UpgradeTemplate.list(),
+    queryFn: () => UpgradeTemplate.list(),
     enabled: !demoMode
   });
 
@@ -105,9 +105,9 @@ export default function Upgrade() {
       
       let upgrades;
       if (selectedProperty) {
-        upgrades = await base44.entities.Upgrade.filter({ property_id: selectedProperty }, '-created_date');
+        upgrades = await UpgradeEntity.filter({ property_id: selectedProperty }, '-created_date');
       } else {
-        upgrades = await base44.entities.Upgrade.list('-created_date');
+        upgrades = await UpgradeEntity.list('-created_date');
       }
       return upgrades || [];
     },

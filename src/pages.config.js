@@ -36,6 +36,8 @@ import DemoImproving from './pages/DemoImproving';
 import DemoStruggling from './pages/DemoStruggling';
 import DemoExcellent from './pages/DemoExcellent';
 import DemoPortfolio from './pages/DemoPortfolio';
+import DemoSchedule from './pages/DemoSchedule';
+import DemoExecute from './pages/DemoExecute';
 import Score360 from './pages/Score360';
 import PortalDashboard from './pages/PortalDashboard';
 import PortalMenu from './pages/PortalMenu';
@@ -70,6 +72,8 @@ import SecuritySettings from './pages/SecuritySettings';
 import GitHubDemo from './pages/GitHubDemo';
 import AdminStripeDebug from './pages/AdminStripeDebug';
 import AdminEmailTest from './pages/AdminEmailTest';
+import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import __Layout from './Layout.jsx';
 
 
@@ -112,6 +116,8 @@ export const PAGES = {
     "DemoStruggling": DemoStruggling,
     "DemoExcellent": DemoExcellent,
     "DemoPortfolio": DemoPortfolio,
+    "DemoSchedule": DemoSchedule,
+    "DemoExecute": DemoExecute,
     "Score360": Score360,
     "PortalDashboard": PortalDashboard,
     "PortalMenu": PortalMenu,
@@ -146,10 +152,52 @@ export const PAGES = {
     "GitHubDemo": GitHubDemo,
     "AdminStripeDebug": AdminStripeDebug,
     "AdminEmailTest": AdminEmailTest,
+    "Login": Login,
+    "ForgotPassword": ForgotPassword,
 }
 
+// Pages that don't require authentication AND don't need Layout (landing pages, auth pages)
+export const PUBLIC_NO_LAYOUT_PAGES = [
+    'Welcome',
+    'Login',
+    'Signup',
+    'ForgotPassword',
+    'LandingPage',
+    'Waitlist',
+    'DemoEntry',
+    'AcceptInvitation',
+];
+
+// Pages that don't require authentication BUT need Layout (demo app pages, resources)
+export const PUBLIC_WITH_LAYOUT_PAGES = [
+    'Pricing',
+    'Resources',
+    'ResourceGuides',
+    'VideoTutorials',
+    'ROICalculators',
+    'WelcomeDemo',
+    'DemoImproving',
+    'DemoStruggling',
+    'DemoExcellent',
+    'DemoPortfolio',
+    'DemoSchedule',
+    'DemoExecute',
+    'ExploreTemplates',
+    'TemplateDetail',
+    'GitHubDemo',
+];
+
+// All public pages (no auth required)
+export const PUBLIC_PAGES = [
+    ...PUBLIC_NO_LAYOUT_PAGES,
+    ...PUBLIC_WITH_LAYOUT_PAGES,
+];
+
 export const pagesConfig = {
-    mainPage: "LandingPage",
+    mainPage: "Welcome",
     Pages: PAGES,
     Layout: __Layout,
+    publicPages: PUBLIC_PAGES,
+    publicNoLayoutPages: PUBLIC_NO_LAYOUT_PAGES,
+    publicWithLayoutPages: PUBLIC_WITH_LAYOUT_PAGES,
 };

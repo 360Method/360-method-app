@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, auth } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,13 +56,13 @@ export default function Settings() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list();
+      const allProps = await Property.list();
       return allProps.filter(p => !p.is_draft);
     },
   });
@@ -81,7 +81,7 @@ export default function Settings() {
   }, [user]);
 
   const updateUserMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: (data) => auth.updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       setIsSaving(false);
@@ -128,7 +128,7 @@ export default function Settings() {
   };
 
   const handleLogout = () => {
-    base44.auth.logout();
+    auth.logout();
   };
 
   // Tier calculations

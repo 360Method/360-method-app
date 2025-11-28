@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, MaintenanceTask, CartItem } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -229,19 +229,19 @@ export default function AIMaintenanceCalendar({
   // Fetch current user to check membership tier
   const { data: user } = useQuery({
     queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   // NEW: Fetch cart items to check for duplicates
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cartItems', propertyId],
-    queryFn: () => base44.entities.CartItem.filter({ property_id: propertyId, status: 'in_cart' }),
+    queryFn: () => CartItem.filter({ property_id: propertyId, status: 'in_cart' }),
     enabled: !!propertyId,
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      return base44.entities.MaintenanceTask.create(taskData);
+      return MaintenanceTask.create(taskData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
+import { WealthProjection } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export default function WealthProjectionChart({ projections, equityData, propert
         });
       }
 
-      const projection = await base44.entities.WealthProjection.create({
+      const projection = await WealthProjection.create({
         scenario_name: scenarioType,
         scenario_description: scenarioType === 'HOLD_ALL' ? 'Hold all properties' : 
                              scenarioType === 'AI_OPTIMAL' ? 'AI optimal strategy' :

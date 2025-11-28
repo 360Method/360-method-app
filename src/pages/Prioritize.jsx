@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, MaintenanceTask, MaintenanceTemplate, auth } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,7 +128,7 @@ export default function PrioritizePage() {
   // Fetch current user
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   // Fetch properties - only for current user
@@ -138,7 +138,7 @@ export default function PrioritizePage() {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return base44.entities.Property.list('-created_date');
+      return Property.list('-created_date');
     }
   });
 
@@ -171,9 +171,9 @@ export default function PrioritizePage() {
       }
       
       if (selectedProperty === 'all') {
-        return base44.entities.MaintenanceTask.list('-created_date');
+        return MaintenanceTask.list('-created_date');
       } else if (selectedProperty) {
-        return base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
+        return MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
       return [];
     },
@@ -187,7 +187,7 @@ export default function PrioritizePage() {
       if (demoMode) {
         return demoData?.seasonalTemplates || [];
       }
-      return base44.entities.MaintenanceTemplate.list();
+      return MaintenanceTemplate.list();
     }
   });
 
@@ -203,7 +203,7 @@ export default function PrioritizePage() {
 
   // Mutations for task management
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    mutationFn: ({ taskId, data }) => MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
@@ -213,8 +213,8 @@ export default function PrioritizePage() {
   // NEW: Bulk update mutation
   const bulkUpdateMutation = useMutation({
     mutationFn: async ({ taskIds, data }) => {
-      const updatePromises = taskIds.map(id => 
-        base44.entities.MaintenanceTask.update(id, data)
+      const updatePromises = taskIds.map(id =>
+        MaintenanceTask.update(id, data)
       );
       return await Promise.all(updatePromises);
     },
@@ -227,8 +227,8 @@ export default function PrioritizePage() {
   // NEW: Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (taskIds) => {
-      const deletePromises = taskIds.map(id => 
-        base44.entities.MaintenanceTask.delete(id)
+      const deletePromises = taskIds.map(id =>
+        MaintenanceTask.delete(id)
       );
       return await Promise.all(deletePromises);
     },
@@ -239,7 +239,7 @@ export default function PrioritizePage() {
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskId) => base44.entities.MaintenanceTask.delete(taskId),
+    mutationFn: (taskId) => MaintenanceTask.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
@@ -435,7 +435,7 @@ export default function PrioritizePage() {
         batch_id: batchId // NEW
       };
 
-      const newTask = await base44.entities.MaintenanceTask.create(taskData);
+      const newTask = await MaintenanceTask.create(taskData);
       return newTask;
     } catch (error) {
       console.error('❌ Error creating task:', error);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, SystemBaseline, Inspection, PreservationRecommendation, MaintenanceTask, storage } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -47,14 +47,14 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
   // Fetch related data
   const { data: property } = useQuery({
     queryKey: ['property', task.property_id],
-    queryFn: () => base44.entities.Property.filter({ id: task.property_id }).then(r => r[0]),
+    queryFn: () => Property.filter({ id: task.property_id }).then(r => r[0]),
     enabled: !!task.property_id
   });
-  
+
   const { data: systemBaseline } = useQuery({
     queryKey: ['system', task.property_id, task.system_type],
     queryFn: async () => {
-      const systems = await base44.entities.SystemBaseline.filter({
+      const systems = await SystemBaseline.filter({
         property_id: task.property_id,
         system_type: task.system_type
       });
@@ -62,12 +62,12 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
     },
     enabled: !!task.property_id && !!task.system_type
   });
-  
+
   const { data: sourceInspection } = useQuery({
     queryKey: ['sourceInspection', task.property_id],
     queryFn: async () => {
       if (task.source !== 'INSPECTION') return null;
-      const inspections = await base44.entities.Inspection.filter({
+      const inspections = await Inspection.filter({
         property_id: task.property_id
       }, '-created_date');
       return inspections[0];
@@ -77,7 +77,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
 
   const { data: preservationRec } = useQuery({
     queryKey: ['preservation', task.preservation_recommendation_id],
-    queryFn: () => base44.entities.PreservationRecommendation.filter({
+    queryFn: () => PreservationRecommendation.filter({
       id: task.preservation_recommendation_id
     }).then(r => r[0]),
     enabled: !!task.preservation_recommendation_id
@@ -155,7 +155,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
     setUploadingStepPhoto(true);
     try {
       const uploadPromises = fileArray.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
@@ -281,7 +281,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
 
   const saveProgress = async (updates) => {
     try {
-      await base44.entities.MaintenanceTask.update(task.id, {
+      await MaintenanceTask.update(task.id, {
         ...updates,
         status: 'In Progress',
         actual_hours: elapsedSeconds / 3600
@@ -299,7 +299,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
     setUploadingPhotos(true);
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
@@ -313,7 +313,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
 
   const completeTaskMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MaintenanceTask.update(task.id, data);
+      return await MaintenanceTask.update(task.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });

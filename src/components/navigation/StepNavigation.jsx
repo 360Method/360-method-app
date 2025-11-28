@@ -4,6 +4,7 @@ import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Eye, Zap, TrendingUp } from "lucide-react";
+import { useDemo } from "@/components/shared/DemoContext";
 
 const STEPS = [
   { number: 1, title: "Baseline", page: "Baseline", phase: "AWARE", phaseColor: "blue" },
@@ -47,7 +48,14 @@ const PHASE_COLORS = {
   }
 };
 
+// Map regular pages to demo pages when in demo mode
+const DEMO_PAGE_MAP = {
+  'Schedule': 'DemoSchedule',
+  'Execute': 'DemoExecute',
+};
+
 export default function StepNavigation({ currentStep, propertyId = null }) {
+  const { demoMode } = useDemo();
   const currentStepData = STEPS.find(s => s.number === currentStep);
   const prevStep = STEPS.find(s => s.number === currentStep - 1);
   const nextStep = STEPS.find(s => s.number === currentStep + 1);
@@ -57,9 +65,11 @@ export default function StepNavigation({ currentStep, propertyId = null }) {
   const phaseIcon = PHASE_ICONS[currentStepData.phase];
   const PhaseIcon = phaseIcon || Eye;
   const colors = PHASE_COLORS[currentStepData.phaseColor];
-  
+
   const buildUrl = (page) => {
-    const baseUrl = createPageUrl(page);
+    // Use demo pages when in demo mode
+    const targetPage = demoMode && DEMO_PAGE_MAP[page] ? DEMO_PAGE_MAP[page] : page;
+    const baseUrl = createPageUrl(targetPage);
     return propertyId ? `${baseUrl}?property=${propertyId}` : baseUrl;
   };
 

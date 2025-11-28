@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTemplate, MaintenanceTask } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,11 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
     queryKey: ['maintenance-templates', currentSeason, property?.climate_zone],
     queryFn: async () => {
       if (!property) return [];
-      
+
       // Fetch templates matching current season and property climate
-      const allTemplates = await base44.entities.MaintenanceTemplate.list('sort_order');
-      
-      return allTemplates.filter(t => 
+      const allTemplates = await MaintenanceTemplate.list('sort_order');
+
+      return allTemplates.filter(t =>
         (t.season === currentSeason || t.season === "Year-Round") &&
         (t.climate_zone === property.climate_zone || t.climate_zone === "All Climates")
       );
@@ -48,24 +48,24 @@ export default function SeasonalTaskSuggestions({ propertyId, property, compact 
 
   const { data: existingTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', propertyId],
-    queryFn: () => propertyId 
-      ? base44.entities.MaintenanceTask.filter({ property_id: propertyId })
+    queryFn: () => propertyId
+      ? MaintenanceTask.filter({ property_id: propertyId })
       : Promise.resolve([]),
     enabled: !!propertyId,
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
-      return base44.entities.MaintenanceTask.create(taskData);
+      return MaintenanceTask.create(taskData);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
-      
+
       // Update template usage count
       if (variables.template_origin_id) {
         const template = templates.find(t => t.id === variables.template_origin_id);
         if (template) {
-          base44.entities.MaintenanceTemplate.update(variables.template_origin_id, {
+          MaintenanceTemplate.update(variables.template_origin_id, {
             usage_count: (template.usage_count || 0) + 1
           });
         }

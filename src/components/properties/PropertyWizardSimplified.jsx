@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { Property } from "@/api/supabaseClient";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,9 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (existingProperty?.id) {
-        return await base44.entities.Property.update(existingProperty.id, data);
+        return await Property.update(existingProperty.id, data);
       } else {
-        return await base44.entities.Property.create({
+        return await Property.create({
           ...data,
           setup_completed: true,
           baseline_completion: 0,
@@ -206,13 +206,13 @@ If you cannot find specific information, return null for those fields and set co
     setIsSaving(true);
     try {
       if (existingProperty?.id) {
-        await base44.entities.Property.update(existingProperty.id, {
+        await Property.update(existingProperty.id, {
           ...formData,
           is_draft: true,
           draft_step: currentStep
         });
       } else {
-        await base44.entities.Property.create({
+        await Property.create({
           ...formData,
           is_draft: true,
           draft_step: currentStep,

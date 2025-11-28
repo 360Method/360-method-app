@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Inspection, MaintenanceTask, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -83,9 +83,9 @@ export default function InspectionDialog({ open, onClose, inspection, propertyId
       };
 
       if (inspection?.id) {
-        return base44.entities.Inspection.update(inspection.id, inspectionData);
+        return Inspection.update(inspection.id, inspectionData);
       } else {
-        return base44.entities.Inspection.create(inspectionData);
+        return Inspection.create(inspectionData);
       }
     },
     onSuccess: async (savedInspection) => {
@@ -115,7 +115,7 @@ export default function InspectionDialog({ open, onClose, inspection, propertyId
         const costs = costEstimates[systemType] || { current: 200, delayed: 2000 };
         const riskScore = cascadeRiskScores[systemType] || 5;
 
-        await base44.entities.MaintenanceTask.create({
+        await MaintenanceTask.create({
           property_id: propertyId,
           title: `${item.item_name}${item.enrichedData?.brand ? ` (${item.enrichedData.brand})` : ''}`,
           description: item.notes || `Issue found during ${inspection.season} inspection. Condition: ${item.condition_rating}`,
@@ -161,7 +161,7 @@ export default function InspectionDialog({ open, onClose, inspection, propertyId
 
     setUploading(true);
     try {
-      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const uploadPromises = files.map(file => storage.uploadFile(file));
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
       

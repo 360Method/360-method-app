@@ -1,4 +1,10 @@
-export const DEMO_PROPERTY_IMPROVING = {
+// Helper to get dates relative to today - called dynamically
+const getToday = () => new Date().toISOString().split('T')[0];
+const getDaysFromNow = (days) => new Date(Date.now() + 86400000 * days).toISOString().split('T')[0];
+const getDaysAgo = (days) => new Date(Date.now() - 86400000 * days).toISOString().split('T')[0];
+
+// Function that returns fresh demo data with dynamic dates
+export const getDemoPropertyImproving = () => ({
   property: {
     id: 'demo-improving-001',
     address: '1847 Riverside Drive',
@@ -120,23 +126,12 @@ export const DEMO_PROPERTY_IMPROVING = {
   ],
 
   tasks: [
+    // PRIORITIZE PAGE TASKS (status: 'Identified') - Shows in Prioritize
     {
       id: 'demo-i-task-001',
       property_id: 'demo-improving-001',
-      title: 'Fall Gutter Cleaning',
-      description: 'Clean gutters before heavy rain season',
-      system_type: 'Gutters',
-      priority: 'Medium',
-      current_fix_cost: 150,
-      contractor_cost: 150,
-      status: 'Identified',
-      created_date: '2025-10-01T00:00:00Z'
-    },
-    {
-      id: 'demo-i-task-002',
-      property_id: 'demo-improving-001',
       title: 'Replace Crawlspace Vapor Barrier',
-      description: 'Old vapor barrier degraded. Replace to prevent moisture damage.',
+      description: 'Old vapor barrier degraded. Replace to prevent moisture damage. Involves removing old barrier, inspecting for mold, installing new 6-mil polyethylene sheeting.',
       system_type: 'Foundation',
       priority: 'High',
       cascade_risk_score: 7,
@@ -144,31 +139,106 @@ export const DEMO_PROPERTY_IMPROVING = {
       delayed_fix_cost: 4000,
       contractor_cost: 800,
       status: 'Identified',
+      execution_method: 'Contractor',
       created_date: '2025-09-15T00:00:00Z'
     },
     {
+      id: 'demo-i-task-002',
+      property_id: 'demo-improving-001',
+      title: 'Add Smart Leak Detectors',
+      description: 'Install smart water leak detectors under sinks, near water heater, and washing machine. Early detection prevents major water damage.',
+      system_type: 'Plumbing',
+      priority: 'Medium',
+      cascade_risk_score: 5,
+      current_fix_cost: 150,
+      delayed_fix_cost: 5000,
+      diy_cost: 150,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.5,
+      status: 'Identified',
+      execution_method: 'DIY',
+      created_date: '2025-10-01T00:00:00Z'
+    },
+    // SCHEDULE PAGE TASKS (status: 'Scheduled' with future dates)
+    {
       id: 'demo-i-task-003',
       property_id: 'demo-improving-001',
-      title: 'Schedule Fall HVAC Service',
-      description: 'Annual furnace service before heating season',
+      title: 'Fall HVAC Service',
+      description: 'Annual furnace service before heating season. Technician will clean burners, check heat exchanger, replace filter, test safety controls, and verify efficiency.',
       system_type: 'HVAC',
       priority: 'High',
       current_fix_cost: 150,
       contractor_cost: 150,
       status: 'Scheduled',
-      scheduled_date: '2025-11-15',
+      execution_method: 'Contractor',
+      scheduled_date: getDaysFromNow(5), // 5 days from now
       created_date: '2025-10-01T00:00:00Z'
     },
     {
       id: 'demo-i-task-004',
       property_id: 'demo-improving-001',
+      title: 'Window Seal Inspection',
+      description: 'Check all window seals for cracks or gaps before winter. Apply weatherstripping where needed to improve energy efficiency.',
+      system_type: 'Windows',
+      priority: 'Medium',
+      current_fix_cost: 50,
+      diy_cost: 50,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 2,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getDaysFromNow(10), // 10 days from now
+      created_date: '2025-10-01T00:00:00Z'
+    },
+    // EXECUTE PAGE TASKS (status: 'Scheduled' with today/past dates)
+    {
+      id: 'demo-i-task-005',
+      property_id: 'demo-improving-001',
+      title: 'Fall Gutter Cleaning',
+      description: 'Clean gutters before heavy rain season. Remove leaves and debris, flush with hose to check flow, inspect for damage or sagging.',
+      system_type: 'Gutters',
+      priority: 'Medium',
+      current_fix_cost: 150,
+      contractor_cost: 150,
+      diy_cost: 0,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 1.5,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getToday(), // Today
+      created_date: '2025-10-01T00:00:00Z'
+    },
+    {
+      id: 'demo-i-task-006',
+      property_id: 'demo-improving-001',
       title: 'Water Heater Flush',
-      description: 'Annual sediment flush to extend life',
+      description: 'Annual sediment flush to extend life. Connect hose to drain valve, open valve to flush sediment, close and refill. Check anode rod condition.',
       system_type: 'Plumbing',
       priority: 'Medium',
       current_fix_cost: 120,
       contractor_cost: 120,
-      status: 'Identified',
+      diy_cost: 0,
+      diy_difficulty: 'Medium',
+      diy_time_hours: 0.75,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getDaysAgo(1), // Yesterday - overdue
+      created_date: '2025-10-01T00:00:00Z'
+    },
+    {
+      id: 'demo-i-task-007',
+      property_id: 'demo-improving-001',
+      title: 'Test Smoke Detectors',
+      description: 'Monthly smoke detector test. Press test button on each unit, verify alarm sounds, check battery indicator lights.',
+      system_type: 'Safety',
+      priority: 'Routine',
+      current_fix_cost: 0,
+      diy_cost: 0,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.25,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getToday(), // Today
       created_date: '2025-10-01T00:00:00Z'
     }
   ],
@@ -183,11 +253,77 @@ export const DEMO_PROPERTY_IMPROVING = {
       inspection_date: '2025-10-01',
       status: 'Completed',
       completion_percentage: 100,
-      issues_found: 2,
+      duration_minutes: 35,
+      issues_found: 5,
       urgent_count: 0,
       flag_count: 2,
-      monitor_count: 0,
-      created_date: '2025-10-01T10:00:00Z'
+      monitor_count: 3,
+      notes: 'Good overall condition. Two items need attention in next 30-90 days. Three items to monitor. No critical safety issues.',
+      created_date: '2025-10-01T10:00:00Z',
+      findings: [
+        // YELLOW - Flag Issues (2)
+        {
+          id: 'f-i-001',
+          area_name: 'Water Heater',
+          item_name: 'Water Heater Approaching End of Life',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: '11-year-old tank water heater. Still functioning well but approaching the 10-15 year typical lifespan. Minor rust forming at bottom connections.',
+          recommendation: 'Schedule annual flush and anode rod inspection. Begin budgeting $1,200-1,500 for replacement within next 2-3 years. Consider tankless upgrade for energy savings.',
+          current_fix_cost: 120,
+          delayed_fix_cost: 1500,
+          cascade_risk: 'Medium - catastrophic failure could flood utility room and damage adjacent systems'
+        },
+        {
+          id: 'f-i-002',
+          area_name: 'Crawlspace',
+          item_name: 'Vapor Barrier Needs Replacement',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: 'Crawlspace vapor barrier is torn in multiple areas (approx. 30% coverage lost). Moisture readings slightly elevated. No mold observed yet.',
+          recommendation: 'Replace vapor barrier before winter rains. This prevents moisture buildup that leads to wood rot and mold. Consider 20-mil reinforced barrier.',
+          current_fix_cost: 650,
+          delayed_fix_cost: 5000,
+          cascade_risk: 'High - moisture intrusion causes floor joist rot, mold growth, pest attraction'
+        },
+        // GREEN - Monitor Items (3)
+        {
+          id: 'f-i-003',
+          area_name: 'HVAC System',
+          item_name: 'Air Filter Due for Replacement',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'HVAC air filter showing normal dirt accumulation. System running efficiently. 5-year-old heat pump in good condition with regular maintenance history.',
+          recommendation: 'Replace filter this month (1" pleated filter, MERV 8-11). Continue bi-annual professional maintenance schedule.',
+          current_fix_cost: 25,
+          delayed_fix_cost: 150,
+          cascade_risk: 'Low - dirty filters reduce efficiency but rarely cause immediate damage'
+        },
+        {
+          id: 'f-i-004',
+          area_name: 'Exterior',
+          item_name: 'Deck Stain Starting to Wear',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Deck stain showing normal wear on high-traffic areas. Last stained 2 years ago. No wood deterioration observed. Structural components solid.',
+          recommendation: 'Plan to re-stain next spring during dry season. Clean with deck wash before staining. Check for any loose boards or nail pops.',
+          current_fix_cost: 350,
+          delayed_fix_cost: 2000,
+          cascade_risk: 'Low - cosmetic now, but unprotected wood will deteriorate over 3-5 years'
+        },
+        {
+          id: 'f-i-005',
+          area_name: 'Gutters',
+          item_name: 'Minor Debris in Gutters',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Light leaf accumulation in gutters (about 20% capacity). Downspouts clear and functioning. Water flowing properly during rain test.',
+          recommendation: 'Clean gutters before heavy fall rain season. Good candidate for gutter guards given nearby trees.',
+          current_fix_cost: 0,
+          delayed_fix_cost: 300,
+          cascade_risk: 'Low currently - becomes high if neglected through winter'
+        }
+      ]
     }
   ],
 
@@ -452,4 +588,7 @@ export const DEMO_PROPERTY_IMPROVING = {
     tasks_medium: 2,
     health_score: 78
   }
-};
+});
+
+// Legacy export for backward compatibility - calls the function to get fresh data
+export const DEMO_PROPERTY_IMPROVING = getDemoPropertyImproving();

@@ -1,11 +1,12 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { Inspection } from "@/api/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Calendar, AlertCircle, AlertTriangle, CheckCircle, ClipboardCheck, MapPin, Lightbulb } from "lucide-react";
 import { getSystemMetadata } from "./systemMetadata";
+import { useDemo } from "@/components/shared/DemoContext";
 
 const getSystemIcon = (type) => {
   return getSystemMetadata(type).emoji;
@@ -23,19 +24,21 @@ const getConditionColor = (condition) => {
 };
 
 export default function SystemCard({ systemType, system, description, isRequired, onEdit, onAdd, propertyId }) {
+  const { demoMode } = useDemo();
   const metadata = getSystemMetadata(systemType);
   const [showHelper, setShowHelper] = React.useState(false);
   const [showLocationHelper, setShowLocationHelper] = React.useState(false);
 
   // Fetch recent inspections for this property to show last inspected date
+  // Disabled in demo mode to prevent server calls
   const { data: recentInspections = [] } = useQuery({
     queryKey: ['recent-inspections', propertyId],
-    queryFn: () => base44.entities.Inspection.filter(
-      { property_id: propertyId, status: 'Completed' }, 
-      '-inspection_date', 
+    queryFn: () => Inspection.filter(
+      { property_id: propertyId, status: 'Completed' },
+      '-inspection_date',
       3
     ),
-    enabled: !!propertyId && !!system,
+    enabled: !!propertyId && !!system && !demoMode,
     initialData: [],
   });
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, Inspection, SystemBaseline } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,7 @@ export default function Inspect() {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await base44.entities.Property.list();
+      const allProps = await Property.list();
       return allProps.filter(p => !p.is_draft);
     },
   });
@@ -80,7 +80,7 @@ export default function Inspect() {
         }
         return demoData?.inspections || [];
       }
-      return base44.entities.Inspection.filter({ property_id: selectedPropertyId }, '-created_date');
+      return Inspection.filter({ property_id: selectedPropertyId }, '-created_date');
     },
     enabled: !!selectedPropertyId
   });
@@ -102,7 +102,7 @@ export default function Inspect() {
         }
         return demoData?.systems || [];
       }
-      return base44.entities.SystemBaseline.filter({ property_id: selectedPropertyId });
+      return SystemBaseline.filter({ property_id: selectedPropertyId });
     },
     enabled: !!selectedPropertyId
   });
@@ -113,7 +113,7 @@ export default function Inspect() {
 
   const deleteInspectionMutation = useMutation({
     mutationFn: async (inspectionId) => {
-      return base44.entities.Inspection.delete(inspectionId);
+      return Inspection.delete(inspectionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspections'] });

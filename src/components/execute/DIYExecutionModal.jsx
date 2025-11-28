@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
     setUploadingPhotos(true);
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const urls = results.map(r => r.file_url);
@@ -66,7 +66,7 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
 
   const completeTaskMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.MaintenanceTask.update(task.id, data);
+      return await MaintenanceTask.update(task.id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });

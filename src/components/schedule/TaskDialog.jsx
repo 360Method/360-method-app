@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { MaintenanceTask } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,15 +24,15 @@ export default function TaskDialog({ open, onClose, selectedDate, propertyId, ex
   const queryClient = useQueryClient();
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskId) => base44.entities.MaintenanceTask.delete(taskId),
+    mutationFn: (taskId) => MaintenanceTask.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
     },
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, updates }) => 
-      base44.entities.MaintenanceTask.update(taskId, updates),
+    mutationFn: ({ taskId, updates }) =>
+      MaintenanceTask.update(taskId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
     },

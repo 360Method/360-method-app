@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export default function OnboardingPropertySetup({ onNext, onBack, data }) {
   };
 
   const createPropertyMutation = useMutation({
-    mutationFn: (propertyData) => base44.entities.Property.create(propertyData),
+    mutationFn: (propertyData) => Property.create(propertyData),
     onSuccess: (newProperty) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       onNext({

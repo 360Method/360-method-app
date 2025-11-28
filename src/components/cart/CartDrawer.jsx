@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, CartItem } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,14 +19,14 @@ export default function CartDrawer() {
 
   const { data: user } = useQuery({
     queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cartItems'],
     queryFn: async () => {
       if (!user) return [];
-      return base44.entities.CartItem.filter({ 
+      return CartItem.filter({
         created_by: user.email,
         status: 'in_cart'
       });
@@ -35,7 +35,7 @@ export default function CartDrawer() {
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId) => base44.entities.CartItem.delete(itemId),
+    mutationFn: (itemId) => CartItem.delete(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
     },

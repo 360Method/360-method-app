@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, Home, CheckCircle, TrendingUp, Shield, Calendar } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 /**
  * DemoEngagementPopup - Shows contextual conversion prompts during demo
@@ -19,7 +18,7 @@ export function DemoEngagementPopup({ trigger, context, onClose, onDismiss }) {
   
   const handleSignup = () => {
     // Redirect to signup
-    base44.auth.redirectToLogin();
+    navigate('/Login');
   };
   
   const handleClose = () => {

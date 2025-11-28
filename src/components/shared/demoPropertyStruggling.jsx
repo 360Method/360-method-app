@@ -1,4 +1,10 @@
-export const DEMO_PROPERTY_STRUGGLING = {
+// Helper to get dates relative to today - called dynamically
+const getToday = () => new Date().toISOString().split('T')[0];
+const getDaysFromNow = (days) => new Date(Date.now() + 86400000 * days).toISOString().split('T')[0];
+const getDaysAgo = (days) => new Date(Date.now() - 86400000 * days).toISOString().split('T')[0];
+
+// Function that returns fresh demo data with dynamic dates
+export const getDemoPropertyStruggling = () => ({
   property: {
     id: 'demo-struggling-001',
     address: '1847 Riverside Drive',
@@ -128,11 +134,277 @@ export const DEMO_PROPERTY_STRUGGLING = {
     }
   ],
 
-  tasks: [],
+  tasks: [
+    // PRIORITIZE PAGE TASKS (status: 'Identified') - Shows in Prioritize, needs scheduling
+    {
+      id: 'demo-s-task-001',
+      property_id: 'demo-struggling-001',
+      title: 'Install CO Detectors - LIFE SAFETY',
+      description: 'No carbon monoxide detectors installed. This is a critical life safety issue. Purchase 3 battery-powered CO detectors and install one on each floor near sleeping areas.',
+      system_type: 'Safety',
+      priority: 'Critical',
+      cascade_risk_score: 10,
+      current_fix_cost: 100,
+      delayed_fix_cost: 100,
+      diy_cost: 100,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.5,
+      status: 'Identified',
+      execution_method: 'DIY',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'demo-s-task-002',
+      property_id: 'demo-struggling-001',
+      title: 'Fix GFCI Outlets Near Water',
+      description: 'GFCI outlets in bathroom and kitchen not functioning. Electrical safety hazard. Test and reset GFCI outlets, replace if damaged.',
+      system_type: 'Electrical',
+      priority: 'Critical',
+      cascade_risk_score: 9,
+      current_fix_cost: 150,
+      delayed_fix_cost: 150,
+      contractor_cost: 250,
+      diy_cost: 150,
+      diy_difficulty: 'Medium',
+      diy_time_hours: 1,
+      status: 'Identified',
+      execution_method: 'DIY',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'demo-s-task-003',
+      property_id: 'demo-struggling-001',
+      title: 'Emergency Roof Shingle Repair',
+      description: 'Missing shingles allowing water infiltration. Must repair before next rain. Professional inspection and targeted shingle replacement needed.',
+      system_type: 'Roof',
+      priority: 'Urgent',
+      cascade_risk_score: 8,
+      current_fix_cost: 850,
+      delayed_fix_cost: 8000,
+      contractor_cost: 850,
+      status: 'Identified',
+      execution_method: 'Contractor',
+      why_urgent: 'Water damage will spread to insulation, drywall, and potentially cause mold.',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    // SCHEDULE PAGE TASKS (status: 'Scheduled' but future date or no date) - Shows in Schedule calendar
+    {
+      id: 'demo-s-task-004',
+      property_id: 'demo-struggling-001',
+      title: 'HVAC Emergency Service',
+      description: '18-year-old heat pump making noise. Needs professional deep cleaning before failure. Schedule immediate HVAC technician visit.',
+      system_type: 'HVAC',
+      priority: 'Urgent',
+      cascade_risk_score: 7,
+      current_fix_cost: 850,
+      delayed_fix_cost: 6500,
+      contractor_cost: 850,
+      status: 'Scheduled',
+      execution_method: 'Contractor',
+      scheduled_date: getDaysFromNow(3), // 3 days from now
+      why_urgent: 'System is past typical lifespan and showing signs of failure. Service now or replace later.',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'demo-s-task-005',
+      property_id: 'demo-struggling-001',
+      title: 'Water Heater Emergency Flush',
+      description: '16-year-old water heater never serviced. Flush and inspect before catastrophic failure. Connect hose to drain valve, flush sediment, check anode rod.',
+      system_type: 'Plumbing',
+      priority: 'High',
+      cascade_risk_score: 6,
+      current_fix_cost: 350,
+      delayed_fix_cost: 2500,
+      contractor_cost: 350,
+      status: 'Scheduled',
+      execution_method: 'Contractor',
+      scheduled_date: getDaysFromNow(7), // 1 week from now
+      why_urgent: 'Tank is 6 years past typical lifespan. Could flood at any time.',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    // EXECUTE PAGE TASKS (status: 'Scheduled' with today/past date) - Shows in Execute
+    {
+      id: 'demo-s-task-006',
+      property_id: 'demo-struggling-001',
+      title: 'Replace/Test Smoke Detectors',
+      description: 'Smoke detectors are unknown age with likely dead batteries. Replace all units with new 10-year sealed battery models.',
+      system_type: 'Safety',
+      priority: 'High',
+      cascade_risk_score: 9,
+      current_fix_cost: 200,
+      delayed_fix_cost: 200,
+      diy_cost: 200,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 1,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getToday(), // Today
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'demo-s-task-007',
+      property_id: 'demo-struggling-001',
+      title: 'Clean Clogged Gutters',
+      description: 'Gutters completely clogged. Water overflowing near foundation. Remove debris, flush with hose, check downspout drainage.',
+      system_type: 'Gutters',
+      priority: 'High',
+      cascade_risk_score: 7,
+      current_fix_cost: 150,
+      delayed_fix_cost: 5000,
+      contractor_cost: 150,
+      diy_cost: 0,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 2,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getDaysAgo(2), // 2 days ago - overdue
+      why_urgent: 'Water pooling at foundation causes basement flooding and structural damage.',
+      created_date: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: 'demo-s-task-008',
+      property_id: 'demo-struggling-001',
+      title: 'Check Furnace Filter',
+      description: 'With an 18-year-old HVAC system, clean filters are critical. Check and replace if dirty to reduce strain on aging equipment.',
+      system_type: 'HVAC',
+      priority: 'Medium',
+      cascade_risk_score: 5,
+      current_fix_cost: 25,
+      delayed_fix_cost: 500,
+      diy_cost: 25,
+      diy_difficulty: 'Easy',
+      diy_time_hours: 0.25,
+      status: 'Scheduled',
+      execution_method: 'DIY',
+      scheduled_date: getToday(), // Today
+      created_date: '2025-01-01T00:00:00Z'
+    }
+  ],
 
-  inspections: [],
+  inspections: [
+    {
+      id: 'demo-s-insp-001',
+      property_id: 'demo-struggling-001',
+      inspection_type: 'Initial Assessment',
+      season: 'Fall',
+      year: 2025,
+      inspection_date: '2025-01-01',
+      status: 'Completed',
+      completion_percentage: 100,
+      duration_minutes: 45,
+      issues_found: 7,
+      urgent_count: 2,
+      flag_count: 4,
+      monitor_count: 1,
+      notes: 'Critical safety issues found. Multiple systems past lifespan with no service history. Immediate action required.',
+      created_date: '2025-01-01T10:00:00Z',
+      findings: [
+        // RED - Critical/Urgent Issues
+        {
+          id: 'f-s-001',
+          area_name: 'Safety Systems',
+          item_name: 'NO CARBON MONOXIDE DETECTORS',
+          severity: 'Critical',
+          stoplight: 'red',
+          description: 'Property has gas appliances but ZERO carbon monoxide detectors installed. This is a life-threatening safety hazard that violates building codes.',
+          recommendation: 'Install 3 CO detectors immediately - one on each floor, prioritizing sleeping areas. Battery-powered units can be installed in under 30 minutes.',
+          current_fix_cost: 100,
+          delayed_fix_cost: 100,
+          cascade_risk: 'Life Safety - CO poisoning risk with gas furnace and water heater',
+          diy_difficulty: 'Easy'
+        },
+        {
+          id: 'f-s-002',
+          area_name: 'Electrical System',
+          item_name: 'GFCI Outlets Not Functioning',
+          severity: 'Critical',
+          stoplight: 'red',
+          description: 'Ground fault circuit interrupter outlets in kitchen and bathroom are not working. These safety devices prevent electrocution in wet areas.',
+          recommendation: 'Test all GFCI outlets with reset button. Replace any that fail to trip or reset. If unfamiliar with electrical work, hire a licensed electrician.',
+          current_fix_cost: 150,
+          delayed_fix_cost: 3000,
+          cascade_risk: 'Electrocution hazard - serious injury or death possible',
+          diy_difficulty: 'Medium'
+        },
+        // YELLOW - Flag Issues
+        {
+          id: 'f-s-003',
+          area_name: 'Roof System',
+          item_name: 'Missing/Damaged Shingles',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: '4-6 shingles missing on south-facing slope. Exposed roof deck visible. Active water infiltration risk with next rain event.',
+          recommendation: 'Schedule professional roofer within 2 weeks. Temporary tarping may be needed if rain expected. Get 3 quotes for repair vs. full replacement assessment.',
+          current_fix_cost: 850,
+          delayed_fix_cost: 8000,
+          cascade_risk: 'High - water damage to insulation, drywall, potential mold growth'
+        },
+        {
+          id: 'f-s-004',
+          area_name: 'HVAC System',
+          item_name: '18-Year-Old Heat Pump - No Service History',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: 'Carrier heat pump installed 2007. No maintenance records. System running but making grinding noise during startup. Past typical 15-20 year lifespan.',
+          recommendation: 'Schedule HVAC technician for deep cleaning and diagnostic. Begin budgeting $6,500 for replacement within 1-2 years. Regular maintenance may extend life.',
+          current_fix_cost: 350,
+          delayed_fix_cost: 6500,
+          cascade_risk: 'Medium - mid-winter failure would require emergency replacement at premium cost'
+        },
+        {
+          id: 'f-s-005',
+          area_name: 'Water Heater',
+          item_name: '16-Year-Old Tank - Never Serviced',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: 'Rheem 40-gallon gas water heater from 2009. No documented service. Anode rod likely depleted. Tank rust visible at connections.',
+          recommendation: 'Flush tank and inspect anode rod. If anode is depleted, this may extend life 1-2 years. Begin planning replacement - budget $1,200-1,500.',
+          current_fix_cost: 200,
+          delayed_fix_cost: 2500,
+          cascade_risk: 'Medium - catastrophic tank failure would flood area, damage nearby systems'
+        },
+        {
+          id: 'f-s-006',
+          area_name: 'Exterior/Drainage',
+          item_name: 'Gutters 100% Clogged',
+          severity: 'Flag',
+          stoplight: 'yellow',
+          description: 'All gutters packed with debris. Observed water overflowing and pooling at foundation during rain. Downspouts disconnected in 2 locations.',
+          recommendation: 'Clean all gutters and reconnect downspouts. Install gutter guards to prevent future buildup. Verify water drains away from foundation.',
+          current_fix_cost: 150,
+          delayed_fix_cost: 5000,
+          cascade_risk: 'High - foundation water intrusion, basement flooding, structural damage'
+        },
+        // GREEN - Monitor Items
+        {
+          id: 'f-s-007',
+          area_name: 'Safety Systems',
+          item_name: 'Smoke Detectors - Unknown Age',
+          severity: 'Monitor',
+          stoplight: 'green',
+          description: 'Battery-powered smoke detectors present in hallways. Age unknown. Batteries status unknown. Recommend replacement with 10-year sealed units.',
+          recommendation: 'Replace all smoke detectors with new 10-year sealed battery models. Test monthly. Note: Smoke detectors expire after 10 years regardless of battery.',
+          current_fix_cost: 200,
+          delayed_fix_cost: 200,
+          cascade_risk: 'Low - safety device, no cascade effect'
+        }
+      ]
+    }
+  ],
 
-  maintenanceHistory: [],
+  maintenanceHistory: [
+    {
+      id: 'demo-s-hist-001',
+      property_id: 'demo-struggling-001',
+      date: '2025-01-01',
+      type: 'Assessment',
+      title: 'Initial Property Assessment',
+      description: 'First-time assessment of property condition. No prior maintenance records found.',
+      cost: 0,
+      completed_by: '360° Method Assessment',
+      notes: 'Property has been in reactive mode. No documentation, no scheduled maintenance, multiple systems at risk.'
+    }
+  ],
 
   preserveSchedules: [
     {
@@ -289,12 +561,18 @@ export const DEMO_PROPERTY_STRUGGLING = {
     systems_good: 0,
     systems_flagged: 4,
     systems_urgent: 2,
-    total_tasks: 0,
-    tasks_urgent: 0,
-    tasks_high: 0,
+    total_tasks: 7,
+    tasks_critical: 2,
+    tasks_urgent: 2,
+    tasks_high: 3,
     tasks_medium: 0,
     tasks_low: 0,
-    total_estimated_savings: 0,
+    total_estimated_cost_now: 2650,
+    total_estimated_cost_if_delayed: 22350,
+    potential_savings: 19700,
     health_score: 62
   }
-};
+});
+
+// Legacy export for backward compatibility - calls the function to get fresh data
+export const DEMO_PROPERTY_STRUGGLING = getDemoPropertyStruggling();

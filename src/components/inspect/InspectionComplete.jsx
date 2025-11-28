@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, CheckCircle, AlertTriangle, ArrowRight, Lightbulb, Shield, DollarSign } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline } from "@/api/supabaseClient";
 import { generatePreservationRecommendations } from "../shared/PreservationAnalyzer";
 import { useQuery } from "@tanstack/react-query";
 
@@ -26,7 +26,7 @@ export default function InspectionComplete({ inspection, property, onViewPriorit
     queryKey: ['systemBaselines', property?.id],
     queryFn: () => {
       if (!property?.id) return Promise.resolve([]);
-      return base44.entities.SystemBaseline.filter({ property_id: property.id });
+      return SystemBaseline.filter({ property_id: property.id });
     },
     enabled: !!property?.id,
   });

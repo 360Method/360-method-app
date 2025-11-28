@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_PROPERTY_HOMEOWNER } from './demoPropertyHomeowner';
-import { DEMO_PROPERTY_STRUGGLING } from './demoPropertyStruggling';
-import { DEMO_PROPERTY_IMPROVING } from './demoPropertyImproving';
-import { DEMO_PROPERTY_EXCELLENT } from './demoPropertyExcellent';
+import { getDemoPropertyStruggling } from './demoPropertyStruggling';
+import { getDemoPropertyImproving } from './demoPropertyImproving';
+import { getDemoPropertyExcellent } from './demoPropertyExcellent';
 import { DEMO_PORTFOLIO_INVESTOR } from './demoPropertyInvestor';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -20,22 +20,25 @@ export function DemoProvider({ children }) {
   
   const enterDemoMode = (userType = 'homeowner', scoreLevel = null) => {
     console.log(`🎬 Entering demo mode: ${userType}${scoreLevel ? ` (${scoreLevel})` : ''}`);
-    
+    console.log('🎬 sessionStorage BEFORE:', sessionStorage.getItem('demoMode'));
+
     if (userType === 'investor') {
       setDemoMode('investor');
       setDemoData(DEMO_PORTFOLIO_INVESTOR);
       sessionStorage.setItem('demoMode', 'investor');
+      console.log('🎬 Set demoMode to investor');
     } else if (userType === 'struggling' || scoreLevel === 'struggling') {
       setDemoMode('struggling');
-      setDemoData(DEMO_PROPERTY_STRUGGLING);
+      setDemoData(getDemoPropertyStruggling()); // Call function to get fresh data with today's dates
       sessionStorage.setItem('demoMode', 'struggling');
+      console.log('🎬 Set demoMode to struggling');
     } else if (scoreLevel === 'improving') {
       setDemoMode('improving');
-      setDemoData(DEMO_PROPERTY_IMPROVING);
+      setDemoData(getDemoPropertyImproving()); // Call function to get fresh data with today's dates
       sessionStorage.setItem('demoMode', 'improving');
     } else if (scoreLevel === 'excellent') {
       setDemoMode('excellent');
-      setDemoData(DEMO_PROPERTY_EXCELLENT);
+      setDemoData(getDemoPropertyExcellent()); // Call function to get fresh data with today's dates
       sessionStorage.setItem('demoMode', 'excellent');
     } else {
       setDemoMode('homeowner');
@@ -48,8 +51,9 @@ export function DemoProvider({ children }) {
     if (!hasSeenWizard) {
       setShowWizard(true);
     }
-    
+
     console.log('Demo data loaded for:', userType, scoreLevel);
+    console.log('🎬 sessionStorage AFTER:', sessionStorage.getItem('demoMode'));
   };
   
   const markStepVisited = (stepNumber) => {
@@ -70,6 +74,17 @@ export function DemoProvider({ children }) {
     sessionStorage.removeItem('demoMode');
     sessionStorage.removeItem('demoWizardSeen');
     sessionStorage.removeItem('demoVisitedSteps');
+    // Clear intro and tour session flags so they show again on re-entry
+    sessionStorage.removeItem('demoIntro_struggling');
+    sessionStorage.removeItem('demoIntro_improving');
+    sessionStorage.removeItem('demoIntro_excellent');
+    sessionStorage.removeItem('demoIntro_investor');
+    sessionStorage.removeItem('demoIntro_homeowner');
+    sessionStorage.removeItem('demoTour_struggling');
+    sessionStorage.removeItem('demoTour_improving');
+    sessionStorage.removeItem('demoTour_excellent');
+    sessionStorage.removeItem('demoTour_investor');
+    sessionStorage.removeItem('demoTour_homeowner');
   };
   
   const exitDemoMode = () => {
@@ -77,10 +92,10 @@ export function DemoProvider({ children }) {
     console.log('🔴 DEMO CONTEXT: Exiting demo mode');
     console.log('🔴 DEMO CONTEXT: Setting demoMode to null');
     clearDemoMode();
-    console.log('🔴 DEMO CONTEXT: Redirecting to Waitlist');
+    console.log('🔴 DEMO CONTEXT: Redirecting to Welcome');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     // Force reload to clear all cached data
-    window.location.href = createPageUrl('Waitlist');
+    window.location.href = createPageUrl('Welcome');
   };
   
   const handleWizardComplete = () => {
@@ -105,15 +120,15 @@ export function DemoProvider({ children }) {
     } else if (stored === 'struggling') {
       console.log('Restoring struggling demo mode');
       setDemoMode('struggling');
-      setDemoData(DEMO_PROPERTY_STRUGGLING);
+      setDemoData(getDemoPropertyStruggling()); // Fresh data with today's dates
     } else if (stored === 'improving') {
       console.log('Restoring improving demo mode');
       setDemoMode('improving');
-      setDemoData(DEMO_PROPERTY_IMPROVING);
+      setDemoData(getDemoPropertyImproving()); // Fresh data with today's dates
     } else if (stored === 'excellent') {
       console.log('Restoring excellent demo mode');
       setDemoMode('excellent');
-      setDemoData(DEMO_PROPERTY_EXCELLENT);
+      setDemoData(getDemoPropertyExcellent()); // Fresh data with today's dates
     } else if (stored === 'investor') {
       console.log('Restoring investor demo mode');
       setDemoMode('investor');
@@ -138,7 +153,8 @@ export function DemoProvider({ children }) {
     }
   }, [demoMode, demoData]);
   
-  const isHomeowner = demoMode === 'homeowner';
+  // All homeowner-type demos (homeowner, struggling, improving, excellent) are considered "homeowner"
+  const isHomeowner = demoMode === 'homeowner' || demoMode === 'struggling' || demoMode === 'improving' || demoMode === 'excellent';
   const isInvestor = demoMode === 'investor';
   
   return (

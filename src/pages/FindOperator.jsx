@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Operator } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function FindOperator() {
 
   const { data: operators = [] } = useQuery({
     queryKey: ['operators'],
-    queryFn: () => base44.entities.Operator.list(),
+    queryFn: () => Operator.list(),
     enabled: searchTriggered,
   });
 

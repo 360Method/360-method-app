@@ -2,7 +2,6 @@ import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Lock, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 export default function DemoConversionModal({ open, onClose }) {
   return (
@@ -37,7 +36,7 @@ export default function DemoConversionModal({ open, onClose }) {
           </div>
           
           <Button 
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => navigate('/Login')}
             className="w-full bg-orange-500 hover:bg-orange-600 mb-3 gap-2"
             style={{ minHeight: '48px' }}
           >

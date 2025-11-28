@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, MaintenanceTask } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,12 +37,12 @@ export default function ExecutePage() {
   const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', demoMode],
     queryFn: async () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await base44.entities.Property.list('-created_date');
+      const allProps = await Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
     }
   });
@@ -73,30 +73,38 @@ export default function ExecutePage() {
       }
       
       if (selectedProperty === 'all') {
-        return await base44.entities.MaintenanceTask.list('-scheduled_date');
+        return await MaintenanceTask.list('-scheduled_date');
       } else {
-        return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-scheduled_date');
+        return await MaintenanceTask.filter({ property_id: selectedProperty }, '-scheduled_date');
       }
     },
-    enabled: !demoMode && properties.length > 0 && selectedProperty !== null
+    enabled: demoMode || (properties.length > 0 && selectedProperty !== null)
   });
 
   const allTasks = realTasks;
 
-  console.log('=== EXECUTE STATE ===');
+  console.log('=== EXECUTE DEBUG ===');
   console.log('Demo mode:', demoMode);
-  console.log('Tasks:', allTasks);
-  console.log('Tasks count:', allTasks?.length);
+  console.log('Demo data exists:', !!demoData);
+  console.log('Demo data property:', demoData?.property);
+  console.log('Demo data tasks count:', demoData?.tasks?.length);
+  console.log('isInvestor:', isInvestor);
+  console.log('Properties:', properties);
+  console.log('All tasks from query:', allTasks);
 
   const canEdit = !demoMode;
 
   const today = startOfDay(new Date());
 
   // Show tasks that are Scheduled or In Progress, have a date, and are due today or overdue
+  // In demo mode, skip date filtering to always show demo tasks
   const tasksForDisplay = allTasks.filter(task => {
     if (task.status !== 'Scheduled' && task.status !== 'In Progress') return false;
     if (!task.scheduled_date) return false;
-    
+
+    // In demo mode, show all scheduled tasks regardless of date
+    if (demoMode) return true;
+
     try {
       const taskDate = startOfDay(parseISO(task.scheduled_date));
       return isSameDay(taskDate, today) || isBefore(taskDate, today);
@@ -146,7 +154,7 @@ export default function ExecutePage() {
   const totalToday = tasksForDisplay.length + completedToday;
   // const completionPercentage = totalToday > 0 ? (completedToday / totalToday) * 100 : 0; // No longer rendered in the header.
 
-  if (properties.length === 0) {
+  if (properties.length === 0 && !demoMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
         <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">

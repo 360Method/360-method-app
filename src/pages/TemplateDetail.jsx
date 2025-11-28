@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { UpgradeTemplate, Property, auth } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,19 +19,19 @@ export default function TemplateDetail() {
   // Modified: Fetch all templates and then find the specific one
   const { data: templates = [] } = useQuery({
     queryKey: ['upgrade-templates'],
-    queryFn: () => base44.entities.UpgradeTemplate.list(),
+    queryFn: () => UpgradeTemplate.list(),
   });
 
   const template = templates.find(t => t.id === templateId);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list(),
+    queryFn: () => Property.list(),
   });
 
   const currentTier = user?.subscription_tier || 'free';

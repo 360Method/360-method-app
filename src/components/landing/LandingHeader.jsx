@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function LandingHeader() {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-    retry: false,
-  });
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,7 +26,7 @@ export default function LandingHeader() {
     }
   };
 
-  if (user) {
+  if (isAuthenticated && user) {
     return (
       <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -107,18 +102,18 @@ export default function LandingHeader() {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={() => base44.auth.redirectToLogin()}
-              className={`hidden md:block text-sm transition-opacity hover:opacity-80 ${
+              onClick={() => navigate('/Login')}
+              className={`hidden md:block text-sm font-medium transition-opacity hover:opacity-80 ${
                 scrolled ? 'text-slate-600' : 'text-white/80'
               }`}
             >
-              Login
+              Log In
             </button>
             <button
-              onClick={() => scrollToSection('offer')}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-lg"
+              onClick={() => navigate('/Signup')}
+              className="hidden md:block bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-lg"
             >
-              Join Waitlist
+              Sign Up
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -166,10 +161,16 @@ export default function LandingHeader() {
                 Resources
               </Link>
               <button
-                onClick={() => base44.auth.redirectToLogin()}
+                onClick={() => navigate('/Login')}
                 className="text-left text-slate-700 hover:text-slate-900 font-medium py-2 border-t pt-4"
               >
-                Login
+                Log In
+              </button>
+              <button
+                onClick={() => navigate('/Signup')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-lg font-medium text-sm transition-colors text-center"
+              >
+                Sign Up
               </button>
             </nav>
           </div>

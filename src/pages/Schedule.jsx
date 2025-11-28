@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, MaintenanceTask } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,14 +82,15 @@ export default function SchedulePage() {
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', demoMode],
     queryFn: async () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await base44.entities.Property.list('-created_date');
+      const allProps = await Property.list('-created_date');
       return allProps.filter(p => !p.is_draft);
-    }
+    },
+    enabled: demoMode || true // Always enabled, but queryFn handles demo mode check
   });
 
   React.useEffect(() => {
@@ -118,20 +119,24 @@ export default function SchedulePage() {
       }
       
       if (selectedProperty === 'all') {
-        return await base44.entities.MaintenanceTask.list('-created_date');
+        return await MaintenanceTask.list('-created_date');
       } else {
-        return await base44.entities.MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
+        return await MaintenanceTask.filter({ property_id: selectedProperty }, '-created_date');
       }
     },
-    enabled: !demoMode && properties.length > 0 && selectedProperty !== null
+    enabled: demoMode || (properties.length > 0 && selectedProperty !== null)
   });
 
   const allTasks = realTasks;
 
-  console.log('=== SCHEDULE STATE ===');
+  console.log('=== SCHEDULE DEBUG ===');
   console.log('Demo mode:', demoMode);
-  console.log('All tasks:', allTasks);
-  console.log('Tasks count:', allTasks?.length);
+  console.log('Demo data exists:', !!demoData);
+  console.log('Demo data property:', demoData?.property);
+  console.log('Demo data tasks count:', demoData?.tasks?.length);
+  console.log('isInvestor:', isInvestor);
+  console.log('Properties:', properties);
+  console.log('All tasks from query:', allTasks);
 
   const canEdit = !demoMode;
 
@@ -144,7 +149,7 @@ export default function SchedulePage() {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => base44.entities.MaintenanceTask.update(taskId, data),
+    mutationFn: ({ taskId, data }) => MaintenanceTask.update(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
@@ -306,7 +311,7 @@ export default function SchedulePage() {
     });
   };
 
-  if (properties.length === 0) {
+  if (properties.length === 0 && !demoMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 pb-20">
         <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pt-6">

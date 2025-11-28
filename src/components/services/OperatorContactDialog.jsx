@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth } from "@/api/supabaseClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -31,7 +31,7 @@ export default function OperatorContactDialog({ operator, serviceTier, onClose }
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   React.useEffect(() => {

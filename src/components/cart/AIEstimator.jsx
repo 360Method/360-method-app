@@ -1,9 +1,11 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
 
 /**
  * AI-powered estimation for cart items
  * Estimates hours and cost ranges based on task details
+ *
+ * Note: This file uses base44.integrations.Core.InvokeLLM which needs to be migrated
+ * to a Supabase Edge Function or alternative AI service implementation
  */
 export async function estimateCartItems(items, property) {
   const prompt = `You are a home service estimator. Analyze these service requests and provide realistic time and cost estimates.

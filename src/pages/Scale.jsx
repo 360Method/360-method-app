@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, PortfolioEquity, StrategicRecommendation, WealthProjection, CapitalAllocation, PortfolioBenchmark, auth } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ export default function Scale() {
         console.log('🔵 SCALE: Demo properties:', demoProps);
         return demoProps;
       }
-      const realProps = await base44.entities.Property.list();
+      const realProps = await Property.list();
       console.log('🔵 SCALE: Real properties:', realProps);
       return realProps;
     },
@@ -66,7 +66,7 @@ export default function Scale() {
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
   const { data: realEquityData = [] } = useQuery({
@@ -74,8 +74,8 @@ export default function Scale() {
     queryFn: async () => {
       console.log('🔵 SCALE: Fetching equity for property:', selectedProperty);
       const equity = selectedProperty === 'all'
-        ? await base44.entities.PortfolioEquity.list()
-        : await base44.entities.PortfolioEquity.filter({ property_id: selectedProperty });
+        ? await PortfolioEquity.list()
+        : await PortfolioEquity.filter({ property_id: selectedProperty });
       console.log('🔵 SCALE: Equity data:', equity);
       return equity;
     },
@@ -114,26 +114,26 @@ export default function Scale() {
   const { data: recommendations = [] } = useQuery({
     queryKey: ['strategic-recommendations', selectedProperty],
     queryFn: () => selectedProperty === 'all'
-      ? base44.entities.StrategicRecommendation.list()
-      : base44.entities.StrategicRecommendation.filter({ property_id: selectedProperty }),
+      ? StrategicRecommendation.list()
+      : StrategicRecommendation.filter({ property_id: selectedProperty }),
     enabled: !demoMode && !!selectedProperty
   });
 
   const { data: projections = [] } = useQuery({
     queryKey: ['wealth-projections'],
-    queryFn: () => base44.entities.WealthProjection.list(),
+    queryFn: () => WealthProjection.list(),
     enabled: !demoMode
   });
 
   const { data: capitalAllocations = [] } = useQuery({
     queryKey: ['capital-allocations'],
-    queryFn: () => base44.entities.CapitalAllocation.list(),
+    queryFn: () => CapitalAllocation.list(),
     enabled: !demoMode
   });
 
   const { data: benchmarks = [] } = useQuery({
     queryKey: ['portfolio-benchmarks'],
-    queryFn: () => base44.entities.PortfolioBenchmark.list(),
+    queryFn: () => PortfolioBenchmark.list(),
     enabled: !demoMode
   });
 

@@ -2,7 +2,6 @@ import React from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -55,7 +54,7 @@ export default function HeroSection() {
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => navigate('/Login')}
             className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             style={{ minHeight: '56px' }}
           >

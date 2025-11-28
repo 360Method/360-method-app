@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Rocket } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { useDemo } from '../shared/DemoContext';
 
 export default function ExitIntentPopup() {
+  const navigate = useNavigate();
   const { demoMode } = useDemo();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -51,7 +52,7 @@ export default function ExitIntentPopup() {
           </p>
 
           <button
-            onClick={() => base44.auth.redirectToLogin()}
+            onClick={() => navigate('/Login')}
             className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 active:scale-95 transition-all mb-3"
             style={{ minHeight: '44px', pointerEvents: 'auto', cursor: 'pointer' }}
           >

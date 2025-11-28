@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+// MIGRATED: Using Supabase instead of Base44
+import { Property, auth } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,8 +70,8 @@ export default function Properties() {
     queryKey: ['properties'],
     queryFn: async () => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔵 PROPERTIES: Fetching properties from database');
-      const allProps = await base44.entities.Property.list('-updated_date');
+      console.log('🔵 PROPERTIES: Fetching properties from Supabase');
+      const allProps = await Property.list('-updated_at');
       console.log('🔵 PROPERTIES: Properties fetched:', allProps?.length);
       allProps?.forEach((p, i) => {
         console.log(`🔵 PROPERTIES: Property ${i + 1}:`, {
@@ -99,12 +100,12 @@ export default function Properties() {
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: () => auth.me()
   });
 
-  // Delete mutation
+  // Delete mutation - MIGRATED to Supabase
   const deleteMutation = useMutation({
-    mutationFn: (propertyId) => base44.entities.Property.delete(propertyId),
+    mutationFn: (propertyId) => Property.delete(propertyId),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties']);
       setShowConfirmDelete(false);

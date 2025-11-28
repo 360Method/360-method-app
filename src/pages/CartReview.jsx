@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { CartItem, Property, ServicePackage, auth, storage } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,19 +53,19 @@ export default function CartReview() {
 
   const { data: user } = useQuery({
     queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: () => Property.list('-created_date'),
   });
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cartItems'],
     queryFn: async () => {
       if (!user) return [];
-      return base44.entities.CartItem.filter({ 
+      return CartItem.filter({
         created_by: user.email,
         status: 'in_cart'
       }, '-created_date');
@@ -74,14 +74,14 @@ export default function CartReview() {
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId) => base44.entities.CartItem.delete(itemId),
+    mutationFn: (itemId) => CartItem.delete(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
     },
   });
 
   const updateItemMutation = useMutation({
-    mutationFn: ({ itemId, updates }) => base44.entities.CartItem.update(itemId, updates),
+    mutationFn: ({ itemId, updates }) => CartItem.update(itemId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
     },
@@ -313,7 +313,7 @@ PRICING MODIFIERS:
 
 Provide realistic, professional estimates. Be conservative - better to over-estimate slightly than under-deliver.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await storage.invokeLLM({
         prompt: estimationPrompt,
         add_context_from_internet: false,
         file_urls: item.photo_urls?.length > 0 ? item.photo_urls : undefined,
@@ -568,10 +568,10 @@ www.360method.com
         operator_id: user?.assigned_operator_id
       };
 
-      const servicePackage = await base44.entities.ServicePackage.create(packageData);
+      const servicePackage = await ServicePackage.create(packageData);
 
       const updatePromises = cartItems.map(item =>
-        base44.entities.CartItem.update(item.id, {
+        CartItem.update(item.id, {
           status: 'submitted',
           package_id: servicePackage.id
         })
@@ -579,7 +579,7 @@ www.360method.com
       await Promise.all(updatePromises);
 
       if (isMember && hoursFromBucket > 0) {
-        await base44.auth.updateMe({
+        await auth.updateMe({
           hour_bucket: {
             ...hourBucket,
             used: (hourBucket.used || 0) + hoursFromBucket,
@@ -588,7 +588,7 @@ www.360method.com
         });
       }
 
-      await base44.integrations.Core.SendEmail({
+      await storage.sendEmail({
         to: operatorInfo.contact?.email || 'operator@example.com',
         subject: `New Service Package Request - ${packageName}`,
         body: `Service package #${servicePackage.id} submitted by ${user.full_name}`

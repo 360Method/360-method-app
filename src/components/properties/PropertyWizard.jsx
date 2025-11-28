@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import UserTypeSelector from "./UserTypeSelector";
 import PropertyTypeSelector from "./PropertyTypeSelector";
@@ -45,10 +45,10 @@ export default function PropertyWizard({ onComplete, onCancel, existingDraft = n
 
       if (draftId) {
         // Update existing draft
-        return await base44.entities.Property.update(draftId, cleanDraftData);
+        return await Property.update(draftId, cleanDraftData);
       } else {
         // Create new draft
-        const result = await base44.entities.Property.create(cleanDraftData);
+        const result = await Property.create(cleanDraftData);
         setDraftId(result.id);
         return result;
       }
@@ -151,9 +151,9 @@ export default function PropertyWizard({ onComplete, onCancel, existingDraft = n
       
       // Update existing draft or create new property
       if (draftId) {
-        return await base44.entities.Property.update(draftId, cleanData);
+        return await Property.update(draftId, cleanData);
       } else {
-        return await base44.entities.Property.create(cleanData);
+        return await Property.create(cleanData);
       }
     },
     onSuccess: (property) => {

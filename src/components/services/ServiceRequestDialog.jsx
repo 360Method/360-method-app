@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { auth, Property, ServiceRequest } from "@/api/supabaseClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,12 +36,12 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData }) {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('-created_date'),
+    queryFn: () => Property.list('-created_date'),
   });
 
   const { data: user } = useQuery({
     queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   // Update form data when prefilledData changes and dialog is open
@@ -66,7 +66,7 @@ export default function ServiceRequestDialog({ open, onClose, prefilledData }) {
         throw new Error('Property ID is required');
       }
 
-      const serviceRequest = await base44.entities.ServiceRequest.create({
+      const serviceRequest = await ServiceRequest.create({
         property_id: data.property_id,
         task_id: data.task_id,
         service_type: data.service_type,

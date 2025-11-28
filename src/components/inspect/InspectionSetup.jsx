@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Inspection } from "@/api/supabaseClient";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
         throw new Error('Property ID is required to create an inspection');
       }
       
-      return base44.entities.Inspection.create({
+      return Inspection.create({
         property_id: property.id,
         season: selectedSeason,
         year: new Date().getFullYear(),

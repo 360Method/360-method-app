@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { CartItem, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ export default function AddToCartDialog({ open, onClose, prefilledData }) {
 
   const addToCartMutation = useMutation({
     mutationFn: async (cartItem) => {
-      return base44.entities.CartItem.create(cartItem);
+      return CartItem.create(cartItem);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
@@ -67,7 +67,7 @@ export default function AddToCartDialog({ open, onClose, prefilledData }) {
 
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);

@@ -1,5 +1,6 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+// MIGRATED: Using Supabase instead of Base44
+import { Property, SystemBaseline } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -261,7 +262,7 @@ export default function Baseline() {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return base44.entities.Property.list('-created_date');
+      return Property.list('-created_at');
     },
     initialData: () => {
       // Provide initial data immediately for demo mode
@@ -288,8 +289,8 @@ export default function Baseline() {
         }
         return demoData?.systems || [];
       }
-      return selectedProperty 
-        ? base44.entities.SystemBaseline.filter({ property_id: selectedProperty })
+      return selectedProperty
+        ? SystemBaseline.filter({ property_id: selectedProperty })
         : Promise.resolve([]);
     },
     enabled: !!selectedProperty,
@@ -351,8 +352,9 @@ export default function Baseline() {
     }
   }, [totalSystemTypes, recentMilestone]);
 
+  // MIGRATED to Supabase
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.SystemBaseline.delete(id),
+    mutationFn: (id) => SystemBaseline.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
     },
@@ -456,7 +458,8 @@ export default function Baseline() {
     if (selectedProperty && properties.length > 0) {
       const property = properties.find(p => p.id === selectedProperty);
       if (property && property.baseline_completion !== essentialProgress && !demoMode) {
-        base44.entities.Property.update(selectedProperty, {
+        // MIGRATED to Supabase
+        Property.update(selectedProperty, {
           baseline_completion: essentialProgress
         }).then(() => {
           queryClient.invalidateQueries({ queryKey: ['properties'] });

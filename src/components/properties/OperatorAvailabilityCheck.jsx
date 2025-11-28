@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Operator } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { CheckCircle2, AlertCircle, MapPin, Building2 } from "lucide-react";
 export default function OperatorAvailabilityCheck({ zipCode, onOperatorFound }) {
   const { data: operators = [], isLoading } = useQuery({
     queryKey: ['operators'],
-    queryFn: () => base44.entities.Operator.list(),
+    queryFn: () => Operator.list(),
     enabled: !!zipCode,
   });
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { Property, auth } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,20 +20,20 @@ export default function Pricing() {
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const allProps = await base44.entities.Property.list();
+      const allProps = await Property.list();
       return allProps.filter(p => !p.is_draft);
     },
   });
 
   const changeTierMutation = useMutation({
     mutationFn: async (newTier) => {
-      return await base44.auth.updateMe({ tier: newTier });
+      return await auth.updateMe({ tier: newTier });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-user'] });

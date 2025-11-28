@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Home, ClipboardCheck, Calendar, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
+import { CartItem } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function PropertyWizardComplete({ property, onComplete }) {
@@ -13,7 +13,7 @@ export default function PropertyWizardComplete({ property, onComplete }) {
 
   const addToCartMutation = useMutation({
     mutationFn: async (cartItem) => {
-      return base44.entities.CartItem.create(cartItem);
+      return CartItem.create(cartItem);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });

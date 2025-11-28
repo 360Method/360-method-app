@@ -1,6 +1,6 @@
 
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { SystemBaseline, storage } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -547,9 +547,9 @@ Be specific, practical, and focus on preventing expensive failures.`;
       };
 
       if (editingSystem?.id) {
-        return base44.entities.SystemBaseline.update(editingSystem.id, submitData);
+        return SystemBaseline.update(editingSystem.id, submitData);
       } else {
-        return base44.entities.SystemBaseline.create(submitData);
+        return SystemBaseline.create(submitData);
       }
     },
     onSuccess: async (savedSystem) => {
@@ -599,7 +599,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => r.file_url);
@@ -631,7 +631,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
     try {
       const uploadPromises = files.map(file =>
-        base44.integrations.Core.UploadFile({ file })
+        storage.uploadFile(file)
       );
       const results = await Promise.all(uploadPromises);
       const newUrls = results.map(r => ({ url: r.file_url, name: r.file_name || r.file_url.split('/').pop() }));
@@ -663,7 +663,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
 
     try {
       // Upload the barcode image
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await storage.uploadFile(file);
 
       // Use AI to extract product info from data plate
       const result = await base44.integrations.Core.InvokeLLM({

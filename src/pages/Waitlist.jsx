@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import { auth } from "@/api/supabaseClient";
 import { Loader2 } from 'lucide-react';
 
 export default function Waitlist() {
   // Redirect all waitlist traffic to signup
   useEffect(() => {
-    base44.auth.redirectToLogin();
+    auth.redirectToLogin();
   }, []);
 
   return (
