@@ -28,6 +28,8 @@ import OnboardingFirstTask from "../components/onboarding/OnboardingFirstTask";
  *   - Complete onboarding and enter the app
  */
 
+const ONBOARDING_STORAGE_KEY = '360_onboarding_progress';
+
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [onboardingData, setOnboardingData] = React.useState({});
@@ -43,13 +45,48 @@ export default function Onboarding() {
     staleTime: 30000,
   });
 
-  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
+  const { data: properties = [], isLoading: propertiesLoading, refetch: refetchProperties } = useQuery({
     queryKey: ['properties'],
     queryFn: () => Property.list(),
     enabled: !!user,
     retry: 1,
-    staleTime: 30000,
+    staleTime: 5000, // Shorter stale time to catch newly created properties
   });
+
+  // Load saved onboarding progress from localStorage
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      const saved = localStorage.getItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.onboardingData) {
+          setOnboardingData(parsed.onboardingData);
+        }
+        if (typeof parsed.currentStep === 'number') {
+          setCurrentStep(parsed.currentStep);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading onboarding progress:', err);
+    }
+  }, [user?.id]);
+
+  // Save onboarding progress to localStorage whenever it changes
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      localStorage.setItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`, JSON.stringify({
+        currentStep,
+        onboardingData,
+        lastUpdated: new Date().toISOString()
+      }));
+    } catch (err) {
+      console.error('Error saving onboarding progress:', err);
+    }
+  }, [user?.id, currentStep, onboardingData]);
 
   // Check onboarding status once
   React.useEffect(() => {
@@ -58,8 +95,13 @@ export default function Onboarding() {
 
     checkedRef.current = true;
 
-    // If already completed onboarding and has properties, go to dashboard
-    if (user?.onboarding_completed && properties.length > 0) {
+    // If user already has properties, skip to dashboard
+    // The property data is already saved - no need to re-enter
+    if (properties.length > 0) {
+      // Clear onboarding progress since they have a property
+      if (user?.id) {
+        localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+      }
       navigate(createPageUrl("Dashboard"), { replace: true });
     } else {
       setShowContent(true);
@@ -88,6 +130,11 @@ export default function Onboarding() {
   };
 
   const handleComplete = (finalData) => {
+    // Clear onboarding progress from localStorage - data is now in database
+    if (user?.id) {
+      localStorage.removeItem(`${ONBOARDING_STORAGE_KEY}_${user.id}`);
+    }
+
     // Navigate based on user's choice
     if (finalData.destination === 'baseline' && finalData.property) {
       // Go to baseline with property and suggested system

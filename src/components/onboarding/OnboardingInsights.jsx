@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Property } from "@/api/supabaseClient";
 import { supabase } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +98,7 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [createdProperty, setCreatedProperty] = useState(null);
+  const hasRunRef = useRef(false);
 
   const queryClient = useQueryClient();
 
@@ -110,9 +111,13 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
     },
   });
 
-  // Fetch property data and create property
+  // Fetch property data and create property - only run once
   useEffect(() => {
     async function fetchAndCreate() {
+      // Prevent duplicate runs
+      if (hasRunRef.current) return;
+      hasRunRef.current = true;
+
       if (!data?.address) {
         setError('No address provided');
         setIsLoading(false);
