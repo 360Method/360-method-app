@@ -140,8 +140,8 @@ export default function DemoExitCTA({ isOpen, onClose, reason = 'exit' }) {
     sessionStorage.removeItem('demoTour_excellent');
     sessionStorage.removeItem('demoTour_investor');
     sessionStorage.removeItem('demoTour_homeowner');
-    // Use direct location change instead of navigate + reload to avoid race condition
-    window.location.href = '/Welcome';
+    // Use root path which renders Welcome page (avoids case-sensitivity issues)
+    window.location.href = '/';
   };
 
   const handleExploreOtherDemos = () => {
