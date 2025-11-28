@@ -33,6 +33,7 @@ const SYSTEM_LIFESPANS = {
 };
 
 // Generate insights based on home age
+// Note: These are suggestions to VERIFY, not assumptions about current state
 function generateAgeInsights(yearBuilt, currentYear = new Date().getFullYear()) {
   const homeAge = currentYear - yearBuilt;
   const insights = [];
@@ -42,21 +43,19 @@ function generateAgeInsights(yearBuilt, currentYear = new Date().getFullYear()) 
     const yearsSinceLastExpected = homeAge % data.avgYears;
     const percentOfLifeUsed = (yearsSinceLastExpected / data.avgYears) * 100;
 
-    let status = 'good';
+    let status = 'verify';
     let message = '';
 
-    if (percentOfLifeUsed >= 100) {
-      status = 'critical';
-      message = `Likely past expected lifespan if original`;
-    } else if (percentOfLifeUsed >= 80) {
-      status = 'warning';
-      message = `May need attention in ${Math.ceil(data.avgYears - yearsSinceLastExpected)} years`;
-    } else if (percentOfLifeUsed >= 60) {
+    // Frame everything as "worth checking" not "definitely bad"
+    if (homeAge > data.avgYears) {
+      status = 'verify';
+      message = `Worth documenting - may have been updated`;
+    } else if (percentOfLifeUsed >= 70) {
       status = 'monitor';
-      message = `About ${Math.round(percentOfLifeUsed)}% through typical lifespan`;
+      message = `Good to track for future planning`;
     } else {
       status = 'good';
-      message = `Typically has ${Math.ceil(data.avgYears - yearsSinceLastExpected)}+ years remaining`;
+      message = `Likely in good shape if maintained`;
     }
 
     insights.push({
@@ -72,8 +71,8 @@ function generateAgeInsights(yearBuilt, currentYear = new Date().getFullYear()) 
     });
   });
 
-  // Sort by priority and status (critical first)
-  const statusOrder = { critical: 0, warning: 1, monitor: 2, good: 3 };
+  // Sort by priority (systems most worth documenting first)
+  const statusOrder = { verify: 0, monitor: 1, good: 2 };
   insights.sort((a, b) => {
     if (statusOrder[a.status] !== statusOrder[b.status]) {
       return statusOrder[a.status] - statusOrder[b.status];
@@ -84,28 +83,13 @@ function generateAgeInsights(yearBuilt, currentYear = new Date().getFullYear()) 
   return insights;
 }
 
-// Calculate potential savings
-function calculatePotentialSavings(insights) {
-  let potentialSavings = 0;
-  insights.forEach(insight => {
-    if (insight.status === 'critical' || insight.status === 'warning') {
-      // Catching issues early saves roughly 50-70% of emergency costs
-      const avgReplacementCost = {
-        'Roof': 15000,
-        'HVAC': 8000,
-        'Water Heater': 1500,
-        'Electrical Panel': 2500,
-        'Windows': 8000,
-        'Plumbing': 5000,
-        'Furnace': 4500,
-        'Air Conditioner': 5500,
-        'Siding': 15000,
-        'Garage Door': 1200
-      }[insight.system] || 2000;
-      potentialSavings += avgReplacementCost * 0.4; // 40% savings from proactive vs reactive
-    }
-  });
-  return Math.round(potentialSavings);
+// Calculate potential savings from proactive maintenance
+function calculatePotentialSavings(homeAge) {
+  // Average homeowner saves $3,000-5,000/year with proactive maintenance
+  // Scale based on home age (older homes have more potential savings)
+  const baseSavings = 3500;
+  const ageMultiplier = Math.min(homeAge / 20, 2); // Cap at 2x for 40+ year old homes
+  return Math.round(baseSavings * ageMultiplier);
 }
 
 export default function OnboardingInsights({ onNext, onBack, data }) {
@@ -269,9 +253,8 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
   }
 
   const homeAge = new Date().getFullYear() - propertyData?.year_built;
-  const criticalCount = insights.filter(i => i.status === 'critical').length;
-  const warningCount = insights.filter(i => i.status === 'warning').length;
-  const potentialSavings = calculatePotentialSavings(insights);
+  const systemsToVerify = insights.filter(i => i.status === 'verify').length;
+  const potentialSavings = calculatePotentialSavings(homeAge);
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -293,12 +276,12 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
           {/* Key Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-orange-400">{criticalCount + warningCount}</div>
-              <div className="text-sm text-slate-300">Systems to Watch</div>
+              <div className="text-3xl font-bold text-orange-400">{systemsToVerify}</div>
+              <div className="text-sm text-slate-300">Systems to Document</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-green-400">${Math.round(potentialSavings / 1000)}K</div>
-              <div className="text-sm text-slate-300">Potential Savings</div>
+              <div className="text-sm text-slate-300">Avg. Annual Savings</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-blue-400">{homeAge}</div>
@@ -307,8 +290,8 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
           </div>
 
           <p className="text-slate-300 text-center">
-            Based on your home's age, here's what typically needs attention.
-            <span className="text-orange-400 font-medium"> Let's catch the $50 fix before it becomes the $5,000 disaster.</span>
+            Based on your home's age, here are the systems worth documenting.
+            <span className="text-orange-400 font-medium"> Many may have been updated - let's find out!</span>
           </p>
         </CardContent>
       </Card>
@@ -316,20 +299,21 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
       {/* Systems Insights */}
       <Card className="border-2 border-slate-200">
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <Wrench className="w-5 h-5 text-slate-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Systems to Watch</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Systems to Document</h2>
           </div>
+          <p className="text-sm text-slate-500 mb-4">
+            These may have been updated - documenting them helps us give you accurate recommendations.
+          </p>
 
           <div className="space-y-3">
             {insights.slice(0, 5).map((insight) => (
               <div
                 key={insight.system}
                 className={`flex items-center justify-between p-4 rounded-xl border-2 ${
-                  insight.status === 'critical'
-                    ? 'bg-red-50 border-red-200'
-                    : insight.status === 'warning'
-                    ? 'bg-amber-50 border-amber-200'
+                  insight.status === 'verify'
+                    ? 'bg-orange-50 border-orange-200'
                     : insight.status === 'monitor'
                     ? 'bg-blue-50 border-blue-200'
                     : 'bg-green-50 border-green-200'
@@ -344,21 +328,17 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
                 </div>
                 <Badge
                   className={
-                    insight.status === 'critical'
-                      ? 'bg-red-500 text-white'
-                      : insight.status === 'warning'
-                      ? 'bg-amber-500 text-white'
+                    insight.status === 'verify'
+                      ? 'bg-orange-500 text-white'
                       : insight.status === 'monitor'
                       ? 'bg-blue-500 text-white'
                       : 'bg-green-500 text-white'
                   }
                 >
-                  {insight.status === 'critical'
-                    ? 'Check Soon'
-                    : insight.status === 'warning'
-                    ? 'Watch'
+                  {insight.status === 'verify'
+                    ? 'Document'
                     : insight.status === 'monitor'
-                    ? 'Monitor'
+                    ? 'Track'
                     : 'Good'}
                 </Badge>
               </div>
@@ -367,7 +347,7 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
 
           {insights.length > 5 && (
             <p className="text-center text-sm text-slate-500 mt-4">
-              + {insights.length - 5} more systems to track
+              + {insights.length - 5} more systems to document
             </p>
           )}
         </CardContent>
@@ -382,11 +362,11 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
             </div>
             <div>
               <h3 className="font-bold text-green-900 text-lg mb-1">
-                Save up to ${potentialSavings.toLocaleString()} Over 5 Years
+                Homeowners Save ~${potentialSavings.toLocaleString()}/Year
               </h3>
               <p className="text-green-800 text-sm">
-                By tracking these systems and catching issues early, you could avoid costly emergency repairs.
-                The average homeowner spends 60% more on reactive repairs than those who plan ahead.
+                By knowing what you have and planning ahead, you avoid emergency pricing and can budget for updates on your timeline.
+                Whether your systems are new or original, tracking them helps you stay ahead.
               </p>
             </div>
           </div>
