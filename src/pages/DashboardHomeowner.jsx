@@ -1,23 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { 
-  Home, Shield, TrendingUp, AlertTriangle, CheckCircle, 
-  Clock, DollarSign, Calendar, Zap, ArrowRight 
+import {
+  Home, Shield, TrendingUp, AlertTriangle, CheckCircle,
+  Clock, DollarSign, Calendar, Zap, ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
 import { createPageUrl } from '@/utils';
 import DemoCTA from '../components/demo/DemoCTA';
+import { useAhaMoments } from '../components/onboarding/AhaMomentManager';
+import { AhaDocumentFirstSystemCard } from '../components/onboarding/AhaDocumentFirstSystem';
+import { GuidedNextStep } from '../components/dashboard/GuidedNextStep';
 
 export default function DashboardHomeowner() {
   const navigate = useNavigate();
   const { demoMode, demoData, markStepVisited } = useDemo();
 
-  React.useEffect(() => {
+  // Aha Moments system - only active when not in demo mode
+  let ahaMoments = null;
+  try {
+    ahaMoments = useAhaMoments();
+  } catch (e) {
+    // AhaMomentProvider not available (e.g., in demo mode or tests)
+  }
+
+  useEffect(() => {
     window.scrollTo(0, 0);
     if (demoMode) markStepVisited(0);
   }, [demoMode, markStepVisited]);
+
+  // Trigger Aha #2 prompt after dashboard loads (only for real users with properties)
+  useEffect(() => {
+    if (demoMode || !ahaMoments) return;
+
+    // Delay to let the page render first
+    const timer = setTimeout(() => {
+      ahaMoments.triggerPrompt(ahaMoments.AHA_MOMENTS.CAN_TRACK);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [demoMode, ahaMoments]);
 
   // Fetch real data
   const { data: realProperties = [] } = useQuery({
@@ -111,6 +134,16 @@ export default function DashboardHomeowner() {
           </>
         )}
       </div>
+
+      {/* Guided Next Step - Shows recommended action based on progress */}
+      {!demoMode && systems.length === 0 && (
+        <GuidedNextStep
+          systemsCount={systems.length}
+          tasksCount={allTasks.length}
+          inspectionsCount={0}
+          className="mb-8"
+        />
+      )}
 
       {/* SECTION 1: HERO METRICS (The Big 3) */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">

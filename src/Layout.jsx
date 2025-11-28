@@ -41,6 +41,8 @@ import DemoAIChat from "./components/demo/DemoAIChat";
 import GuidedDemoTour from "./components/demo/GuidedDemoTour";
 import DemoIntroModal from "./components/demo/DemoIntroModal";
 import DemoHelpButton from "./components/demo/DemoHelpButton";
+import { AhaMomentProvider } from "./components/onboarding/AhaMomentManager";
+import { AhaDocumentFirstSystemModal } from "./components/onboarding/AhaDocumentFirstSystem";
 
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -611,6 +613,9 @@ function LayoutContent({ children }) {
         {showAppUI && demoMode && <DemoHelpButton />}
         {showAppUI && <FloatingSignupCTA />}
         {showAppUI && <ExitIntentPopup />}
+
+        {/* Aha Moment Modals - Only show when not in demo mode */}
+        {showAppUI && !demoMode && <AhaDocumentFirstSystemModal />}
       </div>
 
       <style>{`
@@ -853,7 +858,9 @@ function LayoutContent({ children }) {
 export default function Layout({ children }) {
   return (
     <DemoProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <AhaMomentProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </AhaMomentProvider>
     </DemoProvider>
   );
 }
