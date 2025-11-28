@@ -77,7 +77,7 @@ export default function BecomeOperator() {
             </div>
 
             <div className="space-y-3">
-              <a href="mailto:operators@360method.com?subject=Operator Interest">
+              <a href="mailto:support@360degreemethod.com?subject=Operator Interest">
                 <Button className="w-full bg-orange-500 hover:bg-orange-600 gap-2">
                   <Mail className="w-4 h-4" />
                   Contact Us About Becoming an Operator
