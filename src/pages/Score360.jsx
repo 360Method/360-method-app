@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award, ChevronDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStrugg
 import { DEMO_PROPERTY_IMPROVING } from "@/components/shared/demoPropertyImproving";
 import { DEMO_PROPERTY_EXCELLENT } from "@/components/shared/demoPropertyExcellent";
 import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
+import { useDemo } from '../components/shared/DemoContext';
 import DemoCTA from '../components/demo/DemoCTA';
 import {
   DropdownMenu,
@@ -21,30 +22,41 @@ import {
 
 export default function Score360() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const printRef = useRef(null);
-  
+  const { demoMode } = useDemo();
+
   let propertyId = searchParams.get('property_id');
   const portfolioView = searchParams.get('portfolio') === 'true';
-  
+
+  // Check if we're being rendered from a demo wrapper page (URL contains Demo*Score)
+  const isFromDemoWrapper = location.pathname.includes('DemoOverwhelmedScore') ||
+                            location.pathname.includes('DemoImprovingScore') ||
+                            location.pathname.includes('DemoExcellentScore') ||
+                            location.pathname.includes('DemoInvestorScore');
+
   // Auto-detect demo mode and set default if no property specified
+  // Skip redirect if coming from a demo wrapper page
   React.useEffect(() => {
-    const demoMode = sessionStorage.getItem('demoMode');
-    if (!propertyId && !portfolioView && demoMode) {
-      if (demoMode === 'investor') {
+    if (isFromDemoWrapper) return; // Don't redirect if from demo wrapper
+
+    const storedDemoMode = sessionStorage.getItem('demoMode');
+    if (!propertyId && !portfolioView && storedDemoMode) {
+      if (storedDemoMode === 'investor') {
         // Default to portfolio view for investor
         setSearchParams({ portfolio: 'true' });
-      } else if (demoMode === 'struggling') {
+      } else if (storedDemoMode === 'struggling') {
         navigate(createPageUrl('Score360') + '?property_id=demo-struggling-001', { replace: true });
-      } else if (demoMode === 'improving') {
+      } else if (storedDemoMode === 'improving') {
         navigate(createPageUrl('Score360') + '?property_id=demo-improving-001', { replace: true });
-      } else if (demoMode === 'excellent') {
+      } else if (storedDemoMode === 'excellent') {
         navigate(createPageUrl('Score360') + '?property_id=demo-excellent-001', { replace: true });
       } else {
         navigate(createPageUrl('Score360') + '?property_id=demo-homeowner-001', { replace: true });
       }
     }
-  }, [propertyId, portfolioView, navigate, setSearchParams]);
+  }, [propertyId, portfolioView, navigate, setSearchParams, isFromDemoWrapper]);
   
   // Get all properties for portfolio view
   const getAllProperties = () => {
@@ -54,6 +66,10 @@ export default function Score360() {
     }
     // If portfolio=true in URL, assume investor demo
     if (portfolioView) {
+      return DEMO_PORTFOLIO_INVESTOR.properties;
+    }
+    // If from demo wrapper and investor mode, return portfolio
+    if (isFromDemoWrapper && demoMode === 'investor') {
       return DEMO_PORTFOLIO_INVESTOR.properties;
     }
     return [];
@@ -102,7 +118,28 @@ export default function Score360() {
         health_score: portfolioScore
       };
     }
-    
+
+    // If from demo wrapper, use demoMode from context to get property
+    if (isFromDemoWrapper && demoMode && !propertyId) {
+      if (demoMode === 'struggling') return DEMO_PROPERTY_STRUGGLING.property;
+      if (demoMode === 'improving') return DEMO_PROPERTY_IMPROVING.property;
+      if (demoMode === 'excellent') return DEMO_PROPERTY_EXCELLENT.property;
+      if (demoMode === 'investor') {
+        // Return portfolio average for investor
+        return {
+          id: 'portfolio',
+          address: 'Portfolio Average',
+          city: `${DEMO_PORTFOLIO_INVESTOR.properties.length} Properties`,
+          state: '',
+          property_type: 'Multi-Property Portfolio',
+          year_built: '',
+          square_footage: DEMO_PORTFOLIO_INVESTOR.properties.reduce((sum, p) => sum + (p.square_footage || 0), 0),
+          health_score: Math.round(DEMO_PORTFOLIO_INVESTOR.properties.reduce((sum, p) => sum + p.health_score, 0) / DEMO_PORTFOLIO_INVESTOR.properties.length)
+        };
+      }
+      return DEMO_PROPERTY_HOMEOWNER.property;
+    }
+
     if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
     if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
     if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;

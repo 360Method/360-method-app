@@ -72,6 +72,11 @@ import DemoInvestorPrioritize from './pages/DemoInvestorPrioritize';
 import DemoInvestorSchedule from './pages/DemoInvestorSchedule';
 import DemoInvestorExecute from './pages/DemoInvestorExecute';
 import DemoInvestorScale from './pages/DemoInvestorScale';
+// Score demo pages
+import DemoOverwhelmedScore from './pages/DemoOverwhelmedScore';
+import DemoImprovingScore from './pages/DemoImprovingScore';
+import DemoExcellentScore from './pages/DemoExcellentScore';
+import DemoInvestorScore from './pages/DemoInvestorScore';
 import Score360 from './pages/Score360';
 import PortalDashboard from './pages/PortalDashboard';
 import PortalMenu from './pages/PortalMenu';
@@ -214,6 +219,11 @@ export const PAGES = {
     "DemoInvestorSchedule": DemoInvestorSchedule,
     "DemoInvestorExecute": DemoInvestorExecute,
     "DemoInvestorScale": DemoInvestorScale,
+    // Score demo pages
+    "DemoOverwhelmedScore": DemoOverwhelmedScore,
+    "DemoImprovingScore": DemoImprovingScore,
+    "DemoExcellentScore": DemoExcellentScore,
+    "DemoInvestorScore": DemoInvestorScore,
     "Score360": Score360,
     "PortalDashboard": PortalDashboard,
     "PortalMenu": PortalMenu,
@@ -389,6 +399,11 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     'DemoInvestorSchedule',
     'DemoInvestorExecute',
     'DemoInvestorScale',
+    // Score demo pages
+    'DemoOverwhelmedScore',
+    'DemoImprovingScore',
+    'DemoExcellentScore',
+    'DemoInvestorScore',
 ];
 
 // All public pages (no auth required)
