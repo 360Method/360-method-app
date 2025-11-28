@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
     answer: "Most users spend about 15-20 minutes per month on property care with our system. The initial setup takes about 30 minutes to document your property's systems. After that, our seasonal reminders and smart scheduling do the heavy lifting."
   },
   {
-    question: "I'm not handy—can I still use this?",
+    question: "I'm not handy. Can I still use this?",
     answer: "Absolutely! The 360° Method is designed for everyone, not just DIY experts. We help you know what needs attention, then you decide whether to handle it yourself or hire a professional. Many tasks are simple enough for anyone, and we'll tell you which ones truly need a pro."
   },
   {
@@ -23,11 +23,11 @@ const FAQ_ITEMS = [
   },
   {
     question: "How is this different from a home warranty?",
-    answer: "Home warranties cover repairs after something breaks. The 360° Method helps you prevent breaks in the first place. Think of it as the difference between car insurance and regular oil changes—you need both, but prevention is always cheaper than repair."
+    answer: "Home warranties cover repairs after something breaks. The 360° Method helps you prevent breaks in the first place. Think of it as the difference between car insurance and regular oil changes. You need both, but prevention is always cheaper than repair."
   },
   {
     question: "Can I try it before signing up?",
-    answer: "Yes! Click 'See It In Action' to explore our interactive demo. You'll see exactly how the system works with sample properties in different conditions—from struggling to excellent. No signup required."
+    answer: "Yes! Click 'See It In Action' to explore our interactive demo. You'll see exactly how the system works with sample properties in different conditions, from struggling to excellent. No signup required."
   }
 ];
 
@@ -36,6 +36,22 @@ export default function Welcome() {
   const { user, isAuthenticated, isLoadingAuth } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [openFaq, setOpenFaq] = useState(null);
+
+  // Load Elfsight script for Google Reviews widget
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://static.elfsight.com/platform/platform.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup script on unmount
+      const existingScript = document.querySelector('script[src="https://static.elfsight.com/platform/platform.js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoadingAuth) {
@@ -122,7 +138,7 @@ export default function Welcome() {
           <div className="flex items-center justify-center gap-2 text-slate-400 mb-8">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             <span className="text-sm">
-              Trusted by 400+ property owners protecting $180M+ in real estate
+              Built by a property owner, for property owners
             </span>
           </div>
 
@@ -305,7 +321,7 @@ export default function Welcome() {
               <h3 className="text-xl font-bold text-slate-900 mb-2">ACT</h3>
               <p className="text-green-700 font-medium mb-3">Fix Small Before Big</p>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Know exactly what to fix and when—prioritized by urgency and cost impact. Do it yourself or hire help.
+                Know exactly what to fix and when, prioritized by urgency and cost impact. Do it yourself or hire help.
               </p>
             </div>
 
@@ -324,81 +340,34 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-16 md:py-24 bg-slate-900">
+      {/* Social Proof - Real Google Reviews */}
+      <section className="py-16 md:py-24 bg-slate-100">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center text-white mb-12">
+          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-4">
             Real Transformations
           </h2>
+          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto text-lg">
+            See what property owners are saying about the 360° Method
+          </p>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white rounded-2xl p-6 md:p-8">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-xl font-bold text-slate-600">
-                  S
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-900">Sarah M.</div>
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <blockquote className="text-slate-700 mb-4 leading-relaxed">
-                "Caught a small roof leak during my first inspection that would've cost thousands later. The peace of mind alone is worth 10x what I pay."
-              </blockquote>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <span className="text-sm text-slate-500">Constant worry → Complete confidence</span>
-                <span className="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full text-sm">$4,200 saved</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 md:p-8">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-xl font-bold text-slate-600">
-                  J
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-900">James K.</div>
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <blockquote className="text-slate-700 mb-4 leading-relaxed">
-                "I manage 8 rentals. Since the 360° Method, maintenance costs are down 30% and emergency calls have virtually stopped. My phone doesn't buzz at 2am anymore."
-              </blockquote>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <span className="text-sm text-slate-500">Firefighting → Systematic control</span>
-                <span className="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full text-sm">30% cost reduction</span>
-              </div>
-            </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 md:p-8 mb-10">
+            <div className="elfsight-app-71f6f176-96aa-4ece-8490-6c2274faae5b" data-elfsight-app-lazy></div>
           </div>
 
-          {/* Case Study Banner */}
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 md:p-8 text-center">
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              The $9,500 Difference
+          {/* You Could Be Next CTA */}
+          <div className="text-center">
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">
+              You Could Be Next
             </h3>
-            <p className="text-white/90 mb-6">
-              5-year cost comparison: Reactive approach vs. 360° Method
+            <p className="text-slate-600 mb-6 max-w-xl mx-auto">
+              Every property owner above started exactly where you are now. Make the choice to go from reactive to proactive.
             </p>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto">
-              <div className="grid grid-cols-2 gap-6 text-white">
-                <div>
-                  <div className="text-sm opacity-80 mb-1">Reactive</div>
-                  <div className="text-2xl md:text-3xl font-bold">$19,350</div>
-                </div>
-                <div>
-                  <div className="text-sm opacity-80 mb-1">360° Method</div>
-                  <div className="text-2xl md:text-3xl font-bold">$9,850</div>
-                </div>
-              </div>
-            </div>
+            <button
+              onClick={() => navigate('/Signup')}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
+            >
+              Start Your Transformation
+            </button>
           </div>
         </div>
       </section>
@@ -457,26 +426,38 @@ export default function Welcome() {
           <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg">
             <div className="prose prose-slate max-w-none">
               <p className="text-lg text-slate-700 leading-relaxed mb-6">
-                It started with a $14,000 water heater disaster.
+                The 360° Method was developed by Marcin Micek after managing a 12-door rental portfolio and experiencing
+                firsthand how small ignored problems become financial disasters.
               </p>
               <p className="text-slate-600 leading-relaxed mb-6">
-                Our founder was a first-time homeowner who thought everything was fine—until a 15-year-old water heater
-                catastrophically failed on a Sunday night. The flooding damaged the floors, the walls, and the HVAC system.
-                What should have been a $1,200 planned replacement became a $14,000 emergency.
+                The framework draws from over 15 years of hands-on experience across multiple industries: working construction
+                as a teenager, running a painting business through college, 7 years in B2B manufacturing sales, a stint in the
+                insurance industry, and currently owning and operating a general contracting company.
               </p>
               <p className="text-slate-600 leading-relaxed mb-6">
-                The worst part? A simple annual inspection would have caught it. The tank was rusted, the anode rod was
-                depleted, and there were visible warning signs that any homeowner could have spotted—if they only knew
-                what to look for.
+                Through trial and error, and being my own customer on every rental property I manage, I developed a systematic
+                approach that actually works. The 360° Method combines everything I've learned about construction, risk assessment,
+                systematic processes, and real-world property management into a framework that <strong>prevents problems rather
+                than reacts to them</strong>.
               </p>
               <p className="text-slate-600 leading-relaxed mb-6">
-                That's when the mission became clear: <strong>No property owner should ever be blindsided again.</strong>
+                But this isn't really about me. <strong>It's about your transformation.</strong> I know what it feels like to lie
+                awake wondering what's going to break next. I know the pit in your stomach when an unexpected repair bill lands.
+                And I know the relief that comes when you finally feel in control.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-8">
-                The 360° Method was born from that experience—a systematic approach that transforms reactive firefighting
-                into proactive confidence. It's not about becoming a maintenance expert. It's about having a simple system
-                that catches the $50 fix before it becomes the $5,000 disaster.
+              <p className="text-slate-600 leading-relaxed mb-6">
+                Property ownership should make you feel confident and capable, not anxious and overwhelmed. When you follow
+                this framework, you're not just maintaining a building. You're becoming a more organized, proactive, and
+                financially secure version of yourself.
               </p>
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-500 p-5 rounded-r-lg mb-8">
+                <p className="text-slate-700 italic mb-3">
+                  "I genuinely care about your success. Nothing would make me happier than hearing how this system helped you
+                  sleep better at night, save money, or simply feel like a more capable property owner. Your transformation
+                  story is why I built this."
+                </p>
+                <p className="text-sm text-slate-500 mb-0">- Marcin Micek, Founder</p>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 pt-8 border-t border-slate-200">
@@ -484,22 +465,22 @@ export default function Welcome() {
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
                   <Target className="w-6 h-6 text-blue-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Our Mission</h4>
-                <p className="text-sm text-slate-600">Eliminate surprise property emergencies through proactive care</p>
+                <h4 className="font-semibold text-slate-900 mb-1">Your Transformation</h4>
+                <p className="text-sm text-slate-600">From reactive firefighting to confident, proactive control</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
                   <Users className="w-6 h-6 text-green-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Our Community</h4>
-                <p className="text-sm text-slate-600">400+ property owners protecting $180M+ in real estate</p>
+                <h4 className="font-semibold text-slate-900 mb-1">Your Peace of Mind</h4>
+                <p className="text-sm text-slate-600">Sleep better knowing nothing is silently becoming a disaster</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-purple-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Our Promise</h4>
-                <p className="text-sm text-slate-600">Simple tools that give you peace of mind and control</p>
+                <h4 className="font-semibold text-slate-900 mb-1">Your Success Story</h4>
+                <p className="text-sm text-slate-600">I can't wait to hear how this framework changed things for you</p>
               </div>
             </div>
           </div>
@@ -513,7 +494,7 @@ export default function Welcome() {
             Your Property's Future Starts Today
           </h2>
           <p className="text-lg text-slate-600 mb-8">
-            Join 400+ property owners who've made the switch from reactive to proactive.
+            Make the switch from reactive to proactive property care.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
