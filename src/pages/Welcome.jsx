@@ -1,13 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle, X, Star, ChevronDown } from 'lucide-react';
+import { ArrowRight, CheckCircle, X, Star, ChevronDown, ChevronUp, HelpCircle, Heart, Users, Target, Shield } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+
+const FAQ_ITEMS = [
+  {
+    question: "Is the 360° Method really free?",
+    answer: "Yes! The 360° Method is free forever for your first property. We believe everyone deserves access to proactive property care. For homeowners with multiple properties, we offer affordable Pro plans with additional features."
+  },
+  {
+    question: "How much time does this actually take?",
+    answer: "Most users spend about 15-20 minutes per month on property care with our system. The initial setup takes about 30 minutes to document your property's systems. After that, our seasonal reminders and smart scheduling do the heavy lifting."
+  },
+  {
+    question: "I'm not handy—can I still use this?",
+    answer: "Absolutely! The 360° Method is designed for everyone, not just DIY experts. We help you know what needs attention, then you decide whether to handle it yourself or hire a professional. Many tasks are simple enough for anyone, and we'll tell you which ones truly need a pro."
+  },
+  {
+    question: "What if I rent my property out?",
+    answer: "The 360° Method works great for landlords and rental property owners. In fact, our system is especially valuable for investment properties where catching problems early protects your ROI. You can track multiple properties and even share inspection reports with tenants."
+  },
+  {
+    question: "How is this different from a home warranty?",
+    answer: "Home warranties cover repairs after something breaks. The 360° Method helps you prevent breaks in the first place. Think of it as the difference between car insurance and regular oil changes—you need both, but prevention is always cheaper than repair."
+  },
+  {
+    question: "Can I try it before signing up?",
+    answer: "Yes! Click 'See It In Action' to explore our interactive demo. You'll see exactly how the system works with sample properties in different conditions—from struggling to excellent. No signup required."
+  }
+];
 
 export default function Welcome() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoadingAuth } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
     if (!isLoadingAuth) {
@@ -375,6 +403,109 @@ export default function Welcome() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="py-16 md:py-24 bg-white">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-4 py-2 mb-4">
+              <HelpCircle className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">Common Questions</span>
+            </div>
+            <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+                >
+                  <span className="font-semibold text-slate-900">{item.question}</span>
+                  {openFaq === idx ? (
+                    <ChevronUp className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                  )}
+                </button>
+                {openFaq === idx && (
+                  <div className="px-6 pb-4 text-slate-600 leading-relaxed">
+                    {item.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Us / Origin Story Section */}
+      <section id="about" className="py-16 md:py-24 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-purple-100 rounded-full px-4 py-2 mb-4">
+              <Heart className="w-4 h-4 text-purple-600" />
+              <span className="text-sm font-medium text-purple-700">Our Story</span>
+            </div>
+            <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+              Why We Built the 360° Method
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg">
+            <div className="prose prose-slate max-w-none">
+              <p className="text-lg text-slate-700 leading-relaxed mb-6">
+                It started with a $14,000 water heater disaster.
+              </p>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                Our founder was a first-time homeowner who thought everything was fine—until a 15-year-old water heater
+                catastrophically failed on a Sunday night. The flooding damaged the floors, the walls, and the HVAC system.
+                What should have been a $1,200 planned replacement became a $14,000 emergency.
+              </p>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                The worst part? A simple annual inspection would have caught it. The tank was rusted, the anode rod was
+                depleted, and there were visible warning signs that any homeowner could have spotted—if they only knew
+                what to look for.
+              </p>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                That's when the mission became clear: <strong>No property owner should ever be blindsided again.</strong>
+              </p>
+              <p className="text-slate-600 leading-relaxed mb-8">
+                The 360° Method was born from that experience—a systematic approach that transforms reactive firefighting
+                into proactive confidence. It's not about becoming a maintenance expert. It's about having a simple system
+                that catches the $50 fix before it becomes the $5,000 disaster.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 pt-8 border-t border-slate-200">
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-blue-600" />
+                </div>
+                <h4 className="font-semibold text-slate-900 mb-1">Our Mission</h4>
+                <p className="text-sm text-slate-600">Eliminate surprise property emergencies through proactive care</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-green-600" />
+                </div>
+                <h4 className="font-semibold text-slate-900 mb-1">Our Community</h4>
+                <p className="text-sm text-slate-600">400+ property owners protecting $180M+ in real estate</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-purple-600" />
+                </div>
+                <h4 className="font-semibold text-slate-900 mb-1">Our Promise</h4>
+                <p className="text-sm text-slate-600">Simple tools that give you peace of mind and control</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-3xl mx-auto px-4 text-center">
@@ -419,8 +550,9 @@ export default function Welcome() {
               <span className="font-semibold text-slate-700">360° Method</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-slate-500">
-              <button onClick={() => navigate(createPageUrl('Pricing'))} className="hover:text-slate-700">Pricing</button>
-              <button onClick={() => navigate(createPageUrl('Resources'))} className="hover:text-slate-700">Resources</button>
+              <a href="#faq" className="hover:text-slate-700">FAQ</a>
+              <a href="#about" className="hover:text-slate-700">About Us</a>
+              <button onClick={() => navigate(createPageUrl('DemoEntry'))} className="hover:text-slate-700">Try Demo</button>
               <button onClick={() => navigate('/Login')} className="hover:text-slate-700">Log In</button>
             </div>
             <p className="text-sm text-slate-500">
