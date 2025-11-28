@@ -426,14 +426,9 @@ const AddressAutocomplete = ({ onAddressSelect, initialValue = "" }) => {
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
-            // CRITICAL FIX: Allow parent to track unverified address
-            if (onAddressSelect && e.target.value) {
-              onAddressSelect({
-                address: e.target.value,
-                formatted_address: e.target.value,
-                address_verified: false,
-                verification_source: 'manual_entry'
-              });
+            // Clear selected address when user types (they're searching for a new one)
+            if (selectedAddress) {
+              setSelectedAddress(null);
             }
           }}
           disabled={!ready && !error}

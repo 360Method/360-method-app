@@ -28,6 +28,12 @@ export default function OnboardingAddressInput({ onNext, user }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddressSelect = (place) => {
+    // Only accept verified addresses (from Google Places selection)
+    // Ignore unverified addresses from typing
+    if (!place?.address_verified || place.verification_source === 'manual_entry' && !place.street_address) {
+      return;
+    }
+
     const climateZone = getClimateZone(place.state);
     setSelectedPlace({
       ...place,
