@@ -171,7 +171,6 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
 
         // Only add optional fields if they have values
         if (address.unit_number) propertyPayload.unit_number = address.unit_number;
-        if (address.county) propertyPayload.county = address.county;
         if (address.place_id) propertyPayload.place_id = address.place_id;
 
         console.log('Creating property with payload:', propertyPayload);
