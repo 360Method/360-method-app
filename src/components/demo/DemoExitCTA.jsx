@@ -140,8 +140,8 @@ export default function DemoExitCTA({ isOpen, onClose, reason = 'exit' }) {
     sessionStorage.removeItem('demoTour_excellent');
     sessionStorage.removeItem('demoTour_investor');
     sessionStorage.removeItem('demoTour_homeowner');
-    navigate('/Welcome');
-    window.location.reload();
+    // Use direct location change instead of navigate + reload to avoid race condition
+    window.location.href = '/Welcome';
   };
 
   const handleExploreOtherDemos = () => {
@@ -159,8 +159,8 @@ export default function DemoExitCTA({ isOpen, onClose, reason = 'exit' }) {
     sessionStorage.removeItem('demoTour_excellent');
     sessionStorage.removeItem('demoTour_investor');
     sessionStorage.removeItem('demoTour_homeowner');
-    navigate('/DemoEntry');
-    window.location.reload();
+    // Use direct location change instead of navigate + reload to avoid race condition
+    window.location.href = '/DemoEntry';
   };
 
   return (
