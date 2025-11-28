@@ -173,12 +173,6 @@ export default function OnboardingInsights({ onNext, onBack, data }) {
         if (address.unit_number) propertyPayload.unit_number = address.unit_number;
         if (address.county) propertyPayload.county = address.county;
         if (address.place_id) propertyPayload.place_id = address.place_id;
-        if (address.climate_zone) propertyPayload.climate_zone = address.climate_zone;
-
-        // Handle coordinates - convert to proper format if needed
-        if (address.coordinates) {
-          propertyPayload.coordinates = JSON.stringify(address.coordinates);
-        }
 
         console.log('Creating property with payload:', propertyPayload);
 
