@@ -778,120 +778,98 @@ export default function GuidedDemoTour() {
   const Icon = currentStep?.icon || Home;
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-50 md:bottom-6 md:left-auto md:right-6 md:w-80">
-      <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-        {/* Progress */}
-        <div className="h-1.5 bg-gray-100">
-          <div
-            className="h-full bg-orange-500 transition-all duration-300"
-            style={{ width: `${((currentStepIndex + 1) / (steps.length - 1)) * 100}%` }}
-          />
-        </div>
+    <>
+      {/* Compact mobile navigation bar */}
+      <div className="fixed bottom-20 left-2 right-2 z-50 md:bottom-6 md:left-auto md:right-6 md:w-72">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* Progress bar */}
+          <div className="h-1 bg-gray-100">
+            <div
+              className="h-full bg-orange-500 transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / (steps.length - 1)) * 100}%` }}
+            />
+          </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-          <span className="text-xs font-medium text-gray-500">
-            Step {currentStepIndex + 1} of {steps.length - 1}
-          </span>
-          <div className="flex items-center">
+          {/* Single row: nav + title + nav */}
+          <div className="flex items-center px-2 py-2 gap-1">
+            {/* Back button */}
             <button
-              onClick={() => setIsMinimized(true)}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+              onClick={prevStep}
+              disabled={currentStepIndex === 0}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <Minus className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
+
+            {/* Center content - tap to expand */}
+            <button
+              onClick={() => setDetailsOpen(!detailsOpen)}
+              className="flex-1 flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded-lg transition-colors min-w-0"
+            >
+              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <Icon className="w-4 h-4 text-orange-600" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{currentStep?.title}</p>
+                <p className="text-xs text-gray-500">{currentStepIndex + 1}/{steps.length - 1}</p>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Next/Complete button */}
+            {currentStepIndex === steps.length - 2 ? (
+              <button
+                onClick={nextStep}
+                className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+              >
+                <CheckCircle className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={nextStep}
+                className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Close button */}
             <button
               onClick={closeTour}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-        </div>
 
-        {/* Content - Visual First Design */}
-        <div className="p-4">
-          {/* Centered Icon + Title */}
-          <div className="text-center mb-3">
-            <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center mx-auto mb-2">
-              <Icon className="w-6 h-6 text-orange-600" />
-            </div>
-            <h3 className="font-bold text-gray-900 text-base">
-              {currentStep?.title}
-            </h3>
-          </div>
-
-          {/* Visual Indicator */}
-          <div className="mb-3">
-            <VisualIndicator visual={currentStep?.visual} />
-          </div>
-
-          {/* Action Pointer */}
-          <div className="flex items-center justify-center gap-2 mb-3 py-2 px-3 bg-gray-50 rounded-lg">
-            <Hand className="w-4 h-4 text-orange-500" />
-            <span className="text-sm text-gray-700">{currentStep?.pointer}</span>
-          </div>
-
-          {/* Collapsible Learn More */}
+          {/* Expandable details panel */}
           <Collapsible.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
-            <Collapsible.Trigger className="flex items-center justify-center gap-1 w-full py-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
-              <span>Learn more</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
-            </Collapsible.Trigger>
             <Collapsible.Content>
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 leading-relaxed">
-                {currentStep?.details}
+              <div className="px-3 pb-3 border-t border-gray-100">
+                {/* Action pointer */}
+                <div className="flex items-center gap-2 py-2 text-sm text-gray-700">
+                  <Hand className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  <span>{currentStep?.pointer}</span>
+                </div>
+
+                {/* Progress dots - tappable */}
+                <div className="flex justify-center gap-1.5 py-2 flex-wrap">
+                  {steps.slice(0, -1).map((step, i) => (
+                    <button
+                      key={i}
+                      onClick={() => goToStep(i)}
+                      className={`h-2 rounded-full transition-all ${
+                        i === currentStepIndex ? 'w-6 bg-orange-500' :
+                        i < currentStepIndex ? 'w-2 bg-green-500' :
+                        'w-2 bg-gray-300 hover:bg-gray-400'
+                      }`}
+                      title={step.title}
+                    />
+                  ))}
+                </div>
               </div>
             </Collapsible.Content>
           </Collapsible.Root>
-
-          {/* Progress Dots */}
-          <div className="flex justify-center gap-1 my-3 flex-wrap px-2">
-            {steps.slice(0, -1).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goToStep(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === currentStepIndex ? 'w-4 bg-orange-500' :
-                  i < currentStepIndex ? 'w-1.5 bg-green-500' :
-                  'w-1.5 bg-gray-300 hover:bg-gray-400'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={prevStep}
-              disabled={currentStepIndex === 0}
-              className="flex-1"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-            {currentStepIndex === steps.length - 2 ? (
-              <Button
-                size="sm"
-                onClick={nextStep}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
-              >
-                Complete
-                <CheckCircle className="w-4 h-4 ml-1" />
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={nextStep}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-          </div>
         </div>
       </div>
 
@@ -901,6 +879,6 @@ export default function GuidedDemoTour() {
         onClose={handleCloseCTA}
         reason={exitCTAReason}
       />
-    </div>
+    </>
   );
 }
