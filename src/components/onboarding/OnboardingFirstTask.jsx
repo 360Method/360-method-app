@@ -38,12 +38,15 @@ export default function OnboardingFirstTask({ onComplete, data }) {
   const handleStartDocumenting = async () => {
     setIsCompleting(true);
 
-    // Mark onboarding as complete
-    await updateUserMutation.mutateAsync({
-      onboarding_completed: true,
-      onboarding_skipped: false,
-      onboarding_completed_date: new Date().toISOString()
-    });
+    // Try to mark onboarding as complete (may fail if columns don't exist)
+    try {
+      await updateUserMutation.mutateAsync({
+        onboarding_completed: true
+      });
+    } catch (err) {
+      console.log('Could not update user onboarding status:', err);
+      // Continue anyway - don't block the user
+    }
 
     // Navigate to baseline with the property and first system suggestion
     onComplete({
@@ -56,12 +59,15 @@ export default function OnboardingFirstTask({ onComplete, data }) {
   const handleExploreDashboard = async () => {
     setIsCompleting(true);
 
-    // Mark onboarding as complete
-    await updateUserMutation.mutateAsync({
-      onboarding_completed: true,
-      onboarding_skipped: false,
-      onboarding_completed_date: new Date().toISOString()
-    });
+    // Try to mark onboarding as complete (may fail if columns don't exist)
+    try {
+      await updateUserMutation.mutateAsync({
+        onboarding_completed: true
+      });
+    } catch (err) {
+      console.log('Could not update user onboarding status:', err);
+      // Continue anyway - don't block the user
+    }
 
     onComplete({
       destination: 'dashboard',
