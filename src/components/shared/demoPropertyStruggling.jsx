@@ -148,6 +148,7 @@ export const getDemoPropertyStruggling = () => ({
       system_type: 'Safety',
       priority: 'Critical',
       cascade_risk_score: 10,
+      cascade_risk_reason: 'Carbon monoxide is colorless, odorless, and deadly. With gas appliances in your home and ZERO CO detectors, your family is at risk every single day. This isn\'t about property damage - it\'s about survival.',
       current_fix_cost: 100,
       delayed_fix_cost: 100,
       diy_cost: 100,
@@ -155,6 +156,53 @@ export const getDemoPropertyStruggling = () => ({
       diy_time_hours: 0.5,
       status: 'Identified',
       execution_method: 'DIY',
+      key_warning: 'LIFE SAFETY: You have a gas furnace and gas water heater with NO carbon monoxide protection. This violates building codes and endangers your family.',
+      urgency_timeline: 'Complete TODAY. This is not negotiable. Every night without CO detectors is a night at risk.',
+      ai_tools_needed: [
+        'Step ladder or sturdy chair',
+        'Phillips head screwdriver',
+        'Pencil (for marking)',
+        'Drill with small bit (optional - for wall mounting)'
+      ],
+      ai_materials_needed: [
+        'Kidde or First Alert CO Detector 3-pack with 10-year battery - $50-70 at Home Depot',
+        'Mounting screws (usually included)',
+        'Optional: Combo Smoke/CO detectors for dual protection'
+      ],
+      ai_sow: `1. CRITICAL: Install detectors within 10 feet of each bedroom door
+2. First location: Hallway outside master bedroom
+3. Second location: Main floor near gas appliances (furnace/water heater)
+4. Third location: Basement or near attached garage
+5. For each location: Hold detector to wall/ceiling, mark screw holes
+6. Drill pilot holes or use included anchors
+7. Mount the bracket securely
+8. Snap detector onto bracket
+9. Press TEST button - should emit loud alarm
+10. If battery-activated, pull the activation tab
+11. Write installation date on detector with marker
+12. Download manufacturer app if smart detector
+13. Test all detectors monthly - add calendar reminder
+14. Replace all detectors after 7-10 years (check expiration)`,
+      ai_video_tutorials: [
+        {
+          title: 'Where to Place Carbon Monoxide Detectors',
+          url: 'https://www.youtube.com/watch?v=VEd3QpcMbEY',
+          duration: '4:12',
+          channel: 'NFPA'
+        },
+        {
+          title: 'How to Install a CO Detector - Step by Step',
+          url: 'https://www.youtube.com/watch?v=L_rP1SOWjGM',
+          duration: '5:33',
+          channel: 'Kidde Safety'
+        },
+        {
+          title: 'Carbon Monoxide Safety - What Every Homeowner Must Know',
+          url: 'https://www.youtube.com/watch?v=Rj4sF9u_jqg',
+          duration: '8:45',
+          channel: 'Ask This Old House'
+        }
+      ],
       created_date: '2025-01-01T00:00:00Z'
     },
     {
@@ -165,6 +213,7 @@ export const getDemoPropertyStruggling = () => ({
       system_type: 'Electrical',
       priority: 'Critical',
       cascade_risk_score: 9,
+      cascade_risk_reason: 'GFCI outlets prevent electrocution by shutting off power in milliseconds when water contact is detected. Non-functioning GFCIs near your kitchen sink and bathroom mean you\'re one wet hand away from serious injury.',
       current_fix_cost: 150,
       delayed_fix_cost: 150,
       contractor_cost: 250,
@@ -173,6 +222,61 @@ export const getDemoPropertyStruggling = () => ({
       diy_time_hours: 1,
       status: 'Identified',
       execution_method: 'DIY',
+      key_warning: 'ELECTROCUTION HAZARD: Failed GFCI outlets in wet areas are dangerous. These safety devices exist for one reason - to save lives.',
+      urgency_timeline: 'Complete this week. Until fixed, avoid using these outlets near water.',
+      ai_tools_needed: [
+        'GFCI outlet tester ($15 at Home Depot - essential tool)',
+        'Flathead and Phillips screwdrivers',
+        'Voltage tester / non-contact voltage detector',
+        'Wire strippers (if replacing outlets)',
+        'Needle-nose pliers',
+        'Flashlight'
+      ],
+      ai_materials_needed: [
+        'GFCI outlets (20-amp for kitchen, 15-amp for bathroom) - $15-25 each',
+        'GFCI outlet covers/plates',
+        'Wire nuts (assorted sizes)',
+        'Electrical tape'
+      ],
+      ai_sow: `1. FIRST: Locate your electrical panel and identify the breakers for bathroom/kitchen
+2. Turn OFF the breaker for the circuit you're testing - VERIFY with voltage tester
+3. Try the RESET button on each GFCI outlet - press firmly until you hear a click
+4. Then press TEST button - outlet should lose power
+5. Press RESET again - power should restore
+6. If buttons don't click or outlet doesn't respond, outlet needs replacement
+7. FOR REPLACEMENT: With breaker OFF and verified with voltage tester
+8. Remove outlet cover plate (usually one screw)
+9. Remove outlet from box (two screws top and bottom)
+10. Carefully pull outlet out, note wire connections
+11. Take photo of wiring before disconnecting!
+12. GFCI has LINE and LOAD terminals - LINE is for incoming power
+13. Connect black (hot) wire to brass LINE terminal
+14. Connect white (neutral) wire to silver LINE terminal
+15. Connect ground (bare/green) to green ground screw
+16. Push outlet into box, secure with screws
+17. Install cover plate
+18. Turn breaker ON, test with GFCI tester
+19. Button should pop when you press TEST on tester`,
+      ai_video_tutorials: [
+        {
+          title: 'How to Replace a GFCI Outlet - Complete Tutorial',
+          url: 'https://www.youtube.com/watch?v=w6rBlHYyEwM',
+          duration: '11:24',
+          channel: 'This Old House'
+        },
+        {
+          title: 'GFCI Outlet Not Working? Troubleshooting Guide',
+          url: 'https://www.youtube.com/watch?v=ILBjnZq0n8s',
+          duration: '8:15',
+          channel: 'Everyday Home Repairs'
+        },
+        {
+          title: 'How GFCI Outlets Work and Why You Need Them',
+          url: 'https://www.youtube.com/watch?v=GNFKQ7MxK_8',
+          duration: '6:02',
+          channel: 'Engineering Mindset'
+        }
+      ],
       created_date: '2025-01-01T00:00:00Z'
     },
     {
@@ -235,6 +339,7 @@ export const getDemoPropertyStruggling = () => ({
       system_type: 'Safety',
       priority: 'High',
       cascade_risk_score: 9,
+      cascade_risk_reason: 'Smoke detectors are your first line of defense. A non-working detector means zero warning in a fire - the difference between escape and tragedy.',
       current_fix_cost: 200,
       delayed_fix_cost: 200,
       diy_cost: 200,
@@ -242,7 +347,56 @@ export const getDemoPropertyStruggling = () => ({
       diy_time_hours: 1,
       status: 'Scheduled',
       execution_method: 'DIY',
-      scheduled_date: getToday(), // Today
+      scheduled_date: getToday(),
+      key_warning: 'Unknown age means unknown protection. Smoke detectors expire after 10 years - even with fresh batteries.',
+      urgency_timeline: 'Complete TODAY - every night without working detectors is a risk to your family.',
+      ai_tools_needed: [
+        'Step ladder or sturdy stool',
+        'Phillips head screwdriver',
+        'Pencil (for marking drill holes)',
+        'Drill with 3/16" bit (if mounting new locations)',
+        'Flashlight (to check manufacture dates)'
+      ],
+      ai_materials_needed: [
+        'First Alert 10-Year Sealed Battery Smoke Detector (3-pack) - $45 at Home Depot',
+        'Mounting screws (usually included)',
+        'Wall anchors (if mounting on drywall)',
+        '9V battery for testing (temporary backup)'
+      ],
+      ai_sow: `1. Turn off any ceiling fans near smoke detectors
+2. Use step ladder to safely reach each detector
+3. Twist existing detector counterclockwise to remove from mount
+4. Check manufacture date on back - if over 10 years old, replace entirely
+5. If keeping: open battery compartment, replace with fresh 9V battery
+6. Press and hold TEST button for 3-5 seconds - should hear loud alarm
+7. For new detectors: hold mounting bracket to ceiling, mark screw holes with pencil
+8. Drill pilot holes if needed, insert anchors
+9. Secure mounting bracket with screws
+10. Twist new detector onto bracket clockwise until it clicks
+11. Press TEST button to verify operation
+12. Write today's date on detector with marker for future reference
+13. Repeat for all locations: hallways, each bedroom, kitchen area
+14. Test interconnected function if applicable (triggering one should trigger all)`,
+      ai_video_tutorials: [
+        {
+          title: 'How to Replace a Smoke Detector in 5 Minutes',
+          url: 'https://www.youtube.com/watch?v=DnSQOxkPbPk',
+          duration: '4:32',
+          channel: 'This Old House'
+        },
+        {
+          title: 'Smoke Detector Placement Guide - Where to Install',
+          url: 'https://www.youtube.com/watch?v=_Z9gUd5kDcE',
+          duration: '6:15',
+          channel: 'NFPA'
+        },
+        {
+          title: 'Testing Your Smoke Alarms - The Right Way',
+          url: 'https://www.youtube.com/watch?v=yDCf-AUyWHs',
+          duration: '3:48',
+          channel: 'Home Repair Tutor'
+        }
+      ],
       created_date: '2025-01-01T00:00:00Z'
     },
     {
@@ -253,6 +407,7 @@ export const getDemoPropertyStruggling = () => ({
       system_type: 'Gutters',
       priority: 'High',
       cascade_risk_score: 7,
+      cascade_risk_reason: 'Clogged gutters cause water to overflow and pool at your foundation. This leads to basement leaks, foundation cracks, and even structural settling - turning a $0 DIY job into $5,000+ repairs.',
       current_fix_cost: 150,
       delayed_fix_cost: 5000,
       contractor_cost: 150,
@@ -261,8 +416,61 @@ export const getDemoPropertyStruggling = () => ({
       diy_time_hours: 2,
       status: 'Scheduled',
       execution_method: 'DIY',
-      scheduled_date: getDaysAgo(2), // 2 days ago - overdue
-      why_urgent: 'Water pooling at foundation causes basement flooding and structural damage.',
+      scheduled_date: getDaysAgo(2),
+      key_warning: 'OVERDUE: Every rain event with clogged gutters is actively damaging your foundation. The longer you wait, the worse it gets.',
+      urgency_timeline: 'Complete IMMEDIATELY - this task is 2 days overdue. Next rain will cause more foundation damage.',
+      ai_tools_needed: [
+        'Extension ladder (rated for your weight + 50 lbs)',
+        'Work gloves (leather or heavy rubber)',
+        'Safety glasses',
+        'Garden trowel or gutter scoop',
+        '5-gallon bucket with hook (or garbage bag)',
+        'Garden hose with spray nozzle',
+        'Plumber\'s snake or flexible rod (for downspouts)'
+      ],
+      ai_materials_needed: [
+        'Garbage bags for debris',
+        'Gutter sealant (if joints leaking) - $5 at Home Depot',
+        'Downspout extensions (if needed) - $8 each',
+        'Gutter guards (optional but recommended) - $1-2/ft at Lowe\'s'
+      ],
+      ai_sow: `1. SAFETY FIRST: Set up ladder on firm, level ground. Have someone spot you if possible
+2. Position ladder so you can reach gutters without overreaching - move it often
+3. Wear gloves and safety glasses - gutter debris can be sharp and moldy
+4. Start at downspout end and work away from it
+5. Use trowel/scoop to remove leaves, twigs, and sediment into bucket
+6. Remove any plants or seedlings growing in gutter (yes, this happens!)
+7. Check gutter slope - should tilt toward downspouts. Mark any sags
+8. After debris removal, flush entire gutter with hose starting at far end
+9. Watch water flow - should move quickly to downspout with no pooling
+10. Check downspout for clogs - water should flow freely out the bottom
+11. If downspout clogged: disconnect at elbow, use plumber's snake to clear
+12. Reconnect downspout, test again with full hose pressure
+13. Verify downspout directs water 4-6 feet away from foundation
+14. Add downspout extension if water dumps too close to house
+15. Inspect gutter joints - apply sealant to any leaking seams
+16. Consider installing gutter guards to prevent future buildup
+17. Clean up all debris from ground - don't leave it near foundation`,
+      ai_video_tutorials: [
+        {
+          title: 'How to Clean Gutters Like a Pro (Safely)',
+          url: 'https://www.youtube.com/watch?v=4KGRQXj4xWo',
+          duration: '8:15',
+          channel: 'This Old House'
+        },
+        {
+          title: 'Gutter Cleaning - The Complete Guide',
+          url: 'https://www.youtube.com/watch?v=QZ3WdZOvnuA',
+          duration: '12:03',
+          channel: 'Home RenoVision DIY'
+        },
+        {
+          title: 'How to Unclog a Downspout (3 Methods)',
+          url: 'https://www.youtube.com/watch?v=fTLHe_TLGR8',
+          duration: '5:42',
+          channel: 'Everyday Home Repairs'
+        }
+      ],
       created_date: '2025-01-01T00:00:00Z'
     },
     {
@@ -273,14 +481,63 @@ export const getDemoPropertyStruggling = () => ({
       system_type: 'HVAC',
       priority: 'Medium',
       cascade_risk_score: 5,
+      cascade_risk_reason: 'Your HVAC is 18 years old and already on borrowed time. A clogged filter makes the system work 15% harder, shortening its remaining life and driving up energy bills. At this age, a $25 filter could mean the difference between 1 more year and 3 more years of life.',
       current_fix_cost: 25,
       delayed_fix_cost: 500,
+      contractor_cost: 100,
       diy_cost: 25,
       diy_difficulty: 'Easy',
       diy_time_hours: 0.25,
       status: 'Scheduled',
       execution_method: 'DIY',
-      scheduled_date: getToday(), // Today
+      scheduled_date: getToday(),
+      key_warning: 'With your 18-year-old Carrier heat pump, filter changes aren\'t optional - they\'re life support for aging equipment.',
+      urgency_timeline: 'Takes 15 minutes. Do it today - your system is already stressed.',
+      ai_tools_needed: [
+        'Flashlight (to see filter condition)',
+        'Measuring tape (to verify filter size)',
+        'Marker or pen (to note change date)'
+      ],
+      ai_materials_needed: [
+        'Replacement filter - MERV 8-11 rating recommended for your Carrier system',
+        'Most common sizes: 16x25x1, 20x20x1, 20x25x1 - CHECK YOUR CURRENT FILTER',
+        'Buy 3-4 filters at once to save trips (~$5-12 each at Home Depot)',
+        'Consider upgrading to pleated filters for better air quality'
+      ],
+      ai_sow: `1. Turn OFF your HVAC system at the thermostat (important for safety)
+2. Locate your air filter - typically in return air duct, near furnace, or behind a wall vent
+3. Note the airflow direction arrow on current filter (crucial for replacement)
+4. Slide out the old filter carefully - dirty filters release dust
+5. Check filter condition: hold up to light - if you can't see through it, it's too dirty
+6. Note the filter size printed on the frame (e.g., 16x25x1)
+7. If filter is dirty (gray/black), dispose and insert new filter
+8. Align the airflow arrow on new filter with the direction of airflow (toward furnace)
+9. Slide new filter into slot - it should fit snugly without forcing
+10. Write today's date on filter frame with marker
+11. Turn HVAC system back ON at thermostat
+12. Listen for normal operation - no unusual sounds
+13. Set phone reminder to check again in 30 days (monthly for your aging system)
+14. Pro tip: Keep spare filters near the furnace so you always have one ready`,
+      ai_video_tutorials: [
+        {
+          title: 'How to Change a Furnace Filter (Complete Guide)',
+          url: 'https://www.youtube.com/watch?v=pK3Q_yOXCVY',
+          duration: '5:21',
+          channel: 'Word of Advice TV'
+        },
+        {
+          title: 'Furnace Filter Direction - Which Way Does It Go?',
+          url: 'https://www.youtube.com/watch?v=kCBE67N1Yqw',
+          duration: '3:44',
+          channel: 'HVAC School'
+        },
+        {
+          title: 'Best Furnace Filters - MERV Ratings Explained',
+          url: 'https://www.youtube.com/watch?v=pv3oRBkaAl0',
+          duration: '7:18',
+          channel: 'Technology Connections'
+        }
+      ],
       created_date: '2025-01-01T00:00:00Z'
     }
   ],
