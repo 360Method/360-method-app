@@ -38,7 +38,10 @@ const TITLE_IMAGES = {
   'Fence': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Fencing/yard
   'Washer': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Laundry room
   'Dryer': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Laundry room
-  'Water Conservation': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop' // Irrigation
+  'Water Conservation': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop', // Irrigation
+  'CO Detector': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Smoke/CO detector
+  'Smoke Detector': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Smoke detector
+  'Detector': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop' // Safety detector
 };
 
 const getProjectImage = (project) => {
