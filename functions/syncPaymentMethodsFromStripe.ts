@@ -4,15 +4,15 @@ import Stripe from 'npm:stripe@14.11.0';
 function getStripeClient() {
   const stripeMode = Deno.env.get('STRIPE_MODE') || 'test';
   const isTestMode = stripeMode === 'test';
-  
-  const stripeSecretKey = isTestMode 
+
+  const stripeSecretKey = isTestMode
     ? Deno.env.get('STRIPE_SECRET_KEY_TEST')
     : Deno.env.get('STRIPE_SECRET_KEY');
-  
+
   if (!stripeSecretKey) {
     throw new Error(`STRIPE_SECRET_KEY${isTestMode ? '_TEST' : ''} not configured`);
   }
-  
+
   return new Stripe(stripeSecretKey, {
     apiVersion: '2023-10-16',
   });
@@ -26,14 +26,28 @@ Deno.serve(async (req) => {
 
   try {
     const helper = createHelperFromRequest(req);
-    const user = await helper.auth.me();
-    
-    if (!user || !user.user_metadata?.stripe_customer_id) {
+
+    // Get user info from request body (since we use Clerk auth, not Supabase auth)
+    const { user_id, user_email } = await req.json();
+
+    if (!user_id) {
+      return Response.json({ payment_methods: [] }, { headers: corsHeaders });
+    }
+
+    // Get user's stripe_customer_id from users table
+    let stripeCustomerId: string | undefined;
+    try {
+      const existingUser = await helper.asServiceRole.entities.User.get(user_id);
+      stripeCustomerId = existingUser?.stripe_customer_id;
+    } catch (e) {
+      // User might not exist
+    }
+
+    if (!stripeCustomerId) {
       return Response.json({ payment_methods: [] }, { headers: corsHeaders });
     }
 
     const stripe = getStripeClient();
-    const stripeCustomerId = user.user_metadata.stripe_customer_id;
 
     // Get payment methods from Stripe
     const paymentMethods = await stripe.paymentMethods.list({
@@ -48,14 +62,14 @@ Deno.serve(async (req) => {
     // Sync with database
     for (const pm of paymentMethods.data) {
       // Check if already exists
-      const existing = await helper.entities.PaymentMethod.filter({
+      const existing = await helper.asServiceRole.entities.PaymentMethod.filter({
         stripe_payment_method_id: pm.id
       });
 
       if (existing.length === 0) {
         // Create new record
-        await helper.entities.PaymentMethod.create({
-          user_id: user.id,
+        await helper.asServiceRole.entities.PaymentMethod.create({
+          user_id: user_id,
           stripe_payment_method_id: pm.id,
           stripe_customer_id: stripeCustomerId,
           card_brand: pm.card?.brand,
@@ -65,21 +79,26 @@ Deno.serve(async (req) => {
           is_default: pm.id === defaultPmId,
           status: 'active'
         });
+      } else {
+        // Update default status
+        await helper.asServiceRole.entities.PaymentMethod.update((existing[0] as any).id, {
+          is_default: pm.id === defaultPmId
+        });
       }
     }
 
     // Get updated list
-    const methods = await helper.entities.PaymentMethod.filter({
-      user_id: user.id,
+    const methods = await helper.asServiceRole.entities.PaymentMethod.filter({
+      user_id: user_id,
       status: 'active'
     });
 
     return Response.json({ payment_methods: methods }, { headers: corsHeaders });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error syncing payment methods:', error);
-    return Response.json({ error: error.message }, { 
+    return Response.json({ error: error.message }, {
       status: 500,
-      headers: corsHeaders 
+      headers: corsHeaders
     });
   }
 });

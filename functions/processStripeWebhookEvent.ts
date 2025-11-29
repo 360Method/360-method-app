@@ -218,16 +218,83 @@ async function handleAccountUpdated(helper: SupabaseHelper, account: any) {
 async function handleCheckoutSessionCompleted(helper: SupabaseHelper, session: any) {
   console.log('Checkout session completed:', session.id);
 
+  const userId = session.metadata?.user_id;
+  const tier = session.metadata?.tier;
+  const billingCycle = session.metadata?.billing_cycle || 'monthly';
+
   // Handle subscription checkout
   if (session.mode === 'subscription' && session.subscription) {
-    // Note: In Supabase, we don't have a separate User table - user data is in auth.users
-    // This would need to be handled differently based on your schema
     console.log('Subscription checkout completed for customer:', session.customer);
+    
+    if (userId && tier) {
+      // Create or update user subscription record
+      const existingSubs = await helper.asServiceRole.entities.UserSubscription.filter({
+        user_id: userId
+      });
+
+      const subscriptionData = {
+        user_id: userId,
+        stripe_customer_id: session.customer,
+        stripe_subscription_id: session.subscription,
+        tier: tier,
+        billing_cycle: billingCycle,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+      };
+
+      if (existingSubs && existingSubs.length > 0) {
+        await helper.asServiceRole.entities.UserSubscription.update(
+          (existingSubs[0] as any).id,
+          subscriptionData
+        );
+      } else {
+        await helper.asServiceRole.entities.UserSubscription.create(subscriptionData);
+      }
+
+      // Update user tier in Clerk and database
+      try {
+        await helper.asServiceRole.functions.invoke('updateUserTier', {
+          user_id: userId,
+          tier: tier,
+          billing_cycle: billingCycle
+        });
+        console.log(`User ${userId} tier updated to: ${tier}`);
+      } catch (tierError: any) {
+        console.error(`Failed to update user tier for ${userId}:`, tierError.message);
+        // Don't fail the webhook, subscription is already created
+      }
+      
+      // Create transaction record
+      await helper.asServiceRole.entities.Transaction.create({
+        user_id: userId,
+        stripe_payment_intent_id: session.payment_intent,
+        stripe_subscription_id: session.subscription,
+        amount_total: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        status: 'succeeded',
+        type: 'subscription',
+        description: `${tier} subscription - ${billingCycle}`,
+        metadata: {
+          checkout_session_id: session.id,
+          tier: tier,
+          billing_cycle: billingCycle
+        }
+      });
+
+      // Trigger notification
+      await helper.asServiceRole.functions.invoke('triggerNotificationEvent', {
+        event_type: 'subscription_created',
+        event_data: {
+          user_id: userId,
+          tier: tier,
+          billing_cycle: billingCycle
+        }
+      });
+    }
   }
 
   // Handle payment checkout (one-time or invoice payment)
   if (session.mode === 'payment' && session.payment_intent) {
-    // Payment intent will be handled by payment_intent.succeeded webhook
     console.log('Payment checkout completed, waiting for payment_intent.succeeded');
   }
 
@@ -241,14 +308,247 @@ async function handleInvoicePaid(helper: SupabaseHelper, invoice: any) {
   console.log('Invoice paid:', invoice.id);
 
   if (invoice.subscription) {
-    // Note: In Supabase, we don't have a separate User table - user data is in auth.users
-    console.log('Subscription invoice paid for customer:', invoice.customer);
+    // Find user subscription by stripe subscription ID
+    const subscriptions = await helper.asServiceRole.entities.UserSubscription.filter({
+      stripe_subscription_id: invoice.subscription
+    });
+
+    if (subscriptions && subscriptions.length > 0) {
+      const sub = subscriptions[0] as any;
+      
+      // Update subscription period
+      await helper.asServiceRole.entities.UserSubscription.update(sub.id, {
+        status: 'active',
+        current_period_start: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : undefined,
+        current_period_end: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : undefined,
+      });
+
+      // Create transaction record for renewal
+      await helper.asServiceRole.entities.Transaction.create({
+        user_id: sub.user_id,
+        stripe_invoice_id: invoice.id,
+        stripe_subscription_id: invoice.subscription,
+        amount_total: invoice.amount_paid || 0,
+        currency: invoice.currency || 'usd',
+        status: 'succeeded',
+        type: 'subscription',
+        subscription_id: sub.id,
+        description: `${sub.tier} subscription renewal`,
+        metadata: {
+          invoice_id: invoice.id,
+          billing_reason: invoice.billing_reason
+        }
+      });
+
+      console.log(`Subscription invoice paid for user: ${sub.user_id}`);
+    }
   }
 }
 
 async function handleSubscriptionEvent(helper: SupabaseHelper, eventType: string, subscription: any) {
   console.log(`Handling subscription event: ${eventType}`, subscription.id);
-  // Note: In Supabase, we don't have a separate User table - user data is in auth.users
-  // This would need to be handled differently based on your schema
-  console.log('Subscription event for customer:', subscription.customer);
+  
+  // Find user subscription by Stripe subscription ID
+  const existingSubs = await helper.asServiceRole.entities.UserSubscription.filter({
+    stripe_subscription_id: subscription.id
+  });
+
+  // Also try to find by customer ID if not found
+  let userSubscription = existingSubs?.[0] as any;
+  
+  if (!userSubscription) {
+    const byCustomer = await helper.asServiceRole.entities.UserSubscription.filter({
+      stripe_customer_id: subscription.customer
+    });
+    userSubscription = byCustomer?.[0] as any;
+  }
+
+  // Map Stripe subscription status to our status
+  const mapStatus = (stripeStatus: string): string => {
+    const statusMap: Record<string, string> = {
+      'active': 'active',
+      'past_due': 'past_due',
+      'canceled': 'canceled',
+      'unpaid': 'unpaid',
+      'incomplete': 'incomplete',
+      'incomplete_expired': 'incomplete_expired',
+      'trialing': 'trialing',
+      'paused': 'canceled'
+    };
+    return statusMap[stripeStatus] || 'active';
+  };
+
+  // Get tier from subscription metadata or items
+  const getTierFromSubscription = (sub: any): string | null => {
+    // Check metadata first
+    if (sub.metadata?.tier) return sub.metadata.tier;
+    
+    // Check items metadata
+    const items = sub.items?.data || [];
+    for (const item of items) {
+      if (item.price?.metadata?.tier) return item.price.metadata.tier;
+      if (item.price?.product?.metadata?.tier) return item.price.product.metadata.tier;
+    }
+    
+    return null;
+  };
+
+  const subscriptionData: any = {
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: subscription.customer,
+    status: mapStatus(subscription.status),
+    current_period_start: subscription.current_period_start 
+      ? new Date(subscription.current_period_start * 1000).toISOString() 
+      : undefined,
+    current_period_end: subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toISOString() 
+      : undefined,
+    cancel_at_period_end: subscription.cancel_at_period_end || false,
+  };
+
+  // Add tier if we can determine it
+  const tier = getTierFromSubscription(subscription);
+  if (tier) {
+    subscriptionData.tier = tier;
+  }
+
+  // Add canceled_at if subscription is canceled
+  if (subscription.canceled_at) {
+    subscriptionData.canceled_at = new Date(subscription.canceled_at * 1000).toISOString();
+  }
+
+  // Add trial dates if present
+  if (subscription.trial_start) {
+    subscriptionData.trial_start = new Date(subscription.trial_start * 1000).toISOString();
+  }
+  if (subscription.trial_end) {
+    subscriptionData.trial_end = new Date(subscription.trial_end * 1000).toISOString();
+  }
+
+  // Get price ID
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (priceId) {
+    subscriptionData.stripe_price_id = priceId;
+  }
+
+  switch (eventType) {
+    case 'customer.subscription.created':
+      if (userSubscription) {
+        // Update existing record
+        await helper.asServiceRole.entities.UserSubscription.update(userSubscription.id, subscriptionData);
+        console.log(`Updated subscription for user: ${userSubscription.user_id}`);
+
+        // Update tier in Clerk
+        if (tier) {
+          try {
+            await helper.asServiceRole.functions.invoke('updateUserTier', {
+              user_id: userSubscription.user_id,
+              tier: tier,
+              billing_cycle: subscription.metadata?.billing_cycle
+            });
+          } catch (e) {
+            console.error('Failed to update user tier in Clerk:', e);
+          }
+        }
+      } else {
+        // Try to find user by customer ID from metadata
+        const userId = subscription.metadata?.user_id;
+        if (userId) {
+          subscriptionData.user_id = userId;
+          await helper.asServiceRole.entities.UserSubscription.create(subscriptionData);
+          console.log(`Created subscription for user: ${userId}`);
+
+          // Update tier in Clerk
+          if (tier) {
+            try {
+              await helper.asServiceRole.functions.invoke('updateUserTier', {
+                user_id: userId,
+                tier: tier,
+                billing_cycle: subscription.metadata?.billing_cycle
+              });
+            } catch (e) {
+              console.error('Failed to update user tier in Clerk:', e);
+            }
+          }
+        } else {
+          console.log('No user_id found in subscription metadata, cannot create subscription record');
+        }
+      }
+      break;
+
+    case 'customer.subscription.updated':
+      if (userSubscription) {
+        await helper.asServiceRole.entities.UserSubscription.update(userSubscription.id, subscriptionData);
+        console.log(`Updated subscription for user: ${userSubscription.user_id}, status: ${subscriptionData.status}`);
+
+        // Update tier in Clerk if it changed
+        const newTier = subscriptionData.tier || tier;
+        if (newTier && newTier !== userSubscription.tier) {
+          try {
+            await helper.asServiceRole.functions.invoke('updateUserTier', {
+              user_id: userSubscription.user_id,
+              tier: newTier,
+              billing_cycle: subscription.metadata?.billing_cycle
+            });
+            console.log(`Updated user ${userSubscription.user_id} tier from ${userSubscription.tier} to ${newTier}`);
+          } catch (e) {
+            console.error('Failed to update user tier in Clerk:', e);
+          }
+        }
+
+        // If subscription became active from past_due, notify user
+        if (userSubscription.status === 'past_due' && subscriptionData.status === 'active') {
+          await helper.asServiceRole.functions.invoke('triggerNotificationEvent', {
+            event_type: 'subscription_renewed',
+            event_data: {
+              user_id: userSubscription.user_id,
+              tier: subscriptionData.tier || userSubscription.tier
+            }
+          });
+        }
+
+        // If subscription is being canceled at period end, notify
+        if (subscriptionData.cancel_at_period_end && !userSubscription.cancel_at_period_end) {
+          await helper.asServiceRole.functions.invoke('triggerNotificationEvent', {
+            event_type: 'subscription_canceling',
+            event_data: {
+              user_id: userSubscription.user_id,
+              cancel_date: subscriptionData.current_period_end
+            }
+          });
+        }
+      }
+      break;
+
+    case 'customer.subscription.deleted':
+      if (userSubscription) {
+        await helper.asServiceRole.entities.UserSubscription.update(userSubscription.id, {
+          status: 'canceled',
+          canceled_at: new Date().toISOString()
+        });
+        console.log(`Subscription canceled for user: ${userSubscription.user_id}`);
+
+        // Downgrade user to free tier in Clerk
+        try {
+          await helper.asServiceRole.functions.invoke('updateUserTier', {
+            user_id: userSubscription.user_id,
+            tier: 'free',
+            billing_cycle: null
+          });
+          console.log(`User ${userSubscription.user_id} downgraded to free tier`);
+        } catch (e) {
+          console.error('Failed to downgrade user tier in Clerk:', e);
+        }
+
+        // Notify user
+        await helper.asServiceRole.functions.invoke('triggerNotificationEvent', {
+          event_type: 'subscription_canceled',
+          event_data: {
+            user_id: userSubscription.user_id,
+            tier: userSubscription.tier
+          }
+        });
+      }
+      break;
+  }
 }

@@ -251,11 +251,178 @@ export const emailTemplates = {
         Pro tip: Complete your inspection and we'll automatically prioritize any issues found.
       </p>
     `;
-    
+
     return {
       subject: `${data.season} Inspection Reminder - ${data.property_address}`,
       html: baseTemplate(content, data.unsubscribe_url),
       text: `${data.season} Inspection Due\n\nProperty: ${data.property_address}\n\nStart inspection: ${APP_URL}${data.inspection_url}`
+    };
+  },
+
+  // ========================================
+  // OPERATOR LEAD & QUOTE TEMPLATES
+  // ========================================
+
+  // 7. Quote Sent → Customer
+  quote_sent: (data) => {
+    const formatAmount = () => {
+      if (data.quote_amount_max) {
+        return `$${data.quote_amount?.toLocaleString()} - $${data.quote_amount_max.toLocaleString()}`;
+      }
+      return `$${data.quote_amount?.toLocaleString()}`;
+    };
+
+    const lineItemsHtml = data.line_items?.length > 0 ? `
+      <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 12px; border-bottom: 2px solid #E5E5E5; color: #666; font-size: 12px; text-transform: uppercase;">Description</th>
+            <th style="text-align: right; padding: 12px; border-bottom: 2px solid #E5E5E5; color: #666; font-size: 12px; text-transform: uppercase;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.line_items.map(item => `
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #F0F0F0;">${item.description}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #F0F0F0; text-align: right;">
+                $${item.amount?.toLocaleString()}${item.amount_max ? ` - $${item.amount_max.toLocaleString()}` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '';
+
+    const content = `
+      <h2 style="margin: 0 0 20px 0; color: ${PRIMARY_COLOR}; font-size: 24px; font-weight: 600;">
+        Your Quote is Ready
+      </h2>
+      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333; line-height: 1.6;">
+        Hi ${data.customer_name?.split(' ')[0] || 'there'},
+      </p>
+      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333; line-height: 1.6;">
+        <strong>${data.operator_name}</strong> has prepared a quote for you.
+      </p>
+      ${infoBox('Quote', data.quote_title)}
+      ${data.property_address ? infoBox('Property', data.property_address) : ''}
+      ${lineItemsHtml}
+      <div style="margin: 24px 0; padding: 20px; background-color: #F0FDF4; border-radius: 8px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Total</p>
+        <p style="margin: 0; font-size: 32px; color: #166534; font-weight: 700;">${formatAmount()}</p>
+      </div>
+      ${data.valid_until ? `
+        <p style="margin: 16px 0; font-size: 14px; color: #666; text-align: center;">
+          Quote valid until <strong>${new Date(data.valid_until).toLocaleDateString()}</strong>
+        </p>
+      ` : ''}
+      ${ctaButton('View Full Quote & Approve', data.quote_url)}
+      ${data.notes ? `
+        <div style="margin: 24px 0; padding: 16px; background-color: #F9F9F9; border-radius: 6px;">
+          <p style="margin: 0 0 8px 0; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Message from ${data.operator_name}</p>
+          <p style="margin: 0; font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap;">${data.notes}</p>
+        </div>
+      ` : ''}
+    `;
+
+    return {
+      subject: `Quote from ${data.operator_name}: ${data.quote_title}`,
+      html: baseTemplate(content, data.unsubscribe_url),
+      text: `Your Quote is Ready\n\nFrom: ${data.operator_name}\nQuote: ${data.quote_title}\nTotal: ${formatAmount()}\n\nView quote: ${data.quote_url}`
+    };
+  },
+
+  // 8. Quote Approved → Operator
+  quote_approved: (data) => {
+    const formatAmount = () => {
+      if (data.quote_amount_max) {
+        return `$${data.quote_amount?.toLocaleString()} - $${data.quote_amount_max.toLocaleString()}`;
+      }
+      return `$${data.quote_amount?.toLocaleString()}`;
+    };
+
+    const content = `
+      <h2 style="margin: 0 0 20px 0; color: #166534; font-size: 24px; font-weight: 600;">
+        Quote Approved! ✓
+      </h2>
+      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333; line-height: 1.6;">
+        Great news, ${data.operator_name}! <strong>${data.customer_name}</strong> has approved your quote.
+      </p>
+      ${infoBox('Quote', data.quote_title)}
+      ${infoBox('Amount', formatAmount())}
+      ${data.property_address ? infoBox('Property', data.property_address) : ''}
+      <div style="margin: 24px 0; padding: 16px; background-color: #F9F9F9; border-radius: 6px;">
+        <p style="margin: 0 0 8px 0; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Customer Contact</p>
+        ${data.customer_phone ? `<p style="margin: 4px 0; font-size: 14px; color: #333;">📞 ${data.customer_phone}</p>` : ''}
+        ${data.customer_email ? `<p style="margin: 4px 0; font-size: 14px; color: #333;">✉️ ${data.customer_email}</p>` : ''}
+      </div>
+      ${data.customer_notes ? `
+        <div style="margin: 16px 0; padding: 16px; background-color: #FEF3C7; border-radius: 6px; border-left: 4px solid #F59E0B;">
+          <p style="margin: 0 0 8px 0; font-size: 12px; color: #92400E; text-transform: uppercase; letter-spacing: 0.5px;">Customer Notes</p>
+          <p style="margin: 0; font-size: 14px; color: #92400E; line-height: 1.6;">${data.customer_notes}</p>
+        </div>
+      ` : ''}
+      <p style="margin: 24px 0 0 0; font-size: 16px; color: #333; line-height: 1.6;">
+        Next step: Contact the customer to schedule the work.
+      </p>
+      ${ctaButton('View Lead Details', data.lead_url)}
+    `;
+
+    return {
+      subject: `Quote Approved! - ${data.customer_name}`,
+      html: baseTemplate(content, data.unsubscribe_url),
+      text: `Quote Approved!\n\nCustomer: ${data.customer_name}\nQuote: ${data.quote_title}\nAmount: ${formatAmount()}\nPhone: ${data.customer_phone || 'N/A'}\nEmail: ${data.customer_email || 'N/A'}\n\nView details: ${data.lead_url}`
+    };
+  },
+
+  // 9. New Lead Received → Operator
+  new_lead_received: (data) => {
+    const urgencyBadge = {
+      emergency: { bg: '#FEE2E2', color: '#991B1B', text: '🚨 Emergency' },
+      soon: { bg: '#FEF3C7', color: '#92400E', text: '⚡ Soon' },
+      flexible: { bg: '#DCFCE7', color: '#166534', text: '📆 Flexible' }
+    }[data.urgency] || { bg: '#F3F4F6', color: '#374151', text: data.urgency };
+
+    const leadTypeText = {
+      job: 'One-Time Job',
+      list: 'Task List',
+      service: 'Ongoing Service',
+      nurture: 'Information Request'
+    }[data.lead_type] || data.lead_type;
+
+    const content = `
+      <h2 style="margin: 0 0 20px 0; color: ${PRIMARY_COLOR}; font-size: 24px; font-weight: 600;">
+        New Lead Received
+      </h2>
+      <p style="margin: 0 0 20px 0; font-size: 16px; color: #333; line-height: 1.6;">
+        Hey ${data.operator_name}, you have a new lead!
+      </p>
+      <div style="display: inline-block; margin: 0 0 16px 0; padding: 6px 12px; background-color: ${urgencyBadge.bg}; border-radius: 4px;">
+        <span style="font-size: 14px; color: ${urgencyBadge.color}; font-weight: 600;">${urgencyBadge.text}</span>
+      </div>
+      ${infoBox('Customer', data.customer_name)}
+      ${data.property_address ? infoBox('Property', data.property_address) : ''}
+      ${infoBox('Request Type', leadTypeText)}
+      <div style="margin: 24px 0; padding: 16px; background-color: #F9F9F9; border-radius: 6px;">
+        <p style="margin: 0 0 8px 0; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Contact Info</p>
+        ${data.customer_phone ? `<p style="margin: 4px 0; font-size: 14px; color: #333;">📞 <a href="tel:${data.customer_phone.replace(/\D/g, '')}" style="color: ${ACCENT_COLOR}; text-decoration: none;">${data.customer_phone}</a></p>` : ''}
+        ${data.customer_email ? `<p style="margin: 4px 0; font-size: 14px; color: #333;">✉️ <a href="mailto:${data.customer_email}" style="color: ${ACCENT_COLOR}; text-decoration: none;">${data.customer_email}</a></p>` : ''}
+      </div>
+      ${data.description ? `
+        <div style="margin: 16px 0; padding: 16px; background-color: #F9F9F9; border-radius: 6px; border-left: 4px solid ${ACCENT_COLOR};">
+          <p style="margin: 0 0 8px 0; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">What they need</p>
+          <p style="margin: 0; font-size: 14px; color: #333; line-height: 1.6;">${data.description}</p>
+        </div>
+      ` : ''}
+      ${ctaButton('View Lead & Respond', data.lead_url)}
+      <p style="margin: 20px 0 0 0; font-size: 14px; color: #666; text-align: center;">
+        ${data.urgency === 'emergency' ? 'This is urgent - respond ASAP!' : 'Respond quickly to win the job!'}
+      </p>
+    `;
+
+    return {
+      subject: `${data.urgency === 'emergency' ? '🚨 ' : ''}New Lead: ${data.customer_name}`,
+      html: baseTemplate(content, data.unsubscribe_url),
+      text: `New Lead Received\n\nCustomer: ${data.customer_name}\nUrgency: ${data.urgency}\nPhone: ${data.customer_phone || 'N/A'}\nEmail: ${data.customer_email || 'N/A'}\n\nDescription: ${data.description || 'No description'}\n\nView lead: ${data.lead_url}`
     };
   }
 

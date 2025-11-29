@@ -191,6 +191,7 @@ export function createEntities(supabase: SupabaseClient) {
     ComponentLifespan: createEntityHelper(supabase, 'component_lifespans'),
     MaintenanceReminder: createEntityHelper(supabase, 'maintenance_reminders'),
     RepairCostReference: createEntityHelper(supabase, 'repair_cost_references'),
+    UserSubscription: createEntityHelper(supabase, 'user_subscriptions'),
   };
 }
 
