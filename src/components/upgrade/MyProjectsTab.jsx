@@ -41,7 +41,9 @@ const TITLE_IMAGES = {
   'Water Conservation': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop', // Irrigation
   'CO Detector': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Smoke/CO detector
   'Smoke Detector': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Smoke detector
-  'Detector': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop' // Safety detector
+  'Detector': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // Safety detector
+  'Gutter': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=400&fit=crop', // House gutters
+  'Gutter Guard': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=400&fit=crop' // Gutter guard installation
 };
 
 const getProjectImage = (project) => {
