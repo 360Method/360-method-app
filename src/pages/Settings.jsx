@@ -1,5 +1,5 @@
 import React from "react";
-import { Property, auth } from "@/api/supabaseClient";
+import { Property, auth, functions } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,12 +25,21 @@ import {
   ArrowUpCircle,
   Compass,
   Flag,
-  Star
+  Star,
+  Calendar,
+  AlertCircle,
+  Receipt,
+  XCircle,
+  ChevronDown,
+  AlertTriangle
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
 import TierChangeDialog from "../components/pricing/TierChangeDialog";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -41,6 +50,8 @@ const Label = ({ children, className = "", ...props }) => (
 export default function Settings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, clerkUser } = useAuth();
   const [formData, setFormData] = React.useState({
     full_name: "",
     email: "",
@@ -54,10 +65,25 @@ export default function Settings() {
   const [showTierDialog, setShowTierDialog] = React.useState(false);
   const [selectedNewTier, setSelectedNewTier] = React.useState(null);
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => auth.me(),
-  });
+  // Handle successful Stripe checkout return
+  React.useEffect(() => {
+    const status = searchParams.get('status');
+    if (status === 'success') {
+      // User returned from successful Stripe checkout
+      toast.success('🎉 Plan updated successfully!');
+
+      // Invalidate queries to refresh subscription data from database
+      // The webhook will have updated user_subscriptions table with the new tier
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+
+      // Clean up URL
+      searchParams.delete('status');
+      searchParams.delete('tab');
+      searchParams.delete('session_id');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, queryClient, setSearchParams]);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -65,6 +91,88 @@ export default function Settings() {
       const allProps = await Property.list();
       return allProps.filter(p => !p.is_draft);
     },
+  });
+
+  // Fetch subscription status
+  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['subscription-status', user?.id],
+    queryFn: async () => {
+      try {
+        const { data } = await functions.invoke('getSubscriptionStatus', {
+          user_id: user?.id
+        });
+        return data;
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+        return null;
+      }
+    },
+    enabled: !!user?.id,
+  });
+
+  // Cancel subscription mutation
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async (cancelImmediately = false) => {
+      const { data, error } = await functions.invoke('cancelSubscription', {
+        cancel_immediately: cancelImmediately
+      });
+      if (error) throw new Error(error.message || 'Failed to cancel subscription');
+      if (!data.success) throw new Error(data.error || 'Failed to cancel subscription');
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+      queryClient.invalidateQueries({ queryKey: ['current-user'] });
+      toast.success(data.message || 'Subscription updated');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to cancel subscription');
+    }
+  });
+
+  // Checkout mutation for one-click upgrades
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ tier, billing_cycle }) => {
+      const { data, error } = await functions.invoke('createSubscriptionCheckout', {
+        tier,
+        billing_cycle,
+        user_id: user?.id,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        success_url: `${window.location.origin}${createPageUrl('Settings')}?tab=subscription&status=success`,
+        cancel_url: `${window.location.origin}${createPageUrl('Settings')}`,
+        total_doors: totalDoors
+      });
+      if (error) throw new Error(error.message || 'Checkout failed');
+      if (!data?.success) throw new Error(data?.error || 'Checkout failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      // For prorated upgrades, the subscription is updated immediately (no Stripe Checkout needed)
+      if (data.prorated) {
+        toast.success(`🎉 Upgraded to ${data.tier}!`, {
+          description: 'Your subscription has been updated with prorated billing.'
+        });
+        setIsChangingTier(false);
+        queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        // Redirect to success URL (same page with status=success)
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        }
+        return;
+      }
+      // For new subscriptions, redirect to Stripe Checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    },
+    onError: (error) => {
+      setIsChangingTier(false);
+      toast.error('Failed to start checkout', {
+        description: error.message || 'Please try again.'
+      });
+    }
   });
 
   // Initialize form with user data
@@ -104,7 +212,32 @@ export default function Settings() {
     updateUserMutation.mutate(formData);
   };
 
-  const handleChangeTier = (newTier) => {
+  // Tier order for determining upgrades vs downgrades
+  const tierOrder = ['free', 'homeowner_plus', 'good', 'better', 'best'];
+
+  const handleChangeTier = async (newTier) => {
+    const currentTierIndex = tierOrder.indexOf(currentTier);
+    const newTierIndex = tierOrder.indexOf(newTier);
+    const isUpgrade = newTierIndex > currentTierIndex;
+
+    // For upgrades to paid tiers: Go directly to Stripe checkout (one-click!)
+    // If user has existing subscription, they get prorated (handled by mutation onSuccess)
+    // If new subscription, they get redirected to Stripe Checkout
+    if (isUpgrade && newTier !== 'free') {
+      setIsChangingTier(true);
+      try {
+        await checkoutMutation.mutateAsync({
+          tier: newTier,
+          billing_cycle: 'annual'
+        });
+        // Redirect is handled in onSuccess callback
+      } catch (error) {
+        // Error already handled in mutation
+      }
+      return;
+    }
+
+    // For downgrades: Show confirmation dialog (accessed via Danger Zone)
     setSelectedNewTier(newTier);
     setShowTierDialog(true);
   };
@@ -131,8 +264,8 @@ export default function Settings() {
     auth.logout();
   };
 
-  // Tier calculations
-  const currentTier = user?.tier || 'free';
+  // Tier calculations - use subscription data as source of truth (database), fallback to Clerk metadata
+  const currentTier = subscriptionData?.tier || user?.tier || 'free';
   const totalDoors = calculateTotalDoors(properties);
   const tierConfig = getTierConfig(currentTier);
 
@@ -266,65 +399,61 @@ export default function Settings() {
               )}
             </div>
 
-            {/* Quick Tier Switcher */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm font-semibold text-gray-900 mb-3">Quick Plan Switch:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button
-                  onClick={() => handleChangeTier('free')}
-                  variant={currentTier === 'free' ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={currentTier === 'free' || isChangingTier}
-                  className={currentTier === 'free' ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'text-gray-900 border-gray-300'}
-                  style={{ minHeight: '44px' }}
-                >
-                  {currentTier === 'free' ? '✓ Scout' : 'Scout'}
-                </Button>
-                <Button
-                  onClick={() => handleChangeTier('good')}
-                  variant={currentTier === 'good' ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={currentTier === 'good' || isChangingTier || totalDoors > 25}
-                  className={currentTier === 'good' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-gray-900 border-gray-300'}
-                  style={{ minHeight: '44px' }}
-                >
-                  {currentTier === 'good' ? '✓ Pioneer' : 'Pioneer'}
-                </Button>
-                <Button
-                  onClick={() => handleChangeTier('better')}
-                  variant={currentTier === 'better' ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={currentTier === 'better' || isChangingTier || totalDoors > 100}
-                  className={currentTier === 'better' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'text-gray-900 border-gray-300'}
-                  style={{ minHeight: '44px' }}
-                >
-                  {currentTier === 'better' ? '✓ Commander' : 'Commander'}
-                </Button>
-                <Button
-                  onClick={() => handleChangeTier('best')}
-                  variant={currentTier === 'best' ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={currentTier === 'best' || isChangingTier}
-                  className={currentTier === 'best' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-gray-900 border-gray-300'}
-                  style={{ minHeight: '44px' }}
-                >
-                  {currentTier === 'best' ? '✓ Elite' : 'Elite'}
-                </Button>
+            {/* Quick Upgrade Buttons - Only show tiers above current */}
+            {currentTier !== 'best' && (
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <p className="text-sm font-semibold text-gray-900 mb-3">Upgrade Your Plan:</p>
+                <div className="flex flex-wrap gap-2">
+                  {currentTier === 'free' && (
+                    <>
+                      <Button
+                        onClick={() => handleChangeTier('homeowner_plus')}
+                        size="sm"
+                        disabled={isChangingTier || properties.length > 1}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        style={{ minHeight: '44px' }}
+                      >
+                        {isChangingTier ? 'Loading...' : 'Homeowner+ $7/mo'}
+                      </Button>
+                      <Button
+                        onClick={() => handleChangeTier('good')}
+                        size="sm"
+                        disabled={isChangingTier}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        style={{ minHeight: '44px' }}
+                      >
+                        {isChangingTier ? 'Loading...' : 'Pioneer $12/mo'}
+                      </Button>
+                    </>
+                  )}
+                  {(currentTier === 'free' || currentTier === 'homeowner_plus' || currentTier === 'good') && (
+                    <Button
+                      onClick={() => handleChangeTier('better')}
+                      size="sm"
+                      disabled={isChangingTier}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      style={{ minHeight: '44px' }}
+                    >
+                      {isChangingTier ? 'Loading...' : 'Commander $60/mo'}
+                    </Button>
+                  )}
+                  {currentTier !== 'best' && (
+                    <Button
+                      onClick={() => handleChangeTier('best')}
+                      size="sm"
+                      disabled={isChangingTier}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      style={{ minHeight: '44px' }}
+                    >
+                      {isChangingTier ? 'Loading...' : 'Elite $350/mo'}
+                    </Button>
+                  )}
+                </div>
+                {isChangingTier && (
+                  <p className="text-xs text-center text-gray-600 mt-2">Redirecting to checkout...</p>
+                )}
               </div>
-              {isChangingTier && (
-                <p className="text-xs text-center text-gray-600 mt-2">Updating your plan...</p>
-              )}
-              {(currentTier === 'good' && totalDoors > 25) && (
-                <p className="text-xs text-red-600 text-center mt-2">
-                  Pioneer tier has a 25-door limit. Please upgrade to a higher plan.
-                </p>
-              )}
-              {(currentTier === 'better' && totalDoors > 100) && (
-                <p className="text-xs text-red-600 text-center mt-2">
-                  Commander tier has a 100-door limit. Please upgrade to Elite.
-                </p>
-              )}
-            </div>
+            )}
 
             {/* Upgrade Suggestions */}
             {currentTier === 'free' && totalDoors > 1 && (
@@ -396,6 +525,190 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Subscription & Billing Section */}
+        {subscriptionData?.has_subscription && (
+          <Card className="mb-6 border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-blue-600" />
+                Subscription & Billing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Subscription Status */}
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">Subscription Status</h4>
+                      <Badge className={
+                        subscriptionData.subscription.is_active ? 'bg-green-600' :
+                        subscriptionData.subscription.is_past_due ? 'bg-red-600' :
+                        'bg-gray-600'
+                      }>
+                        {subscriptionData.subscription.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Billing: {subscriptionData.subscription.billing_cycle === 'annual' ? 'Annual' : 'Monthly'}
+                      </p>
+                      
+                      {subscriptionData.subscription.current_period_end && (
+                        <p className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {subscriptionData.subscription.cancel_at_period_end 
+                            ? `Access ends: ${new Date(subscriptionData.subscription.current_period_end).toLocaleDateString()}`
+                            : `Next billing: ${new Date(subscriptionData.subscription.current_period_end).toLocaleDateString()}`
+                          }
+                        </p>
+                      )}
+
+                      {subscriptionData.subscription.days_remaining !== null && (
+                        <p className="text-xs text-gray-500">
+                          {subscriptionData.subscription.days_remaining} days remaining in current period
+                        </p>
+                      )}
+                    </div>
+
+                    {subscriptionData.subscription.cancel_at_period_end && (
+                      <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded">
+                        <p className="text-sm text-orange-800 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          Your subscription will not renew after the current period
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Payment Method</h4>
+                    {subscriptionData.payment_method ? (
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-gray-600" />
+                        <span className="text-sm text-gray-700 capitalize">
+                          {subscriptionData.payment_method.brand} •••• {subscriptionData.payment_method.last4}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Expires {subscriptionData.payment_method.exp_month}/{subscriptionData.payment_method.exp_year}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">No payment method on file</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(createPageUrl('PaymentMethods'))}
+                  >
+                    Manage
+                  </Button>
+                </div>
+              </div>
+
+              {/* Recent Transactions */}
+              {subscriptionData.recent_transactions?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-semibold text-gray-900 mb-3">Recent Transactions</h4>
+                  <div className="space-y-2">
+                    {subscriptionData.recent_transactions.map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{transaction.description}</p>
+                          <p className="text-xs text-gray-500">{new Date(transaction.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">
+                            ${transaction.amount.toFixed(2)} {transaction.currency.toUpperCase()}
+                          </p>
+                          <Badge className={
+                            transaction.status === 'succeeded' ? 'bg-green-100 text-green-700' :
+                            transaction.status === 'failed' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          } variant="outline">
+                            {transaction.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cancel Subscription */}
+              {subscriptionData.subscription.is_active && !subscriptionData.subscription.cancel_at_period_end && (
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Cancel Subscription</h4>
+                      <p className="text-sm text-gray-600">
+                        You'll keep access until the end of your current billing period.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to cancel your subscription? You will keep access until the end of your current billing period.')) {
+                          cancelSubscriptionMutation.mutate(false);
+                        }
+                      }}
+                      disabled={cancelSubscriptionMutation.isPending}
+                    >
+                      {cancelSubscriptionMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Canceling...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Cancel
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Subscription - Prompt to Subscribe */}
+        {!subscriptionData?.has_subscription && currentTier !== 'free' && (
+          <Card className="mb-6 border-2 border-orange-200 bg-orange-50">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-orange-900">No Active Subscription</h3>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Your tier is set to {getTierConfig(currentTier).displayName} but you don't have an active subscription.
+                    Set up billing to unlock all features.
+                  </p>
+                  <Button
+                    onClick={() => navigate(`${createPageUrl('Checkout')}?plan=${currentTier}`)}
+                    className="mt-3"
+                    style={{ backgroundColor: getTierConfig(currentTier).color }}
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Set Up Billing
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Profile Settings */}
         <Card className="mb-6 border-2 border-gray-200">
@@ -592,28 +905,87 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Logout */}
-        <Card className="border-2 border-red-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">Sign Out</p>
-                <p className="text-sm text-gray-600">
-                  Log out of your 360° Method account
-                </p>
-              </div>
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
-                style={{ minHeight: '48px' }}
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Danger Zone - Collapsed by default */}
+        <Collapsible className="mb-6">
+          <CollapsibleTrigger className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors w-full justify-center py-2">
+            <ChevronDown className="w-4 h-4" />
+            Danger Zone
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Card className="border-2 border-red-200 mt-2">
+              <CardContent className="p-6 space-y-4">
+                {/* Downgrade Plan */}
+                {currentTier !== 'free' && (
+                  <div className="border-b border-red-100 pb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-red-900">Downgrade Plan</h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Switch to a lower tier plan. Your data will be preserved.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentTier !== 'free' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleChangeTier('free')}
+                              disabled={isChangingTier}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              Downgrade to Scout (Free)
+                            </Button>
+                          )}
+                          {(currentTier === 'better' || currentTier === 'best') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleChangeTier('good')}
+                              disabled={isChangingTier || totalDoors > 25}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              Downgrade to Pioneer
+                            </Button>
+                          )}
+                          {currentTier === 'best' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleChangeTier('better')}
+                              disabled={isChangingTier || totalDoors > 100}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              Downgrade to Commander
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sign Out */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Sign Out</p>
+                    <p className="text-sm text-gray-600">
+                      Log out of your 360° Method account
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                    style={{ minHeight: '48px' }}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Tier Change Dialog */}

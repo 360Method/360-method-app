@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Property, SystemBaseline, MaintenanceTask } from '@/api/supabaseClient';
 import {
   Home, Shield, TrendingUp, AlertTriangle, CheckCircle,
-  Clock, DollarSign, Calendar, Zap, ArrowRight
+  Clock, DollarSign, Calendar, Zap, ArrowRight, Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
@@ -147,30 +147,30 @@ export default function DashboardHomeowner() {
 
       {/* SECTION 1: HERO METRICS (The Big 3) */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
-        {/* Health Score */}
-        <div 
+        {/* Health Score - Links to 360° Score */}
+        <div
           data-tour="health-score"
           className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(createPageUrl('Baseline'))}
+          onClick={() => navigate(createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
               <Shield className="w-6 h-6 text-green-700" />
             </div>
             <span className="text-xs font-semibold text-green-700 bg-green-200 px-3 py-1 rounded-full">
-              EXCELLENT
+              {healthScore >= 90 ? 'EXCELLENT' : healthScore >= 75 ? 'GOOD' : healthScore >= 65 ? 'FAIR' : 'NEEDS ATTENTION'}
             </span>
           </div>
-          
+
           <div className="mb-2">
-            <div className="text-sm text-green-800 mb-1">Property Health Score</div>
+            <div className="text-sm text-green-800 mb-1">360° Health Score</div>
             <div className="text-5xl font-bold text-green-900">{healthScore}</div>
             <div className="text-xs text-green-700 mt-1">out of 100</div>
           </div>
 
           <div className="mt-4 pt-4 border-t border-green-300">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-800">View all systems →</span>
+              <span className="text-green-800">View full report →</span>
               <ArrowRight className="w-4 h-4 text-green-700" />
             </div>
           </div>
@@ -453,6 +453,21 @@ export default function DashboardHomeowner() {
           </div>
 
           <div className="space-y-3">
+            <button
+              onClick={() => navigate(createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl hover:shadow-md transition-all text-left"
+              style={{ minHeight: '48px' }}
+            >
+              <div className="flex items-center gap-3">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <div className="font-semibold text-gray-900">View 360° Score</div>
+                  <div className="text-xs text-gray-600">Full property health report</div>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-emerald-600" />
+            </button>
+
             <button
               onClick={() => navigate(createPageUrl('Baseline'))}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 rounded-xl hover:shadow-md transition-all text-left"

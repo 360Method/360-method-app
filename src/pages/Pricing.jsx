@@ -1,27 +1,27 @@
 import React from "react";
-import { Property, auth } from "@/api/supabaseClient";
+import { Property, functions } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Crown, X, Info, Zap, TrendingUp, Brain, Shield, Users, BarChart3, FileText, Share2, ArrowUp, Compass, Flag, Star, DollarSign } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Check, Crown, Brain, Compass, Flag, Star, Home, CreditCard, Calendar, AlertCircle, ArrowRight, ChevronDown, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing, getRecommendedTier } from "../components/shared/TierCalculator";
+import { calculateTotalDoors, getTierConfig, calculateHomeownerPlusPricing, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
 import TierChangeDialog from "../components/pricing/TierChangeDialog";
+import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function Pricing() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isChangingTier, setIsChangingTier] = React.useState(false);
   const [showTierDialog, setShowTierDialog] = React.useState(false);
   const [selectedNewTier, setSelectedNewTier] = React.useState(null);
-  const [billingCycle, setBillingCycle] = React.useState('annual');
-  const pricingCardsRef = React.useRef(null);
+  const [showAllPlans, setShowAllPlans] = React.useState(false);
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => auth.me(),
-  });
+  // Get user from Clerk auth context
+  const { user, updateUserMetadata } = useAuth();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -31,19 +31,122 @@ export default function Pricing() {
     },
   });
 
-  const changeTierMutation = useMutation({
-    mutationFn: async (newTier) => {
-      return await auth.updateMe({ tier: newTier });
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['subscription-status'],
+    queryFn: async () => {
+      try {
+        const { data } = await functions.invoke('getSubscriptionStatus');
+        return data;
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+        return null;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['current-user'] });
-      setIsChangingTier(false);
-      setShowTierDialog(false);
-      setSelectedNewTier(null);
-    },
+    enabled: !!user,
   });
 
-  const handleChangeTier = (tier) => {
+  // Mutation to create Stripe checkout session for upgrades
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ tier, billing_cycle }) => {
+      const { data, error } = await functions.invoke('createSubscriptionCheckout', {
+        tier,
+        billing_cycle,
+        user_id: user?.id,
+        user_email: user?.email,
+        user_name: user?.name,
+        success_url: `${window.location.origin}${createPageUrl('Settings')}?tab=subscription&status=success`,
+        cancel_url: `${window.location.origin}${createPageUrl('Pricing')}`,
+        total_doors: totalDoors
+      });
+      if (error) throw new Error(error.message || 'Checkout failed');
+      if (!data?.success) throw new Error(data?.error || 'Checkout failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      // For prorated upgrades, the subscription is updated immediately (no Stripe Checkout needed)
+      if (data.prorated) {
+        toast.success(`Upgraded to ${data.tier}!`, {
+          description: 'Your subscription has been updated with prorated billing.'
+        });
+        setIsChangingTier(false);
+        queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+        queryClient.invalidateQueries({ queryKey: ['current-user'] });
+        // Redirect to success URL
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        }
+        return;
+      }
+      // For new subscriptions, redirect to Stripe Checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    },
+    onError: (error) => {
+      setIsChangingTier(false);
+      toast.error('Failed to start checkout', {
+        description: error.message || 'Please try again.'
+      });
+    }
+  });
+
+  // Mutation to change tier via Clerk metadata (for downgrades)
+  const changeTierMutation = useMutation({
+    mutationFn: async (newTier) => {
+      // Update tier in Clerk user metadata
+      await updateUserMetadata({ tier: newTier });
+      return newTier;
+    },
+    onSuccess: (newTier) => {
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['current-user'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+
+      setIsChangingTier(false);
+      setShowTierDialog(false);
+
+      const tierConfig = getTierConfig(newTier);
+
+      toast.success(`Plan changed to ${tierConfig.displayName}`, {
+        description: 'Your data has been preserved.'
+      });
+
+      setSelectedNewTier(null);
+    },
+    onError: (error) => {
+      setIsChangingTier(false);
+      toast.error('Failed to change plan', {
+        description: error.message || 'Please try again.'
+      });
+    }
+  });
+
+  // Define tier hierarchy for upgrade suggestions
+  const tierOrder = ['free', 'homeowner_plus', 'good', 'better', 'best'];
+  const currentTier = user?.tier || 'free';
+  const currentTierIndex = tierOrder.indexOf(currentTier);
+
+  const handleChangeTier = async (tier) => {
+    const isUpgrade = tierOrder.indexOf(tier) > currentTierIndex;
+
+    // For upgrades to paid tiers: Go directly to Stripe checkout (one-click!)
+    // If user has existing subscription, they get prorated (handled by mutation onSuccess)
+    // If new subscription, they get redirected to Stripe Checkout
+    if (isUpgrade && tier !== 'free') {
+      setIsChangingTier(true);
+      try {
+        await checkoutMutation.mutateAsync({
+          tier,
+          billing_cycle: 'annual'
+        });
+        // Redirect is handled in onSuccess callback
+      } catch (error) {
+        // Error already handled in mutation
+      }
+      return;
+    }
+
+    // For downgrades: Show confirmation dialog (accessed via hidden "View all plans")
     setSelectedNewTier(tier);
     setShowTierDialog(true);
   };
@@ -53,796 +156,338 @@ export default function Pricing() {
     changeTierMutation.mutate(selectedNewTier);
   };
 
-  const scrollToPricing = () => {
-    pricingCardsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const totalDoors = calculateTotalDoors(properties);
+  const currentTierConfig = getTierConfig(currentTier);
+
+  const hasActiveSubscription = subscriptionData?.has_subscription && subscriptionData?.subscription?.is_active;
+  const subscriptionInfo = subscriptionData?.subscription;
+  const billingCycle = subscriptionInfo?.billing_cycle || 'annual';
+
+  // Check if tier has AI features
+  const tierHasAI = currentTierConfig.aiFeatures;
+
+  // Get current pricing
+  const getCurrentPrice = () => {
+    switch(currentTier) {
+      case 'homeowner_plus': return calculateHomeownerPlusPricing(billingCycle).monthlyPrice;
+      case 'good': return calculateGoodPricing(totalDoors, billingCycle).monthlyPrice;
+      case 'better': return calculateBetterPricing(totalDoors, billingCycle).monthlyPrice;
+      case 'best': return calculateBestPricing(billingCycle).monthlyPrice;
+      default: return 0;
+    }
   };
 
-  const currentTier = user?.tier || 'free';
-  const totalDoors = calculateTotalDoors(properties);
-  const recommendedTier = getRecommendedTier(totalDoors);
+  // Get next upgrade tier
+  const getNextUpgrade = () => {
+    if (currentTierIndex >= tierOrder.length - 1) return null;
+    
+    // Skip homeowner_plus if user has multiple properties
+    let nextIndex = currentTierIndex + 1;
+    if (tierOrder[nextIndex] === 'homeowner_plus' && properties.length > 1) {
+      nextIndex++;
+    }
+    
+    if (nextIndex >= tierOrder.length) return null;
+    return tierOrder[nextIndex];
+  };
 
-  const goodPricing = calculateGoodPricing(totalDoors, billingCycle);
-  const betterPricing = calculateBetterPricing(totalDoors, billingCycle);
-  const bestPricing = calculateBestPricing(billingCycle);
+  const nextUpgrade = getNextUpgrade();
+  const nextUpgradeConfig = nextUpgrade ? getTierConfig(nextUpgrade) : null;
 
-  const goodAnnualPricingObj = calculateGoodPricing(totalDoors, 'annual');
-  const goodMonthlyPricingObj = calculateGoodPricing(totalDoors, 'monthly');
-  const goodMonthlySavings = goodMonthlyPricingObj.monthlyPrice - goodAnnualPricingObj.monthlyPrice;
-  
-  const betterAnnualPricingObj = calculateBetterPricing(totalDoors, 'annual');
-  const betterMonthlyPricingObj = calculateBetterPricing(totalDoors, 'monthly');
-  const betterMonthlySavings = betterMonthlyPricingObj.monthlyPrice - betterAnnualPricingObj.monthlyPrice;
-  
-  const bestAnnualPricingObj = calculateBestPricing('annual');
-  const bestMonthlyPricingObj = calculateBestPricing('monthly');
-  const bestMonthlySavings = bestMonthlyPricingObj.monthlyPrice - bestAnnualPricingObj.monthlyPrice;
+  // Get upgrade price
+  const getUpgradePrice = (tier) => {
+    switch(tier) {
+      case 'homeowner_plus': return calculateHomeownerPlusPricing('annual').monthlyPrice;
+      case 'good': return calculateGoodPricing(totalDoors, 'annual').monthlyPrice;
+      case 'better': return calculateBetterPricing(totalDoors, 'annual').monthlyPrice;
+      case 'best': return calculateBestPricing('annual').monthlyPrice;
+      default: return 0;
+    }
+  };
+
+  // Icons for tiers
+  const tierIcons = {
+    free: Compass,
+    homeowner_plus: Home,
+    good: Flag,
+    better: Star,
+    best: Crown
+  };
+
+  const CurrentIcon = tierIcons[currentTier] || Compass;
+  const UpgradeIcon = nextUpgrade ? tierIcons[nextUpgrade] : null;
 
   let selectedNewTierPricing = null;
-  if (selectedNewTier === 'good') selectedNewTierPricing = goodPricing;
-  if (selectedNewTier === 'better') selectedNewTierPricing = betterPricing;
-  if (selectedNewTier === 'best') selectedNewTierPricing = bestPricing;
-
-  const comparisonFeatures = [
-    { name: 'Properties', free: '1 property', good: 'Up to 25', better: 'Up to 100', best: 'Unlimited' },
-    { name: 'Total Doors', free: 'Any size', good: 'Up to 25', better: 'Up to 100', best: 'Unlimited' },
-    { name: 'Baseline Documentation', free: true, good: true, better: true, best: true },
-    { name: 'Seasonal Inspections', free: true, good: true, better: true, best: true },
-    { name: 'Task Tracking', free: true, good: true, better: true, best: true },
-    { name: 'AI Cascade Risk Alerts', free: false, good: true, better: true, best: true },
-    { name: 'AI Spending Forecasts', free: false, good: true, better: true, best: true },
-    { name: 'AI Maintenance Insights', free: false, good: true, better: true, best: true },
-    { name: 'Portfolio Analytics', free: false, good: true, better: true, best: true },
-    { name: 'Export Reports (PDF)', free: false, good: true, better: true, best: true },
-    { name: 'AI Portfolio Comparison', free: false, good: false, better: true, best: true },
-    { name: 'AI Budget Forecasting', free: false, good: false, better: true, best: true },
-    { name: 'Share Access', free: false, good: false, better: true, best: true },
-    { name: 'White-label Reports', free: false, good: false, better: true, best: true },
-    { name: 'Multi-user Accounts', free: false, good: false, better: false, best: true },
-    { name: 'Custom AI Reporting', free: false, good: false, better: false, best: true },
-    { name: 'Dedicated Manager', free: false, good: false, better: false, best: true },
-    { name: 'Support Level', free: 'Community', good: 'Email (48hr)', better: 'Priority (24hr)', best: 'Phone (4hr)' }
-  ];
+  if (selectedNewTier) {
+    switch(selectedNewTier) {
+      case 'homeowner_plus': selectedNewTierPricing = calculateHomeownerPlusPricing(billingCycle); break;
+      case 'good': selectedNewTierPricing = calculateGoodPricing(totalDoors, billingCycle); break;
+      case 'better': selectedNewTierPricing = calculateBetterPricing(totalDoors, billingCycle); break;
+      case 'best': selectedNewTierPricing = calculateBestPricing(billingCycle); break;
+      default: selectedNewTierPricing = { monthlyPrice: 0 };
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-white pb-20 overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto">
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        
         {/* Header */}
-        <div className="mb-6 md:mb-8 text-center pt-4 md:pt-0 px-4">
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
-            <Badge 
-              className="text-white text-xs"
-              style={{ backgroundColor: getTierConfig(currentTier).color }}
-            >
-              Current: {getTierConfig(currentTier).displayName}
-            </Badge>
-            {properties.length > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {totalDoors} door{totalDoors !== 1 ? 's' : ''} total
-              </Badge>
-            )}
-          </div>
-          <h1 className="font-bold mb-2 text-2xl md:text-3xl break-words" style={{ color: '#1B365D' }}>
-            Software Plans & Pricing
-          </h1>
-          <p className="text-gray-600 text-sm md:text-base max-w-3xl mx-auto break-words">
-            <strong>The 360° Method</strong> uses AI to transform you from reactive homeowner to proactive property manager
-          </p>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Your Plan</h1>
+          <p className="text-slate-600 text-sm">Manage your subscription</p>
         </div>
 
-        {/* Billing Cycle Toggle */}
-        <div className="px-3 mb-6">
-          <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
-            <CardContent className="p-3 md:p-6">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-start gap-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                    <DollarSign className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-blue-900 mb-1 text-sm md:text-base break-words">
-                      Choose Billing Cycle
-                    </h3>
-                    <p className="text-xs text-blue-800 break-words">
-                      <strong>Annual</strong> = best rates. <strong>Monthly</strong> = flexibility.
-                    </p>
-                  </div>
+        {/* Past Due Warning */}
+        {subscriptionInfo?.is_past_due && (
+          <Card className="border-red-300 bg-red-50 mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="flex-1">
+                  <p className="font-semibold text-red-900 text-sm">Payment Failed</p>
+                  <p className="text-xs text-red-700">Update your payment method to continue.</p>
                 </div>
-
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={() => setBillingCycle('annual')}
-                    className={`flex-1 px-3 py-2 rounded-md font-semibold text-xs transition-all ${
-                      billingCycle === 'annual'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-white text-gray-600 border border-blue-200'
-                    }`}
-                    style={{ minHeight: '44px' }}
-                  >
-                    Annual
-                    <span className="block text-xs font-normal">Save 20%</span>
-                  </button>
-                  <button
-                    onClick={() => setBillingCycle('monthly')}
-                    className={`flex-1 px-3 py-2 rounded-md font-semibold text-xs transition-all ${
-                      billingCycle === 'monthly'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-white text-gray-600 border border-blue-200'
-                    }`}
-                    style={{ minHeight: '44px' }}
-                  >
-                    Monthly
-                    <span className="block text-xs font-normal">Flexible</span>
-                  </button>
-                </div>
+                <Button size="sm" className="bg-red-600" onClick={() => navigate(createPageUrl('PaymentMethods'))}>
+                  Update
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Your Calculated Pricing */}
-        {properties.length > 0 && currentTier === 'free' && (
-          <div className="px-3 mb-6">
-            <Card className="border-2 border-green-300 bg-green-50">
-              <CardContent className="p-3 md:p-6">
-                <div className="flex items-start gap-2 mb-3">
-                  <Info className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-green-900 mb-1 text-sm md:text-base break-words">
-                      Your Calculated Pricing
-                    </h3>
-                    <p className="text-xs text-green-800 break-words">
-                      Based on {properties.length} propert{properties.length === 1 ? 'y' : 'ies'}, {totalDoors} door{totalDoors !== 1 ? 's' : ''}:
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {totalDoors <= 25 && (
-                    <div className="bg-white rounded-lg p-3 border-2 border-green-400">
-                      <p className="text-xs text-gray-600 mb-1">Pioneer (Recommended)</p>
-                      <p className="text-xl font-bold text-green-700 break-words">
-                        ${goodPricing.monthlyPrice}/mo
-                      </p>
-                    </div>
-                  )}
-                  {totalDoors <= 100 && (
-                    <div className="bg-white rounded-lg p-3 border-2 border-purple-300">
-                      <p className="text-xs text-gray-600 mb-1">Commander</p>
-                      <p className="text-xl font-bold text-purple-700 break-words">
-                        ${betterPricing.monthlyPrice}/mo
-                      </p>
-                    </div>
-                  )}
-                  <div className="bg-white rounded-lg p-3 border-2 border-orange-300">
-                    <p className="text-xs text-gray-600 mb-1">Elite</p>
-                    <p className="text-xl font-bold text-orange-700 break-words">
-                      ${bestPricing.monthlyPrice}/mo
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         )}
 
-        {/* Main Pricing Cards */}
-        <div ref={pricingCardsRef} className="scroll-mt-20 px-3 mb-8">
-          <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 md:space-y-0">
-            {/* Scout Tier */}
-            <Card className={`border-2 ${currentTier === 'free' ? 'border-gray-400 shadow-lg' : 'border-gray-200'}`}>
-              <CardContent className="p-4">
-                {currentTier === 'free' && (
-                  <Badge className="mb-3 bg-gray-600 text-xs">CURRENT</Badge>
-                )}
-                <div className="flex items-center gap-2 mb-1">
-                  <Compass className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                  <h3 className="font-bold text-gray-900 text-lg break-words">Scout</h3>
+        {/* Current Plan Card */}
+        <Card className="border-2 mb-6" style={{ borderColor: currentTierConfig.color }}>
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${currentTierConfig.color}15` }}
+                >
+                  <CurrentIcon className="w-6 h-6" style={{ color: currentTierConfig.color }} />
                 </div>
-                <p className="text-xs text-gray-500 mb-2">Learn the Method</p>
-                <div className="mb-3">
-                  <span className="text-3xl font-bold text-gray-900">$0</span>
-                  <span className="text-gray-600 text-sm">/mo</span>
-                </div>
-
-                <div className="bg-blue-50 rounded-lg p-2 mb-3 border border-blue-200">
-                  <p className="text-xs text-blue-900 leading-relaxed break-words">
-                    Perfect for learning the method on your first property.
-                  </p>
-                </div>
-
-                <ul className="space-y-2 mb-4 text-xs">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">1 property (any size)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Basic baseline</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Inspection checklists</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Task tracking</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-gray-400">
-                    <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">No AI alerts</span>
-                  </li>
-                </ul>
-
-                {currentTier === 'free' ? (
-                  <Button variant="outline" className="w-full text-xs" disabled style={{ minHeight: '44px' }}>
+                <div>
+                  <h2 className="font-bold text-xl text-slate-900">{currentTierConfig.displayName}</h2>
+                  <Badge className="text-white mt-1" style={{ backgroundColor: currentTierConfig.color }}>
                     Current Plan
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => handleChangeTier('free')}
-                    variant="outline" 
-                    className="w-full text-xs"
-                    disabled={isChangingTier}
-                    style={{ minHeight: '44px' }}
-                  >
-                    {isChangingTier ? 'Switching...' : 'Downgrade'}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Pioneer Tier */}
-            <Card className={`border-2 ${currentTier === 'good' ? 'border-green-600 shadow-lg' : recommendedTier === 'good' ? 'border-green-400 shadow-lg' : 'border-green-200'}`}>
-              <CardContent className="p-4">
-                {currentTier === 'good' ? (
-                  <Badge className="mb-3 bg-green-600 text-xs">CURRENT</Badge>
-                ) : recommendedTier === 'good' ? (
-                  <Badge className="mb-3 bg-green-600 text-xs">RECOMMENDED</Badge>
-                ) : (
-                  <Badge className="mb-3 bg-green-600 text-xs">BEST VALUE</Badge>
-                )}
-                <div className="flex items-center gap-2 mb-1">
-                  <Flag className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <h3 className="font-bold text-green-700 text-lg break-words">Pioneer</h3>
-                </div>
-                <p className="text-xs text-gray-500 mb-2">AI-Powered Pro</p>
-                <div className="mb-3">
-                  <span className="text-3xl font-bold text-green-700">${goodPricing.monthlyPrice}</span>
-                  <span className="text-gray-600 text-sm">/mo</span>
-                  {billingCycle === 'annual' && (
-                    <p className="text-xs text-gray-500 mt-1 break-words">
-                      Billed ${goodPricing.annualPrice}/yr
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-green-50 rounded-lg p-2 mb-3 border border-green-200">
-                  <p className="text-xs text-green-900 leading-relaxed break-words">
-                    Unlock AI intelligence to prevent disasters before they start.
-                  </p>
-                </div>
-
-                <ul className="space-y-2 mb-4 text-xs">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="font-semibold break-words">Everything in Scout, PLUS:</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">AI cascade alerts</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">AI cost forecasting</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">AI spending insights</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Up to 25 doors</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Export reports (PDF)</span>
-                  </li>
-                </ul>
-
-                {currentTier === 'good' ? (
-                  <Button variant="outline" className="w-full text-xs border-2 border-green-600" disabled style={{ minHeight: '44px' }}>
-                    Current Plan
-                  </Button>
-                ) : totalDoors > 25 ? (
-                  <Button variant="outline" className="w-full text-xs" disabled style={{ minHeight: '44px' }}>
-                    {totalDoors} Doors Exceeds Limit
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleChangeTier('good')}
-                    disabled={isChangingTier}
-                    className="w-full font-bold text-xs"
-                    style={{ backgroundColor: '#28A745', minHeight: '44px' }}
-                  >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Pioneer' : 'Switch to Pioneer'}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Commander Tier */}
-            <Card className={`border-2 ${currentTier === 'better' ? 'border-purple-600 shadow-lg' : recommendedTier === 'better' ? 'border-purple-400 shadow-lg' : 'border-purple-200'}`}>
-              <CardContent className="p-4">
-                {currentTier === 'better' ? (
-                  <Badge className="mb-3 bg-purple-600 text-xs">CURRENT</Badge>
-                ) : recommendedTier === 'better' ? (
-                  <Badge className="mb-3 bg-purple-600 text-xs">RECOMMENDED</Badge>
-                ) : (
-                  <Badge className="mb-3 bg-purple-600 text-xs">GROWING PORTFOLIO</Badge>
-                )}
-                <div className="flex items-center gap-2 mb-1">
-                  <Star className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                  <h3 className="font-bold text-purple-700 text-lg break-words">Commander</h3>
-                </div>
-                <p className="text-xs text-gray-500 mb-2">Advanced AI + Team</p>
-                <div className="mb-3">
-                  <span className="text-3xl font-bold text-purple-700">${betterPricing.monthlyPrice}</span>
-                  <span className="text-gray-600 text-sm">/mo</span>
-                  {billingCycle === 'annual' && (
-                    <p className="text-xs text-gray-500 mt-1 break-words">
-                      Billed ${betterPricing.annualPrice}/yr
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-purple-50 rounded-lg p-2 mb-3 border border-purple-200">
-                  <p className="text-xs text-purple-900 leading-relaxed break-words">
-                    Scale your success with portfolio AI and team tools.
-                  </p>
-                </div>
-
-                <ul className="space-y-2 mb-4 text-xs">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="font-semibold break-words">Everything in Pioneer, PLUS:</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">AI portfolio comparison</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">AI budget forecasting</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Share2 className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Share access with team</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Up to 100 doors</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">White-label reports</span>
-                  </li>
-                </ul>
-
-                {currentTier === 'better' ? (
-                  <Button variant="outline" className="w-full text-xs border-2 border-purple-600" disabled style={{ minHeight: '44px' }}>
-                    Current Plan
-                  </Button>
-                ) : totalDoors > 100 ? (
-                  <Button variant="outline" className="w-full text-xs" disabled style={{ minHeight: '44px' }}>
-                    Exceeds Limit
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleChangeTier('better')}
-                    disabled={isChangingTier}
-                    className="w-full font-bold text-xs"
-                    style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
-                  >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Commander' : 'Switch'}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Elite Tier */}
-            <Card className={`border-2 ${currentTier === 'best' ? 'border-orange-600 shadow-lg' : recommendedTier === 'best' ? 'border-orange-400 shadow-lg' : 'border-orange-200'}`}>
-              <CardContent className="p-4">
-                {currentTier === 'best' ? (
-                  <Badge className="mb-3 bg-orange-600 text-xs">CURRENT</Badge>
-                ) : recommendedTier === 'best' ? (
-                  <Badge className="mb-3 bg-orange-600 text-xs">RECOMMENDED</Badge>
-                ) : (
-                  <Badge className="mb-3 bg-orange-600 text-xs">UNLIMITED</Badge>
-                )}
-                <div className="flex items-center gap-2 mb-1">
-                  <Crown className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                  <h3 className="font-bold text-orange-700 text-lg break-words">Elite</h3>
-                </div>
-                <p className="text-xs text-gray-500 mb-2">Enterprise Suite</p>
-                <div className="mb-3">
-                  <span className="text-3xl font-bold text-orange-700">${bestPricing.monthlyPrice}</span>
-                  <span className="text-gray-600 text-sm">/mo</span>
-                  {billingCycle === 'annual' && (
-                    <p className="text-xs text-gray-500 mt-1 break-words">
-                      Billed ${bestPricing.annualPrice}/yr
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-orange-50 rounded-lg p-2 mb-3 border border-orange-200">
-                  <p className="text-xs text-orange-900 leading-relaxed break-words">
-                    Built for professionals with unlimited doors.
-                  </p>
-                </div>
-
-                <ul className="space-y-2 mb-4 text-xs">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="font-semibold break-words">Everything in Commander, PLUS:</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Custom AI reporting</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Users className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Multi-user accounts</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Shield className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Dedicated manager</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Unlimited doors</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span className="break-words">Phone support (4hr)</span>
-                  </li>
-                </ul>
-
-                {currentTier === 'best' ? (
-                  <Button variant="outline" className="w-full text-xs border-2 border-orange-600" disabled style={{ minHeight: '44px' }}>
-                    Current Plan
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleChangeTier('best')}
-                    disabled={isChangingTier}
-                    className="w-full font-bold text-xs"
-                    style={{ backgroundColor: '#F59E0B', minHeight: '44px' }}
-                  >
-                    {isChangingTier ? 'Switching...' : currentTier === 'free' ? 'Upgrade to Elite' : 'Switch to Elite'}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* AI Features Deep Dive */}
-        <div className="px-3 mb-8">
-          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-2 mb-4">
-                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-purple-900 mb-1 text-base break-words">
-                    Why AI Makes You Smarter
-                  </h3>
-                  <p className="text-gray-700 text-xs leading-relaxed break-words">
-                    Our AI teaches you to think like a property pro.
-                  </p>
+                  </Badge>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <div className="flex items-start gap-2 mb-2">
-                    <Shield className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <h4 className="font-semibold text-purple-900 text-sm break-words">Cascade Risk Intelligence</h4>
-                  </div>
-                  <p className="text-xs text-gray-700 mb-1 break-words">
-                    <strong>What it does:</strong> Shows how one problem triggers others (e.g., gutters → foundation → flooding).
-                  </p>
-                  <p className="text-xs text-gray-600 italic break-words">
-                    <strong>Why you're better:</strong> Prevent $10K-50K disasters with $200 fixes.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <div className="flex items-start gap-2 mb-2">
-                    <BarChart3 className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <h4 className="font-semibold text-purple-900 text-sm break-words">Pattern Recognition</h4>
-                  </div>
-                  <p className="text-xs text-gray-700 mb-1 break-words">
-                    <strong>What it does:</strong> Predicts future needs and costs from your history.
-                  </p>
-                  <p className="text-xs text-gray-600 italic break-words">
-                    <strong>Why you're better:</strong> Budget accurately, plan ahead, no surprises.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <div className="flex items-start gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <h4 className="font-semibold text-purple-900 text-sm break-words">Smart Prioritization</h4>
-                  </div>
-                  <p className="text-xs text-gray-700 mb-1 break-words">
-                    <strong>What it does:</strong> Ranks tasks by urgency, cost, and cascade risk.
-                  </p>
-                  <p className="text-xs text-gray-600 italic break-words">
-                    <strong>Why you're better:</strong> Work on the right things first, maximize ROI.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border border-purple-200">
-                  <div className="flex items-start gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <h4 className="font-semibold text-purple-900 text-sm break-words">Cost Optimization</h4>
-                  </div>
-                  <p className="text-xs text-gray-700 mb-1 break-words">
-                    <strong>What it does:</strong> Finds ways to reduce spending without sacrificing quality.
-                  </p>
-                  <p className="text-xs text-gray-600 italic break-words">
-                    <strong>Why you're better:</strong> Spend 30-40% less while maintaining higher health scores.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 bg-purple-100 rounded-lg p-3 border border-purple-300">
-                <p className="text-xs font-bold text-purple-900 mb-1 break-words">
-                  🎓 The Real ROI: Knowledge That Compounds
+              <div className="text-right">
+                <p className="text-2xl font-bold" style={{ color: currentTierConfig.color }}>
+                  ${getCurrentPrice()}<span className="text-sm font-normal text-slate-500">/mo</span>
                 </p>
-                <p className="text-xs text-gray-800 leading-relaxed break-words">
-                  After 6 months, users predict issues before inspectors, negotiate better with contractors, and make confident repair decisions.
-                </p>
+                {hasActiveSubscription && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {billingCycle === 'annual' ? 'Billed annually' : 'Billed monthly'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Subscription Info */}
+            {hasActiveSubscription && subscriptionInfo?.current_period_end && (
+              <div className="flex items-center gap-2 text-sm text-slate-600 mb-4 bg-slate-100 rounded-lg p-3">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {subscriptionInfo.cancel_at_period_end ? 'Cancels' : 'Renews'} on {new Date(subscriptionInfo.current_period_end).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+
+            {/* AI Status */}
+            {tierHasAI ? (
+              <div className="flex items-center gap-2 text-sm mb-4 bg-purple-50 rounded-lg p-3 border border-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span className="text-purple-800 font-medium">AI-powered insights included</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm mb-4 bg-slate-100 rounded-lg p-3 border border-slate-200">
+                <Brain className="w-4 h-4 text-slate-500" />
+                <span className="text-slate-600">
+                  Upgrade to unlock AI-powered insights
+                </span>
+              </div>
+            )}
+
+            {/* Features */}
+            <div className="border-t border-slate-200 pt-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-3">What's Included</p>
+              <div className="grid grid-cols-2 gap-2">
+                {currentTierConfig.features?.slice(0, 6).map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm text-slate-700">
+                    <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="truncate">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Manage Button */}
+            {hasActiveSubscription && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(createPageUrl('Settings'))}
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Manage Subscription
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upgrade Option */}
+        {nextUpgrade && (
+          <Card className="border-2 border-dashed border-slate-300 bg-white mb-6 hover:border-solid hover:shadow-md transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${nextUpgradeConfig.color}15` }}
+                  >
+                    <UpgradeIcon className="w-5 h-5" style={{ color: nextUpgradeConfig.color }} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-semibold">Upgrade to</p>
+                    <h3 className="font-bold text-lg text-slate-900">{nextUpgradeConfig.displayName}</h3>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold" style={{ color: nextUpgradeConfig.color }}>
+                    ${getUpgradePrice(nextUpgrade)}<span className="text-sm font-normal text-slate-500">/mo</span>
+                  </p>
+                </div>
               </div>
 
-              {currentTier !== 'best' && (
-                <div className="mt-4 text-center">
-                  <Button
-                    onClick={scrollToPricing}
-                    className="gap-2 font-bold text-xs w-full"
-                    style={{ backgroundColor: '#8B5CF6', minHeight: '44px' }}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                    Choose Your Plan
-                  </Button>
+              {/* Key Benefit */}
+              <div className="mt-4 bg-slate-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  {nextUpgradeConfig.aiFeatures && <Brain className="w-4 h-4 text-purple-600" />}
+                  <span className="text-slate-700">
+                    {nextUpgrade === 'homeowner_plus' && 'Unlock AI-powered insights, risk analysis & PDF reports'}
+                    {nextUpgrade === 'good' && 'Add up to 25 properties with portfolio analytics'}
+                    {nextUpgrade === 'better' && 'Share with team members & white-label reports'}
+                    {nextUpgrade === 'best' && 'Unlimited properties, multi-user accounts & dedicated support'}
+                  </span>
                 </div>
-              )}
+              </div>
+
+              <Button
+                className="w-full mt-4 font-semibold text-white"
+                style={{ backgroundColor: nextUpgradeConfig.color }}
+                onClick={() => handleChangeTier(nextUpgrade)}
+                disabled={isChangingTier}
+              >
+                {isChangingTier ? 'Redirecting to checkout...' : `Upgrade to ${nextUpgradeConfig.displayName}`}
+                {!isChangingTier && <ArrowRight className="w-4 h-4 ml-2" />}
+              </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* View All Plans Section */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowAllPlans(!showAllPlans)}
+            className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors py-2"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${showAllPlans ? 'rotate-180' : ''}`} />
+            {showAllPlans ? 'Hide all plans' : 'View all plans & features'}
+          </button>
+
+          {showAllPlans && (
+            <div className="mt-4 space-y-3">
+              {tierOrder
+                .filter(tier => tier !== currentTier) // Don't show current tier
+                .filter(tier => tierOrder.indexOf(tier) > currentTierIndex) // Only show upgrades
+                .map(tier => {
+                  const config = getTierConfig(tier);
+                  const Icon = tierIcons[tier];
+                  const price = tier === 'free' ? 0 : getUpgradePrice(tier);
+                  const isDisabled = tier === 'homeowner_plus' && properties.length > 1;
+
+                  return (
+                    <Card
+                      key={tier}
+                      className={`border transition-all ${
+                        isDisabled ? 'opacity-50' : 'hover:shadow-md hover:border-slate-300'
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center"
+                              style={{ backgroundColor: `${config.color}15` }}
+                            >
+                              <Icon className="w-5 h-5" style={{ color: config.color }} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-slate-900">{config.displayName}</h3>
+                                {config.aiFeatures && (
+                                  <Badge className="bg-purple-100 text-purple-700 text-xs">AI</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500">
+                                {tier === 'free' && '1 property • Full 360° Method'}
+                                {tier === 'homeowner_plus' && '1 property • AI-powered insights'}
+                                {tier === 'good' && 'Up to 25 doors • Portfolio analytics'}
+                                {tier === 'better' && 'Up to 100 doors • Team sharing'}
+                                {tier === 'best' && 'Unlimited • Dedicated support'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="font-bold" style={{ color: config.color }}>
+                                {tier === 'free' ? 'Free' : `$${price}/mo`}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              disabled={isDisabled || isChangingTier}
+                              onClick={() => handleChangeTier(tier)}
+                              className="text-xs font-semibold text-white"
+                              style={{ backgroundColor: config.color }}
+                            >
+                              {isDisabled ? 'Too many properties' : isChangingTier ? 'Loading...' : 'Upgrade'}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Features preview */}
+                        <div className="mt-3 pt-3 border-t border-slate-100">
+                          <div className="flex flex-wrap gap-2">
+                            {config.features?.slice(0, 4).map((feature, idx) => (
+                              <span key={idx} className="text-xs text-slate-600 flex items-center gap-1">
+                                <Check className="w-3 h-3 text-green-500" />
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
         </div>
 
-        {/* Pricing Examples */}
-        <div className="px-3 mb-8">
-          <Card className="border-2 border-blue-300 bg-blue-50">
-            <CardContent className="p-4">
-              <h3 className="font-bold mb-3 text-base break-words" style={{ color: '#1B365D' }}>
-                💡 How Pricing Works
-              </h3>
-              
-              <div className="space-y-3 text-xs break-words">
-                <p className="text-gray-700 leading-relaxed">
-                  <strong>Pioneer:</strong> ${goodMonthlyPricingObj.monthlyPrice}/mo covers first 3 doors. +$2/mo per door after, max 25.
-                </p>
-                <p className="text-gray-700 leading-relaxed">
-                  <strong>Commander:</strong> ${betterMonthlyPricingObj.monthlyPrice}/mo covers first 15 doors. +$3/mo per door after, max 100.
-                </p>
-                <p className="text-gray-700 leading-relaxed">
-                  <strong>Elite:</strong> ${bestMonthlyPricingObj.monthlyPrice}/mo flat, unlimited doors.
-                </p>
+        {/* Data preservation note */}
+        <p className="text-xs text-slate-500 text-center">
+          Your data is always preserved when changing plans.
+        </p>
 
-                <div className="bg-white rounded-lg p-3 mt-3 border border-blue-200">
-                  <p className="font-semibold mb-2 text-sm break-words">Examples (monthly):</p>
-                  <div className="space-y-2">
-                    <div>
-                      <strong>Pioneer:</strong>
-                      <ul className="space-y-1 ml-3 mt-1">
-                        <li className="break-words">• 1 house = ${calculateGoodPricing(1, 'monthly').monthlyPrice}/mo</li>
-                        <li className="break-words">• 3 doors = ${calculateGoodPricing(3, 'monthly').monthlyPrice}/mo</li>
-                        <li className="break-words">• 25 doors = ${calculateGoodPricing(25, 'monthly').monthlyPrice}/mo</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <strong>Commander:</strong>
-                      <ul className="space-y-1 ml-3 mt-1">
-                        <li className="break-words">• 15 doors = ${calculateBetterPricing(15, 'monthly').monthlyPrice}/mo</li>
-                        <li className="break-words">• 50 doors = ${calculateBetterPricing(50, 'monthly').monthlyPrice}/mo</li>
-                        <li className="break-words">• 100 doors = ${calculateBetterPricing(100, 'monthly').monthlyPrice}/mo</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-green-50 rounded-lg p-3 border-l-4 border-green-600">
-                  <p className="text-xs text-green-900 leading-relaxed break-words">
-                    <strong>💡 Tip:</strong> Elite is better value at 80+ doors.
-                  </p>
-                </div>
-              </div>
-
-              {currentTier !== 'best' && (
-                <div className="mt-4 text-center">
-                  <Button
-                    onClick={scrollToPricing}
-                    className="gap-2 font-bold text-xs w-full"
-                    style={{ backgroundColor: '#FF6B35', minHeight: '44px' }}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                    Compare Plans
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Feature Comparison Table */}
-        <div className="px-3 mb-8">
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-4">
-              <h3 className="font-bold mb-4 text-center text-base break-words" style={{ color: '#1B365D' }}>
-                Feature Comparison
-              </h3>
-              
-              <div className="overflow-x-auto -mx-4">
-                <div className="min-w-[500px] px-4">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b-2">
-                        <th className="text-left p-2 font-semibold">Feature</th>
-                        <th className="text-center p-2 font-semibold">Scout</th>
-                        <th className="text-center p-2 font-semibold text-green-700">Pioneer</th>
-                        <th className="text-center p-2 font-semibold text-purple-700">Commander</th>
-                        <th className="text-center p-2 font-semibold text-orange-700">Elite</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonFeatures.map((feature, idx) => (
-                        <tr key={idx} className="border-b">
-                          <td className="p-2 font-medium">{feature.name}</td>
-                          <td className="p-2 text-center">
-                            {typeof feature.free === 'boolean' ? (
-                              feature.free ? <Check className="w-4 h-4 text-gray-600 mx-auto" /> : <X className="w-4 h-4 text-gray-300 mx-auto" />
-                            ) : (
-                              <span className="text-xs">{feature.free}</span>
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            {typeof feature.good === 'boolean' ? (
-                              feature.good ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-gray-300 mx-auto" />
-                            ) : (
-                              <span className="text-xs font-semibold text-green-700">{feature.good}</span>
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            {typeof feature.better === 'boolean' ? (
-                              feature.better ? <Check className="w-4 h-4 text-purple-600 mx-auto" /> : <X className="w-4 h-4 text-gray-300 mx-auto" />
-                            ) : (
-                              <span className="text-xs font-semibold text-purple-700">{feature.better}</span>
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            {typeof feature.best === 'boolean' ? (
-                              feature.best ? <Check className="w-4 h-4 text-orange-600 mx-auto" /> : <X className="w-4 h-4 text-gray-300 mx-auto" />
-                            ) : (
-                              <span className="text-xs font-semibold text-orange-700">{feature.best}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {currentTier !== 'best' && (
-                <div className="mt-4 text-center">
-                  <Button
-                    onClick={scrollToPricing}
-                    className="gap-2 font-bold text-xs w-full"
-                    style={{ backgroundColor: '#1B365D', minHeight: '44px' }}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                    Back to Plans
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* FAQ */}
-        <div className="px-3 mb-8">
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-4">
-              <h3 className="font-bold mb-4 text-center text-base break-words" style={{ color: '#1B365D' }}>
-                Frequently Asked Questions
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    How does this save me money?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    By catching small issues before they cascade. A $150 gutter cleaning prevents a $12K foundation repair. Users prevent an average of $8,400 in disasters per year.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    Can I change tiers anytime?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    Yes! Switch instantly with no penalties. All your data stays intact.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    What's a "door"?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    A "door" is an independent unit with its own kitchen. Single-family home = 1 door. Duplex = 2 doors. 12-unit building = 12 doors.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    What happens if I downgrade?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    Nothing! All your data is preserved forever. Extra properties get archived (not deleted) and reactivate if you upgrade again.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    When choose Elite over Commander?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    Elite makes sense at 80+ doors (saves money) OR if you need multi-user teams and dedicated support. Great for property managers.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2 text-sm break-words" style={{ color: '#1B365D' }}>
-                    What about HomeCare/PropertyCare?
-                  </h4>
-                  <p className="text-xs text-gray-700 leading-relaxed break-words">
-                    Service memberships include Elite software FREE for one year. <Link to={createPageUrl("Services")} className="text-blue-600 underline">Learn more</Link>.
-                  </p>
-                </div>
-              </div>
-
-              {currentTier !== 'best' && (
-                <div className="mt-6 text-center border-t pt-6">
-                  <p className="text-sm text-gray-700 mb-3 break-words">Ready to upgrade?</p>
-                  <Button
-                    onClick={scrollToPricing}
-                    className="gap-2 font-bold text-xs w-full"
-                    style={{ backgroundColor: '#28A745', minHeight: '48px' }}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                    View Plans & Upgrade
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
+      {/* Tier Change Dialog */}
       {selectedNewTier && (
         <TierChangeDialog
           open={showTierDialog}
@@ -853,7 +498,7 @@ export default function Pricing() {
           onConfirm={handleConfirmTierChange}
           currentTier={currentTier}
           newTier={selectedNewTier}
-          currentTierConfig={getTierConfig(currentTier)}
+          currentTierConfig={currentTierConfig}
           newTierConfig={getTierConfig(selectedNewTier)}
           newTierPricing={selectedNewTierPricing}
           totalDoors={totalDoors}

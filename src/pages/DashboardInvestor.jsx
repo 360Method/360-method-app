@@ -1,9 +1,9 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Property } from '@/api/supabaseClient';
-import { 
+import {
   Home, TrendingUp, DollarSign, AlertTriangle, CheckCircle,
-  Building2, PieChart, Calendar, ArrowRight, Zap, Clock
+  Building2, PieChart, Calendar, ArrowRight, Zap, Clock, Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
@@ -284,6 +284,21 @@ export default function DashboardInvestor() {
 
           <div className="space-y-3">
             <button
+              onClick={() => navigate(createPageUrl('Score360') + '?portfolio=true')}
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl hover:shadow-md transition-all text-left"
+              style={{ minHeight: '48px' }}
+            >
+              <div className="flex items-center gap-3">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <div className="font-semibold text-gray-900">Portfolio 360° Score</div>
+                  <div className="text-xs text-gray-600">Full health report for all properties</div>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-emerald-600" />
+            </button>
+
+            <button
               onClick={() => navigate(createPageUrl('Scale'))}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-xl hover:shadow-md transition-all text-left"
               style={{ minHeight: '48px' }}
@@ -365,7 +380,7 @@ function PropertyCard({ property, navigate }) {
   };
 
   return (
-    <div 
+    <div
       className="bg-white border-2 border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all cursor-pointer"
       onClick={() => navigate(createPageUrl('Properties'))}
     >
@@ -375,7 +390,14 @@ function PropertyCard({ property, navigate }) {
           <h3 className="font-bold text-gray-900 text-lg mb-1">{property.name || property.address}</h3>
           <p className="text-sm text-gray-600">{property.type || property.property_type} • {typeof property.units === 'number' ? property.units : property.door_count || 1} unit{(property.units > 1 || property.door_count > 1) ? 's' : ''}</p>
         </div>
-        <div className={`w-12 h-12 ${healthColorClasses[healthColor].bg} rounded-full flex items-center justify-center`}>
+        <div
+          className={`w-12 h-12 ${healthColorClasses[healthColor].bg} rounded-full flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-${healthColor}-400 transition-all`}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(createPageUrl('Score360') + `?property_id=${property.id}`);
+          }}
+          title="View 360° Score"
+        >
           <span className={`text-lg font-bold ${healthColorClasses[healthColor].text}`}>
             {property.healthScore || property.health_score || 0}
           </span>
