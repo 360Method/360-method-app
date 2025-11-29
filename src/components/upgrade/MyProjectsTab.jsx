@@ -3,7 +3,56 @@ import { CheckCircle, Clock, Calendar, DollarSign, TrendingUp, AlertCircle, Trop
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 
-export default function MyProjectsTab({ projects }) {
+// Stock images for project categories
+const PROJECT_IMAGES = {
+  'Energy Efficiency': 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=600&h=400&fit=crop', // Smart thermostat
+  'Quality of Life': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop', // Modern kitchen
+  'High ROI Renovations': 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&h=400&fit=crop', // Home renovation
+  'Rental Income Boosters': 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop', // Apartment interior
+  'Curb Appeal': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Landscaped yard
+  'Health & Safety': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // HVAC system
+  default: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop' // Home improvement
+};
+
+// Specific images for common project titles
+const TITLE_IMAGES = {
+  'Smart Thermostat': 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=600&h=400&fit=crop', // Smart thermostat on wall
+  'Attic Insulation': 'https://images.unsplash.com/photo-1607400201889-565b1ee75f8e?w=600&h=400&fit=crop', // Insulation work
+  'LED Lighting': 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?w=600&h=400&fit=crop', // LED light bulbs
+  'Kitchen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop', // Modern kitchen
+  'Bathroom': 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&h=400&fit=crop', // Modern bathroom
+  'Outdoor': 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop', // Outdoor patio
+  'Deck': 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop', // Deck patio
+  'Water Heater': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // Water heater
+  'Solar': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop', // Solar panels
+  'Smart Home': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&h=400&fit=crop', // Smart home devices
+  'Window': 'https://images.unsplash.com/photo-1604079628040-94301bb21b91?w=600&h=400&fit=crop', // Window installation
+  'HVAC': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // HVAC system
+  'Flooring': 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&h=400&fit=crop', // Flooring installation
+  'Landscaping': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Landscaping
+  'Garage': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Garage workshop
+  'Roof': 'https://images.unsplash.com/photo-1632759145889-7b5b9c2e9d4a?w=600&h=400&fit=crop', // Roof work
+  'Plumbing': 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&h=400&fit=crop', // Plumbing work
+  'Paint': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=600&h=400&fit=crop', // Painting walls
+  'Electrical': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&h=400&fit=crop', // Electrical work
+  'Fence': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Fencing/yard
+  'Washer': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Laundry room
+  'Dryer': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Laundry room
+  'Water Conservation': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop' // Irrigation
+};
+
+const getProjectImage = (project) => {
+  // First try to match by title
+  for (const [key, url] of Object.entries(TITLE_IMAGES)) {
+    if (project.title?.toLowerCase().includes(key.toLowerCase())) {
+      return url;
+    }
+  }
+  // Then fall back to category
+  return PROJECT_IMAGES[project.category] || PROJECT_IMAGES.default;
+};
+
+export default function MyProjectsTab({ projects, demoMode }) {
   if (!projects || projects.length === 0) {
     return (
       <div className="text-center py-12">
@@ -73,33 +122,39 @@ function ProjectCard({ project }) {
     'High ROI Renovations': 'bg-green-50 text-green-700 border-green-300'
   };
 
+  const projectImage = getProjectImage(project);
+
   return (
-    <Card className={`border-2 hover:shadow-lg transition-all ${
+    <Card className={`border-2 hover:shadow-lg transition-all overflow-hidden ${
       project.category === 'Quality of Life' ? 'bg-purple-50/30' : ''
     }`}>
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-gray-900">{project.title}</h3>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[project.status]}`}>
-                {project.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span className={`px-2 py-1 rounded border ${categoryColors[project.category]}`}>
-                {project.category}
-              </span>
-              {project.status === 'In Progress' && project.daysRemaining && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {project.daysRemaining} days left
-                </span>
-              )}
-            </div>
+      {/* Project Image */}
+      <div className="relative h-48 md:h-56 overflow-hidden">
+        <img
+          src={projectImage}
+          alt={project.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[project.status]} bg-white/90`}>
+              {project.status}
+            </span>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColors[project.category]} bg-white/90`}>
+              {project.category}
+            </span>
           </div>
+          <h3 className="text-xl font-bold text-white drop-shadow-lg">{project.title}</h3>
         </div>
+        {project.status === 'In Progress' && project.daysRemaining && (
+          <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {project.daysRemaining} days left
+          </div>
+        )}
+      </div>
+      <CardContent className="p-6">
 
         {/* Budget & ROI */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">

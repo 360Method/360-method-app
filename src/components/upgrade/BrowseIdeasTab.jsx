@@ -11,7 +11,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Lightbulb,
     color: 'yellow',
-    
+    image: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=600&h=400&fit=crop', // Smart thermostat on wall
+
     typicalCost: { min: 1500, max: 3000 },
     annualSavings: { min: 450, max: 750 },
     paybackPeriod: { min: 2.0, max: 6.7 },
@@ -42,7 +43,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Home,
     color: 'orange',
-    
+    image: 'https://images.unsplash.com/photo-1607400201889-565b1ee75f8e?w=600&h=400&fit=crop', // Attic insulation installation
+
     typicalCost: { min: 1800, max: 2800 },
     annualSavings: { min: 350, max: 600 },
     paybackPeriod: { min: 3.0, max: 8.0 },
@@ -73,7 +75,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Palette,
     color: 'purple',
-    
+    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop', // Modern kitchen renovation
+
     typicalCost: { min: 3500, max: 6500 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 5000, max: 9000 },
@@ -104,7 +107,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Droplet,
     color: 'blue',
-    
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop', // Smart irrigation sprinkler system
+
     typicalCost: { min: 800, max: 1500 },
     annualSavings: { min: 200, max: 400 },
     paybackPeriod: { min: 2.0, max: 7.5 },
@@ -135,7 +139,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Leaf,
     color: 'green',
-    
+    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop', // Outdoor patio deck with furniture
+
     typicalCost: { min: 2500, max: 5000 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 4000, max: 7500 },
@@ -166,7 +171,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Sparkles,
     color: 'blue',
-    
+    image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&h=400&fit=crop', // Modern bathroom with vanity
+
     typicalCost: { min: 3000, max: 5500 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 5500, max: 9000 },
@@ -197,7 +203,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Health & Safety',
     icon: Wind,
     color: 'purple',
-    
+    image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // HVAC air quality system
+
     typicalCost: { min: 1200, max: 2200 },
     annualSavings: { min: 0, max: 0 },
     healthBenefit: 'Significant',
@@ -227,7 +234,8 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Home,
     color: 'orange',
-    
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Organized garage workshop
+
     typicalCost: { min: 1500, max: 3000 },
     annualSavings: { min: 0, max: 0 },
     diySavings: 'High',
@@ -260,7 +268,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Sparkles,
     color: 'purple',
-    
+    image: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Washer dryer laundry room
+
     typicalCost: { min: 2500, max: 3500 },
     rentIncrease: { min: 75, max: 125 },
     annualIncome: { min: 900, max: 1500 },
@@ -292,7 +301,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Home,
     color: 'green',
-    
+    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop', // Modern apartment living room
+
     typicalCost: { min: 3500, max: 5500 },
     rentIncrease: { min: 100, max: 200 },
     annualIncome: { min: 1200, max: 2400 },
@@ -324,7 +334,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Home,
     color: 'blue',
-    
+    image: 'https://images.unsplash.com/photo-1604079628040-94301bb21b91?w=600&h=400&fit=crop', // Window installation
+
     typicalCost: { min: 2500, max: 3500 },
     annualSavings: { min: 150, max: 300 },
     paybackPeriod: { min: 8.3, max: 23.3 },
@@ -355,7 +366,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Shield,
     color: 'purple',
-    
+    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&h=400&fit=crop', // Smart home devices
+
     typicalCost: { min: 800, max: 1500 },
     rentIncrease: { min: 50, max: 75 },
     annualIncome: { min: 600, max: 900 },
@@ -387,7 +399,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Curb Appeal',
     icon: Leaf,
     color: 'green',
-    
+    image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Professional landscaping yard
+
     typicalCost: { min: 1500, max: 3500 },
     annualIncome: { min: 0, max: 0 },
     resaleValueIncrease: { min: 3000, max: 6000 },
@@ -418,7 +431,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Home,
     color: 'orange',
-    
+    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&h=400&fit=crop', // Luxury vinyl plank flooring
+
     typicalCost: { min: 2500, max: 4500 },
     rentIncrease: { min: 50, max: 100 },
     annualIncome: { min: 600, max: 1200 },
@@ -450,7 +464,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Zap,
     color: 'yellow',
-    
+    image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?w=600&h=400&fit=crop', // LED lighting installation
+
     typicalCost: { min: 200, max: 500 },
     annualSavings: { min: 120, max: 300 },
     paybackPeriod: { min: 0.7, max: 4.2 },
@@ -481,7 +496,8 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Curb Appeal',
     icon: Home,
     color: 'red',
-    
+    image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&h=400&fit=crop', // Parking lot with striping
+
     typicalCost: { min: 1500, max: 3500 },
     annualIncome: { min: 0, max: 0 },
     resaleValueIncrease: { min: 2500, max: 5000 },
@@ -568,38 +584,43 @@ export default function BrowseIdeasTab() {
 
 function IdeaCard({ idea, onClick }) {
   const colorClasses = {
-    yellow: 'from-yellow-50 to-yellow-100 border-yellow-300 text-yellow-700',
-    blue: 'from-blue-50 to-blue-100 border-blue-300 text-blue-700',
-    purple: 'from-purple-50 to-purple-100 border-purple-300 text-purple-700',
-    red: 'from-red-50 to-red-100 border-red-300 text-red-700',
-    orange: 'from-orange-50 to-orange-100 border-orange-300 text-orange-700',
-    green: 'from-green-50 to-green-100 border-green-300 text-green-700',
-    pink: 'from-pink-50 to-pink-100 border-pink-300 text-pink-700'
+    yellow: 'border-yellow-300 text-yellow-700 bg-yellow-100',
+    blue: 'border-blue-300 text-blue-700 bg-blue-100',
+    purple: 'border-purple-300 text-purple-700 bg-purple-100',
+    red: 'border-red-300 text-red-700 bg-red-100',
+    orange: 'border-orange-300 text-orange-700 bg-orange-100',
+    green: 'border-green-300 text-green-700 bg-green-100',
+    pink: 'border-pink-300 text-pink-700 bg-pink-100'
   };
 
   const Icon = idea.icon;
 
   return (
-    <Card 
+    <Card
       onClick={onClick}
-      className={`bg-gradient-to-br ${colorClasses[idea.color].split(' ')[0]} ${colorClasses[idea.color].split(' ')[1]} border-2 ${colorClasses[idea.color].split(' ')[2]} cursor-pointer hover:shadow-lg transition-all`}
+      className="border-2 border-gray-200 cursor-pointer hover:shadow-xl transition-all overflow-hidden group"
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-12 h-12 bg-${idea.color}-200 rounded-full flex items-center justify-center`}>
-            <Icon className={`w-6 h-6 ${colorClasses[idea.color].split(' ')[3]}`} />
-          </div>
-          <div className="flex gap-2 flex-wrap justify-end">
-            {idea.tags.slice(0, 2).map(tag => (
-              <span key={tag} className={`px-2 py-1 bg-${idea.color}-200 text-${idea.color}-800 text-xs rounded-full font-semibold`}>
-                {tag}
-              </span>
-            ))}
-          </div>
+      {/* Image Header */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={idea.image}
+          alt={idea.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute bottom-3 left-3 right-3">
+          <h3 className="font-bold text-white text-lg drop-shadow-lg">{idea.title}</h3>
+          <p className="text-sm text-white/90">{idea.category}</p>
         </div>
-
-        <h3 className="font-bold text-gray-900 text-lg mb-2">{idea.title}</h3>
-        <p className="text-sm text-gray-600 mb-4">{idea.category}</p>
+        <div className="absolute top-3 right-3 flex gap-1">
+          {idea.tags.slice(0, 1).map(tag => (
+            <span key={tag} className="px-2 py-1 bg-white/90 text-gray-800 text-xs rounded-full font-semibold shadow">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+      <CardContent className="p-4">
 
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -664,31 +685,38 @@ function IdeaCard({ idea, onClick }) {
 
 function IdeaDetailModal({ idea, onClose }) {
   const Icon = idea.icon;
-  
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="p-8">
-          {/* Header */}
-          <div className="flex items-start gap-4 mb-6">
-            <div className={`w-16 h-16 bg-${idea.color}-100 rounded-full flex items-center justify-center flex-shrink-0`}>
-              <Icon className={`w-8 h-8 text-${idea.color}-600`} />
+        {/* Hero Image */}
+        <div className="relative h-56 md:h-64 overflow-hidden rounded-t-2xl">
+          <img
+            src={idea.image}
+            alt={idea.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-700" />
+          </button>
+          <div className="absolute bottom-4 left-6 right-6">
+            <div className="flex gap-2 mb-2">
+              {idea.tags.map(tag => (
+                <span key={tag} className="px-2 py-1 bg-white/90 text-gray-800 text-xs rounded-full font-semibold">
+                  {tag}
+                </span>
+              ))}
             </div>
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">{idea.title}</h2>
-              <p className="text-gray-600">{idea.category}</p>
-              <div className="flex gap-2 mt-2">
-                {idea.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-6 h-6" />
-            </button>
+            <h2 className="text-3xl font-bold text-white drop-shadow-lg">{idea.title}</h2>
+            <p className="text-white/90">{idea.category}</p>
           </div>
+        </div>
+
+        <div className="p-6 md:p-8">
 
           {/* Cost & ROI */}
           <div className="grid md:grid-cols-3 gap-4 mb-8">
