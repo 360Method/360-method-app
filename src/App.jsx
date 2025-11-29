@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
-import { pagesConfig } from './pages.config'
+import { pagesConfig, PAGES } from './pages.config'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
@@ -78,6 +78,18 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         )
       } />
+      {/* Public Quote View - Dynamic Route */}
+      <Route path="/q/:shortcode" element={<PAGES.ViewQuote />} />
+
+      {/* Public Lead Intake Form - Dynamic Route */}
+      <Route path="/intake/:operatorSlug" element={<PAGES.LeadIntakeForm />} />
+
+      {/* Embeddable Lead Form for operator websites */}
+      <Route path="/embed/:operatorSlug" element={<PAGES.EmbedLeadForm />} />
+
+      {/* Client Invitation Page - existing client onboarding */}
+      <Route path="/welcome/:invitationToken" element={<PAGES.ClientInvitation />} />
+
       {/* Clerk Sign In/Up pages with wildcard for SSO callbacks */}
       <Route path="/Login/*" element={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -85,8 +97,7 @@ const AuthenticatedApp = () => {
             routing="path"
             path="/Login"
             signUpUrl="/Signup"
-            afterSignInUrl="/Properties"
-            fallbackRedirectUrl="/Properties"
+            forceRedirectUrl="/Properties"
             appearance={{
               elements: {
                 rootBox: "mx-auto",
@@ -103,7 +114,7 @@ const AuthenticatedApp = () => {
             routing="path"
             path="/Signup"
             signInUrl="/Login"
-            afterSignUpUrl="/Onboarding"
+            forceRedirectUrl="/Onboarding"
             appearance={{
               elements: {
                 rootBox: "mx-auto",
