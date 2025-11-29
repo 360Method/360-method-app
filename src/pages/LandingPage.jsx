@@ -7,6 +7,7 @@ import MethodSection from '../components/landing/MethodSection';
 import TransformationProof from '../components/landing/TransformationProof';
 import ProductSection from '../components/landing/ProductSection';
 import PersonaPathsSection from '../components/landing/PersonaPathsSection';
+import PricingSection from '../components/landing/PricingSection';
 import OfferSection from '../components/landing/OfferSection';
 import FAQSection from '../components/landing/FAQSection';
 import FinalCTA from '../components/landing/FinalCTA';
@@ -23,6 +24,7 @@ export default function LandingPage() {
       <TransformationProof />
       <ProductSection />
       <PersonaPathsSection />
+      <PricingSection />
       <OfferSection />
       <FAQSection />
       <FinalCTA />

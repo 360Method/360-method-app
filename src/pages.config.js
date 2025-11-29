@@ -111,6 +111,7 @@ import PropertyAccessSettings from './pages/PropertyAccessSettings';
 import AcceptInvitation from './pages/AcceptInvitation';
 import PaymentMethods from './pages/PaymentMethods';
 import OperatorEarnings from './pages/OperatorEarnings';
+import OperatorSettings from './pages/OperatorSettings';
 import OwnerInvoices from './pages/OwnerInvoices';
 import NotificationSettings from './pages/NotificationSettings';
 import AdminJobQueue from './pages/AdminJobQueue';
@@ -141,6 +142,11 @@ import HQSettings from './pages/HQSettings';
 import HQActivity from './pages/HQActivity';
 import HQReports from './pages/HQReports';
 import HQAlerts from './pages/HQAlerts';
+// Public Quote/Intake Pages
+import ViewQuote from './pages/ViewQuote';
+import LeadIntakeForm from './pages/LeadIntakeForm';
+import EmbedLeadForm from './pages/EmbedLeadForm';
+import ClientInvitation from './pages/ClientInvitation';
 import __Layout from './Layout.jsx';
 
 
@@ -258,6 +264,7 @@ export const PAGES = {
     "AcceptInvitation": AcceptInvitation,
     "PaymentMethods": PaymentMethods,
     "OperatorEarnings": OperatorEarnings,
+    "OperatorSettings": OperatorSettings,
     "OwnerInvoices": OwnerInvoices,
     "NotificationSettings": NotificationSettings,
     "AdminJobQueue": AdminJobQueue,
@@ -288,6 +295,11 @@ export const PAGES = {
     "HQActivity": HQActivity,
     "HQReports": HQReports,
     "HQAlerts": HQAlerts,
+    // Public Quote/Intake Pages (dynamic routes handled in App.jsx)
+    "ViewQuote": ViewQuote,
+    "LeadIntakeForm": LeadIntakeForm,
+    "EmbedLeadForm": EmbedLeadForm,
+    "ClientInvitation": ClientInvitation,
 }
 
 // Pages that don't require authentication AND don't need Layout (landing pages, auth pages)
@@ -308,6 +320,11 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
     'OperatorPending',
     // Contractor Invitation
     'ContractorAcceptInvitation',
+    // Public Quote/Intake Pages
+    'ViewQuote',
+    'LeadIntakeForm',
+    'EmbedLeadForm',
+    'ClientInvitation',
     // Operator Portal (has its own OperatorLayout)
     'OperatorDashboard',
     'OperatorClients',
@@ -324,6 +341,7 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
     'OperatorContractors',
     'OperatorEarnings',
     'OperatorMarketplaceProfile',
+    'OperatorSettings',
     // HQ Admin Portal (has its own HQLayout)
     'HQDashboard',
     'HQUsers',

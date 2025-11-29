@@ -1,50 +1,81 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { functions } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Plus, Trash2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { CreditCard, Plus, Trash2, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PaymentMethods() {
   const [addingCard, setAddingCard] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: paymentMethods = [], isLoading } = useQuery({
-    queryKey: ['paymentMethods'],
+    queryKey: ['paymentMethods', user?.id],
     queryFn: async () => {
-      const { data } = await functions.invoke('syncPaymentMethodsFromStripe');
-      return data.payment_methods || [];
-    }
+      const { data } = await functions.invoke('syncPaymentMethodsFromStripe', {
+        user_id: user.id,
+        user_email: user.email
+      });
+      return data?.payment_methods || [];
+    },
+    enabled: !!user?.id
   });
 
   const addPaymentMutation = useMutation({
     mutationFn: async () => {
+      if (!user) {
+        throw new Error('Please log in to add a payment method');
+      }
       const returnUrl = window.location.origin + window.location.pathname + '?setup=complete';
-      const { data } = await functions.invoke('addPaymentMethod', { return_url: returnUrl });
+      const { data, error } = await functions.invoke('addPaymentMethod', {
+        return_url: returnUrl,
+        user_id: user.id,
+        user_email: user.email,
+        user_name: user.full_name || user.name
+      });
+
+      if (error) throw new Error(error.message || 'Failed to start setup');
 
       // Redirect to Stripe-hosted setup page
-      if (data.setup_url) {
+      if (data?.setup_url) {
         window.location.href = data.setup_url;
       }
       return data;
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to add payment method');
     }
   });
 
   const removePaymentMutation = useMutation({
-    mutationFn: (paymentMethodId) => functions.invoke('removePaymentMethod', { payment_method_id: paymentMethodId }),
+    mutationFn: (paymentMethodId) => functions.invoke('removePaymentMethod', {
+      payment_method_id: paymentMethodId,
+      user_id: user?.id
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
       toast.success('Payment method removed');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to remove payment method');
     }
   });
 
   const setDefaultMutation = useMutation({
-    mutationFn: (paymentMethodId) => functions.invoke('setDefaultPaymentMethod', { payment_method_id: paymentMethodId }),
+    mutationFn: (paymentMethodId) => functions.invoke('setDefaultPaymentMethod', {
+      payment_method_id: paymentMethodId,
+      user_id: user?.id
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
       toast.success('Default payment method updated');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update default payment method');
     }
   });
 

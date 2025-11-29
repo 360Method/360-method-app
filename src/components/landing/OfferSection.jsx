@@ -1,7 +1,10 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function OfferSection() {
+  const navigate = useNavigate();
+
   const benefits = [
     {
       text: '<strong>Full dashboard access</strong> for 1 property forever',
@@ -20,6 +23,10 @@ export default function OfferSection() {
       highlight: 'Maintenance tracking'
     }
   ];
+
+  const scrollToPricing = () => {
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <section id="offer" className="py-24 bg-gradient-to-b from-slate-900 to-slate-800 scroll-mt-16">
@@ -40,7 +47,7 @@ export default function OfferSection() {
           
           <div className="text-center mb-8">
             <span className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-semibold text-sm">
-              🎁 Free Account Includes
+              🎁 Scout Plan - Free Forever
             </span>
           </div>
           
@@ -61,16 +68,25 @@ export default function OfferSection() {
             ))}
           </ul>
           
-          {/* CTA Button */}
+          {/* CTA Buttons */}
           <button
-            onClick={() => navigate('/Login')}
+            onClick={() => navigate('/Signup')}
             className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 active:scale-95 transition-all shadow-lg mb-3"
             style={{ minHeight: '48px' }}
           >
             Create Free Account
           </button>
-          <p className="text-xs text-center text-slate-500">
-            No credit card required • 2-minute setup
+          
+          <button
+            onClick={scrollToPricing}
+            className="w-full py-3 text-slate-600 rounded-xl font-medium text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+          >
+            <ArrowUp className="w-4 h-4" />
+            Compare all plans
+          </button>
+          
+          <p className="text-xs text-center text-slate-500 mt-3">
+            No credit card required • Upgrade anytime for AI features
           </p>
           
         </div>

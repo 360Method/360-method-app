@@ -5,13 +5,49 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Building2, TrendingUp, Calculator } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Check, Building2, TrendingUp, Calculator, CreditCard, Shield, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { functions, auth } from "@/api/supabaseClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function PropertyCare() {
+  const navigate = useNavigate();
   const [doorCount, setDoorCount] = React.useState(1);
   const [selectedTier, setSelectedTier] = React.useState("premium");
+
+  const { data: user } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => auth.me(),
+  });
+
+  // Mutation for creating checkout session
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ tier, doors }) => {
+      const successUrl = `${window.location.origin}${createPageUrl('Dashboard')}?subscription=success`;
+      const cancelUrl = `${window.location.origin}${createPageUrl('PropertyCare')}?canceled=true`;
+
+      const { data, error } = await functions.invoke('createSubscriptionCheckout', {
+        tier: tier,
+        billing_cycle: 'monthly',
+        success_url: successUrl,
+        cancel_url: cancelUrl
+      });
+
+      if (error) throw new Error(error.message || 'Failed to create checkout');
+      if (!data.success) throw new Error(data.error || 'Failed to create checkout');
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to start checkout');
+    }
+  });
 
   const tierPricing = {
     essential: 124,
@@ -197,15 +233,59 @@ export default function PropertyCare() {
               </div>
             )}
 
-            <Button
-              asChild
-              className="w-full mt-6 font-bold"
-              style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
-            >
-              <Link to={createPageUrl("FindOperator") + `?tier=${selectedTier}&doors=${doorCount}`}>
-                Find Operator for This Portfolio →
-              </Link>
-            </Button>
+            <div className="mt-6 space-y-3">
+              <Button
+                asChild
+                className="w-full font-bold"
+                style={{ backgroundColor: '#FF6B35', minHeight: '56px' }}
+              >
+                <Link to={createPageUrl("FindOperator") + `?tier=${selectedTier}&doors=${doorCount}`}>
+                  Find Operator for This Portfolio →
+                </Link>
+              </Button>
+
+              {/* Direct Subscription Option */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">Or subscribe directly</span>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => {
+                  if (!user) {
+                    toast.error('Please sign in to subscribe');
+                    navigate(createPageUrl('Login'));
+                    return;
+                  }
+                  checkoutMutation.mutate({ tier: selectedTier, doors: doorCount });
+                }}
+                disabled={checkoutMutation.isPending}
+                variant="outline"
+                className="w-full font-semibold border-2"
+                style={{ borderColor: '#1B365D', color: '#1B365D', minHeight: '48px' }}
+              >
+                {checkoutMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Connecting to Stripe...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Subscribe Now - ${calculation.total.toLocaleString()}/mo
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-center text-gray-500 flex items-center justify-center gap-1">
+                <Shield className="w-3 h-3" />
+                Secure payment via Stripe
+              </p>
+            </div>
           </CardContent>
         </Card>
 

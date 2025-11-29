@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, ArrowRight, Brain, Sparkles, Zap, TrendingUp, Crown, Check, AlertTriangle, Compass, Flag, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, ArrowRight, Brain, Sparkles, Zap, TrendingUp, Crown, Check, AlertTriangle, Compass, Flag, Star, Home } from "lucide-react";
 
 export default function TierChangeDialog({ 
   open, 
@@ -17,14 +18,26 @@ export default function TierChangeDialog({
   billingCycle = 'annual',
   isLoading = false
 }) {
+  // State for downgrade confirmation input
+  const [downgradeConfirmText, setDowngradeConfirmText] = useState('');
+  
+  // Reset confirmation text when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setDowngradeConfirmText('');
+    }
+  }, [open]);
+
   if (!open) return null;
 
-  const isUpgrade = ['free', 'good', 'better', 'best'].indexOf(newTier) > ['free', 'good', 'better', 'best'].indexOf(currentTier);
+  const tierOrder = ['free', 'homeowner_plus', 'good', 'better', 'best'];
+  const isUpgrade = tierOrder.indexOf(newTier) > tierOrder.indexOf(currentTier);
   const isDowngrade = !isUpgrade;
 
   const getTierIcon = (tier) => {
     switch(tier) {
       case 'free': return Compass;
+      case 'homeowner_plus': return Home;
       case 'good': return Flag;
       case 'better': return Star;
       case 'best': return Crown;
@@ -32,15 +45,19 @@ export default function TierChangeDialog({
     }
   };
 
+  // Check if downgrade confirmation is valid
+  const isDowngradeConfirmValid = downgradeConfirmText.toUpperCase() === 'DOWNGRADE';
+
   const CurrentIcon = getTierIcon(currentTier);
   const NewIcon = getTierIcon(newTier);
 
   // Feature changes - show only new features for each tier upgrade
   const getFeatureChanges = () => {
     const features = {
-      free: ['Basic tracking', '1 property limit'],
-      good: ['AI cascade alerts', 'AI cost forecasting', 'AI insights', 'Portfolio analytics', 'Export reports', 'Up to 25 doors'],
-      better: ['AI portfolio comparison', 'AI budget forecasting', 'Team collaboration', 'White-label reports', 'Up to 100 doors'],
+      free: ['Full 360° Method', 'Baseline documentation', 'Inspection checklists', 'Task tracking', '1 property'],
+      homeowner_plus: ['AI-powered insights', 'AI risk analysis', 'AI cost forecasting', 'AI inspection summaries', 'PDF reports', '1 property'],
+      good: ['Portfolio analytics', 'Multi-property AI insights', 'Priority support', 'Up to 25 doors'],
+      better: ['Team collaboration', 'White-label reports', 'AI portfolio comparison', 'Up to 100 doors'],
       best: ['Custom AI reports', 'Multi-user accounts', 'Dedicated manager', 'Phone support', 'Unlimited doors']
     };
 
@@ -53,8 +70,10 @@ export default function TierChangeDialog({
         keeping: currentFeatures
       };
     } else {
+      // For downgrade, show what they're losing (features in current tier not in new tier)
+      const losingFeatures = currentFeatures.filter(f => !newFeatures.includes(f));
       return {
-        losing: currentFeatures.slice(newFeatures.length),
+        losing: losingFeatures,
         keeping: newFeatures
       };
     }
@@ -272,6 +291,37 @@ export default function TierChangeDialog({
               </div>
             )}
 
+            {/* Downgrade Confirmation Input */}
+            {isDowngrade && (
+              <div className="mb-6 bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                <p className="text-sm font-semibold text-red-900 mb-2">
+                  🔒 Type "DOWNGRADE" to confirm
+                </p>
+                <p className="text-xs text-red-700 mb-3">
+                  This helps prevent accidental downgrades. You can always upgrade again later.
+                </p>
+                <Input
+                  type="text"
+                  placeholder="Type DOWNGRADE to confirm"
+                  value={downgradeConfirmText}
+                  onChange={(e) => setDowngradeConfirmText(e.target.value)}
+                  className={`font-mono text-center uppercase ${
+                    downgradeConfirmText && !isDowngradeConfirmValid 
+                      ? 'border-red-400 focus:ring-red-400' 
+                      : isDowngradeConfirmValid 
+                        ? 'border-green-400 focus:ring-green-400 bg-green-50' 
+                        : ''
+                  }`}
+                />
+                {downgradeConfirmText && !isDowngradeConfirmValid && (
+                  <p className="text-xs text-red-600 mt-1">Please type "DOWNGRADE" exactly</p>
+                )}
+                {isDowngradeConfirmValid && (
+                  <p className="text-xs text-green-600 mt-1">✓ Confirmed - you can now downgrade</p>
+                )}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
@@ -285,11 +335,12 @@ export default function TierChangeDialog({
               </Button>
               <Button
                 onClick={onConfirm}
-                disabled={isLoading}
+                disabled={isLoading || (isDowngrade && !isDowngradeConfirmValid)}
                 className="flex-1 font-bold text-lg"
                 style={{ 
                   backgroundColor: isUpgrade ? '#10B981' : '#F59E0B',
-                  minHeight: '56px' 
+                  minHeight: '56px',
+                  opacity: (isDowngrade && !isDowngradeConfirmValid) ? 0.5 : 1
                 }}
               >
                 {isLoading ? (
@@ -304,7 +355,7 @@ export default function TierChangeDialog({
 
             {/* Instant Activation */}
             <p className="text-xs text-center text-gray-500 mt-4">
-              ⚡ Changes take effect immediately • No payment required (demo mode)
+              ⚡ Changes take effect immediately • {isUpgrade ? 'Demo mode - no payment required' : 'Your data is preserved'}
             </p>
           </div>
         </CardContent>

@@ -207,6 +207,24 @@ export const useAuth = () => {
     return config.defaultRoute;
   };
 
+  // Function to update user metadata (tier, preferences, etc.)
+  const updateUserMetadata = useCallback(async (updates) => {
+    if (!user) throw new Error('Not authenticated');
+    
+    try {
+      await user.update({
+        publicMetadata: {
+          ...publicMetadata,
+          ...updates
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to update user metadata:', error);
+      throw error;
+    }
+  }, [user, publicMetadata]);
+
   // Map Clerk user to our expected format
   const mappedUser = user ? {
     id: user.id,
@@ -217,6 +235,8 @@ export const useAuth = () => {
     image_url: user.imageUrl,
     user_metadata: publicMetadata,
     created_at: user.createdAt,
+    // Tier (subscription level)
+    tier: publicMetadata.tier || 'free',
     // Multi-role fields
     roles,
     active_role: activeRole,
@@ -286,6 +306,8 @@ export const useAuth = () => {
     ROLE_CONFIG,
     // Database user (synced from Clerk)
     dbUser,
+    // Tier management
+    updateUserMetadata,
   };
 };
 

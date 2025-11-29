@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Compass, Flag, Star, Crown } from "lucide-react";
+import { Compass, Flag, Star, Crown, Home } from "lucide-react";
 import { getTierConfig } from "../shared/TierCalculator";
 
 export default function TierBadge({ tier, size = "default", showIcon = true, className = "" }) {
@@ -8,6 +8,7 @@ export default function TierBadge({ tier, size = "default", showIcon = true, cla
   
   const icons = {
     free: Compass,
+    homeowner_plus: Home,
     good: Flag,
     better: Star,
     best: Crown

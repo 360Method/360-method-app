@@ -1,9 +1,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase, Operator } from '@/api/supabaseClient';
+import { supabase, Operator, OperatorLead, OperatorClient, OperatorQuote, WorkOrder } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import OperatorLayout from '@/components/operator/OperatorLayout';
 import StripeConnectCard from '@/components/operator/StripeConnectCard';
+import OperatorOnboardingWizard from '@/components/operator/OperatorOnboardingWizard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,63 +28,190 @@ import {
   Home,
   Star,
   Activity,
-  ChevronRight
+  ChevronRight,
+  Loader2,
+  Settings,
+  Sparkles
 } from 'lucide-react';
+
+// Helper function to format time ago
+function formatTimeAgo(dateString) {
+  if (!dateString) return 'recently';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
 
 export default function OperatorDashboard() {
   const { user } = useAuth();
 
   // Fetch operator data
-  const { data: operator } = useQuery({
-    queryKey: ['myOperator', user?.email],
+  const { data: operator, isLoading: operatorLoading } = useQuery({
+    queryKey: ['myOperator', user?.id],
     queryFn: async () => {
-      const operators = await Operator.filter({ created_by: user?.email });
-      return operators[0] || null;
+      const { data, error } = await supabase
+        .from('operators')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
     },
-    enabled: !!user?.email
+    enabled: !!user?.id
   });
 
-  // Mock data - replace with real queries
+  // Fetch real metrics
+  const { data: clients = [] } = useQuery({
+    queryKey: ['operator-clients', operator?.id],
+    queryFn: () => OperatorClient.filter({ operator_id: operator.id }),
+    enabled: !!operator?.id
+  });
+
+  const { data: leads = [] } = useQuery({
+    queryKey: ['operator-leads', operator?.id],
+    queryFn: () => OperatorLead.filter({ operator_id: operator.id }),
+    enabled: !!operator?.id
+  });
+
+  const { data: quotes = [] } = useQuery({
+    queryKey: ['operator-quotes', operator?.id],
+    queryFn: () => OperatorQuote.filter({ operator_id: operator.id }),
+    enabled: !!operator?.id
+  });
+
+  const { data: workOrders = [] } = useQuery({
+    queryKey: ['operator-work-orders', operator?.id],
+    queryFn: async () => {
+      try {
+        return await WorkOrder.filter({ operator_id: operator.id });
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!operator?.id
+  });
+
+  // Calculate real metrics
+  const activeLeads = leads.filter(l => !['won', 'lost'].includes(l.stage));
+  const newLeadsThisWeek = leads.filter(l => {
+    const created = new Date(l.created_at);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return created >= weekAgo;
+  });
+
+  const activeClients = clients.filter(c => c.status === 'active_user' || c.status === 'registered');
+  const newClientsThisMonth = clients.filter(c => {
+    const created = new Date(c.created_at);
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    return created >= monthAgo;
+  });
+
+  const openWorkOrderCount = workOrders.filter(wo =>
+    ['pending', 'assigned', 'in_progress'].includes(wo.status)
+  ).length;
+
+  const pendingQuotes = quotes.filter(q => q.status === 'sent' || q.status === 'draft');
+  const pendingQuotesTotal = pendingQuotes.reduce((sum, q) => sum + (q.total_amount || 0), 0);
+
+  const wonQuotes = quotes.filter(q => q.status === 'approved');
+  const monthlyRevenue = wonQuotes
+    .filter(q => {
+      const approved = new Date(q.approved_at || q.updated_at);
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return approved >= monthAgo;
+    })
+    .reduce((sum, q) => sum + (q.total_amount || 0), 0);
+
   const metrics = {
-    totalClients: 24,
-    clientsChange: 3,
-    activeLeads: 7,
-    leadsChange: 2,
-    scheduledThisWeek: 12,
-    openWorkOrders: 8,
-    pendingInvoices: 4,
-    pendingAmount: 3250,
-    monthlyRevenue: 12450,
-    revenueChange: 18.5
+    totalClients: clients.length,
+    clientsChange: newClientsThisMonth.length,
+    activeLeads: activeLeads.length,
+    leadsChange: newLeadsThisWeek.length,
+    scheduledThisWeek: 0, // TODO: Connect to calendar
+    openWorkOrders: openWorkOrderCount,
+    pendingInvoices: pendingQuotes.length,
+    pendingAmount: pendingQuotesTotal,
+    monthlyRevenue: monthlyRevenue,
+    revenueChange: 0 // TODO: Calculate month-over-month
   };
 
-  const todaySchedule = [
-    { id: 1, time: '9:00 AM', type: 'inspection', client: 'Sarah Johnson', property: '123 Oak Street', status: 'upcoming' },
-    { id: 2, time: '11:30 AM', type: 'follow-up', client: 'Mike Peterson', property: '456 Elm Avenue', status: 'upcoming' },
-    { id: 3, time: '2:00 PM', type: 'assessment', client: 'Lisa Chen', property: '789 Pine Road', status: 'upcoming' },
-    { id: 4, time: '4:30 PM', type: 'inspection', client: 'Tom Wilson', property: '321 Maple Drive', status: 'upcoming' },
-  ];
-
+  // Build recent activity from real data
   const recentActivity = [
-    { id: 1, type: 'lead', message: 'New lead from Jennifer Davis', time: '10 min ago', icon: Target, color: 'orange' },
-    { id: 2, type: 'payment', message: 'Invoice #1234 paid by Mike Peterson', time: '2 hours ago', icon: DollarSign, color: 'green' },
-    { id: 3, type: 'inspection', message: 'Inspection completed at 123 Oak St', time: '3 hours ago', icon: CheckCircle, color: 'blue' },
-    { id: 4, type: 'message', message: 'New message from Sarah Johnson', time: '5 hours ago', icon: MessageSquare, color: 'purple' },
-    { id: 5, type: 'workorder', message: 'Work order assigned to ABC Plumbing', time: '1 day ago', icon: Wrench, color: 'gray' },
-  ];
+    ...leads.slice(0, 2).map(lead => ({
+      id: `lead-${lead.id}`,
+      type: 'lead',
+      message: `New lead: ${lead.contact_name}`,
+      time: formatTimeAgo(lead.created_at),
+      icon: Target,
+      color: 'orange'
+    })),
+    ...quotes.filter(q => q.status === 'approved').slice(0, 2).map(quote => ({
+      id: `quote-${quote.id}`,
+      type: 'payment',
+      message: `Quote approved: $${quote.total_amount?.toLocaleString()}`,
+      time: formatTimeAgo(quote.approved_at || quote.updated_at),
+      icon: DollarSign,
+      color: 'green'
+    })),
+    ...clients.slice(0, 1).map(client => ({
+      id: `client-${client.id}`,
+      type: 'client',
+      message: `Client added: ${client.contact_name}`,
+      time: formatTimeAgo(client.created_at),
+      icon: Users,
+      color: 'blue'
+    }))
+  ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
 
+  // Calculate client health from migration status
   const clientHealthOverview = [
-    { status: 'Excellent', count: 8, color: 'bg-green-500', percent: 33 },
-    { status: 'Good', count: 10, color: 'bg-blue-500', percent: 42 },
-    { status: 'Needs Attention', count: 4, color: 'bg-yellow-500', percent: 17 },
-    { status: 'Critical', count: 2, color: 'bg-red-500', percent: 8 },
+    { status: 'Active', count: clients.filter(c => c.status === 'active_user').length, color: 'bg-green-500' },
+    { status: 'Registered', count: clients.filter(c => c.status === 'registered').length, color: 'bg-blue-500' },
+    { status: 'Invited', count: clients.filter(c => c.status === 'invited' || c.status === 'viewed').length, color: 'bg-yellow-500' },
+    { status: 'Pending', count: clients.filter(c => c.status === 'pending').length, color: 'bg-gray-400' },
+  ].filter(h => h.count > 0);
+
+  const totalForPercent = clients.length || 1;
+  clientHealthOverview.forEach(h => {
+    h.percent = Math.round((h.count / totalForPercent) * 100);
+  });
+
+  // Build urgent items
+  const urgentItems = [
+    ...leads.filter(l => l.priority === 'hot' && l.stage === 'new').slice(0, 2).map(l => ({
+      id: `hot-${l.id}`,
+      type: 'lead',
+      title: 'Hot lead needs follow-up',
+      client: l.contact_name,
+      days: 0
+    })),
+    ...pendingQuotes.filter(q => {
+      const sent = new Date(q.sent_at || q.created_at);
+      const daysSince = Math.floor((Date.now() - sent.getTime()) / (1000 * 60 * 60 * 24));
+      return daysSince > 7;
+    }).slice(0, 1).map(q => ({
+      id: `quote-${q.id}`,
+      type: 'invoice',
+      title: 'Quote awaiting response',
+      client: 'Client',
+      days: 7
+    }))
   ];
 
-  const urgentItems = [
-    { id: 1, type: 'overdue', title: 'Inspection overdue', client: 'Robert Brown', days: 3 },
-    { id: 2, type: 'invoice', title: 'Invoice past due', client: 'Amy White', days: 7 },
-    { id: 3, type: 'lead', title: 'Lead expiring soon', client: 'David Lee', days: 1 },
-  ];
+  // Today's schedule - placeholder for now
+  const todaySchedule = [];
 
   const getTypeIcon = (type) => {
     const icons = {
@@ -105,6 +233,42 @@ export default function OperatorDashboard() {
     return colors[color] || colors.gray;
   };
 
+  // Loading state
+  if (operatorLoading) {
+    return (
+      <OperatorLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </OperatorLayout>
+    );
+  }
+
+  // No operator record yet - show onboarding wizard
+  if (!operator) {
+    return (
+      <OperatorLayout>
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Welcome to Your Operator Portal!
+            </h1>
+            <p className="text-gray-600">
+              Let's get your business set up in a few quick steps.
+            </p>
+          </div>
+
+          <OperatorOnboardingWizard
+            onComplete={() => window.location.reload()}
+          />
+        </div>
+      </OperatorLayout>
+    );
+  }
+
   return (
     <OperatorLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -117,6 +281,10 @@ export default function OperatorDashboard() {
             <p className="text-gray-600">Here's what's happening with your territory today.</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => window.location.href = createPageUrl('OperatorSettings')}>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
             <Button variant="outline" onClick={() => window.location.href = createPageUrl('OperatorAddClient')}>
               <Plus className="w-4 h-4 mr-2" />
               Add Client

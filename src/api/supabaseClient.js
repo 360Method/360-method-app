@@ -493,6 +493,15 @@ export const ServicePackageCategory = createEntityWrapper('service_package_categ
 export const ServicePackageSeasonalPricing = createEntityWrapper('service_package_seasonal_pricing');
 export const DefaultServicePackage = createEntityWrapper('default_service_packages');
 
+// NEW: Operator Lead Management
+export const OperatorLead = createEntityWrapper('operator_leads');
+export const OperatorQuote = createEntityWrapper('operator_quotes');
+export const OperatorLeadActivity = createEntityWrapper('operator_lead_activities');
+
+// NEW: Operator Client Management (existing clients and migration)
+export const OperatorClient = createEntityWrapper('operator_clients');
+export const ImportedServiceHistory = createEntityWrapper('imported_service_history');
+
 // ============================================
 // NEW: Reference Data Tables (from data architecture restructure)
 // ============================================
@@ -1316,7 +1325,14 @@ export const base44 = {
     ServiceRecordTag,
     ServicePackageCategory,
     ServicePackageSeasonalPricing,
-    DefaultServicePackage
+    DefaultServicePackage,
+    // Operator Lead Management
+    OperatorLead,
+    OperatorQuote,
+    OperatorLeadActivity,
+    // Operator Client Management
+    OperatorClient,
+    ImportedServiceHistory
   },
 
   // Auth wrapper

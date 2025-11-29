@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   User,
   Home,
@@ -19,7 +21,10 @@ import {
   Package,
   FileText,
   Building2,
-  Clock
+  Clock,
+  Plus,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import OperatorLayout from '@/components/operator/OperatorLayout';
@@ -31,6 +36,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import { OperatorClient, ImportedServiceHistory, Operator } from '@/api/supabaseClient';
 
 const STEPS = [
   { id: 1, label: 'Owner Info', icon: User },
@@ -95,7 +102,11 @@ const SERVICE_PACKAGES = [
 
 export default function OperatorAddClient() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
+  const [sendInvitation, setSendInvitation] = useState(true);
+  const [serviceHistory, setServiceHistory] = useState([]);
   const [formData, setFormData] = useState({
     // Owner info
     owner_name: '',
@@ -115,6 +126,84 @@ export default function OperatorAddClient() {
     package_id: '',
     start_date: '',
     notes: '',
+  });
+
+  // Fetch operator
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator', user?.id],
+    queryFn: async () => {
+      const operators = await Operator.filter({ user_id: user?.id });
+      return operators[0] || null;
+    },
+    enabled: !!user?.id
+  });
+
+  // Add service history entry
+  const addHistoryEntry = () => {
+    setServiceHistory([...serviceHistory, {
+      id: Date.now(),
+      service_date: '',
+      description: '',
+      amount: ''
+    }]);
+  };
+
+  // Remove service history entry
+  const removeHistoryEntry = (id) => {
+    setServiceHistory(serviceHistory.filter(h => h.id !== id));
+  };
+
+  // Update service history entry
+  const updateHistoryEntry = (id, field, value) => {
+    setServiceHistory(serviceHistory.map(h =>
+      h.id === id ? { ...h, [field]: value } : h
+    ));
+  };
+
+  // Save mutation
+  const saveClientMutation = useMutation({
+    mutationFn: async () => {
+      // Create client
+      const client = await OperatorClient.create({
+        operator_id: myOperator.id,
+        contact_name: formData.owner_name,
+        contact_email: formData.owner_email,
+        contact_phone: formData.owner_phone,
+        property_address: formData.street_address,
+        property_city: formData.city,
+        property_state: formData.state,
+        property_zip: formData.zip_code,
+        service_type: formData.package_id === 'enterprise' ? 'propertycare' : 'homecare',
+        service_tier: formData.package_id,
+        service_start_date: formData.start_date,
+        notes: formData.notes,
+        status: 'active',
+        migration_status: sendInvitation ? 'invited' : 'pending'
+      });
+
+      // Add service history
+      for (const entry of serviceHistory) {
+        if (entry.service_date && entry.description) {
+          await ImportedServiceHistory.create({
+            operator_id: myOperator.id,
+            client_id: client.id,
+            service_date: entry.service_date,
+            description: entry.description,
+            amount: entry.amount ? parseFloat(entry.amount) : null
+          });
+        }
+      }
+
+      return client;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['operator-clients']);
+      toast.success('Client added successfully!');
+      navigate(createPageUrl('OperatorClients'));
+    },
+    onError: (err) => {
+      toast.error('Failed to add client: ' + err.message);
+    }
   });
 
   const updateFormData = (field, value) => {
@@ -147,9 +236,7 @@ export default function OperatorAddClient() {
   };
 
   const handleSubmit = () => {
-    // In real app, would save to backend
-    toast.success('Client added successfully!');
-    navigate(createPageUrl('OperatorClients'));
+    saveClientMutation.mutate();
   };
 
   const selectedPackage = SERVICE_PACKAGES.find(p => p.id === formData.package_id);
@@ -423,6 +510,82 @@ export default function OperatorAddClient() {
                   rows={3}
                 />
               </div>
+
+              {/* Service History */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Past Service History</h3>
+                    <p className="text-sm text-gray-500">Import past work you've done for this client</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addHistoryEntry} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Entry
+                  </Button>
+                </div>
+
+                {serviceHistory.length === 0 ? (
+                  <Card className="p-4 border-dashed text-center text-gray-500">
+                    <p className="text-sm">No service history added yet</p>
+                    <p className="text-xs mt-1">Add past jobs to show the client their investment history</p>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {serviceHistory.map((entry) => (
+                      <Card key={entry.id} className="p-4">
+                        <div className="flex gap-3">
+                          <div className="flex-1 grid md:grid-cols-3 gap-3">
+                            <Input
+                              type="date"
+                              value={entry.service_date}
+                              onChange={(e) => updateHistoryEntry(entry.id, 'service_date', e.target.value)}
+                              placeholder="Date"
+                            />
+                            <Input
+                              value={entry.description}
+                              onChange={(e) => updateHistoryEntry(entry.id, 'description', e.target.value)}
+                              placeholder="Description (e.g., HVAC Tune-up)"
+                              className="md:col-span-1"
+                            />
+                            <Input
+                              type="number"
+                              value={entry.amount}
+                              onChange={(e) => updateHistoryEntry(entry.id, 'amount', e.target.value)}
+                              placeholder="Amount ($)"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeHistoryEntry(entry.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Send Invitation Checkbox */}
+              <div className="border-t pt-6">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={sendInvitation}
+                    onCheckedChange={setSendInvitation}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">Send invitation to Property Portal</p>
+                    <p className="text-sm text-gray-500">
+                      Client will receive an email/SMS to access their property portal
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
           )}
 
@@ -517,9 +680,17 @@ export default function OperatorAddClient() {
                 <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} className="gap-2 bg-green-600 hover:bg-green-700">
-                <CheckCircle className="w-4 h-4" />
-                Add Client
+              <Button
+                onClick={handleSubmit}
+                disabled={saveClientMutation.isPending}
+                className="gap-2 bg-green-600 hover:bg-green-700"
+              >
+                {saveClientMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                {saveClientMutation.isPending ? 'Adding...' : 'Add Client'}
               </Button>
             )}
           </div>

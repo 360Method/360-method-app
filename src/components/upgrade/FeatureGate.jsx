@@ -2,9 +2,10 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Brain, Sparkles, TrendingUp, Crown } from "lucide-react";
+import { Lock, Brain, Sparkles, TrendingUp, Crown, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { getTierConfig } from "@/components/shared/TierCalculator";
 
 export default function FeatureGate({ 
   requiredTier = 'good',
@@ -13,27 +14,33 @@ export default function FeatureGate({
   children 
 }) {
   const tierInfo = {
+    homeowner_plus: {
+      name: 'Homeowner+',
+      color: '#3B82F6',
+      icon: Home,
+      example: 'AI cascade risk alerts that prevent $10K+ disasters on your home'
+    },
     good: {
-      name: 'Pro',
+      name: 'Pioneer',
       color: '#28A745',
       icon: Sparkles,
-      example: 'AI cascade risk alerts that prevent $10K+ disasters'
+      example: 'AI cascade risk alerts + portfolio analytics for investors'
     },
     better: {
-      name: 'Premium',
+      name: 'Commander',
       color: '#8B5CF6',
       icon: TrendingUp,
       example: 'AI portfolio comparison across all your properties'
     },
     best: {
-      name: 'Enterprise',
+      name: 'Elite',
       color: '#F59E0B',
       icon: Crown,
       example: 'Custom AI reports and multi-user team collaboration'
     }
   };
 
-  const tier = tierInfo[requiredTier];
+  const tier = tierInfo[requiredTier] || tierInfo.homeowner_plus;
   const Icon = tier.icon;
 
   return (
