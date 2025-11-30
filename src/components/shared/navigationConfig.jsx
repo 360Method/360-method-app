@@ -15,6 +15,84 @@ import {
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
+// Centralized demo page mapping for all demo modes
+export const getDemoPageMap = (demoMode) => {
+  if (demoMode === 'struggling') {
+    return {
+      'Dashboard': 'DemoStruggling',
+      'Properties': 'DemoOverwhelmedBaseline',
+      'Score360': 'DemoOverwhelmedScore',
+      'Baseline': 'DemoOverwhelmedBaseline',
+      'Inspect': 'DemoOverwhelmedInspect',
+      'Track': 'DemoOverwhelmedTrack',
+      'Prioritize': 'DemoOverwhelmedPrioritize',
+      'Schedule': 'DemoOverwhelmedSchedule',
+      'Execute': 'DemoOverwhelmedExecute',
+      'Preserve': 'DemoOverwhelmedPreserve',
+      'Upgrade': 'DemoOverwhelmedUpgrade',
+      'Scale': 'DemoOverwhelmedScale',
+    };
+  } else if (demoMode === 'improving') {
+    return {
+      'Dashboard': 'DemoImproving',
+      'Properties': 'DemoImprovingBaseline',
+      'Score360': 'DemoImprovingScore',
+      'Baseline': 'DemoImprovingBaseline',
+      'Inspect': 'DemoImprovingInspect',
+      'Track': 'DemoImprovingTrack',
+      'Prioritize': 'DemoImprovingPrioritize',
+      'Schedule': 'DemoImprovingSchedule',
+      'Execute': 'DemoImprovingExecute',
+      'Preserve': 'DemoImprovingPreserve',
+      'Upgrade': 'DemoImprovingUpgrade',
+      'Scale': 'DemoImprovingScale',
+    };
+  } else if (demoMode === 'excellent') {
+    return {
+      'Dashboard': 'DemoExcellent',
+      'Properties': 'DemoExcellentBaseline',
+      'Score360': 'DemoExcellentScore',
+      'Baseline': 'DemoExcellentBaseline',
+      'Inspect': 'DemoExcellentInspect',
+      'Track': 'DemoExcellentTrack',
+      'Prioritize': 'DemoExcellentPrioritize',
+      'Schedule': 'DemoExcellentSchedule',
+      'Execute': 'DemoExcellentExecute',
+      'Preserve': 'DemoExcellentPreserve',
+      'Upgrade': 'DemoExcellentUpgrade',
+      'Scale': 'DemoExcellentScale',
+    };
+  } else if (demoMode === 'investor') {
+    return {
+      'Dashboard': 'DemoInvestorDashboard',
+      'Properties': 'DemoInvestorProperties',
+      'Score360': 'DemoInvestorScore',
+      'Baseline': 'DemoInvestorProperties',
+      'Inspect': 'DemoInvestorProperties',
+      'Track': 'DemoInvestorProperties',
+      'Prioritize': 'DemoInvestorPrioritize',
+      'Schedule': 'DemoInvestorSchedule',
+      'Execute': 'DemoInvestorExecute',
+      'Preserve': 'DemoInvestorPreserve',
+      'Upgrade': 'DemoInvestorUpgrade',
+      'Scale': 'DemoInvestorScale',
+    };
+  }
+  // Fallback for legacy demo modes or homeowner
+  return {
+    'Schedule': 'DemoSchedule',
+    'Execute': 'DemoExecute',
+  };
+};
+
+// Helper to get the demo URL for a page
+export const getDemoUrl = (page, demoMode) => {
+  if (!demoMode) return createPageUrl(page);
+  const demoPageMap = getDemoPageMap(demoMode);
+  const targetPage = demoPageMap[page] || page;
+  return createPageUrl(targetPage);
+};
+
 export const NAVIGATION_STRUCTURE = [
   {
     section: "Core",

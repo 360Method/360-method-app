@@ -33,7 +33,7 @@ import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import NotificationCenter from "./components/notifications/NotificationCenter";
 import RoleSwitcher from "./components/shared/RoleSwitcher";
-import { NAVIGATION_STRUCTURE, isNavItemLocked } from "./components/shared/navigationConfig";
+import { NAVIGATION_STRUCTURE, isNavItemLocked, getDemoPageMap } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
 import FloatingSignupCTA from "./components/demo/FloatingSignupCTA";
@@ -102,18 +102,15 @@ function LayoutContent({ children }) {
     t.status !== 'Completed'
   );
 
-  // Map regular pages to demo pages when in demo mode
-  const DEMO_PAGE_MAP = {
-    'Schedule': 'DemoSchedule',
-    'Execute': 'DemoExecute',
-  };
-
   // Helper to get URL, using demo pages when appropriate
   const getNavUrl = (originalUrl) => {
     if (!demoMode) return originalUrl;
 
+    // Get the centralized demo page map
+    const demoPageMap = getDemoPageMap(demoMode);
+
     // Extract page name from URL and check if it should be a demo page
-    for (const [page, demoPage] of Object.entries(DEMO_PAGE_MAP)) {
+    for (const [page, demoPage] of Object.entries(demoPageMap)) {
       if (originalUrl === createPageUrl(page)) {
         return createPageUrl(demoPage);
       }

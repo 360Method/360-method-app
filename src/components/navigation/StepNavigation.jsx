@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Eye, Zap, TrendingUp } from "lucide-react";
 import { useDemo } from "@/components/shared/DemoContext";
+import { getDemoPageMap } from "@/components/shared/navigationConfig";
 
 const STEPS = [
   { number: 1, title: "Baseline", page: "Baseline", phase: "AWARE", phaseColor: "blue" },
@@ -46,64 +47,6 @@ const PHASE_COLORS = {
     text: 'text-green-600',
     hover: 'hover:bg-green-100'
   }
-};
-
-// Map regular pages to demo pages based on demo mode
-const getDemoPageMap = (demoMode) => {
-  if (demoMode === 'struggling') {
-    return {
-      'Baseline': 'DemoOverwhelmedBaseline',
-      'Inspect': 'DemoOverwhelmedInspect',
-      'Track': 'DemoOverwhelmedTrack',
-      'Prioritize': 'DemoOverwhelmedPrioritize',
-      'Schedule': 'DemoOverwhelmedSchedule',
-      'Execute': 'DemoOverwhelmedExecute',
-      'Preserve': 'DemoOverwhelmedPreserve',
-      'Upgrade': 'DemoOverwhelmedUpgrade',
-      'Scale': 'DemoOverwhelmedScale',
-    };
-  } else if (demoMode === 'improving') {
-    return {
-      'Baseline': 'DemoImprovingBaseline',
-      'Inspect': 'DemoImprovingInspect',
-      'Track': 'DemoImprovingTrack',
-      'Prioritize': 'DemoImprovingPrioritize',
-      'Schedule': 'DemoImprovingSchedule',
-      'Execute': 'DemoImprovingExecute',
-      'Preserve': 'DemoImprovingPreserve',
-      'Upgrade': 'DemoImprovingUpgrade',
-      'Scale': 'DemoImprovingScale',
-    };
-  } else if (demoMode === 'excellent') {
-    return {
-      'Baseline': 'DemoExcellentBaseline',
-      'Inspect': 'DemoExcellentInspect',
-      'Track': 'DemoExcellentTrack',
-      'Prioritize': 'DemoExcellentPrioritize',
-      'Schedule': 'DemoExcellentSchedule',
-      'Execute': 'DemoExcellentExecute',
-      'Preserve': 'DemoExcellentPreserve',
-      'Upgrade': 'DemoExcellentUpgrade',
-      'Scale': 'DemoExcellentScale',
-    };
-  } else if (demoMode === 'investor') {
-    return {
-      'Baseline': 'DemoInvestorProperties',
-      'Inspect': 'DemoInvestorProperties',
-      'Track': 'DemoInvestorProperties',
-      'Prioritize': 'DemoInvestorPrioritize',
-      'Schedule': 'DemoInvestorSchedule',
-      'Execute': 'DemoInvestorExecute',
-      'Preserve': 'DemoInvestorPreserve',
-      'Upgrade': 'DemoInvestorUpgrade',
-      'Scale': 'DemoInvestorScale',
-    };
-  }
-  // Fallback for legacy demo modes
-  return {
-    'Schedule': 'DemoSchedule',
-    'Execute': 'DemoExecute',
-  };
 };
 
 export default function StepNavigation({ currentStep, propertyId = null }) {

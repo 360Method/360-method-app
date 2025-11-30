@@ -10,18 +10,19 @@ import {
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { useDemo } from "@/components/shared/DemoContext";
+import { getDemoPageMap } from "@/components/shared/navigationConfig";
 
 const navItems = [
   {
     id: "home",
     label: "Home",
-    url: createPageUrl("Dashboard"),
+    page: "Dashboard",
     icon: LayoutDashboard
   },
   {
     id: "tasks",
     label: "Tasks",
-    url: createPageUrl("Prioritize"),
+    page: "Prioritize",
     icon: ListTodo,
     showBadge: true
   },
@@ -35,31 +36,27 @@ const navItems = [
   {
     id: "calendar",
     label: "Calendar",
-    url: createPageUrl("Schedule"),
+    page: "Schedule",
     icon: CalendarDays
   },
   {
     id: "more",
     label: "More",
-    url: createPageUrl("Properties"),
+    page: "Properties",
     icon: Menu
   }
 ];
-
-// Map regular pages to demo pages when in demo mode
-const DEMO_PAGE_MAP = {
-  'Schedule': 'DemoSchedule',
-  'Execute': 'DemoExecute',
-};
 
 export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { demoMode } = useDemo();
 
-  // Helper to get the correct page (demo or regular)
+  // Helper to get the correct page URL (demo or regular)
   const getPageUrl = (page) => {
-    const targetPage = demoMode && DEMO_PAGE_MAP[page] ? DEMO_PAGE_MAP[page] : page;
+    if (!demoMode) return createPageUrl(page);
+    const demoPageMap = getDemoPageMap(demoMode);
+    const targetPage = demoPageMap[page] || page;
     return createPageUrl(targetPage);
   };
 
@@ -78,42 +75,40 @@ export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty 
       return;
     }
 
-    // Calendar routing - use demo page in demo mode
-    if (item.id === "calendar") {
-      navigate(getPageUrl("Schedule"));
-      return;
-    }
-
-    // Regular navigation
-    if (item.url) {
-      navigate(item.url);
+    // Navigate using the page property
+    if (item.page) {
+      navigate(getPageUrl(item.page));
     }
   };
 
   const isActive = (item) => {
-    if (item.id === "home") return location.pathname === createPageUrl("Dashboard");
+    const currentPath = location.pathname;
+
+    if (item.id === "home") {
+      // Check both regular and demo dashboard pages
+      const dashboardPages = [
+        createPageUrl("Dashboard"),
+        createPageUrl("DemoStruggling"),
+        createPageUrl("DemoImproving"),
+        createPageUrl("DemoExcellent"),
+        createPageUrl("DemoInvestorDashboard")
+      ];
+      return dashboardPages.some(path => currentPath === path);
+    }
     if (item.id === "tasks") {
-      return [
-        createPageUrl("Baseline"),
-        createPageUrl("Prioritize"),
-        createPageUrl("Execute"),
-        createPageUrl("DemoExecute")
-      ].some(path => location.pathname === path);
+      return currentPath.toLowerCase().includes('baseline') ||
+             currentPath.toLowerCase().includes('prioritize') ||
+             currentPath.toLowerCase().includes('execute');
     }
     if (item.id === "calendar") {
-      return [
-        createPageUrl("Schedule"),
-        createPageUrl("DemoSchedule")
-      ].some(path => location.pathname === path);
+      return currentPath.toLowerCase().includes('schedule');
     }
     if (item.id === "more") {
-      return [
-        createPageUrl("Properties"),
-        createPageUrl("Settings"),
-        createPageUrl("Services")
-      ].some(path => location.pathname === path);
+      return currentPath.toLowerCase().includes('properties') ||
+             currentPath.toLowerCase().includes('settings') ||
+             currentPath.toLowerCase().includes('services');
     }
-    return location.pathname === item.url;
+    return false;
   };
 
   return (
