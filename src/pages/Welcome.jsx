@@ -390,8 +390,8 @@ export default function Welcome() {
           </p>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-100 relative">
-              <div className="absolute -top-3 left-6 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+            <div className="bg-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-100 relative text-center">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 1
               </div>
               <div className="text-4xl mb-4">👁️</div>
@@ -402,8 +402,8 @@ export default function Welcome() {
               </p>
             </div>
 
-            <div className="bg-green-50 rounded-2xl p-6 md:p-8 border-2 border-green-100 relative">
-              <div className="absolute -top-3 left-6 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+            <div className="bg-green-50 rounded-2xl p-6 md:p-8 border-2 border-green-100 relative text-center">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 2
               </div>
               <div className="text-4xl mb-4">🔧</div>
@@ -414,8 +414,8 @@ export default function Welcome() {
               </p>
             </div>
 
-            <div className="bg-purple-50 rounded-2xl p-6 md:p-8 border-2 border-purple-100 relative">
-              <div className="absolute -top-3 left-6 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+            <div className="bg-purple-50 rounded-2xl p-6 md:p-8 border-2 border-purple-100 relative text-center">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 3
               </div>
               <div className="text-4xl mb-4">📈</div>
