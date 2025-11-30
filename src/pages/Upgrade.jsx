@@ -40,6 +40,7 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 import DemoCTA from '../components/demo/DemoCTA';
+import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 export default function Upgrade() {
   const location = useLocation();
@@ -125,10 +126,19 @@ export default function Upgrade() {
 
   React.useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
+      // For investor demo, default to Oak Ridge Drive (demo-investor-2)
+      if (isInvestor) {
+        const oakRidge = properties.find(p => p.id === 'demo-investor-2');
+        if (oakRidge) {
+          console.log('🏠 Auto-selecting Oak Ridge for investor demo:', oakRidge.id);
+          setSelectedProperty(oakRidge.id);
+          return;
+        }
+      }
       console.log('🏠 Auto-selecting first property:', properties[0].id);
       setSelectedProperty(properties[0].id);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, isInvestor]);
 
   // Get current property object
   const currentProperty = properties.find(p => p.id === selectedProperty);
@@ -416,6 +426,7 @@ export default function Upgrade() {
           </Tabs>
         )}
 
+        <DontWantDIYBanner />
         <DemoCTA />
 
       </div>

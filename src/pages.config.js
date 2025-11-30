@@ -68,20 +68,22 @@ import DemoExcellentExecute from './pages/DemoExcellentExecute';
 import DemoExcellentPreserve from './pages/DemoExcellentPreserve';
 import DemoExcellentUpgrade from './pages/DemoExcellentUpgrade';
 import DemoExcellentScale from './pages/DemoExcellentScale';
-// Investor demo pages
-import DemoInvestorDashboard from './pages/DemoInvestorDashboard';
-import DemoInvestorProperties from './pages/DemoInvestorProperties';
-import DemoInvestorPrioritize from './pages/DemoInvestorPrioritize';
-import DemoInvestorSchedule from './pages/DemoInvestorSchedule';
-import DemoInvestorExecute from './pages/DemoInvestorExecute';
-import DemoInvestorPreserve from './pages/DemoInvestorPreserve';
-import DemoInvestorUpgrade from './pages/DemoInvestorUpgrade';
-import DemoInvestorScale from './pages/DemoInvestorScale';
+// Portfolio (Investor) demo pages
+import DemoPortfolioProperties from './pages/DemoPortfolioProperties';
+import DemoPortfolioBaseline from './pages/DemoPortfolioBaseline';
+import DemoPortfolioInspect from './pages/DemoPortfolioInspect';
+import DemoPortfolioTrack from './pages/DemoPortfolioTrack';
+import DemoPortfolioPrioritize from './pages/DemoPortfolioPrioritize';
+import DemoPortfolioSchedule from './pages/DemoPortfolioSchedule';
+import DemoPortfolioExecute from './pages/DemoPortfolioExecute';
+import DemoPortfolioPreserve from './pages/DemoPortfolioPreserve';
+import DemoPortfolioUpgrade from './pages/DemoPortfolioUpgrade';
+import DemoPortfolioScale from './pages/DemoPortfolioScale';
+import DemoPortfolioScore from './pages/DemoPortfolioScore';
 // Score demo pages
 import DemoOverwhelmedScore from './pages/DemoOverwhelmedScore';
 import DemoImprovingScore from './pages/DemoImprovingScore';
 import DemoExcellentScore from './pages/DemoExcellentScore';
-import DemoInvestorScore from './pages/DemoInvestorScore';
 import Score360 from './pages/Score360';
 import PortalDashboard from './pages/PortalDashboard';
 import PortalMenu from './pages/PortalMenu';
@@ -226,20 +228,22 @@ export const PAGES = {
     "DemoExcellentPreserve": DemoExcellentPreserve,
     "DemoExcellentUpgrade": DemoExcellentUpgrade,
     "DemoExcellentScale": DemoExcellentScale,
-    // Investor demo pages
-    "DemoInvestorDashboard": DemoInvestorDashboard,
-    "DemoInvestorProperties": DemoInvestorProperties,
-    "DemoInvestorPrioritize": DemoInvestorPrioritize,
-    "DemoInvestorSchedule": DemoInvestorSchedule,
-    "DemoInvestorExecute": DemoInvestorExecute,
-    "DemoInvestorPreserve": DemoInvestorPreserve,
-    "DemoInvestorUpgrade": DemoInvestorUpgrade,
-    "DemoInvestorScale": DemoInvestorScale,
+    // Portfolio (Investor) demo pages
+    "DemoPortfolioProperties": DemoPortfolioProperties,
+    "DemoPortfolioBaseline": DemoPortfolioBaseline,
+    "DemoPortfolioInspect": DemoPortfolioInspect,
+    "DemoPortfolioTrack": DemoPortfolioTrack,
+    "DemoPortfolioPrioritize": DemoPortfolioPrioritize,
+    "DemoPortfolioSchedule": DemoPortfolioSchedule,
+    "DemoPortfolioExecute": DemoPortfolioExecute,
+    "DemoPortfolioPreserve": DemoPortfolioPreserve,
+    "DemoPortfolioUpgrade": DemoPortfolioUpgrade,
+    "DemoPortfolioScale": DemoPortfolioScale,
+    "DemoPortfolioScore": DemoPortfolioScore,
     // Score demo pages
     "DemoOverwhelmedScore": DemoOverwhelmedScore,
     "DemoImprovingScore": DemoImprovingScore,
     "DemoExcellentScore": DemoExcellentScore,
-    "DemoInvestorScore": DemoInvestorScore,
     "Score360": Score360,
     "PortalDashboard": PortalDashboard,
     "PortalMenu": PortalMenu,
@@ -423,20 +427,22 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     'DemoExcellentPreserve',
     'DemoExcellentUpgrade',
     'DemoExcellentScale',
-    // Investor demo pages
-    'DemoInvestorDashboard',
-    'DemoInvestorProperties',
-    'DemoInvestorPrioritize',
-    'DemoInvestorSchedule',
-    'DemoInvestorExecute',
-    'DemoInvestorPreserve',
-    'DemoInvestorUpgrade',
-    'DemoInvestorScale',
+    // Portfolio (Investor) demo pages
+    'DemoPortfolioProperties',
+    'DemoPortfolioBaseline',
+    'DemoPortfolioInspect',
+    'DemoPortfolioTrack',
+    'DemoPortfolioPrioritize',
+    'DemoPortfolioSchedule',
+    'DemoPortfolioExecute',
+    'DemoPortfolioPreserve',
+    'DemoPortfolioUpgrade',
+    'DemoPortfolioScale',
+    'DemoPortfolioScore',
     // Score demo pages
     'DemoOverwhelmedScore',
     'DemoImprovingScore',
     'DemoExcellentScore',
-    'DemoInvestorScore',
 ];
 
 // All public pages (no auth required)
