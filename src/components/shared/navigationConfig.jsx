@@ -64,18 +64,18 @@ export const getDemoPageMap = (demoMode) => {
     };
   } else if (demoMode === 'investor') {
     return {
-      'Dashboard': 'DemoInvestorDashboard',
-      'Properties': 'DemoInvestorProperties',
-      'Score360': 'DemoInvestorScore',
-      'Baseline': 'DemoInvestorProperties',
-      'Inspect': 'DemoInvestorProperties',
-      'Track': 'DemoInvestorProperties',
-      'Prioritize': 'DemoInvestorPrioritize',
-      'Schedule': 'DemoInvestorSchedule',
-      'Execute': 'DemoInvestorExecute',
-      'Preserve': 'DemoInvestorPreserve',
-      'Upgrade': 'DemoInvestorUpgrade',
-      'Scale': 'DemoInvestorScale',
+      'Dashboard': 'DemoPortfolio',
+      'Properties': 'DemoPortfolioProperties',
+      'Score360': 'DemoPortfolioScore',
+      'Baseline': 'DemoPortfolioBaseline',
+      'Inspect': 'DemoPortfolioInspect',
+      'Track': 'DemoPortfolioTrack',
+      'Prioritize': 'DemoPortfolioPrioritize',
+      'Schedule': 'DemoPortfolioSchedule',
+      'Execute': 'DemoPortfolioExecute',
+      'Preserve': 'DemoPortfolioPreserve',
+      'Upgrade': 'DemoPortfolioUpgrade',
+      'Scale': 'DemoPortfolioScale',
     };
   }
   // Fallback for legacy demo modes or homeowner
