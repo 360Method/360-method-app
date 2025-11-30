@@ -6,6 +6,37 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createPageUrl } from '@/utils';
 
+// Demo data for each persona - different maintenance scenarios
+const DEMO_MAINTENANCE_DATA = {
+  struggling: {
+    ytdMaintenance: 450,
+    preventedCosts: 0,
+    projection: {
+      withoutMethod: 17000,
+      withMethod: 2650,
+      description: 'catching up on deferred maintenance'
+    }
+  },
+  improving: {
+    ytdMaintenance: 1200,
+    preventedCosts: 4800,
+    projection: {
+      withoutMethod: 28000,
+      withMethod: 8500,
+      description: 'in planned maintenance'
+    }
+  },
+  excellent: {
+    ytdMaintenance: 2825,
+    preventedCosts: 28600,
+    projection: {
+      withoutMethod: 62000,
+      withMethod: 14000,
+      description: 'in planned maintenance'
+    }
+  }
+};
+
 export default function ScaleSingleProperty({ property, systems = [], demoMode = false }) {
   const navigate = useNavigate();
 
@@ -13,21 +44,25 @@ export default function ScaleSingleProperty({ property, systems = [], demoMode =
   const currentYear = new Date().getFullYear();
   const projectionYear = currentYear + 10;
   const annualAppreciation = 0.035; // 3.5%
-  
+
   const currentValue = property.current_value || 340000;
   const mortgageBalance = property.mortgage_balance || 198000;
   const equity = currentValue - mortgageBalance;
   const monthlyMortgage = property.monthly_mortgage_payment || 1450;
-  
+
   const projectedValue = Math.round(currentValue * Math.pow(1 + annualAppreciation, 10));
   const principalPaydown = monthlyMortgage * 0.25 * 120; // ~25% of payment is principal
   const projectedMortgage = Math.max(0, mortgageBalance - principalPaydown);
   const projectedEquity = projectedValue - projectedMortgage;
   const wealthGain = projectedEquity - equity;
 
-  // Maintenance ROI (demo data or calculated)
-  const ytdMaintenance = demoMode ? 1850 : (property.total_maintenance_spent || 0);
-  const preventedCosts = demoMode ? 12400 : (property.estimated_disasters_prevented || 0);
+  // Maintenance ROI (demo data varies by persona, or calculated for real users)
+  const demoKey = typeof demoMode === 'string' ? demoMode : 'excellent';
+  const demoMaintenanceData = DEMO_MAINTENANCE_DATA[demoKey] || DEMO_MAINTENANCE_DATA.excellent;
+
+  const ytdMaintenance = demoMode ? demoMaintenanceData.ytdMaintenance : (property.total_maintenance_spent || 0);
+  const preventedCosts = demoMode ? demoMaintenanceData.preventedCosts : (property.estimated_disasters_prevented || 0);
+  const projectionData = demoMode ? demoMaintenanceData.projection : null;
   const netSavings = preventedCosts - ytdMaintenance;
 
   // Property health impact
@@ -175,19 +210,27 @@ export default function ScaleSingleProperty({ property, systems = [], demoMode =
               <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-blue-700 mb-1">Without 360° Method:</div>
-                  <div className="text-2xl font-bold text-red-600">$62,000</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    ${(projectionData?.withoutMethod || 62000).toLocaleString()}
+                  </div>
                   <div className="text-xs text-blue-600">in emergency repairs</div>
                 </div>
                 <div>
                   <div className="text-blue-700 mb-1">With 360° Method:</div>
-                  <div className="text-2xl font-bold text-green-600">$9,250</div>
-                  <div className="text-xs text-blue-600">in planned maintenance</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${(projectionData?.withMethod || 9250).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-blue-600">
+                    {projectionData?.description || 'in planned maintenance'}
+                  </div>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-blue-900">Your Advantage:</span>
-                  <span className="text-2xl font-bold text-blue-600">$52,750</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${((projectionData?.withoutMethod || 62000) - (projectionData?.withMethod || 9250)).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>

@@ -10,8 +10,10 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import PageNotFound from './lib/PageNotFound';
 import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { GamificationProvider } from '@/lib/GamificationContext';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { DemoProvider } from '@/components/shared/DemoContext';
+import XPCelebration from '@/components/gamification/XPCelebration';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -90,6 +92,13 @@ const AuthenticatedApp = () => {
       {/* Client Invitation Page - existing client onboarding */}
       <Route path="/welcome/:invitationToken" element={<PAGES.ClientInvitation />} />
 
+      {/* Resource Guide Detail - Dynamic Route */}
+      <Route path="/Resources/guide/:slug" element={
+        <LayoutWrapper currentPageName="GuideDetail">
+          <PAGES.GuideDetail />
+        </LayoutWrapper>
+      } />
+
       {/* Clerk Sign In/Up pages with wildcard for SSO callbacks */}
       <Route path="/Login/*" element={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -162,17 +171,21 @@ function App() {
       afterSignUpUrl="/Onboarding"
     >
       <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <ScrollToTop />
-            <DemoProvider>
-              <NavigationTracker />
-              <AuthenticatedApp />
-            </DemoProvider>
-          </Router>
-          <Toaster />
-          <VisualEditAgent />
-        </QueryClientProvider>
+        <GamificationProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <Router>
+              <ScrollToTop />
+              <DemoProvider>
+                <NavigationTracker />
+                <AuthenticatedApp />
+                {/* XP celebration overlay - renders globally */}
+                <XPCelebration />
+              </DemoProvider>
+            </Router>
+            <Toaster />
+            <VisualEditAgent />
+          </QueryClientProvider>
+        </GamificationProvider>
       </AuthProvider>
     </ClerkProvider>
   )

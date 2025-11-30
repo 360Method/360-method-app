@@ -248,16 +248,21 @@ export default function Settings() {
   };
 
   const handleRestartOnboarding = async () => {
-    try {
-      await updateUserMutation.mutateAsync({
-        onboarding_completed: false,
-        onboarding_skipped: false
-      });
-      await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      navigate(createPageUrl("Onboarding"));
-    } catch (error) {
-      console.error("Failed to restart onboarding:", error);
+    // If user already completed onboarding, reset it first
+    if (user?.onboarding_completed) {
+      try {
+        await updateUserMutation.mutateAsync({
+          onboarding_completed: false,
+          onboarding_skipped: false
+        });
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      } catch (error) {
+        console.error("Failed to reset onboarding status:", error);
+        // Still navigate even if reset fails
+      }
     }
+    // Always navigate to onboarding
+    navigate(createPageUrl("Onboarding"));
   };
 
   const handleLogout = () => {

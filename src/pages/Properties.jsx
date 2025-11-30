@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // MIGRATED: Using Supabase instead of Base44
-import { Property, auth } from "@/api/supabaseClient";
+import { Property } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,12 +36,14 @@ import PropertyProfileWizard from "../components/properties/PropertyProfileWizar
 import { createPageUrl } from "@/utils";
 import { useDemo } from "../components/shared/DemoContext";
 import DemoCTA from "../components/demo/DemoCTA";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Properties() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { demoMode, demoData, exitDemoMode, isInvestor, isHomeowner } = useDemo();
+  const { user } = useAuth();
 
   // URL params - read fresh each render
   const searchParams = new URLSearchParams(location.search);
@@ -67,11 +69,12 @@ export default function Properties() {
 
   // Fetch data - fetch both demo and real properties
   const { data: realProperties = [], isLoading } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🔵 PROPERTIES: Fetching properties from Supabase');
-      const allProps = await Property.list('-updated_at');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-updated_at', user?.id);
       console.log('🔵 PROPERTIES: Properties fetched:', allProps?.length);
       allProps?.forEach((p, i) => {
         console.log(`🔵 PROPERTIES: Property ${i + 1}:`, {
@@ -86,7 +89,7 @@ export default function Properties() {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return allProps;
     },
-    enabled: !demoMode,
+    enabled: !demoMode && !!user?.id,
     staleTime: 0,
     cacheTime: 0
   });
@@ -98,11 +101,6 @@ export default function Properties() {
 
   const canEdit = !demoMode;
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => auth.me()
-  });
-
   // Delete mutation - MIGRATED to Supabase
   const deleteMutation = useMutation({
     mutationFn: (propertyId) => Property.delete(propertyId),
@@ -113,17 +111,20 @@ export default function Properties() {
     }
   });
 
-  // Check if first time (show welcome)
+  // Check if first time - redirect to onboarding if no properties
   useEffect(() => {
     if (demoMode) return; // Don't show wizards in demo mode
-    
-    const hideWelcome = localStorage.getItem('hidePropertyWelcome');
-    if (newParam === 'true' && properties.length === 0 && !hideWelcome) {
-      setShowWelcome(true);
-    } else if (newParam === 'true') {
+
+    // If user has no properties and tries to add one, redirect to onboarding
+    if (newParam === 'true' && properties.length === 0) {
+      navigate(createPageUrl('Onboarding'), { replace: true });
+      return;
+    }
+
+    if (newParam === 'true') {
       setShowQuickAdd(true);
     }
-  }, [newParam, properties.length, demoMode]);
+  }, [newParam, properties.length, demoMode, navigate]);
 
   // Handle edit mode
   useEffect(() => {
@@ -202,20 +203,11 @@ export default function Properties() {
     }, 100);
   };
 
-  // Show welcome screen
+  // Show welcome screen - redirect to onboarding instead
   if (showWelcome) {
-    return (
-      <PropertyWizardWelcome
-        onContinue={() => {
-          setShowWelcome(false);
-          setShowSimplifiedWizard(true);
-        }}
-        onSkip={() => {
-          setShowWelcome(false);
-          navigate(createPageUrl('Properties'));
-        }}
-      />
-    );
+    // Redirect to onboarding for new users
+    navigate(createPageUrl('Onboarding'), { replace: true });
+    return null;
   }
 
   // Show success screen

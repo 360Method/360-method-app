@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useAhaMoments, AHA_MOMENTS } from '@/components/onboarding/AhaMomentManager';
 import { createPageUrl } from '@/utils';
+import { getDemoUrl } from '@/components/shared/navigationConfig';
+import { useDemo } from '@/components/shared/DemoContext';
 
 /**
  * GuidedNextStep - Shows the user's next recommended action based on their progress
@@ -117,6 +119,7 @@ export function GuidedNextStep({
 }) {
   const navigate = useNavigate();
   const { isMomentCompleted } = useAhaMoments();
+  const { demoMode } = useDemo();
 
   // Determine the next step based on user's progress
   const getNextStep = () => {
@@ -142,7 +145,9 @@ export function GuidedNextStep({
   const nextStep = getNextStep();
 
   const handleAction = () => {
-    navigate(createPageUrl(nextStep.destination));
+    // Use demo-aware navigation when in demo mode
+    const url = demoMode ? getDemoUrl(nextStep.destination, demoMode) : createPageUrl(nextStep.destination);
+    navigate(url);
   };
 
   const Icon = nextStep.icon;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { functions } from '@/api/supabaseClient';
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification } from '@/api/notifications';
 import { useDemo } from '@/components/shared/DemoContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -45,35 +45,28 @@ export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const { demoMode } = useDemo();
-  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, user } = useAuth();
 
   // Only enable queries when authenticated and not in demo mode
-  const shouldFetch = isAuthenticated && !demoMode && !isLoadingAuth;
+  const shouldFetch = isAuthenticated && !demoMode && !isLoadingAuth && !!user?.id;
 
   // Get unread count - skip in demo mode or when not authenticated
   const { data: unreadData } = useQuery({
-    queryKey: ['unreadNotificationCount'],
-    queryFn: async () => {
-      const { data } = await functions.invoke('getUnreadCount');
-      return data.count || 0;
-    },
+    queryKey: ['unreadNotificationCount', user?.id],
+    queryFn: () => getUnreadCount(user.id),
     refetchInterval: shouldFetch ? 30000 : false, // Don't poll when not authenticated
     enabled: shouldFetch
   });
 
   // Get notifications - skip in demo mode or when not authenticated
   const { data: notificationsData, isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: async () => {
-      const { data } = await functions.invoke('getNotifications', { limit: 20 });
-      return data.notifications || [];
-    },
+    queryKey: ['notifications', user?.id],
+    queryFn: () => getNotifications(user.id, { limit: 20 }),
     enabled: open && shouldFetch
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (notification_id) => 
-      functions.invoke('markNotificationRead', { notification_id }),
+    mutationFn: (notificationId) => markAsRead(notificationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
@@ -81,8 +74,7 @@ export default function NotificationCenter() {
   });
 
   const dismissMutation = useMutation({
-    mutationFn: (notification_id) => 
-      functions.invoke('dismissNotification', { notification_id }),
+    mutationFn: (notificationId) => deleteNotification(notificationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
@@ -90,7 +82,7 @@ export default function NotificationCenter() {
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: () => functions.invoke('markAllNotificationsRead'),
+    mutationFn: () => markAllAsRead(user?.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });

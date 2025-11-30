@@ -33,10 +33,10 @@ import HelpSystem from "./components/shared/HelpSystem";
 import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import NotificationCenter from "./components/notifications/NotificationCenter";
 import RoleSwitcher from "./components/shared/RoleSwitcher";
+import UserLevelBadge from "./components/gamification/UserLevelBadge";
 import { NAVIGATION_STRUCTURE, isNavItemLocked, getDemoPageMap } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
-import FloatingSignupCTA from "./components/demo/FloatingSignupCTA";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
 import DemoAIChat from "./components/demo/DemoAIChat";
 import GuidedDemoTour from "./components/demo/GuidedDemoTour";
@@ -44,6 +44,7 @@ import DemoIntroModal from "./components/demo/DemoIntroModal";
 import DemoHelpButton from "./components/demo/DemoHelpButton";
 import { AhaMomentProvider } from "./components/onboarding/AhaMomentManager";
 import { AhaDocumentFirstSystemModal } from "./components/onboarding/AhaDocumentFirstSystem";
+import OnboardingPromptModal from "./components/onboarding/OnboardingPromptModal";
 
 function LayoutContent({ children }) {
   const location = useLocation();
@@ -57,6 +58,7 @@ function LayoutContent({ children }) {
     "Phase III: ADVANCE": false
   });
   const [showQuickAddMenu, setShowQuickAddMenu] = React.useState(false);
+  const [showOnboardingPrompt, setShowOnboardingPrompt] = React.useState(false);
 
   // Scroll to top on route change
   React.useEffect(() => {
@@ -70,14 +72,43 @@ function LayoutContent({ children }) {
   const showAppUI = !isLandingPage && !isWaitlistPage && !isDemoEntryPage;
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
-      const allProps = await Property.list('-created_date');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_date', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
     retry: false,
-    enabled: !demoMode // Don't fetch from server in demo mode
+    enabled: !demoMode && !!user?.id // Don't fetch from server in demo mode or without user
   });
+
+  // Check if user needs onboarding prompt
+  const isOnboardingPage = location.pathname.toLowerCase().includes('onboarding');
+  const isAuthPage = location.pathname.toLowerCase().includes('login') ||
+                     location.pathname.toLowerCase().includes('signup');
+
+  React.useEffect(() => {
+    // Don't show on onboarding, auth pages, landing, or demo mode
+    if (demoMode || isOnboardingPage || isAuthPage || !showAppUI || !user) {
+      setShowOnboardingPrompt(false);
+      return;
+    }
+
+    // Check if user has no properties (needs onboarding)
+    const hasNoProperties = properties.length === 0;
+
+    // Check localStorage for onboarding completion
+    const onboardingCompleted = localStorage.getItem(`onboarding_completed_${user?.id}`) === 'true';
+
+    // Show prompt if no properties and onboarding not completed
+    if (hasNoProperties && !onboardingCompleted) {
+      // Delay showing the modal slightly for better UX
+      const timer = setTimeout(() => {
+        setShowOnboardingPrompt(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [demoMode, isOnboardingPage, isAuthPage, showAppUI, user, properties]);
 
   const selectedProperty = properties[0];
 
@@ -399,6 +430,12 @@ function LayoutContent({ children }) {
             <div className="border-t border-gray-200 p-2 space-y-2 flex-shrink-0">
               {!sidebarCollapsed ? (
                 <>
+                  {/* Level Badge - show for authenticated users not in demo */}
+                  {!demoMode && user && (
+                    <div className="px-1 pb-2">
+                      <UserLevelBadge variant="compact" />
+                    </div>
+                  )}
                   <div className="flex items-center gap-1 px-1">
                     <NotificationCenter />
                     <HelpSystem
@@ -421,6 +458,8 @@ function LayoutContent({ children }) {
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-2">
+                  {/* Level Badge - collapsed version */}
+                  {!demoMode && user && <UserLevelBadge variant="compact" />}
                   <NotificationCenter />
                   <HelpSystem
                     currentPhase={getCurrentPhase()}
@@ -593,6 +632,8 @@ function LayoutContent({ children }) {
                   <p className="text-xs text-gray-500">Asset Command Center</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  {/* Level badge - show only for authenticated users not in demo */}
+                  {!demoMode && user && <UserLevelBadge variant="compact" />}
                   {!demoMode && user?.roles?.length > 1 && (
                     <RoleSwitcher variant="compact" showAddRole={false} />
                   )}
@@ -622,11 +663,18 @@ function LayoutContent({ children }) {
         {showAppUI && demoMode && <GuidedDemoTour />}
         {showAppUI && demoMode && <DemoIntroModal />}
         {showAppUI && demoMode && <DemoHelpButton />}
-        {showAppUI && <FloatingSignupCTA />}
         {showAppUI && <ExitIntentPopup />}
 
         {/* Aha Moment Modals - Only show when not in demo mode */}
         {showAppUI && !demoMode && <AhaDocumentFirstSystemModal />}
+
+        {/* Onboarding Prompt Modal - shows for users who need to complete onboarding */}
+        <OnboardingPromptModal
+          isOpen={showOnboardingPrompt}
+          onClose={() => setShowOnboardingPrompt(false)}
+          hasProperties={properties.length > 0}
+          onboardingCompleted={localStorage.getItem(`onboarding_completed_${user?.id}`) === 'true'}
+        />
       </div>
 
       <style>{`

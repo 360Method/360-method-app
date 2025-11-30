@@ -86,7 +86,7 @@ const DEMO_PROFILES = {
 
 // Step-specific tips
 const STEP_TIPS = {
-  'DemoStruggling': { step: 'Welcome', tip: 'Start the tour to see how you can transform from reactive to proactive maintenance.' },
+  'DemoOverwhelmed': { step: 'Welcome', tip: 'Start the tour to see how you can transform from reactive to proactive maintenance.' },
   'DemoImproving': { step: 'Welcome', tip: 'You\'re at Bronze level. Let\'s get you to Silver (85+)!' },
   'DemoExcellent': { step: 'Welcome', tip: 'Gold status achieved! Learn how to maintain excellence.' },
   'DemoPortfolio': { step: 'Portfolio', tip: 'Managing multiple properties? See how 360° Method scales.' },
@@ -94,9 +94,7 @@ const STEP_TIPS = {
   'Inspect': { step: '2. Inspect', tip: 'Seasonal inspections catch 90% of problems before they\'re emergencies.' },
   'Track': { step: '3. Track', tip: 'Every maintenance event is logged automatically for history.' },
   'Prioritize': { step: '4. Prioritize', tip: 'AI ranks tasks by cascade risk - focus on HIGH items first.' },
-  'DemoSchedule': { step: '5. Schedule', tip: 'Plan maintenance strategically to save time and money.' },
   'Schedule': { step: '5. Schedule', tip: 'Plan maintenance strategically to save time and money.' },
-  'DemoExecute': { step: '6. Execute', tip: 'Complete tasks with DIY guides or find qualified contractors.' },
   'Execute': { step: '6. Execute', tip: 'Complete tasks with DIY guides or find qualified contractors.' },
   'Preserve': { step: '7. Preserve', tip: 'Small investments now extend system life 3-6 years.' },
   'Upgrade': { step: '8. Upgrade', tip: 'Strategic upgrades with ROI calculations and payback periods.' },

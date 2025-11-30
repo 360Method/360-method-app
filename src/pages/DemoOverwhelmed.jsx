@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useDemo } from '@/components/shared/DemoContext';
 
-export default function DemoStruggling() {
+export default function DemoOverwhelmed() {
   const navigate = useNavigate();
   const { enterDemoMode, demoMode } = useDemo();
   const [animatedScore, setAnimatedScore] = useState(0);
@@ -94,7 +94,7 @@ export default function DemoStruggling() {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate(createPageUrl('Score360') + '?property_id=demo-struggling-001')}
+                onClick={() => navigate(createPageUrl('DemoOverwhelmedScore'))}
                 className="border-2 border-red-600 text-red-600 hover:bg-red-50 text-xl px-12 py-6 rounded-full shadow-2xl"
               >
                 📄 View Score Report

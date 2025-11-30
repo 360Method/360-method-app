@@ -227,10 +227,10 @@ export default function Scale() {
             className="mb-6"
           />
 
-          <ScaleSingleProperty 
-            property={demoProperty} 
+          <ScaleSingleProperty
+            property={demoProperty}
             systems={demoSystems}
-            demoMode={true}
+            demoMode={demoMode}
           />
         </div>
       </div>

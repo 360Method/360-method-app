@@ -30,6 +30,7 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from "../components/demo/DemoInfoTooltip";
 import RegionalAdaptationBox from "../components/shared/RegionalAdaptationBox";
 import DemoCTA from "../components/demo/DemoCTA";
+import DontWantDIYBanner from "../components/demo/DontWantDIYBanner";
 
 const REQUIRED_SYSTEMS = [
   "HVAC System",
@@ -1124,6 +1125,7 @@ export default function Baseline() {
           }}
         />
 
+        <DontWantDIYBanner />
         <DemoCTA />
       </div>
     </div>

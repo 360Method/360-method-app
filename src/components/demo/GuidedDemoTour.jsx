@@ -254,7 +254,7 @@ const TOUR_STEPS = {
       pointer: "Tap any system card to see details",
       visual: { type: 'score', score: 62 },
       details: "You're at 62 - let's transform from reactive to proactive. This score means you're at risk for expensive surprises.",
-      page: 'DemoStruggling',
+      page: 'DemoOverwhelmed',
       icon: Home
     },
     {
@@ -283,6 +283,15 @@ const TOUR_STEPS = {
       details: "7 issues found: 2 critical, 2 urgent, 3 high priority. Critical ones need action TODAY.",
       page: 'DemoOverwhelmedInspect',
       icon: ScanSearch
+    },
+    {
+      id: 'track',
+      title: 'Track',
+      pointer: "See your maintenance history",
+      visual: { type: 'checklist', items: ['Past repairs', 'Costs logged', 'Timeline'] },
+      details: "All maintenance is logged here. Track costs, see patterns, build your home's service history.",
+      page: 'DemoOverwhelmedTrack',
+      icon: BarChart3
     },
     {
       id: 'prioritize',
@@ -344,7 +353,7 @@ const TOUR_STEPS = {
       pointer: "Ready to start your journey?",
       visual: { type: 'score', score: 78, tier: 'bronze' },
       details: "In 6 months: 62 → 78. Spend $1K strategically, prevent $17K+ in disasters. You've got this.",
-      page: 'DemoStruggling',
+      page: 'DemoOverwhelmed',
       icon: CheckCircle
     }
   ],
@@ -384,6 +393,15 @@ const TOUR_STEPS = {
       details: "Fall inspection found 5 issues: 2 flags, 3 to monitor. You're catching things early.",
       page: 'DemoImprovingInspect',
       icon: ScanSearch
+    },
+    {
+      id: 'track',
+      title: 'Track',
+      pointer: "Scroll to see your maintenance log",
+      visual: { type: 'checklist', items: ['History logged', 'Costs tracked', 'Progress visible'] },
+      details: "Your maintenance history shows steady progress. Every repair builds your home's value story.",
+      page: 'DemoImprovingTrack',
+      icon: BarChart3
     },
     {
       id: 'prioritize',
@@ -496,6 +514,15 @@ const TOUR_STEPS = {
       icon: BarChart3
     },
     {
+      id: 'prioritize',
+      title: 'Prioritize',
+      pointer: "See your clean task queue",
+      visual: { type: 'checklist', items: ['All routine', 'No urgents'] },
+      details: "No urgent tasks - just routine maintenance. This is what proactive management looks like.",
+      page: 'DemoExcellentPrioritize',
+      icon: ListChecks
+    },
+    {
       id: 'schedule',
       title: 'Schedule',
       pointer: "Tap to see your annual plan",
@@ -566,17 +593,8 @@ const TOUR_STEPS = {
       pointer: "See all 3 property scores at once",
       visual: { type: 'scores', scores: [97, 78, 62] },
       details: "Portfolio average: 79. One property needs work. This report helps you prioritize capital.",
-      page: 'DemoInvestorScore',
+      page: 'DemoPortfolioScore',
       icon: Award
-    },
-    {
-      id: 'dashboard',
-      title: 'Dashboard',
-      pointer: "Tap a score to see details",
-      visual: { type: 'scores', scores: [97, 78, 62] },
-      details: "All properties at a glance: Duplex (97), Single-family (78), Triplex (62). $3,170/mo cash flow.",
-      page: 'DemoInvestorDashboard',
-      icon: Building2
     },
     {
       id: 'properties',
@@ -584,8 +602,35 @@ const TOUR_STEPS = {
       pointer: "Tap the red score to investigate",
       visual: { type: 'scores', scores: [97, 78, 62] },
       details: "Duplex is elite. Single-family is improving. Triplex needs work - that's your focus.",
-      page: 'DemoInvestorProperties',
+      page: 'DemoPortfolioProperties',
       icon: Home
+    },
+    {
+      id: 'baseline',
+      title: 'Baseline',
+      pointer: "Tap any system to see details",
+      visual: { type: 'systems', data: { critical: 3, warning: 5, good: 12 } },
+      details: "20 systems across all properties. 12 healthy, 5 aging, 3 need attention. Full documentation.",
+      page: 'DemoPortfolioBaseline',
+      icon: ClipboardList
+    },
+    {
+      id: 'inspect',
+      title: 'Inspect',
+      pointer: "View inspection findings across properties",
+      visual: { type: 'severity', data: { critical: 2, urgent: 3, high: 5 } },
+      details: "10 issues found across portfolio. Prioritize Triplex first - it has the most urgent items.",
+      page: 'DemoPortfolioInspect',
+      icon: ScanSearch
+    },
+    {
+      id: 'track',
+      title: 'Track',
+      pointer: "See maintenance history for all properties",
+      visual: { type: 'checklist', items: ['All repairs logged', 'Costs by property', 'Contractor history'] },
+      details: "Complete maintenance history across your portfolio. Track spending and contractor performance.",
+      page: 'DemoPortfolioTrack',
+      icon: BarChart3
     },
     {
       id: 'prioritize',
@@ -593,7 +638,7 @@ const TOUR_STEPS = {
       pointer: "Tap to see Triplex issues first",
       visual: { type: 'severity', data: { critical: 2, urgent: 3, high: 4 } },
       details: "All tasks ranked across portfolio. Triplex has critical issues - address these first.",
-      page: 'DemoInvestorPrioritize',
+      page: 'DemoPortfolioPrioritize',
       icon: ListChecks
     },
     {
@@ -602,7 +647,7 @@ const TOUR_STEPS = {
       pointer: "Tap to plan across properties",
       visual: { type: 'checklist', items: ['Multi-property view', 'Batch scheduling'] },
       details: "Plan maintenance across your entire portfolio. Batch similar tasks for efficiency.",
-      page: 'DemoInvestorSchedule',
+      page: 'DemoPortfolioSchedule',
       icon: Calendar
     },
     {
@@ -611,8 +656,26 @@ const TOUR_STEPS = {
       pointer: "Tap to assign contractors",
       visual: { type: 'checklist', items: ['Assign', 'Track', 'Verify'] },
       details: "Assign contractors, track progress across all properties from one screen.",
-      page: 'DemoInvestorExecute',
+      page: 'DemoPortfolioExecute',
       icon: Wrench
+    },
+    {
+      id: 'preserve',
+      title: 'Preserve',
+      pointer: "Tap to see ROI on preventive care",
+      visual: { type: 'cost', now: 4500, saves: 45000 },
+      details: "$4,500/year in preventive care across portfolio saves $45,000. That's 10x ROI.",
+      page: 'DemoPortfolioPreserve',
+      icon: Shield
+    },
+    {
+      id: 'upgrade',
+      title: 'Upgrade',
+      pointer: "See strategic upgrades by property",
+      visual: { type: 'roi', data: { investment: 8500, returns: 'Value increase', payback: '2 years' } },
+      details: "$8,500 in strategic upgrades across portfolio. Increases property values and tenant satisfaction.",
+      page: 'DemoPortfolioUpgrade',
+      icon: TrendingUp
     },
     {
       id: 'scale',
@@ -620,8 +683,8 @@ const TOUR_STEPS = {
       pointer: "Scroll to see 10-year projection",
       visual: { type: 'equity', from: 547000, to: 1800000, years: 10 },
       details: "$547K equity today, 17.8% ROI. 10-year projection: $1.8M. This is wealth building.",
-      page: 'DemoInvestorScale',
-      icon: TrendingUp
+      page: 'DemoPortfolioScale',
+      icon: Building2
     },
     {
       id: 'complete',

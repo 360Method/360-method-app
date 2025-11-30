@@ -30,6 +30,7 @@ import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
 import DemoInfoTooltip from '../components/demo/DemoInfoTooltip';
 import RegionalAdaptationBox from '../components/shared/RegionalAdaptationBox';
 import DemoCTA from '../components/demo/DemoCTA';
+import DontWantDIYBanner from '../components/demo/DontWantDIYBanner';
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -883,6 +884,7 @@ export default function Inspect() {
         />
       )}
 
+      <DontWantDIYBanner />
       <DemoCTA />
     </div>
   );

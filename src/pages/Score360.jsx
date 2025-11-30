@@ -31,10 +31,12 @@ export default function Score360() {
   const portfolioView = searchParams.get('portfolio') === 'true';
 
   // Check if we're being rendered from a demo wrapper page (URL contains Demo*Score)
-  const isFromDemoWrapper = location.pathname.includes('DemoOverwhelmedScore') ||
-                            location.pathname.includes('DemoImprovingScore') ||
-                            location.pathname.includes('DemoExcellentScore') ||
-                            location.pathname.includes('DemoInvestorScore');
+  // Note: pathname is lowercase from createPageUrl, so we compare lowercase
+  const pathLower = location.pathname.toLowerCase();
+  const isFromDemoWrapper = pathLower.includes('demooverwhelmedscore') ||
+                            pathLower.includes('demoimprovingscore') ||
+                            pathLower.includes('demoexcellentscore') ||
+                            pathLower.includes('demoportfolioscore');
 
   // Auto-detect demo mode and set default if no property specified
   // Skip redirect if coming from a demo wrapper page

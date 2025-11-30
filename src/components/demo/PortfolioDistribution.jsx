@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { getDemoUrl } from '@/components/shared/navigationConfig';
+import { useDemo } from '@/components/shared/DemoContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +10,7 @@ import { Star } from 'lucide-react';
 
 export default function PortfolioDistribution({ properties, visualization = 'bars' }) {
   const navigate = useNavigate();
+  const { demoMode } = useDemo();
   
   const getTierBadge = (tier) => {
     const configs = {
@@ -46,7 +49,7 @@ export default function PortfolioDistribution({ properties, visualization = 'bar
                 <div 
                   key={idx} 
                   className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                  onClick={() => property.id && navigate(createPageUrl('Score360') + `?property_id=${property.id}`)}
+                  onClick={() => property.id && navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + `?property_id=${property.id}`)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3 flex-1">

@@ -1,31 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)",
-      "Bash(echo:*)",
-      "Bash(node -e \"\nconst { createClient } = require(''@supabase/supabase-js'');\nconst supabase = createClient(\n  ''https://xrvguskdvrhcbjiejgqr.supabase.co'',\n  ''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhydmd1c2tkdnJoY2JqaWVqZ3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNjY1OTUsImV4cCI6MjA3OTg0MjU5NX0.jnB9BbbKNKikJ7NIgGfDmMRY_4KD8T2ZddtvDxGnDUQ''\n);\nsupabase.from(''properties'').select(''*'').then(({ data, error }) => {\n  if (error) console.log(''Error:'', error.message);\n  else console.log(''Success! Properties table exists. Rows:'', data.length);\n}).catch(e => console.log(''Connection failed:'', e.message));\n\")",
-      "Bash(node -e:*)",
-      "Bash(npm run dev:*)",
+      "Bash(nslookup:*)",
+      "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(tasklist:*)",
-      "Bash(findstr:*)",
-      "Bash(taskkill:*)",
-      "Bash(timeout /t 2 /nobreak)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git pull:*)",
-      "Bash(ping:*)",
-      "Bash(cat:*)",
-      "Bash(pkill:*)",
-      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
-      "Bash(git checkout:*)",
-      "Bash(dir \"C:\\Users\\help\\Documents\\App_Build\\360°-Method-App\\functions\")",
-      "Bash(dir /s \"C:\\Users\\help\\Documents\\App_Build\\360°-Method-App\\supabase\\migrations\")",
-      "Bash(netstat:*)",
-      "Bash(curl:*)",
-      "Bash(powershell -Command \"Get-ItemProperty -Path ''HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings'' | Select-Object ProxyEnable, ProxyServer, ProxyOverride\")",
-      "mcp__ide__getDiagnostics"
+      "Bash(supabase db push:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npm run dev:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

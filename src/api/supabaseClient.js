@@ -85,10 +85,11 @@ function applyFilterCondition(query, key, value) {
  */
 export const Property = {
   /**
-   * List all properties, optionally sorted
+   * List all properties for a user, optionally sorted
    * @param {string} orderBy - Column to sort by. Prefix with '-' for descending (e.g., '-created_at')
+   * @param {string} userId - Optional user ID to filter by (required for security with Clerk auth)
    */
-  async list(orderBy = '-created_at') {
+  async list(orderBy = '-created_at', userId = null) {
     const ascending = !orderBy.startsWith('-');
     // Map column name aliases
     const column = orderBy
@@ -96,10 +97,18 @@ export const Property = {
       .replace('created_date', 'created_at')
       .replace('updated_date', 'updated_at');
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('properties')
-      .select('*')
-      .order(column, { ascending });
+      .select('*');
+
+    // Filter by user_id if provided (important for security with Clerk auth)
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    query = query.order(column, { ascending });
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data;
@@ -1046,7 +1055,6 @@ export async function syncCurrentUser(clerkUser) {
     full_name: clerkUser.fullName,
     first_name: clerkUser.firstName,
     last_name: clerkUser.lastName,
-    image_url: clerkUser.imageUrl,
     updated_at: new Date().toISOString()
   };
 
@@ -1260,6 +1268,69 @@ export const functions = {
     return { data };
   }
 };
+
+// ============================================
+// RESOURCE ACCESS HELPER
+// Checks if user has access to paid resource content
+// ============================================
+
+/**
+ * Subscription tiers that have access to paid resources
+ * These match the tiers defined in the pricing/subscription system
+ */
+const PAID_RESOURCE_TIERS = [
+  'homeowner_plus',
+  'HOMEOWNER_PLUS',
+  'pioneer',
+  'PIONEER',
+  'commander',
+  'COMMANDER',
+  'elite',
+  'ELITE',
+  'good',
+  'better',
+  'best'
+];
+
+/**
+ * Check if a user has access to paid resource content
+ *
+ * @param {Object|null} user - User object with subscription_tier property
+ * @returns {boolean} True if user can access paid resources
+ */
+export function hasResourceAccess(user) {
+  if (!user) return false;
+
+  const tier = user.subscription_tier || user.subscriptionTier;
+  if (!tier) return false;
+
+  return PAID_RESOURCE_TIERS.includes(tier);
+}
+
+/**
+ * Get the user's subscription tier name for display
+ *
+ * @param {Object|null} user - User object with subscription_tier property
+ * @returns {string} Display name of the subscription tier
+ */
+export function getUserTierName(user) {
+  if (!user) return 'Free';
+
+  const tier = (user.subscription_tier || user.subscriptionTier || '').toLowerCase();
+
+  const tierNames = {
+    'scout': 'Scout (Free)',
+    'homeowner_plus': 'Homeowner+',
+    'pioneer': 'Pioneer',
+    'commander': 'Commander',
+    'elite': 'Elite',
+    'good': 'Good',
+    'better': 'Better',
+    'best': 'Best'
+  };
+
+  return tierNames[tier] || 'Free';
+}
 
 // ============================================
 // COMPATIBILITY LAYER

@@ -121,7 +121,7 @@ const PORTALS = {
       { name: 'Welcome', url: 'Welcome' },
       { name: 'Waitlist', url: 'Waitlist' },
       { name: 'DemoEntry', url: 'DemoEntry' },
-      { name: 'DemoStruggling', url: 'DemoStruggling' },
+      { name: 'DemoOverwhelmed', url: 'DemoOverwhelmed' },
       { name: 'DemoImproving', url: 'DemoImproving' },
       { name: 'DemoExcellent', url: 'DemoExcellent' },
       { name: 'DemoPortfolio', url: 'DemoPortfolio' },
@@ -183,17 +183,17 @@ export default function PortalSwitcher() {
       pageUrl === 'Welcome' ||
       pageUrl === 'Waitlist' ||
       pageUrl === 'DemoEntry' ||
-      pageUrl === 'DemoStruggling' ||
+      pageUrl === 'DemoOverwhelmed' ||
       pageUrl === 'DemoImproving' ||
       pageUrl === 'DemoExcellent' ||
       pageUrl === 'DemoPortfolio' ||
       pageUrl === 'WelcomeDemo' ||
       pageUrl.startsWith('Demo');
-    
+
     // Toggle demo mode based on destination
     if (isDemoPage) {
       // Determine which demo mode based on page name
-      if (pageUrl === 'DemoStruggling') {
+      if (pageUrl === 'DemoOverwhelmed') {
         enterDemoMode('homeowner', 'struggling');
       } else if (pageUrl === 'DemoImproving') {
         enterDemoMode('homeowner', 'improving');

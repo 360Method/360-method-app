@@ -20,7 +20,7 @@ export default function DemoCTA() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <button 
             className="bg-orange-500 text-white hover:bg-orange-600 font-bold px-8 py-3 rounded-lg text-lg transition-colors"
-            onClick={() => navigate('/Login')}
+            onClick={() => navigate(createPageUrl('Login'))}
             style={{ minHeight: '48px' }}
           >
             Start Free Today

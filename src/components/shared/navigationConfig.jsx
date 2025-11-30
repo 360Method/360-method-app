@@ -19,7 +19,7 @@ import { createPageUrl } from '@/utils';
 export const getDemoPageMap = (demoMode) => {
   if (demoMode === 'struggling') {
     return {
-      'Dashboard': 'DemoStruggling',
+      'Dashboard': 'DemoOverwhelmed',
       'Properties': 'DemoOverwhelmedBaseline',
       'Score360': 'DemoOverwhelmedScore',
       'Baseline': 'DemoOverwhelmedBaseline',
@@ -78,11 +78,8 @@ export const getDemoPageMap = (demoMode) => {
       'Scale': 'DemoPortfolioScale',
     };
   }
-  // Fallback for legacy demo modes or homeowner
-  return {
-    'Schedule': 'DemoSchedule',
-    'Execute': 'DemoExecute',
-  };
+  // No fallback - return empty object for unknown demo modes
+  return {};
 };
 
 // Helper to get the demo URL for a page

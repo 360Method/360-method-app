@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
+import { getDemoUrl } from '@/components/shared/navigationConfig';
 import { createPageUrl } from '@/utils';
 import DemoCTA from '../components/demo/DemoCTA';
 
@@ -212,7 +213,7 @@ export default function DashboardInvestor() {
           className="grid md:grid-cols-3 gap-6"
         >
           {demoPropertyCards.map(prop => (
-            <PropertyCard key={prop.id} property={prop} navigate={navigate} />
+            <PropertyCard key={prop.id} property={prop} navigate={navigate} demoMode={demoMode} />
           ))}
         </div>
       </div>
@@ -284,7 +285,7 @@ export default function DashboardInvestor() {
 
           <div className="space-y-3">
             <button
-              onClick={() => navigate(createPageUrl('Score360') + '?portfolio=true')}
+              onClick={() => navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + '?portfolio=true')}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl hover:shadow-md transition-all text-left"
               style={{ minHeight: '48px' }}
             >
@@ -367,7 +368,7 @@ export default function DashboardInvestor() {
 }
 
 // Property Card Component
-function PropertyCard({ property, navigate }) {
+function PropertyCard({ property, navigate, demoMode }) {
   const healthColor = 
     property.healthScore >= 85 ? 'green' :
     property.healthScore >= 70 ? 'yellow' :
@@ -394,7 +395,7 @@ function PropertyCard({ property, navigate }) {
           className={`w-12 h-12 ${healthColorClasses[healthColor].bg} rounded-full flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-${healthColor}-400 transition-all`}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(createPageUrl('Score360') + `?property_id=${property.id}`);
+            navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + `?property_id=${property.id}`);
           }}
           title="View 360° Score"
         >

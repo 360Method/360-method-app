@@ -21,6 +21,7 @@ import Pricing from './pages/Pricing';
 import ExploreTemplates from './pages/ExploreTemplates';
 import TemplateDetail from './pages/TemplateDetail';
 import Resources from './pages/Resources';
+import GuideDetail from './pages/GuideDetail';
 import ResourceGuides from './pages/ResourceGuides';
 import VideoTutorials from './pages/VideoTutorials';
 import ROICalculators from './pages/ROICalculators';
@@ -33,11 +34,9 @@ import DashboardHomeowner from './pages/DashboardHomeowner';
 import DashboardInvestor from './pages/DashboardInvestor';
 import PropertyScore from './pages/PropertyScore';
 import DemoImproving from './pages/DemoImproving';
-import DemoStruggling from './pages/DemoStruggling';
+import DemoOverwhelmed from './pages/DemoOverwhelmed';
 import DemoExcellent from './pages/DemoExcellent';
 import DemoPortfolio from './pages/DemoPortfolio';
-import DemoSchedule from './pages/DemoSchedule';
-import DemoExecute from './pages/DemoExecute';
 // Overwhelmed Owner (struggling) demo pages
 import DemoOverwhelmedBaseline from './pages/DemoOverwhelmedBaseline';
 import DemoOverwhelmedInspect from './pages/DemoOverwhelmedInspect';
@@ -181,6 +180,7 @@ export const PAGES = {
     "ExploreTemplates": ExploreTemplates,
     "TemplateDetail": TemplateDetail,
     "Resources": Resources,
+    "GuideDetail": GuideDetail,
     "ResourceGuides": ResourceGuides,
     "VideoTutorials": VideoTutorials,
     "ROICalculators": ROICalculators,
@@ -193,11 +193,9 @@ export const PAGES = {
     "DashboardInvestor": DashboardInvestor,
     "PropertyScore": PropertyScore,
     "DemoImproving": DemoImproving,
-    "DemoStruggling": DemoStruggling,
+    "DemoOverwhelmed": DemoOverwhelmed,
     "DemoExcellent": DemoExcellent,
     "DemoPortfolio": DemoPortfolio,
-    "DemoSchedule": DemoSchedule,
-    "DemoExecute": DemoExecute,
     // Overwhelmed Owner (struggling) demo pages
     "DemoOverwhelmedBaseline": DemoOverwhelmedBaseline,
     "DemoOverwhelmedInspect": DemoOverwhelmedInspect,
@@ -385,16 +383,15 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
 export const PUBLIC_WITH_LAYOUT_PAGES = [
     'Pricing',
     'Resources',
+    'GuideDetail',
     'ResourceGuides',
     'VideoTutorials',
     'ROICalculators',
     'WelcomeDemo',
     'DemoImproving',
-    'DemoStruggling',
+    'DemoOverwhelmed',
     'DemoExcellent',
     'DemoPortfolio',
-    'DemoSchedule',
-    'DemoExecute',
     'ExploreTemplates',
     'TemplateDetail',
     // Overwhelmed Owner (struggling) demo pages

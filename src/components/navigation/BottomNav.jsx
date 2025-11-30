@@ -88,10 +88,10 @@ export default function BottomNav({ taskCount = 0, onQuickAdd, selectedProperty 
       // Check both regular and demo dashboard pages
       const dashboardPages = [
         createPageUrl("Dashboard"),
-        createPageUrl("DemoStruggling"),
+        createPageUrl("DemoOverwhelmed"),
         createPageUrl("DemoImproving"),
         createPageUrl("DemoExcellent"),
-        createPageUrl("DemoInvestorDashboard")
+        createPageUrl("DemoPortfolio")
       ];
       return dashboardPages.some(path => currentPath === path);
     }

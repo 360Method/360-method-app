@@ -18,7 +18,7 @@ export default function DemoEntry() {
   const handleEnterDemo = (demoType, score) => {
     if (score === 'struggling') {
       enterDemoMode('struggling');
-      navigate(createPageUrl('DemoStruggling'));
+      navigate(createPageUrl('DemoOverwhelmed'));
     } else if (score === 'improving') {
       enterDemoMode('homeowner', 'improving');
       navigate(createPageUrl('DemoImproving'));

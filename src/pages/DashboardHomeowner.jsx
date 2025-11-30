@@ -1,21 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Property, SystemBaseline, MaintenanceTask } from '@/api/supabaseClient';
+import { Property, SystemBaseline, MaintenanceTask, Inspection, PortfolioEquity, WealthProjection } from '@/api/supabaseClient';
 import {
   Home, Shield, TrendingUp, AlertTriangle, CheckCircle,
   Clock, DollarSign, Calendar, Zap, ArrowRight, Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
+import { getDemoUrl } from '@/components/shared/navigationConfig';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
 import DemoCTA from '../components/demo/DemoCTA';
 import { useAhaMoments } from '../components/onboarding/AhaMomentManager';
 import { AhaDocumentFirstSystemCard } from '../components/onboarding/AhaDocumentFirstSystem';
 import { GuidedNextStep } from '../components/dashboard/GuidedNextStep';
+import { calculateHealthScore, getCertification, getScoreColor, getScoreLabel } from '@/lib/calculateHealthScore';
 
 export default function DashboardHomeowner() {
   const navigate = useNavigate();
   const { demoMode, demoData, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   // Aha Moments system - only active when not in demo mode
   let ahaMoments = null;
@@ -44,12 +48,13 @@ export default function DashboardHomeowner() {
 
   // Fetch real data using Supabase
   const { data: realProperties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
-      const allProps = await Property.list('-created_at');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_at', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: !demoMode
+    enabled: !demoMode && !!user?.id
   });
 
   const property = demoMode ? demoData?.property : realProperties[0];
@@ -81,8 +86,107 @@ export default function DashboardHomeowner() {
 
   const completedTasks = demoMode ? (demoData?.maintenanceHistory || []) : realCompletedTasks;
 
-  // Calculate metrics
-  const healthScore = property?.health_score || 84;
+  // Fetch inspections for health score calculation
+  const { data: realInspections = [] } = useQuery({
+    queryKey: ['inspections', property?.id],
+    queryFn: () => Inspection.filter({ property_id: property?.id }),
+    enabled: !demoMode && !!property?.id
+  });
+
+  const inspections = demoMode ? (demoData?.inspections || []) : realInspections;
+
+  // Fetch equity data for wealth projection
+  const { data: realEquityData = [] } = useQuery({
+    queryKey: ['portfolio-equity', property?.id],
+    queryFn: () => property?.id ? PortfolioEquity.filter({ property_id: property.id }) : PortfolioEquity.list(),
+    enabled: !demoMode && !!property?.id
+  });
+
+  const equityData = demoMode ? (demoData?.equityData || []) : realEquityData;
+
+  // Fetch wealth projections
+  const { data: realProjections = [] } = useQuery({
+    queryKey: ['wealth-projections'],
+    queryFn: () => WealthProjection.list(),
+    enabled: !demoMode
+  });
+
+  const projections = demoMode ? (demoData?.projections || []) : realProjections;
+
+  // Calculate wealth metrics
+  const wealthMetrics = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+
+    // Get current equity from equity data or estimate from property
+    let currentEquity = 0;
+    let currentValue = 0;
+    let totalDebt = 0;
+
+    if (equityData.length > 0) {
+      currentValue = equityData.reduce((sum, e) => sum + (e.current_market_value || 0), 0);
+      totalDebt = equityData.reduce((sum, e) => sum + (e.total_debt || 0), 0);
+      currentEquity = currentValue - totalDebt;
+    } else if (property) {
+      // Estimate from property data if no equity records
+      currentValue = property.estimated_value || property.purchase_price || 0;
+      totalDebt = property.mortgage_balance || 0;
+      currentEquity = currentValue - totalDebt;
+    }
+
+    // Get projection data if available
+    const aiProjection = projections.find(p => p.scenario_name === 'AI_OPTIMAL' || p.is_ai_recommended);
+    const projection = aiProjection || projections[0];
+
+    let projectedGain = 0;
+    let endingEquity = 0;
+
+    if (projection?.yearly_projections && projection.yearly_projections.length > 0) {
+      const lastYear = projection.yearly_projections[projection.yearly_projections.length - 1];
+      endingEquity = lastYear.total_equity || 0;
+      projectedGain = projection.total_equity_gain || (endingEquity - (projection.starting_equity || currentEquity));
+    } else if (currentValue > 0) {
+      // Generate simple projection if no saved data
+      const appreciationRate = 0.04; // 4% annual appreciation
+      const years = 10;
+      const futureValue = currentValue * Math.pow(1 + appreciationRate, years);
+      const futureDebt = Math.max(0, totalDebt * Math.pow(0.92, years)); // Simplified debt paydown
+      endingEquity = futureValue - futureDebt;
+      projectedGain = endingEquity - currentEquity;
+    }
+
+    return {
+      currentEquity,
+      currentValue,
+      totalDebt,
+      projectedGain,
+      endingEquity,
+      targetYear: currentYear + 10,
+      hasProjection: projection != null || currentValue > 0
+    };
+  }, [equityData, projections, property]);
+
+  // Calculate 360° Health Score dynamically
+  const healthScoreData = useMemo(() => {
+    if (demoMode) {
+      // Use demo property score
+      return {
+        score: property?.health_score || 84,
+        breakdown: null,
+        recommendations: []
+      };
+    }
+
+    return calculateHealthScore({
+      property,
+      systems,
+      tasks: allTasks,
+      inspections
+    });
+  }, [demoMode, property, systems, allTasks, inspections]);
+
+  const healthScore = healthScoreData.score;
+  const scoreBreakdown = healthScoreData.breakdown;
+  const scoreRecommendations = healthScoreData.recommendations;
   const preventedCosts = demoMode ? 12400 : completedTasks.reduce((sum, t) => sum + (t.prevented_cost || 0), 0);
   const ytdMaintenanceSpent = demoMode ? 1850 : completedTasks.reduce((sum, t) => sum + (t.actual_cost || 0), 0);
   const tasksCompleted = completedTasks.length;
@@ -151,7 +255,7 @@ export default function DashboardHomeowner() {
         <div
           data-tour="health-score"
           className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
+          onClick={() => navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
@@ -228,7 +332,7 @@ export default function DashboardHomeowner() {
         </div>
 
         {/* Wealth Building */}
-        <div 
+        <div
           className="bg-gradient-to-br from-purple-50 to-violet-100 border-2 border-purple-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
           onClick={() => navigate(createPageUrl('Scale'))}
         >
@@ -240,23 +344,41 @@ export default function DashboardHomeowner() {
               10-YR
             </span>
           </div>
-          
+
           <div className="mb-2">
             <div className="text-sm text-purple-800 mb-1">Projected Wealth Gain</div>
             <div className="text-5xl font-bold text-purple-900">
-              $245K
+              {wealthMetrics.hasProjection ? (
+                wealthMetrics.projectedGain >= 1000000
+                  ? `$${(wealthMetrics.projectedGain / 1000000).toFixed(1)}M`
+                  : `$${Math.round(wealthMetrics.projectedGain / 1000)}K`
+              ) : (
+                <span className="text-2xl text-purple-600">Set up equity</span>
+              )}
             </div>
-            <div className="text-xs text-purple-700 mt-1">equity growth by 2034</div>
+            <div className="text-xs text-purple-700 mt-1">
+              {wealthMetrics.hasProjection
+                ? `equity growth by ${wealthMetrics.targetYear}`
+                : 'Add property value to see projections'}
+            </div>
           </div>
 
           <div className="mt-4 pt-4 border-t border-purple-300">
             <div className="flex items-center justify-between text-sm mb-3">
               <span className="text-purple-800">Current equity:</span>
-              <span className="font-semibold text-purple-900">$142K</span>
+              <span className="font-semibold text-purple-900">
+                {wealthMetrics.currentEquity > 0
+                  ? `$${Math.round(wealthMetrics.currentEquity / 1000)}K`
+                  : '--'}
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-purple-800">Property value:</span>
-              <span className="font-semibold text-purple-900">$340K</span>
+              <span className="font-semibold text-purple-900">
+                {wealthMetrics.currentValue > 0
+                  ? `$${Math.round(wealthMetrics.currentValue / 1000)}K`
+                  : '--'}
+              </span>
             </div>
           </div>
         </div>
@@ -454,7 +576,7 @@ export default function DashboardHomeowner() {
 
           <div className="space-y-3">
             <button
-              onClick={() => navigate(createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
+              onClick={() => navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl hover:shadow-md transition-all text-left"
               style={{ minHeight: '48px' }}
             >
