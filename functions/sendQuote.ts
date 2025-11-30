@@ -1,4 +1,4 @@
-import { createHelperFromRequest, createServiceClient, corsHeaders } from './_shared/supabaseClient.ts';
+import { createHelperFromRequest, createServiceClient, getCorsHeaders, getCurrentUser } from './_shared/supabaseClient.ts';
 import { emailTemplates } from './emailTemplates.ts';
 
 /**
@@ -12,16 +12,38 @@ import { emailTemplates } from './emailTemplates.ts';
  * - send_sms: boolean - whether to send via SMS
  */
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // SECURITY: Verify user is authenticated
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, {
+        status: 401,
+        headers: corsHeaders
+      });
+    }
+
     const helper = createHelperFromRequest(req);
     const serviceClient = createServiceClient();
 
-    const { quote_id, send_email, send_sms } = await req.json();
+    // Validate input
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid JSON body' }, {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+
+    const { quote_id, send_email, send_sms } = body;
 
     if (!quote_id) {
       return Response.json({ error: 'quote_id is required' }, {

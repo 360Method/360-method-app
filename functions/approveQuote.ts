@@ -1,17 +1,21 @@
-import { createHelperFromRequest, createServiceClient, corsHeaders } from './_shared/supabaseClient.ts';
+import { createHelperFromRequest, createServiceClient, getCorsHeaders } from './_shared/supabaseClient.ts';
 import { emailTemplates } from './emailTemplates.ts';
 
 /**
  * Approve Quote Edge Function
  *
  * Approves a quote and notifies the operator.
+ * NOTE: This function is called by unauthenticated customers via magic token,
+ * so auth check is done via magic token validation instead of user session.
  *
  * Request body:
  * - quote_id: UUID of the quote to approve
- * - token: magic token for authorization (optional if already validated)
+ * - token: magic token for authorization (required for customer access)
  * - customer_notes: string (optional notes from customer)
  */
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -21,7 +25,26 @@ Deno.serve(async (req) => {
     const helper = createHelperFromRequest(req);
     const serviceClient = createServiceClient();
 
-    const { quote_id, token, customer_notes } = await req.json();
+    // Validate input
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid request' }, {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+
+    const { quote_id, token, customer_notes } = body;
+
+    // Validate customer_notes length to prevent abuse
+    if (customer_notes && customer_notes.length > 5000) {
+      return Response.json({ error: 'Notes too long' }, {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
 
     if (!quote_id) {
       return Response.json({ error: 'quote_id is required' }, {
@@ -76,7 +99,8 @@ Deno.serve(async (req) => {
 
     // Check if quote can be approved
     if (!['sent', 'viewed', 'draft'].includes(quote.status)) {
-      return Response.json({ error: `Quote cannot be approved (current status: ${quote.status})` }, {
+      // SECURITY: Don't reveal internal state in error message
+      return Response.json({ error: 'Quote cannot be approved' }, {
         status: 400,
         headers: corsHeaders
       });

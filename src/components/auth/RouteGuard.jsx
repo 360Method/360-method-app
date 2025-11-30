@@ -35,11 +35,19 @@ export default function RouteGuard({
   } = useAuth();
   const { user: clerkUser } = useUser();
 
-  // Check if we're in demo mode - allow access without auth
-  // Check FIRST before auth loading to avoid flicker/redirect
+  // Check if we're in demo mode - only allow on demo routes
+  // SECURITY: Demo mode should ONLY work on /Demo* routes to prevent bypass
   const demoMode = sessionStorage.getItem('demoMode');
-  if (demoMode) {
+  const isDemoRoute = location.pathname.toLowerCase().startsWith('/demo');
+
+  if (demoMode && isDemoRoute) {
+    // Valid demo mode - allow access to demo routes without auth
     return children;
+  }
+
+  if (demoMode && !isDemoRoute) {
+    // Invalid demo mode usage - clear it and require auth
+    sessionStorage.removeItem('demoMode');
   }
 
   if (isLoadingAuth) {

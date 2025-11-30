@@ -1,10 +1,12 @@
-import { createHelperFromRequest, createServiceClient, corsHeaders } from './_shared/supabaseClient.ts';
+import { createHelperFromRequest, createServiceClient, getCorsHeaders } from './_shared/supabaseClient.ts';
 import { emailTemplates } from './emailTemplates.ts';
 
 /**
  * Create Operator Lead Edge Function
  *
  * Creates a new lead for an operator and optionally notifies them.
+ * NOTE: This is a public endpoint for lead intake forms, so no auth is required.
+ * However, we validate the operator_id exists and is active.
  *
  * Request body:
  * - operator_id: UUID of the operator
@@ -22,6 +24,8 @@ import { emailTemplates } from './emailTemplates.ts';
  * - notify_operator: boolean (default true)
  */
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -31,7 +35,16 @@ Deno.serve(async (req) => {
     const helper = createHelperFromRequest(req);
     const serviceClient = createServiceClient();
 
-    const body = await req.json();
+    // Validate JSON input
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid request' }, {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
     const {
       operator_id,
       contact_name,
@@ -66,6 +79,16 @@ Deno.serve(async (req) => {
 
     if (!contact_phone && !contact_email) {
       return Response.json({ error: 'At least one contact method (phone or email) is required' }, {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+
+    // SECURITY: Validate input lengths to prevent abuse
+    if (contact_name.length > 200 ||
+        (description && description.length > 5000) ||
+        (property_address && property_address.length > 500)) {
+      return Response.json({ error: 'Input too long' }, {
         status: 400,
         headers: corsHeaders
       });
