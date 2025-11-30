@@ -1,14 +1,81 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowRight, CheckCircle, X, Star, ChevronDown, ChevronUp, HelpCircle, Heart, Users, Target, Shield, Brain, Check, Compass, Home, Flag, Crown, TrendingUp, Zap, BarChart3 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  calculateHomeownerPlusPricing, 
-  calculateGoodPricing, 
-  calculateBetterPricing, 
-  calculateBestPricing 
+import {
+  calculateHomeownerPlusPricing,
+  calculateGoodPricing,
+  calculateBetterPricing,
+  calculateBestPricing
 } from '@/components/shared/TierCalculator';
+
+// JSON-LD Structured Data for SEO
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "360° Method",
+  "url": "https://app.360degreemethod.com",
+  "logo": "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6911a3ab5b84ed3aa2d106c2/ea24cb40a_GreyProfessionalMonogramCircularBrandLogo.png",
+  "description": "Proactive home maintenance platform that helps property owners catch the $50 fix before it becomes the $5,000 disaster.",
+  "sameAs": []
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is the 360° Method really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes! The Scout plan is free forever for your first property. You get the complete 360° Method framework including baseline documentation, seasonal inspections, task tracking, and cascade risk alerts."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much time does this actually take?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Most users spend about 15-20 minutes per month on property care with our system. The initial setup takes about 30 minutes to document your property's systems."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "I'm not handy. Can I still use this?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Absolutely! The 360° Method is designed for everyone, not just DIY experts. We help you know what needs attention, then you decide whether to handle it yourself or hire a professional."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What if I rent my property out?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The 360° Method works great for landlords and rental property owners. Our system is especially valuable for investment properties where catching problems early protects your ROI."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is this different from a home warranty?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Home warranties cover repairs after something breaks. The 360° Method helps you prevent breaks in the first place. Prevention is always cheaper than repair."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I try it before signing up?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes! Click 'See It In Action' to explore our interactive demo. You'll see exactly how the system works with sample properties. No signup required."
+      }
+    }
+  ]
+};
 
 const FAQ_ITEMS = [
   {
@@ -87,6 +154,15 @@ export default function Welcome() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>360° Method - Proactive Home Maintenance That Builds Wealth</title>
+        <meta name="description" content="Stop worrying about what's breaking next. The 360° Method helps property owners catch the $50 fix before it becomes the $5,000 disaster." />
+        <link rel="canonical" href="https://app.360degreemethod.com/" />
+        <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      </Helmet>
+
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">

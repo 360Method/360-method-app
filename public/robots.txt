@@ -1,0 +1,51 @@
+# 360° Method - robots.txt
+# https://app.360degreemethod.com
+
+User-agent: *
+Allow: /
+
+# Public pages - allow crawling
+Allow: /welcome
+Allow: /pricing
+Allow: /resources
+Allow: /login
+Allow: /signup
+Allow: /becomeoperator
+
+# Protected user pages - disallow
+Disallow: /dashboard
+Disallow: /properties
+Disallow: /baseline
+Disallow: /inspect
+Disallow: /track
+Disallow: /prioritize
+Disallow: /schedule
+Disallow: /execute
+Disallow: /preserve
+Disallow: /upgrade
+Disallow: /scale
+Disallow: /score360
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /checkout
+
+# Operator portal - disallow
+Disallow: /operator
+Disallow: /operatordashboard
+Disallow: /operatorleads
+Disallow: /operatorworkorders
+Disallow: /operatorclients
+Disallow: /operatorinvoices
+
+# Contractor portal - disallow
+Disallow: /contractor
+Disallow: /contractordashboard
+Disallow: /contractorjobdetail
+Disallow: /contractormessages
+Disallow: /contractorprofile
+
+# Admin - disallow
+Disallow: /admin
+
+# Sitemap location
+Sitemap: https://app.360degreemethod.com/sitemap.xml
