@@ -71,6 +71,8 @@ import DemoInvestorProperties from './pages/DemoInvestorProperties';
 import DemoInvestorPrioritize from './pages/DemoInvestorPrioritize';
 import DemoInvestorSchedule from './pages/DemoInvestorSchedule';
 import DemoInvestorExecute from './pages/DemoInvestorExecute';
+import DemoInvestorPreserve from './pages/DemoInvestorPreserve';
+import DemoInvestorUpgrade from './pages/DemoInvestorUpgrade';
 import DemoInvestorScale from './pages/DemoInvestorScale';
 // Score demo pages
 import DemoOverwhelmedScore from './pages/DemoOverwhelmedScore';
@@ -224,6 +226,8 @@ export const PAGES = {
     "DemoInvestorPrioritize": DemoInvestorPrioritize,
     "DemoInvestorSchedule": DemoInvestorSchedule,
     "DemoInvestorExecute": DemoInvestorExecute,
+    "DemoInvestorPreserve": DemoInvestorPreserve,
+    "DemoInvestorUpgrade": DemoInvestorUpgrade,
     "DemoInvestorScale": DemoInvestorScale,
     // Score demo pages
     "DemoOverwhelmedScore": DemoOverwhelmedScore,
@@ -416,6 +420,8 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     'DemoInvestorPrioritize',
     'DemoInvestorSchedule',
     'DemoInvestorExecute',
+    'DemoInvestorPreserve',
+    'DemoInvestorUpgrade',
     'DemoInvestorScale',
     // Score demo pages
     'DemoOverwhelmedScore',
