@@ -48,10 +48,62 @@ const PHASE_COLORS = {
   }
 };
 
-// Map regular pages to demo pages when in demo mode
-const DEMO_PAGE_MAP = {
-  'Schedule': 'DemoSchedule',
-  'Execute': 'DemoExecute',
+// Map regular pages to demo pages based on demo mode
+const getDemoPageMap = (demoMode) => {
+  if (demoMode === 'struggling') {
+    return {
+      'Baseline': 'DemoOverwhelmedBaseline',
+      'Inspect': 'DemoOverwhelmedInspect',
+      'Track': 'DemoOverwhelmedTrack',
+      'Prioritize': 'DemoOverwhelmedPrioritize',
+      'Schedule': 'DemoOverwhelmedSchedule',
+      'Execute': 'DemoOverwhelmedExecute',
+      'Preserve': 'DemoOverwhelmedPreserve',
+      'Upgrade': 'DemoOverwhelmedUpgrade',
+      'Scale': 'DemoOverwhelmedScale',
+    };
+  } else if (demoMode === 'improving') {
+    return {
+      'Baseline': 'DemoImprovingBaseline',
+      'Inspect': 'DemoImprovingInspect',
+      'Track': 'DemoImprovingTrack',
+      'Prioritize': 'DemoImprovingPrioritize',
+      'Schedule': 'DemoImprovingSchedule',
+      'Execute': 'DemoImprovingExecute',
+      'Preserve': 'DemoImprovingPreserve',
+      'Upgrade': 'DemoImprovingUpgrade',
+      'Scale': 'DemoImprovingScale',
+    };
+  } else if (demoMode === 'excellent') {
+    return {
+      'Baseline': 'DemoExcellentBaseline',
+      'Inspect': 'DemoExcellentInspect',
+      'Track': 'DemoExcellentTrack',
+      'Prioritize': 'DemoExcellentPrioritize',
+      'Schedule': 'DemoExcellentSchedule',
+      'Execute': 'DemoExcellentExecute',
+      'Preserve': 'DemoExcellentPreserve',
+      'Upgrade': 'DemoExcellentUpgrade',
+      'Scale': 'DemoExcellentScale',
+    };
+  } else if (demoMode === 'investor') {
+    return {
+      'Baseline': 'DemoInvestorProperties',
+      'Inspect': 'DemoInvestorProperties',
+      'Track': 'DemoInvestorProperties',
+      'Prioritize': 'DemoInvestorPrioritize',
+      'Schedule': 'DemoInvestorSchedule',
+      'Execute': 'DemoInvestorExecute',
+      'Preserve': 'DemoInvestorPreserve',
+      'Upgrade': 'DemoInvestorUpgrade',
+      'Scale': 'DemoInvestorScale',
+    };
+  }
+  // Fallback for legacy demo modes
+  return {
+    'Schedule': 'DemoSchedule',
+    'Execute': 'DemoExecute',
+  };
 };
 
 export default function StepNavigation({ currentStep, propertyId = null }) {
@@ -68,7 +120,8 @@ export default function StepNavigation({ currentStep, propertyId = null }) {
 
   const buildUrl = (page) => {
     // Use demo pages when in demo mode
-    const targetPage = demoMode && DEMO_PAGE_MAP[page] ? DEMO_PAGE_MAP[page] : page;
+    const demoPageMap = getDemoPageMap(demoMode);
+    const targetPage = demoMode && demoPageMap[page] ? demoPageMap[page] : page;
     const baseUrl = createPageUrl(targetPage);
     return propertyId ? `${baseUrl}?property=${propertyId}` : baseUrl;
   };

@@ -47,9 +47,11 @@ import DemoOverwhelmedExecute from './pages/DemoOverwhelmedExecute';
 import DemoOverwhelmedPreserve from './pages/DemoOverwhelmedPreserve';
 import DemoOverwhelmedUpgrade from './pages/DemoOverwhelmedUpgrade';
 import DemoOverwhelmedScale from './pages/DemoOverwhelmedScale';
+import DemoOverwhelmedTrack from './pages/DemoOverwhelmedTrack';
 // Improving demo pages
 import DemoImprovingBaseline from './pages/DemoImprovingBaseline';
 import DemoImprovingInspect from './pages/DemoImprovingInspect';
+import DemoImprovingTrack from './pages/DemoImprovingTrack';
 import DemoImprovingPrioritize from './pages/DemoImprovingPrioritize';
 import DemoImprovingSchedule from './pages/DemoImprovingSchedule';
 import DemoImprovingExecute from './pages/DemoImprovingExecute';
@@ -60,6 +62,7 @@ import DemoImprovingScale from './pages/DemoImprovingScale';
 import DemoExcellentBaseline from './pages/DemoExcellentBaseline';
 import DemoExcellentInspect from './pages/DemoExcellentInspect';
 import DemoExcellentTrack from './pages/DemoExcellentTrack';
+import DemoExcellentPrioritize from './pages/DemoExcellentPrioritize';
 import DemoExcellentSchedule from './pages/DemoExcellentSchedule';
 import DemoExcellentExecute from './pages/DemoExcellentExecute';
 import DemoExcellentPreserve from './pages/DemoExcellentPreserve';
@@ -196,6 +199,7 @@ export const PAGES = {
     // Overwhelmed Owner (struggling) demo pages
     "DemoOverwhelmedBaseline": DemoOverwhelmedBaseline,
     "DemoOverwhelmedInspect": DemoOverwhelmedInspect,
+    "DemoOverwhelmedTrack": DemoOverwhelmedTrack,
     "DemoOverwhelmedPrioritize": DemoOverwhelmedPrioritize,
     "DemoOverwhelmedSchedule": DemoOverwhelmedSchedule,
     "DemoOverwhelmedExecute": DemoOverwhelmedExecute,
@@ -205,6 +209,7 @@ export const PAGES = {
     // Improving demo pages
     "DemoImprovingBaseline": DemoImprovingBaseline,
     "DemoImprovingInspect": DemoImprovingInspect,
+    "DemoImprovingTrack": DemoImprovingTrack,
     "DemoImprovingPrioritize": DemoImprovingPrioritize,
     "DemoImprovingSchedule": DemoImprovingSchedule,
     "DemoImprovingExecute": DemoImprovingExecute,
@@ -215,6 +220,7 @@ export const PAGES = {
     "DemoExcellentBaseline": DemoExcellentBaseline,
     "DemoExcellentInspect": DemoExcellentInspect,
     "DemoExcellentTrack": DemoExcellentTrack,
+    "DemoExcellentPrioritize": DemoExcellentPrioritize,
     "DemoExcellentSchedule": DemoExcellentSchedule,
     "DemoExcellentExecute": DemoExcellentExecute,
     "DemoExcellentPreserve": DemoExcellentPreserve,
@@ -390,6 +396,7 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     // Overwhelmed Owner (struggling) demo pages
     'DemoOverwhelmedBaseline',
     'DemoOverwhelmedInspect',
+    'DemoOverwhelmedTrack',
     'DemoOverwhelmedPrioritize',
     'DemoOverwhelmedSchedule',
     'DemoOverwhelmedExecute',
@@ -399,6 +406,7 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     // Improving demo pages
     'DemoImprovingBaseline',
     'DemoImprovingInspect',
+    'DemoImprovingTrack',
     'DemoImprovingPrioritize',
     'DemoImprovingSchedule',
     'DemoImprovingExecute',
@@ -409,6 +417,7 @@ export const PUBLIC_WITH_LAYOUT_PAGES = [
     'DemoExcellentBaseline',
     'DemoExcellentInspect',
     'DemoExcellentTrack',
+    'DemoExcellentPrioritize',
     'DemoExcellentSchedule',
     'DemoExcellentExecute',
     'DemoExcellentPreserve',
