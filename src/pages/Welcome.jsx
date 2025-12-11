@@ -198,7 +198,7 @@ export default function Welcome() {
       </header>
 
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden pt-16">
+      <section className="min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden pt-16">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -207,40 +207,40 @@ export default function Welcome() {
           }}
         />
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center py-12">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center py-8">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
             <span className="text-sm text-white/80 font-medium">
               For Property Owners Who Are Done Playing Defense
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-4">
             Stop Worrying About What's Breaking Next.
-            <span className="text-orange-400 block mt-2">Start Building Wealth.</span>
+            <span className="text-orange-400 block mt-1">Start Building Wealth.</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed mb-4">
+          <p className="text-base md:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed mb-3">
             Most property owners are one hidden problem away from a $10,000 emergency.
             The 360° Method catches the $50 fix before it becomes the $5,000 disaster.
           </p>
 
-          <div className="flex items-center justify-center gap-2 text-slate-400 mb-8">
+          <div className="flex items-center justify-center gap-2 text-slate-400 mb-6">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             <span className="text-sm">
               Built by a property owner, for property owners
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
             <button
               onClick={() => navigate('/Signup')}
-              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
+              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             >
               Start Free Today
             </button>
             <button
               onClick={() => navigate(createPageUrl('DemoEntry'))}
-              className="w-full sm:w-auto border-2 border-white/30 hover:border-white/50 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all"
+              className="w-full sm:w-auto border-2 border-white/30 hover:border-white/50 text-white px-8 py-3 rounded-xl font-semibold text-lg transition-all"
             >
               See It In Action
             </button>
@@ -251,127 +251,127 @@ export default function Welcome() {
           </p>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-white/50">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce text-white/50">
           <ChevronDown className="w-6 h-6" />
         </div>
       </section>
 
       {/* Pain Section - The Problem */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-10 md:py-14 bg-white">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-2">
             Sound Familiar?
           </h2>
-          <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto text-lg">
+          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto text-lg">
             If you've ever felt like your property owns YOU instead of the other way around...
           </p>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-6 md:p-8">
-              <div className="text-4xl mb-4">💸</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">The $10,000 Blindside</h3>
-              <p className="text-slate-600 leading-relaxed">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-5 md:p-6">
+              <div className="text-3xl mb-3">💸</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">The $10,000 Blindside</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 One day everything's fine. The next, you're writing a check for a new HVAC system or a flooded basement. Sound familiar?
               </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 md:p-8">
-              <div className="text-4xl mb-4">😰</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">The Endless "What If"</h3>
-              <p className="text-slate-600 leading-relaxed">
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 md:p-6">
+              <div className="text-3xl mb-3">😰</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">The Endless "What If"</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 Every creak, drip, and strange noise makes you wonder: Is this THE ONE that empties my savings? You never feel at peace.
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8">
-              <div className="text-4xl mb-4">🎰</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">The Trust Problem</h3>
-              <p className="text-slate-600 leading-relaxed">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 md:p-6">
+              <div className="text-3xl mb-3">🎰</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">The Trust Problem</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 When something breaks, you're Googling at midnight hoping whoever shows up won't rip you off. Emergency pricing. Questionable advice.
               </p>
             </div>
           </div>
 
-          <p className="text-center text-2xl text-slate-700 font-medium mt-12">
+          <p className="text-center text-xl text-slate-700 font-medium mt-8">
             It doesn't have to be this way.
           </p>
         </div>
       </section>
 
       {/* Transformation Section - Before/After */}
-      <section className="py-16 md:py-24 bg-slate-50">
+      <section className="py-10 md:py-14 bg-slate-50">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-2">
             Your Transformation
           </h2>
-          <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto text-lg">
+          <p className="text-center text-slate-600 mb-6 max-w-2xl mx-auto text-lg">
             From reactive firefighting to proactive confidence
           </p>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-4">
             {/* Before */}
-            <div className="bg-white rounded-2xl p-6 md:p-8 border-2 border-slate-200">
-              <h3 className="text-xl font-bold text-slate-400 mb-6 text-center">
+            <div className="bg-white rounded-2xl p-5 md:p-6 border-2 border-slate-200">
+              <h3 className="text-lg font-bold text-slate-400 mb-4 text-center">
                 Where You Are Now
               </h3>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
-                  <span className="text-slate-500">Constant worry about what's breaking next</span>
+              <ul className="space-y-2.5">
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-500 text-sm">Constant worry about what's breaking next</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
-                  <span className="text-slate-500">$10,000 surprise emergencies that drain savings</span>
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-500 text-sm">$10,000 surprise emergencies that drain savings</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
-                  <span className="text-slate-500">Reactive firefighting that consumes weekends</span>
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-500 text-sm">Reactive firefighting that consumes weekends</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
-                  <span className="text-slate-500">No idea what your home actually needs</span>
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-500 text-sm">No idea what your home actually needs</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-1" />
-                  <span className="text-slate-500">Property slowly losing value from neglect</span>
+                <li className="flex items-start gap-2">
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-500 text-sm">Property slowly losing value from neglect</span>
                 </li>
               </ul>
             </div>
 
             {/* After */}
-            <div className="bg-white rounded-2xl p-6 md:p-8 border-2 border-green-200 shadow-lg shadow-green-500/10">
-              <h3 className="text-xl font-bold text-slate-900 mb-6 text-center">
+            <div className="bg-white rounded-2xl p-5 md:p-6 border-2 border-green-200 shadow-lg shadow-green-500/10">
+              <h3 className="text-lg font-bold text-slate-900 mb-4 text-center">
                 Where You're Going
               </h3>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  <span className="text-slate-700">Peace of mind knowing exactly what needs attention</span>
+              <ul className="space-y-2.5">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700 text-sm">Peace of mind knowing exactly what needs attention</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  <span className="text-slate-700">Small, planned investments instead of emergencies</span>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700 text-sm">Small, planned investments instead of emergencies</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  <span className="text-slate-700">Proactive confidence that frees your time</span>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700 text-sm">Proactive confidence that frees your time</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  <span className="text-slate-700">Complete visibility into your property's health</span>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700 text-sm">Complete visibility into your property's health</span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  <span className="text-slate-700">Property appreciating faster than the market</span>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700 text-sm">Property appreciating faster than the market</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-8">
             <button
               onClick={() => navigate('/Signup')}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg transition-all shadow-lg"
             >
               Start Your Transformation
             </button>
@@ -380,48 +380,48 @@ export default function Welcome() {
       </section>
 
       {/* The Method - How It Works */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-10 md:py-14 bg-white">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-2">
             The 360° Method
           </h2>
-          <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto text-lg">
+          <p className="text-center text-slate-600 mb-6 max-w-2xl mx-auto text-lg">
             Three phases that take you from overwhelmed to in control
           </p>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-100 relative text-center">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-blue-50 rounded-2xl p-5 md:p-6 border-2 border-blue-100 relative text-center">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 1
               </div>
-              <div className="text-4xl mb-4">👁️</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">AWARE</h3>
-              <p className="text-blue-700 font-medium mb-3">Know Before You Need</p>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <div className="text-3xl mb-3 pt-2">👁️</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">AWARE</h3>
+              <p className="text-blue-700 font-medium text-sm mb-2">Know Before You Need</p>
+              <p className="text-slate-600 text-xs leading-relaxed">
                 Document your systems, inspect regularly, and build complete visibility into your property's condition.
               </p>
             </div>
 
-            <div className="bg-green-50 rounded-2xl p-6 md:p-8 border-2 border-green-100 relative text-center">
+            <div className="bg-green-50 rounded-2xl p-5 md:p-6 border-2 border-green-100 relative text-center">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 2
               </div>
-              <div className="text-4xl mb-4">🔧</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">ACT</h3>
-              <p className="text-green-700 font-medium mb-3">Fix Small Before Big</p>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <div className="text-3xl mb-3 pt-2">🔧</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">ACT</h3>
+              <p className="text-green-700 font-medium text-sm mb-2">Fix Small Before Big</p>
+              <p className="text-slate-600 text-xs leading-relaxed">
                 Know exactly what to fix and when, prioritized by urgency and cost impact. Do it yourself or hire help.
               </p>
             </div>
 
-            <div className="bg-purple-50 rounded-2xl p-6 md:p-8 border-2 border-purple-100 relative text-center">
+            <div className="bg-purple-50 rounded-2xl p-5 md:p-6 border-2 border-purple-100 relative text-center">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                 Phase 3
               </div>
-              <div className="text-4xl mb-4">📈</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">ADVANCE</h3>
-              <p className="text-purple-700 font-medium mb-3">Build Wealth Over Time</p>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <div className="text-3xl mb-3 pt-2">📈</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">ADVANCE</h3>
+              <p className="text-purple-700 font-medium text-sm mb-2">Build Wealth Over Time</p>
+              <p className="text-slate-600 text-xs leading-relaxed">
                 Go beyond maintenance. Extend system lifespans, make strategic upgrades, and watch your equity grow.
               </p>
             </div>
@@ -433,30 +433,30 @@ export default function Welcome() {
       <PricingSection navigate={navigate} />
 
       {/* Social Proof - Real Google Reviews */}
-      <section className="py-16 md:py-24 bg-slate-100">
+      <section className="py-10 md:py-14 bg-slate-100">
         <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-center text-slate-900 mb-2">
             Real Transformations
           </h2>
-          <p className="text-center text-slate-600 mb-8 max-w-2xl mx-auto text-lg">
+          <p className="text-center text-slate-600 mb-6 max-w-2xl mx-auto text-lg">
             See what property owners are saying about the 360° Method
           </p>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 md:p-8 mb-10">
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 md:p-6 mb-6">
             <div className="elfsight-app-71f6f176-96aa-4ece-8490-6c2274faae5b" data-elfsight-app-lazy></div>
           </div>
 
           {/* You Could Be Next CTA */}
           <div className="text-center">
-            <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-3">
+            <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">
               You Could Be Next
             </h3>
-            <p className="text-slate-600 mb-6 max-w-xl mx-auto">
+            <p className="text-slate-600 text-sm mb-4 max-w-xl mx-auto">
               Every property owner above started exactly where you are now. Make the choice to go from reactive to proactive.
             </p>
             <button
               onClick={() => navigate('/Signup')}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
             >
               Start Your Transformation
             </button>
@@ -465,26 +465,26 @@ export default function Welcome() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-16 md:py-24 bg-white">
+      <section id="faq" className="py-10 md:py-14 bg-white">
         <div className="max-w-3xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-4 py-2 mb-4">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-blue-100 rounded-full px-3 py-1.5 mb-3">
               <HelpCircle className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-700">Common Questions</span>
             </div>
-            <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+            <h2 className="text-2xl md:text-4xl font-bold text-slate-900">
               Frequently Asked Questions
             </h2>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2">
             {FAQ_ITEMS.map((item, idx) => (
               <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+                  className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
                 >
-                  <span className="font-semibold text-slate-900">{item.question}</span>
+                  <span className="font-semibold text-slate-900 text-sm">{item.question}</span>
                   {openFaq === idx ? (
                     <ChevronUp className="w-5 h-5 text-slate-500 flex-shrink-0" />
                   ) : (
@@ -492,7 +492,7 @@ export default function Welcome() {
                   )}
                 </button>
                 {openFaq === idx && (
-                  <div className="px-6 pb-4 text-slate-600 leading-relaxed">
+                  <div className="px-4 pb-3 text-slate-600 text-sm leading-relaxed">
                     {item.answer}
                   </div>
                 )}
@@ -503,76 +503,76 @@ export default function Welcome() {
       </section>
 
       {/* About Us / Origin Story Section */}
-      <section id="about" className="py-16 md:py-24 bg-slate-50">
+      <section id="about" className="py-10 md:py-14 bg-slate-50">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-purple-100 rounded-full px-4 py-2 mb-4">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-purple-100 rounded-full px-3 py-1.5 mb-3">
               <Heart className="w-4 h-4 text-purple-600" />
               <span className="text-sm font-medium text-purple-700">Our Story</span>
             </div>
-            <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+            <h2 className="text-2xl md:text-4xl font-bold text-slate-900">
               Why We Built the 360° Method
             </h2>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 md:p-10 shadow-lg">
+          <div className="bg-white rounded-2xl p-5 md:p-8 shadow-lg">
             <div className="prose prose-slate max-w-none">
-              <p className="text-lg text-slate-700 leading-relaxed mb-6">
+              <p className="text-base text-slate-700 leading-relaxed mb-4">
                 The 360° Method was developed by Marcin Micek after managing a 12-door rental portfolio and experiencing
                 firsthand how small ignored problems become financial disasters.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-6">
+              <p className="text-slate-600 text-sm leading-relaxed mb-4">
                 The framework draws from over 15 years of hands-on experience across multiple industries: working construction
                 as a teenager, running a painting business through college, 7 years in B2B manufacturing sales, a stint in the
                 insurance industry, and currently owning and operating a general contracting company.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-6">
+              <p className="text-slate-600 text-sm leading-relaxed mb-4">
                 Through trial and error, and being my own customer on every rental property I manage, I developed a systematic
                 approach that actually works. The 360° Method combines everything I've learned about construction, risk assessment,
                 systematic processes, and real-world property management into a framework that <strong>prevents problems rather
                 than reacts to them</strong>.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-6">
+              <p className="text-slate-600 text-sm leading-relaxed mb-4">
                 But this isn't really about me. <strong>It's about your transformation.</strong> I know what it feels like to lie
                 awake wondering what's going to break next. I know the pit in your stomach when an unexpected repair bill lands.
                 And I know the relief that comes when you finally feel in control.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-6">
+              <p className="text-slate-600 text-sm leading-relaxed mb-4">
                 Property ownership should make you feel confident and capable, not anxious and overwhelmed. When you follow
                 this framework, you're not just maintaining a building. You're becoming a more organized, proactive, and
                 financially secure version of yourself.
               </p>
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-500 p-5 rounded-r-lg mb-8">
-                <p className="text-slate-700 italic mb-3">
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-500 p-4 rounded-r-lg mb-6">
+                <p className="text-slate-700 text-sm italic mb-2">
                   "I genuinely care about your success. Nothing would make me happier than hearing how this system helped you
                   sleep better at night, save money, or simply feel like a more capable property owner. Your transformation
                   story is why I built this."
                 </p>
-                <p className="text-sm text-slate-500 mb-0">- Marcin Micek, Founder</p>
+                <p className="text-xs text-slate-500 mb-0">- Marcin Micek, Founder</p>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6 pt-8 border-t border-slate-200">
+            <div className="grid md:grid-cols-3 gap-4 pt-6 border-t border-slate-200">
               <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Target className="w-6 h-6 text-blue-600" />
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-blue-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Your Transformation</h4>
-                <p className="text-sm text-slate-600">From reactive firefighting to confident, proactive control</p>
+                <h4 className="font-semibold text-slate-900 text-sm mb-1">Your Transformation</h4>
+                <p className="text-xs text-slate-600">From reactive firefighting to confident, proactive control</p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-green-600" />
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-green-100 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-green-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Your Peace of Mind</h4>
-                <p className="text-sm text-slate-600">Sleep better knowing nothing is silently becoming a disaster</p>
+                <h4 className="font-semibold text-slate-900 text-sm mb-1">Your Peace of Mind</h4>
+                <p className="text-xs text-slate-600">Sleep better knowing nothing is silently becoming a disaster</p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-purple-600" />
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-purple-600" />
                 </div>
-                <h4 className="font-semibold text-slate-900 mb-1">Your Success Story</h4>
-                <p className="text-sm text-slate-600">I can't wait to hear how this framework changed things for you</p>
+                <h4 className="font-semibold text-slate-900 text-sm mb-1">Your Success Story</h4>
+                <p className="text-xs text-slate-600">I can't wait to hear how this framework changed things for you</p>
               </div>
             </div>
           </div>
@@ -580,25 +580,25 @@ export default function Welcome() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-10 md:py-14 bg-white">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-2">
             Your Property's Future Starts Today
           </h2>
-          <p className="text-lg text-slate-600 mb-8">
+          <p className="text-lg text-slate-600 mb-6">
             Make the switch from reactive to proactive property care.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
             <button
               onClick={() => navigate('/Signup')}
-              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
+              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
             >
               Create Free Account
             </button>
             <button
               onClick={() => navigate(createPageUrl('DemoEntry'))}
-              className="w-full sm:w-auto border-2 border-slate-300 hover:border-slate-400 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all"
+              className="w-full sm:w-auto border-2 border-slate-300 hover:border-slate-400 text-slate-700 px-8 py-3 rounded-xl font-semibold text-lg transition-all"
             >
               Explore Demo First
             </button>
@@ -611,7 +611,7 @@ export default function Welcome() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 bg-slate-100 border-t border-slate-200">
+      <footer className="py-6 bg-slate-100 border-t border-slate-200">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -659,7 +659,7 @@ function PricingSection({ navigate }) {
       keyFeature: 'Full 360° Method',
       hasAI: false,
       limit: '1 property',
-      features: ['1 property (any size)', 'Baseline documentation', 'Inspection checklists', 'Task tracking', 'Cascade risk alerts'],
+      features: ['1 property (any size)', 'Baseline documentation', 'Inspection checklists', 'Task tracking', 'Basic maintenance alerts'],
     },
     {
       id: 'homeowner_plus',
@@ -673,7 +673,7 @@ function PricingSection({ navigate }) {
       hasAI: true,
       limit: '1 property',
       popular: true,
-      features: ['Everything in Scout', 'AI risk analysis', 'AI cost forecasting', 'AI inspection summaries', 'PDF reports'],
+      features: ['Everything in Scout', 'AI cascade risk alerts', 'AI cost forecasting', 'AI inspection summaries', 'PDF reports'],
     },
     {
       id: 'good',
@@ -723,24 +723,24 @@ function PricingSection({ navigate }) {
   };
 
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-slate-50 scroll-mt-16">
+    <section id="pricing" className="py-10 md:py-14 bg-slate-50 scroll-mt-16">
       <div className="max-w-6xl mx-auto px-4">
-        
+
         {/* Header */}
-        <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold text-sm mb-4">
+        <div className="text-center mb-6">
+          <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-semibold text-sm mb-3">
             💰 Simple, Transparent Pricing
           </span>
-          <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-slate-900 mb-2">
             Choose Your Level of Protection
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <p className="text-base text-slate-600 max-w-2xl mx-auto">
             Start free, upgrade when you need more. No hidden fees.
           </p>
         </div>
 
         {/* Billing Toggle */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <div className="inline-flex bg-white rounded-xl p-1.5 shadow-sm border border-slate-200">
             <button
               onClick={() => setBillingCycle('annual')}
@@ -766,7 +766,7 @@ function PricingSection({ navigate }) {
         </div>
 
         {/* Pricing Cards - Mobile: Stack, Desktop: Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
           {tiers.map((tier) => {
             const Icon = tier.icon;
             
@@ -824,17 +824,12 @@ function PricingSection({ navigate }) {
 
                 {/* Features List - Compact */}
                 <ul className="space-y-1.5 mb-4 text-xs">
-                  {tier.features.slice(0, 3).map((feature, idx) => (
+                  {tier.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
                       <span className="text-slate-600">{feature}</span>
                     </li>
                   ))}
-                  {tier.features.length > 3 && (
-                    <li className="text-slate-400 text-xs pl-5">
-                      +{tier.features.length - 3} more
-                    </li>
-                  )}
                 </ul>
 
                 {/* CTA Button */}
@@ -861,7 +856,7 @@ function PricingSection({ navigate }) {
         </div>
 
         {/* Learn More Dropdowns */}
-        <div className="max-w-3xl mx-auto space-y-3">
+        <div className="max-w-3xl mx-auto space-y-2">
           
           {/* AI Features */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -1009,14 +1004,14 @@ function PricingSection({ navigate }) {
         </div>
 
         {/* Bottom CTA */}
-        <div className="text-center mt-10">
+        <div className="text-center mt-8">
           <button
             onClick={() => navigate('/Signup')}
-            className="inline-flex items-center gap-2 bg-orange-500 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-all shadow-lg"
+            className="inline-flex items-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-orange-600 transition-all shadow-lg"
           >
             Start Free Today
           </button>
-          <p className="text-sm text-slate-500 mt-3">No credit card required</p>
+          <p className="text-sm text-slate-500 mt-2">No credit card required</p>
         </div>
 
       </div>

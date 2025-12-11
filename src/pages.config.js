@@ -321,8 +321,6 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
     'Signup',
     'ForgotPassword',
     'PostLoginRedirect',
-    'LandingPage',
-    'Waitlist',
     'DemoEntry',
     'AcceptInvitation',
     // Operator Certification Flow (public landing + own layouts)
@@ -381,19 +379,11 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
 
 // Pages that don't require authentication BUT need Layout (demo app pages, resources)
 export const PUBLIC_WITH_LAYOUT_PAGES = [
-    'Pricing',
-    'Resources',
-    'GuideDetail',
-    'ResourceGuides',
-    'VideoTutorials',
-    'ROICalculators',
     'WelcomeDemo',
     'DemoImproving',
     'DemoOverwhelmed',
     'DemoExcellent',
     'DemoPortfolio',
-    'ExploreTemplates',
-    'TemplateDetail',
     // Overwhelmed Owner (struggling) demo pages
     'DemoOverwhelmedBaseline',
     'DemoOverwhelmedInspect',
