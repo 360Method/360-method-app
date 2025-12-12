@@ -12,8 +12,9 @@ export const INSPECTION_CHECKPOINTS = {
         question: 'Is the air filter clean?',
         goodDescription: 'Filter is white/light gray, air flows freely',
         badDescription: 'Filter is dark, clogged with dust/debris',
-        severity: 'Flag', // if answered "no"
-        photoExample: true
+        severity: 'Flag',
+        photoExample: true,
+        issueExample: "E.g., 'Filter is gray/brown and clogged with dust'"
       },
       {
         id: 'hvac-sounds',
@@ -21,7 +22,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Normal hum, no grinding or squealing',
         badDescription: 'Grinding, squealing, rattling, or banging sounds',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Loud grinding noise when AC kicks on'"
       },
       {
         id: 'hvac-airflow',
@@ -29,7 +31,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Strong, steady airflow from all vents',
         badDescription: 'Weak or no airflow from some vents',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Bedroom vent has almost no air coming out'"
       }
     ],
     full: [
@@ -39,7 +42,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Filter is white/light gray, air flows freely',
         badDescription: 'Filter is dark, clogged with dust/debris',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Filter is gray/brown and clogged with dust'"
       },
       {
         id: 'hvac-sounds-full',
@@ -47,7 +51,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Normal hum only',
         badDescription: 'Grinding, squealing, rattling, or banging',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Squealing sound from the blower motor'"
       },
       {
         id: 'hvac-vents',
@@ -55,7 +60,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All vents open, unobstructed, good airflow',
         badDescription: 'Blocked vents or weak airflow',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Living room vent blocked by furniture'"
       },
       {
         id: 'hvac-thermostat',
@@ -63,7 +69,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Display works, system responds to changes',
         badDescription: 'Blank display, no response, wrong temperature',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Set to 72° but reads 78° and won't cool'"
       },
       {
         id: 'hvac-condensate',
@@ -71,7 +78,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Floor is dry, no water stains',
         badDescription: 'Puddles, water stains, or moisture',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Small puddle forming under the unit'"
       },
       {
         id: 'hvac-outdoor',
@@ -79,7 +87,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear of leaves, plants 2ft away',
         badDescription: 'Covered in debris, plants too close',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bushes growing against the unit, leaves piled up'"
       }
     ]
   },
@@ -92,7 +101,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry under all sinks, no drips',
         badDescription: 'Water puddles, drips, or water stains',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Dripping from the P-trap under kitchen sink'"
       },
       {
         id: 'plumbing-drains',
@@ -100,7 +110,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Water drains quickly, no gurgling',
         badDescription: 'Slow drains or standing water',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Bathroom sink drains very slowly, takes 30+ seconds'"
       },
       {
         id: 'plumbing-water-heater',
@@ -108,7 +119,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Hot water available, no visible rust',
         badDescription: 'No hot water, rust spots, or leaks',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Rust spots on bottom of tank, small puddle nearby'"
       }
     ],
     full: [
@@ -118,7 +130,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No moisture, stains, or drips',
         badDescription: 'Water puddles, stains, or active drips',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Water stain on cabinet floor under bathroom sink'"
       },
       {
         id: 'plumbing-pressure',
@@ -126,7 +139,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Strong, consistent flow',
         badDescription: 'Weak flow or sputtering',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Kitchen faucet has weak pressure, sputters at first'"
       },
       {
         id: 'plumbing-drains-full',
@@ -134,7 +148,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Fast drain, no sounds',
         badDescription: 'Slow, gurgling, or backed up',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Tub drain gurgles when toilet flushes'"
       },
       {
         id: 'plumbing-toilets',
@@ -142,7 +157,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clean flush, stops running quickly',
         badDescription: 'Weak flush or continuously running',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Hall bathroom toilet runs for 2+ minutes after flush'"
       },
       {
         id: 'plumbing-water-heater-full',
@@ -150,7 +166,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clean exterior, dry floor',
         badDescription: 'Rust, corrosion, or water puddles',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Corrosion around pipe connections at top'"
       },
       {
         id: 'plumbing-shutoffs',
@@ -158,7 +175,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Location known and accessible',
         badDescription: 'Unknown location or blocked access',
         severity: 'Monitor',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Not sure where main shutoff valve is located'"
       },
       {
         id: 'plumbing-exposed',
@@ -166,7 +184,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clean pipes, no green or white buildup',
         badDescription: 'Corrosion, mineral deposits, or stains',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Green corrosion on copper pipes in basement'"
       }
     ]
   },
@@ -179,7 +198,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Easy to access, breakers labeled',
         badDescription: 'Blocked, unlabeled, or damaged',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Storage boxes stacked in front of panel'"
       },
       {
         id: 'electrical-gfci',
@@ -187,7 +207,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Test button trips, reset restores power',
         badDescription: 'Buttons don\'t work or won\'t reset',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bathroom GFCI won't reset after pressing test'"
       },
       {
         id: 'electrical-outlets',
@@ -195,7 +216,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All outlets provide power, no sparks',
         badDescription: 'Dead outlets, sparks, or warm plates',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Outlet in bedroom sparks when plugging in charger'"
       }
     ],
     full: [
@@ -205,7 +227,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear path, nothing blocking panel',
         badDescription: 'Items blocking or too close',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Only 2 feet of clearance, shelf too close'"
       },
       {
         id: 'electrical-labels',
@@ -213,7 +236,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Each breaker clearly labeled',
         badDescription: 'Missing or incorrect labels',
         severity: 'Monitor',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Half the breakers have no labels'"
       },
       {
         id: 'electrical-gfci-full',
@@ -221,7 +245,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All test/reset buttons work',
         badDescription: 'Failed test or won\'t reset',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Kitchen GFCI by sink won't trip when tested'"
       },
       {
         id: 'electrical-outlets-full',
@@ -229,7 +254,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tight, no cracks or discoloration',
         badDescription: 'Loose, cracked, or discolored',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Outlet faceplate cracked, outlet wiggles when used'"
       },
       {
         id: 'electrical-exposed',
@@ -237,7 +263,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All wiring in conduit or behind walls',
         badDescription: 'Exposed or hanging wires visible',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Exposed wires hanging in garage near workbench'"
       }
     ]
   },
@@ -250,7 +277,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No cracks, or only hairline cracks',
         badDescription: 'Cracks wider than 1/4 inch',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Horizontal crack about 1/2 inch wide on east wall'"
       },
       {
         id: 'foundation-water',
@@ -258,7 +286,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No water, moisture, or stains',
         badDescription: 'Water, dampness, or water stains',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Water stains along the base of walls'"
       },
       {
         id: 'foundation-smell',
@@ -266,7 +295,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Normal air, no musty odor',
         badDescription: 'Musty, earthy, or mold smell',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Strong musty smell when entering basement'"
       }
     ],
     full: [
@@ -276,7 +306,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid walls or only hairline cracks',
         badDescription: 'Visible cracks, especially horizontal',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Stair-step crack in block wall near corner'"
       },
       {
         id: 'foundation-floor',
@@ -284,7 +315,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Level floor, no large cracks',
         badDescription: 'Uneven, sloping, or cracked',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Floor slopes noticeably toward drain, crack near stairs'"
       },
       {
         id: 'foundation-moisture',
@@ -292,7 +324,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry to touch, no stains',
         badDescription: 'Damp, wet, or white mineral deposits',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'White powdery deposits (efflorescence) on walls'"
       },
       {
         id: 'foundation-mold',
@@ -300,7 +333,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No visible mold or musty smell',
         badDescription: 'Mold spots, musty odor',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Black spots visible in corner near water heater'"
       },
       {
         id: 'foundation-drainage',
@@ -308,7 +342,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Ground slopes away from house',
         badDescription: 'Water pooling near foundation',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Ground slopes toward house on north side'"
       }
     ]
   },
@@ -321,7 +356,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Completely dry, no stains',
         badDescription: 'Water, dampness, or stains',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Small puddle under the P-trap'"
       },
       {
         id: 'kitchen-disposal',
@@ -329,7 +365,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Runs smoothly, drains well',
         badDescription: 'Won\'t turn on, jams, or leaks',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Makes humming sound but won't spin'"
       },
       {
         id: 'kitchen-faucet',
@@ -337,7 +374,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Good flow, stops completely',
         badDescription: 'Drips when off, low pressure',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Slow drip from spout when turned off'"
       },
       {
         id: 'kitchen-appliances',
@@ -345,7 +383,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All turn on and function properly',
         badDescription: 'Any appliance not working',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Microwave display is blank, won't turn on'"
       }
     ],
     full: [
@@ -355,7 +394,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry, no stains or moisture',
         badDescription: 'Any water, stains, or dampness',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Water stain on cabinet bottom from past leak'"
       },
       {
         id: 'kitchen-faucet-full',
@@ -363,7 +403,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Strong flow, stops completely when off',
         badDescription: 'Weak flow or dripping',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Low pressure, takes long to fill pot'"
       },
       {
         id: 'kitchen-disposal-full',
@@ -371,7 +412,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Turns on, grinds, drains well',
         badDescription: 'Won\'t run, jams, or leaks',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Disposal jams frequently, needs reset'"
       },
       {
         id: 'kitchen-dishwasher',
@@ -379,7 +421,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No leaks, drains completely',
         badDescription: 'Water underneath or standing water inside',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Standing water in bottom after cycle'"
       },
       {
         id: 'kitchen-fridge',
@@ -387,7 +430,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Cold inside, dry underneath',
         badDescription: 'Not cold enough or water leaking',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Water pooling under fridge, ice buildup in freezer'"
       },
       {
         id: 'kitchen-stove',
@@ -395,7 +439,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All burners heat, oven reaches temperature',
         badDescription: 'Any burner not working',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Back left burner won't ignite'"
       },
       {
         id: 'kitchen-vent',
@@ -403,7 +448,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Fan runs, vents outside or filters air',
         badDescription: 'Won\'t turn on or weak suction',
         severity: 'Monitor',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Fan runs but doesn't seem to pull air'"
       },
       {
         id: 'kitchen-caulk',
@@ -411,7 +457,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk line, no gaps',
         badDescription: 'Cracked, missing, or moldy caulk',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Caulk peeling away from backsplash'"
       }
     ]
   },
@@ -424,7 +471,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Completely dry, no stains',
         badDescription: 'Water, dampness, or stains',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Damp spot under sink drain pipe'"
       },
       {
         id: 'bath-toilet',
@@ -432,7 +480,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Flushes well, stops within 30 seconds',
         badDescription: 'Weak flush or keeps running',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Toilet keeps running, have to jiggle handle'"
       },
       {
         id: 'bath-caulk',
@@ -440,7 +489,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk, no gaps or mold',
         badDescription: 'Cracked, missing, or moldy',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Black mold in caulk line where tub meets tile'"
       },
       {
         id: 'bath-vent',
@@ -448,7 +498,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Runs and pulls air out',
         badDescription: 'Won\'t turn on or weak',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Fan makes noise but barely moves air'"
       }
     ],
     full: [
@@ -458,7 +509,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No water, stains, or moisture',
         badDescription: 'Any wetness or water stains',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Old water stain on cabinet floor'"
       },
       {
         id: 'bath-faucet',
@@ -466,7 +518,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Good pressure, stop completely',
         badDescription: 'Drips or low pressure',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Hot water handle drips when off'"
       },
       {
         id: 'bath-toilet-full',
@@ -474,7 +527,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Strong flush, stops within 30 seconds',
         badDescription: 'Weak flush or continuously running',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Weak flush, sometimes needs second flush'"
       },
       {
         id: 'bath-toilet-base',
@@ -482,7 +536,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry floor, toilet doesn\'t rock',
         badDescription: 'Water at base or toilet moves',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Toilet rocks slightly when sitting down'"
       },
       {
         id: 'bath-caulk-full',
@@ -490,7 +545,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk lines, no mold',
         badDescription: 'Cracked, missing, or moldy caulk',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Caulk pulling away from tile in shower corner'"
       },
       {
         id: 'bath-vent-full',
@@ -498,7 +554,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Runs, pulls air, vents outside',
         badDescription: 'Doesn\'t work or vents into attic',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Fan runs but mirror still fogs up'"
       },
       {
         id: 'bath-grout',
@@ -506,7 +563,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid grout, no cracks or missing pieces',
         badDescription: 'Crumbling, missing, or stained grout',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Grout crumbling between floor tiles near tub'"
       }
     ]
   },
@@ -519,7 +577,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Even coverage, no bare spots',
         badDescription: 'Thin spots or missing insulation',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bare spots near eaves, insulation pushed aside'"
       },
       {
         id: 'attic-moisture',
@@ -527,7 +586,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry wood, no stains',
         badDescription: 'Water stains, damp wood, or mold',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Dark water stain on rafters near chimney'"
       },
       {
         id: 'attic-pests',
@@ -535,7 +595,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No droppings, nests, or damage',
         badDescription: 'Droppings, nests, or chewed materials',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Small droppings near insulation, possible mice'"
       }
     ],
     full: [
@@ -545,7 +606,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Deep, even insulation throughout',
         badDescription: 'Thin, compressed, or missing',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Only 4-6 inches deep, can see joists'"
       },
       {
         id: 'attic-vents',
@@ -553,7 +615,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All vents open and unblocked',
         badDescription: 'Blocked by insulation or debris',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Insulation pushed against soffit vents'"
       },
       {
         id: 'attic-moisture-full',
@@ -561,7 +624,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Dry wood, no discoloration',
         badDescription: 'Water stains, wet spots, or mold',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Dark staining around roof vent penetration'"
       },
       {
         id: 'attic-pests-full',
@@ -569,7 +633,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No droppings, nests, or damage',
         badDescription: 'Signs of rodents, birds, or insects',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bird nest material near gable vent'"
       },
       {
         id: 'attic-exhaust',
@@ -577,7 +642,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Vents go outside, not into attic',
         badDescription: 'Vents terminate in attic',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bathroom vent hose ends in attic, not outside'"
       }
     ]
   },
@@ -590,7 +656,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No cracks, holes, or missing pieces',
         badDescription: 'Damage, rot, or missing sections',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Cracked vinyl siding panel near garage'"
       },
       {
         id: 'exterior-paint',
@@ -598,7 +665,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid paint, no peeling or bubbling',
         badDescription: 'Peeling, bubbling, or bare wood',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Paint peeling on south-facing trim'"
       },
       {
         id: 'exterior-caulk',
@@ -606,7 +674,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk, no gaps',
         badDescription: 'Cracked, missing, or separated caulk',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Caulk cracked around front door frame'"
       }
     ],
     full: [
@@ -616,7 +685,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid siding, no damage',
         badDescription: 'Cracks, holes, soft spots, or rot',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Soft spot in wood siding near foundation'"
       },
       {
         id: 'exterior-paint-full',
@@ -624,7 +694,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid paint coverage',
         badDescription: 'Peeling, cracking, or fading',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Paint bubbling on window sills'"
       },
       {
         id: 'exterior-trim',
@@ -632,7 +703,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Firm trim, no rot or gaps',
         badDescription: 'Soft, rotted, or separated trim',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Bottom of door trim feels soft, possible rot'"
       },
       {
         id: 'exterior-caulk-full',
@@ -640,7 +712,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk lines everywhere',
         badDescription: 'Missing, cracked, or failing caulk',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Gap where siding meets window frame'"
       },
       {
         id: 'exterior-grade',
@@ -648,7 +721,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Ground slopes away for drainage',
         badDescription: 'Ground slopes toward house or flat',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Mulch piled against foundation, ground flat'"
       },
       {
         id: 'exterior-vents',
@@ -656,7 +730,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Vents unobstructed, damper works',
         badDescription: 'Blocked, damaged, or missing cover',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Dryer vent cover flap stuck open'"
       }
     ]
   },
@@ -669,7 +744,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear gutters, water flows freely',
         badDescription: 'Leaves, dirt, or blockages',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Leaves and twigs piled up near downspout'"
       },
       {
         id: 'gutters-secure',
@@ -677,7 +753,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tight to house, no sagging',
         badDescription: 'Sagging, loose, or pulling away',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Gutter sagging in middle, pulling from fascia'"
       },
       {
         id: 'gutters-downspouts',
@@ -685,7 +762,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Extensions move water 4+ feet away',
         badDescription: 'Dumping at foundation',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Downspout ends right at foundation, no extension'"
       }
     ],
     full: [
@@ -695,7 +773,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Completely clear, water flows',
         badDescription: 'Debris buildup blocking flow',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Heavy debris buildup, plants growing in gutter'"
       },
       {
         id: 'gutters-secure-full',
@@ -703,7 +782,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tight, level, no gaps',
         badDescription: 'Sagging, loose, or separated',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Gap between gutter and fascia board'"
       },
       {
         id: 'gutters-leaks',
@@ -711,7 +791,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'No drips at joints',
         badDescription: 'Water leaking at seams/corners',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Water dripping from corner joint during rain'"
       },
       {
         id: 'gutters-downspouts-full',
@@ -719,7 +800,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Extensions or splash blocks in place',
         badDescription: 'Water dumping near foundation',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Extension missing, water pooling at foundation'"
       },
       {
         id: 'gutters-rust',
@@ -727,7 +809,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid metal, no rust spots',
         badDescription: 'Rust, corrosion, or holes',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Rust spots and small holes in back gutter'"
       }
     ]
   },
@@ -740,7 +823,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All shingles flat and intact',
         badDescription: 'Missing, curled, or damaged shingles',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Several shingles lifted/curled on south slope'"
       },
       {
         id: 'roof-flashing',
@@ -748,7 +832,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Flashing sealed, no gaps',
         badDescription: 'Lifted, rusted, or missing flashing',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Flashing around vent pipe appears lifted'"
       },
       {
         id: 'roof-moss',
@@ -756,7 +841,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clean roof surface',
         badDescription: 'Moss, algae, or dark streaks',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Green moss growing on north side of roof'"
       }
     ],
     full: [
@@ -766,7 +852,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Complete coverage, no damage',
         badDescription: 'Missing, curled, cracked, or lifted',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Missing shingle near edge, granules in gutters'"
       },
       {
         id: 'roof-flashing-full',
@@ -774,7 +861,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tight, sealed, no rust',
         badDescription: 'Lifted, rusty, or gaps visible',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Rust visible on chimney flashing'"
       },
       {
         id: 'roof-vents',
@@ -782,7 +870,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All vents secure and sealed',
         badDescription: 'Cracked, missing caps, or damaged',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Vent cap missing, opening exposed'"
       },
       {
         id: 'roof-moss-full',
@@ -790,7 +879,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clean roof surface',
         badDescription: 'Growth or debris accumulation',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Black streaks/algae on shaded areas'"
       },
       {
         id: 'roof-chimney',
@@ -798,7 +888,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Cap in place, flashing sealed',
         badDescription: 'Missing cap or failing flashing',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Chimney cap crooked, mortar crumbling'"
       },
       {
         id: 'roof-valleys',
@@ -806,7 +897,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear valleys, no debris buildup',
         badDescription: 'Debris or damaged valley flashing',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Leaves accumulated in valley, water backs up'"
       }
     ]
   },
@@ -819,7 +911,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Smooth surface or only hairline cracks',
         badDescription: 'Cracks wider than 1/4 inch',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Large crack running across driveway near garage'"
       },
       {
         id: 'driveway-level',
@@ -827,7 +920,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Even surface, no raised sections',
         badDescription: 'Uneven, heaving, or sunken areas',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Section raised about 1 inch, trip hazard'"
       },
       {
         id: 'driveway-drainage',
@@ -835,7 +929,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Water flows away, no puddles',
         badDescription: 'Standing water or pooling',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Water pools at low spot near sidewalk'"
       }
     ],
     full: [
@@ -845,7 +940,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid surface, minor hairlines only',
         badDescription: 'Large cracks or spreading damage',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Spider web cracks spreading near edge'"
       },
       {
         id: 'driveway-settling',
@@ -853,7 +949,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Even grade throughout',
         badDescription: 'Sunken areas or heaving',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Driveway sinking where it meets garage floor'"
       },
       {
         id: 'driveway-drainage-full',
@@ -861,7 +958,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Drains within hours, no standing water',
         badDescription: 'Persistent puddles or poor drainage',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Large puddle stays for days after rain'"
       },
       {
         id: 'driveway-edge',
@@ -869,7 +967,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid edges, no breakdown',
         badDescription: 'Crumbling or broken edges',
         severity: 'Monitor',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Edge crumbling along grass line'"
       }
     ]
   },
@@ -882,7 +981,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear glass, no fogging',
         badDescription: 'Fog or moisture between panes',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Foggy/hazy area between panes in bedroom window'"
       },
       {
         id: 'windows-operation',
@@ -890,7 +990,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Smooth operation, locks work',
         badDescription: 'Stuck, hard to move, or won\'t lock',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Kitchen window stuck, won't slide open'"
       },
       {
         id: 'windows-weather',
@@ -898,7 +999,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid seal, no gaps',
         badDescription: 'Missing, torn, or compressed',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Weatherstripping torn, can feel air coming in'"
       }
     ],
     full: [
@@ -908,7 +1010,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Clear panes, no seal failure',
         badDescription: 'Fogged, moisture, or condensation',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Two windows in living room have fog between panes'"
       },
       {
         id: 'windows-operation-full',
@@ -916,7 +1019,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Open, close, and lock easily',
         badDescription: 'Stuck, binding, or difficult',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Window in spare room very hard to open'"
       },
       {
         id: 'windows-locks',
@@ -924,7 +1028,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All locks work and hold',
         badDescription: 'Broken, stuck, or missing locks',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Lock on bathroom window won't latch'"
       },
       {
         id: 'windows-weather-full',
@@ -932,7 +1037,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tight seal, no light visible',
         badDescription: 'Gaps, torn, or missing sections',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Daylight visible around window frame'"
       },
       {
         id: 'windows-caulk',
@@ -940,7 +1046,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Solid caulk, no cracks or gaps',
         badDescription: 'Cracked, missing, or separated',
         severity: 'Flag',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Caulk pulling away from window frame outside'"
       }
     ]
   },
@@ -953,7 +1060,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All beep when tested',
         badDescription: 'Any detector not working or missing',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Hallway smoke detector chirping, needs battery'"
       },
       {
         id: 'safety-co',
@@ -961,7 +1069,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'All beep when tested',
         badDescription: 'Any detector not working or missing',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'CO detector by garage not responding to test'"
       },
       {
         id: 'safety-extinguisher',
@@ -969,7 +1078,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Gauge in green zone',
         badDescription: 'Gauge in red or expired',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Gauge showing in red zone, needs recharge'"
       },
       {
         id: 'safety-batteries',
@@ -977,7 +1087,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Replaced within 12 months',
         badDescription: 'Unknown or over 12 months',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Not sure when batteries were last changed'"
       }
     ],
     full: [
@@ -987,7 +1098,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Every level covered, all test okay',
         badDescription: 'Missing levels or failed tests',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'No smoke detector in basement'"
       },
       {
         id: 'safety-smoke-age',
@@ -995,7 +1107,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Manufacture date within 10 years',
         badDescription: 'Over 10 years or unknown age',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Manufacture date shows 2012, over 10 years old'"
       },
       {
         id: 'safety-co-full',
@@ -1003,7 +1116,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Near sleeping areas, all test okay',
         badDescription: 'Poorly located or failed tests',
         severity: 'Urgent',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Only CO detector is in garage, none near bedrooms'"
       },
       {
         id: 'safety-extinguisher-full',
@@ -1011,7 +1125,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Easy access, gauge shows full',
         badDescription: 'Blocked, empty, or expired',
         severity: 'Urgent',
-        photoExample: true
+        photoExample: true,
+        issueExample: "E.g., 'Extinguisher buried behind items in pantry'"
       },
       {
         id: 'safety-escape',
@@ -1019,7 +1134,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Family knows two exits from each room',
         badDescription: 'No plan or family doesn\'t know it',
         severity: 'Monitor',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'Never discussed escape plan with family'"
       },
       {
         id: 'safety-radon',
@@ -1027,7 +1143,8 @@ export const INSPECTION_CHECKPOINTS = {
         goodDescription: 'Tested and under 4 pCi/L or mitigated',
         badDescription: 'Never tested or high levels',
         severity: 'Flag',
-        photoExample: false
+        photoExample: false,
+        issueExample: "E.g., 'House has never been tested for radon'"
       }
     ]
   }

@@ -182,7 +182,7 @@ export default function CheckpointQuestion({
                 <Textarea
                   value={issueNote}
                   onChange={handleNoteChange}
-                  placeholder="E.g., 'Small crack near the corner, about 2 inches long'"
+                  placeholder={checkpoint.issueExample || "Describe the issue you found..."}
                   className="min-h-[80px] text-base"
                 />
               </div>
