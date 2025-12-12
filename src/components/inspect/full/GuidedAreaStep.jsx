@@ -133,7 +133,7 @@ export default function GuidedAreaStep({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto pb-32">
+      <div className="flex-1 overflow-auto pb-48">
         <div className="max-w-2xl mx-auto px-4 py-6">
           {showIntro ? (
             // Area intro screen

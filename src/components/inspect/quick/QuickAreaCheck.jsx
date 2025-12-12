@@ -85,7 +85,7 @@ export default function QuickAreaCheck({
   const issuesFound = Object.values(answers).filter(a => a.answer === 'bad').length;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-gray-50 pb-56">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3">
