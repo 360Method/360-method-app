@@ -100,7 +100,7 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
       id: inspectionId,
       data: {
         checklist_items: allCheckpoints,
-        completion_percentage: Math.round(((currentAreaIndex + 1) / selectedAreas.length) * 100)
+        completion_percent: Math.round(((currentAreaIndex + 1) / selectedAreas.length) * 100)
       }
     });
 
@@ -148,9 +148,9 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
       id: inspectionId,
       data: {
         status: 'Completed',
-        completion_percentage: 100,
-        issues_found: allIssues.length,
-        inspection_date: new Date().toISOString().split('T')[0]
+        completion_percent: 100,
+        issues_count: allIssues.length,
+        completion_date: new Date().toISOString()
       }
     });
 

@@ -12,7 +12,6 @@ import { AUDIO_GUIDANCE } from '../shared/audioGuidanceText';
 import { useGamification } from '@/lib/GamificationContext';
 import { useAuth } from '@/lib/AuthContext';
 import { notifyInspectionCompleted } from '@/api/triggerNotification';
-import { format } from 'date-fns';
 
 /**
  * FullWalkthrough - Comprehensive guided property inspection
@@ -117,8 +116,8 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
       id: inspectionId,
       data: {
         checklist_items: allCheckpoints,
-        issues_found: allIssues.length,
-        completion_percentage: Math.round((newCompletedAreas.length / orderedAreas.length) * 100)
+        issues_count: allIssues.length,
+        completion_percent: Math.round((newCompletedAreas.length / orderedAreas.length) * 100)
       }
     });
 
@@ -180,10 +179,10 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
       id: inspectionId,
       data: {
         status: 'Completed',
-        completion_percentage: 100,
-        issues_found: allIssues.length,
+        completion_percent: 100,
+        issues_count: allIssues.length,
         checklist_items: allCheckpoints,
-        inspection_date: format(new Date(), 'yyyy-MM-dd')
+        completion_date: new Date().toISOString()
       }
     });
 
