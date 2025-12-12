@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Property, MaintenanceTask, MaintenanceTemplate, auth } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +109,7 @@ export default function PrioritizePage() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdParam = urlParams.get('property');
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     if (demoMode) markStepVisited(4);
@@ -120,10 +124,11 @@ export default function PrioritizePage() {
   const [viewMode, setViewMode] = React.useState('grouped');
   const [selectedTasks, setSelectedTasks] = React.useState([]);
   const [unitFilter, setUnitFilter] = React.useState('all');
-  
-  const [intentModal, setIntentModal] = React.useState({ open: false, template: null, property: null });
-  const [unitSelectionModal, setUnitSelectionModal] = React.useState({ open: false, template: null, property: null });
-  const [dualUnitModal, setDualUnitModal] = React.useState({ open: false, template: null, property: null }); // NEW STATE
+
+  const [intentModal, setIntentModal] = useState({ open: false, template: null, property: null });
+  const [unitSelectionModal, setUnitSelectionModal] = useState({ open: false, template: null, property: null });
+  const [dualUnitModal, setDualUnitModal] = useState({ open: false, template: null, property: null }); // NEW STATE
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -133,13 +138,15 @@ export default function PrioritizePage() {
 
   // Fetch properties - only for current user
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return Property.list('-created_date');
-    }
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      return Property.list('-created_date', user?.id);
+    },
+    enabled: demoMode || !!user?.id
   });
 
   // Set initial selected property
@@ -153,6 +160,18 @@ export default function PrioritizePage() {
       setSelectedProperty(properties[0].id);
     }
   }, [propertyIdParam, properties, selectedProperty]);
+
+  // Show prerequisite popup if needed
+  const currentPropertyObj = selectedProperty !== 'all'
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('prioritize', currentPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_prioritize_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   // Fetch tasks based on selected property - only for user's properties
   const { data: realTasks = [], isLoading: isLoadingTasks, refetch: refetchTasks } = useQuery({
@@ -1253,6 +1272,19 @@ export default function PrioritizePage() {
       />
 
       <DemoCTA />
+
+      {/* Prerequisite Popup */}
+      <PrerequisitePopup
+        isOpen={showPrereqPopup}
+        onClose={() => {
+          setShowPrereqPopup(false);
+          sessionStorage.setItem('dismissed_prioritize_prereq', 'true');
+        }}
+        message={prereqInfo.message}
+        requiredStep={prereqInfo.requiredStep}
+        progress={prereqInfo.currentProgress}
+        threshold={prereqInfo.threshold}
+      />
     </div>
   );
 }

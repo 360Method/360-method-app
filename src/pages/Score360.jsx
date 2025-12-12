@@ -1,15 +1,20 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award, ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useGamification } from '@/lib/GamificationContext';
+import { ArrowLeft, ArrowRight, Download, Share2, Trophy, TrendingUp, Shield, AlertTriangle, CheckCircle2, DollarSign, Home as HomeIcon, Calendar, Zap, Target, Award, ChevronDown, Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Property, SystemBaseline, MaintenanceTask, Inspection } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import { calculateHealthScore, getCertification as getHealthCertification, getScoreColor, getScoreLabel } from '@/lib/calculateHealthScore';
 import { DEMO_PROPERTY_HOMEOWNER } from "@/components/shared/demoPropertyHomeowner";
-import { DEMO_PROPERTY_STRUGGLING } from "@/components/shared/demoPropertyStruggling";
-import { DEMO_PROPERTY_IMPROVING } from "@/components/shared/demoPropertyImproving";
-import { DEMO_PROPERTY_EXCELLENT } from "@/components/shared/demoPropertyExcellent";
+import { getDemoPropertyStruggling } from "@/components/shared/demoPropertyStruggling";
+import { getDemoPropertyImproving } from "@/components/shared/demoPropertyImproving";
+import { getDemoPropertyExcellent } from "@/components/shared/demoPropertyExcellent";
 import { DEMO_PORTFOLIO_INVESTOR } from "@/components/shared/demoPropertyInvestor";
 import { useDemo } from '../components/shared/DemoContext';
 import DemoCTA from '../components/demo/DemoCTA';
@@ -26,8 +31,52 @@ export default function Score360() {
   const [searchParams, setSearchParams] = useSearchParams();
   const printRef = useRef(null);
   const { demoMode } = useDemo();
+  const { user } = useAuth();
+  const { checkAchievement, hasAchievement, awardXP } = useGamification();
+
+  // Track which achievements we've already checked for this session
+  const checkedAchievementsRef = useRef(new Set());
 
   let propertyId = searchParams.get('property_id');
+  const isRealProperty = Boolean(propertyId && !propertyId.startsWith('demo-'));
+
+  // Fetch real property data when not in demo mode
+  const { data: realProperty, isLoading: propertyLoading } = useQuery({
+    queryKey: ['property', propertyId],
+    queryFn: () => Property.get(propertyId),
+    enabled: isRealProperty
+  });
+
+  // Fetch all properties for the user (for property selector)
+  const { data: userProperties = [] } = useQuery({
+    queryKey: ['properties', user?.id],
+    queryFn: async () => {
+      const allProps = await Property.list('-created_at', user?.id);
+      return allProps.filter(p => !p.is_draft);
+    },
+    enabled: !demoMode && !!user?.id
+  });
+
+  // Fetch systems for real property
+  const { data: realSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', propertyId],
+    queryFn: () => SystemBaseline.filter({ property_id: propertyId }),
+    enabled: isRealProperty
+  });
+
+  // Fetch tasks for real property
+  const { data: realTasks = [] } = useQuery({
+    queryKey: ['maintenanceTasks', propertyId],
+    queryFn: () => MaintenanceTask.filter({ property_id: propertyId }),
+    enabled: isRealProperty
+  });
+
+  // Fetch inspections for real property
+  const { data: realInspections = [] } = useQuery({
+    queryKey: ['inspections', propertyId],
+    queryFn: () => Inspection.filter({ property_id: propertyId }),
+    enabled: isRealProperty
+  });
   const portfolioView = searchParams.get('portfolio') === 'true';
 
   // Check if we're being rendered from a demo wrapper page (URL contains Demo*Score)
@@ -105,8 +154,13 @@ export default function Score360() {
     }
   };
   
-  // Get property from demo data
+  // Get property from demo data or real data
   const getPropertyData = () => {
+    // Return real property if fetched
+    if (isRealProperty && realProperty) {
+      return realProperty;
+    }
+
     // Portfolio view - return portfolio average as a virtual property
     if (portfolioView && isPortfolio) {
       return {
@@ -123,9 +177,9 @@ export default function Score360() {
 
     // If from demo wrapper, use demoMode from context to get property
     if (isFromDemoWrapper && demoMode && !propertyId) {
-      if (demoMode === 'struggling') return DEMO_PROPERTY_STRUGGLING.property;
-      if (demoMode === 'improving') return DEMO_PROPERTY_IMPROVING.property;
-      if (demoMode === 'excellent') return DEMO_PROPERTY_EXCELLENT.property;
+      if (demoMode === 'struggling') return getDemoPropertyStruggling().property;
+      if (demoMode === 'improving') return getDemoPropertyImproving().property;
+      if (demoMode === 'excellent') return getDemoPropertyExcellent().property;
       if (demoMode === 'investor') {
         // Return portfolio average for investor
         return {
@@ -143,9 +197,9 @@ export default function Score360() {
     }
 
     if (propertyId === 'demo-homeowner-001') return DEMO_PROPERTY_HOMEOWNER.property;
-    if (propertyId === 'demo-struggling-001') return DEMO_PROPERTY_STRUGGLING.property;
-    if (propertyId === 'demo-improving-001') return DEMO_PROPERTY_IMPROVING.property;
-    if (propertyId === 'demo-excellent-001') return DEMO_PROPERTY_EXCELLENT.property;
+    if (propertyId === 'demo-struggling-001') return getDemoPropertyStruggling().property;
+    if (propertyId === 'demo-improving-001') return getDemoPropertyImproving().property;
+    if (propertyId === 'demo-excellent-001') return getDemoPropertyExcellent().property;
 
     // Portfolio investor properties - individual property
     if (propertyId?.startsWith('demo-investor')) {
@@ -155,9 +209,29 @@ export default function Score360() {
 
     return null;
   };
-  
+
   const property = getPropertyData();
-  
+
+  // Calculate health score dynamically for real properties
+  const healthScoreData = useMemo(() => {
+    // For demo properties, use the stored score
+    if (!isRealProperty || !property) {
+      return {
+        score: property?.health_score || 0,
+        breakdown: null,
+        recommendations: []
+      };
+    }
+
+    // Calculate real score for real properties
+    return calculateHealthScore({
+      property: realProperty,
+      systems: realSystems,
+      tasks: realTasks,
+      inspections: realInspections
+    });
+  }, [isRealProperty, property, realProperty, realSystems, realTasks, realInspections]);
+
   // Handle property selection
   const handlePropertySelect = (selectedId) => {
     if (selectedId === 'portfolio') {
@@ -166,8 +240,53 @@ export default function Score360() {
       setSearchParams({ property_id: selectedId });
     }
   };
-  
-  const score = property?.health_score || 0;
+
+  const score = healthScoreData.score;
+
+  // ========================================
+  // GAMIFICATION: Check for certification achievements
+  // ========================================
+  useEffect(() => {
+    // Only check for real properties, not demo
+    if (!isRealProperty || demoMode || !score) return;
+
+    const checkCertificationAchievements = async () => {
+      try {
+        // Bronze (75+)
+        if (score >= 75 && !checkedAchievementsRef.current.has('bronze') && !hasAchievement('bronze_certified')) {
+          checkedAchievementsRef.current.add('bronze');
+          await checkAchievement('bronze_certified');
+          await awardXP('reach_bronze', { score, propertyId });
+        }
+
+        // Silver (85+)
+        if (score >= 85 && !checkedAchievementsRef.current.has('silver') && !hasAchievement('silver_certified')) {
+          checkedAchievementsRef.current.add('silver');
+          await checkAchievement('silver_certified');
+          await awardXP('reach_silver', { score, propertyId });
+        }
+
+        // Gold (90+)
+        if (score >= 90 && !checkedAchievementsRef.current.has('gold') && !hasAchievement('gold_certified')) {
+          checkedAchievementsRef.current.add('gold');
+          await checkAchievement('gold_certified');
+          await awardXP('reach_gold', { score, propertyId });
+        }
+
+        // Platinum (96+)
+        if (score >= 96 && !checkedAchievementsRef.current.has('platinum') && !hasAchievement('platinum_certified')) {
+          checkedAchievementsRef.current.add('platinum');
+          await checkAchievement('platinum_certified');
+          await awardXP('reach_platinum', { score, propertyId });
+        }
+      } catch (err) {
+        console.error('Error checking certification achievements:', err);
+      }
+    };
+
+    checkCertificationAchievements();
+  }, [score, isRealProperty, demoMode, propertyId, checkAchievement, hasAchievement, awardXP]);
+
   const propertyName = property?.address || 'Property';
   const propertyAddress = `${property?.city || ''}, ${property?.state || ''}`.trim().replace(/^,\s*/, '');
   const propertyType = property?.property_type || 'N/A';
@@ -210,7 +329,49 @@ export default function Score360() {
       alert('Link copied to clipboard!');
     }
   };
-  
+
+  // Loading state for real properties
+  if (isRealProperty && propertyLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Calculating your 360° Score...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No property selected and user has properties - prompt to select
+  if (!property && !demoMode && userProperties.length > 0 && !portfolioView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-6 h-6 text-blue-600" />
+              Select a Property
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-gray-600 text-sm mb-4">Choose a property to view its 360° Health Score</p>
+            {userProperties.map(p => (
+              <Button
+                key={p.id}
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => setSearchParams({ property_id: p.id })}
+              >
+                <span>{p.street_address || p.address}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Action Bar - Don't print */}

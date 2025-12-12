@@ -178,43 +178,54 @@ export default function UpgradeProjectDetail() {
           </div>
 
           {/* Progress Overview Card */}
-          <Card className="mb-4 md:mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base sm:text-lg">
-                <span className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                  Project Progress
-                </span>
-                <span className="text-2xl sm:text-3xl font-bold text-blue-600">
-                  {project.progress_percentage || 0}%
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Progress value={project.progress_percentage || 0} className="h-2.5 sm:h-3 mb-3 sm:mb-4" />
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Milestones</p>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900">
-                    {project.milestones?.filter(m => m.status === 'Completed').length || 0} / {project.milestones?.length || 0}
-                  </p>
-                </div>
-                {project.current_milestone && (
-                  <div className="md:col-span-2">
-                    <p className="text-xs text-gray-600 mb-1">Current Step</p>
-                    <p className="text-sm sm:text-base font-semibold text-blue-700 line-clamp-1">
-                      {project.current_milestone}
-                    </p>
+          {(() => {
+            // Calculate progress from milestones on the fly
+            const completedCount = project.milestones?.filter(m => m.status === 'Completed').length || 0;
+            const totalCount = project.milestones?.length || 0;
+            const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+            const nextMilestone = project.milestones?.find(m => m.status !== 'Completed');
+            const currentStep = nextMilestone?.title || (completedCount > 0 ? 'All Complete' : null);
+
+            return (
+              <Card className="mb-4 md:mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base sm:text-lg">
+                    <span className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                      Project Progress
+                    </span>
+                    <span className="text-2xl sm:text-3xl font-bold text-blue-600">
+                      {progressPercent}%
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Progress value={progressPercent} className="h-2.5 sm:h-3 mb-3 sm:mb-4" />
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                    <div>
+                      <p className="text-xs text-gray-600 mb-1">Milestones</p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                        {completedCount} / {totalCount}
+                      </p>
+                    </div>
+                    {currentStep && (
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-gray-600 mb-1">Current Step</p>
+                        <p className="text-sm sm:text-base font-semibold text-blue-700 line-clamp-1">
+                          {currentStep}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-gray-600 mb-1">Status</p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">{project.status}</p>
+                    </div>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Status</p>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900">{project.status}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Financial Summary - Mobile First */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 md:mb-6">
@@ -273,35 +284,47 @@ export default function UpgradeProjectDetail() {
 
           {/* Main Tabs - Mobile First */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-6 h-auto">
-              <TabsTrigger 
-                value="overview" 
+            <TabsList className="grid w-full grid-cols-5 mb-4 md:mb-6 h-auto">
+              <TabsTrigger
+                value="overview"
                 className="text-xs sm:text-sm py-2.5 sm:py-3"
                 style={{ minHeight: '44px' }}
               >
-                Overview
+                <span className="hidden sm:inline">Overview</span>
+                <span className="sm:hidden">Info</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="milestones" 
+              <TabsTrigger
+                value="milestones"
                 className="text-xs sm:text-sm py-2.5 sm:py-3"
                 style={{ minHeight: '44px' }}
               >
                 <span className="hidden sm:inline">Milestones</span>
                 <span className="sm:hidden">Steps</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="budget" 
+              <TabsTrigger
+                value="budget"
                 className="text-xs sm:text-sm py-2.5 sm:py-3"
                 style={{ minHeight: '44px' }}
               >
                 Budget
               </TabsTrigger>
-              <TabsTrigger 
-                value="files" 
+              <TabsTrigger
+                value="files"
                 className="text-xs sm:text-sm py-2.5 sm:py-3"
                 style={{ minHeight: '44px' }}
               >
                 Files
+              </TabsTrigger>
+              <TabsTrigger
+                value="ai-guide"
+                className="text-xs sm:text-sm py-2.5 sm:py-3"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="hidden sm:inline flex items-center gap-1">
+                  <Lightbulb className="w-3 h-3" />
+                  AI Guide
+                </span>
+                <span className="sm:hidden">AI</span>
               </TabsTrigger>
             </TabsList>
 

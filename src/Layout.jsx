@@ -15,8 +15,7 @@ import {
   LogOut,
   Settings,
   Wrench,
-  Sparkles,
-  Lock
+  Sparkles
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,7 +33,7 @@ import ProgressiveEducation from "./components/shared/ProgressiveEducation";
 import NotificationCenter from "./components/notifications/NotificationCenter";
 import RoleSwitcher from "./components/shared/RoleSwitcher";
 import UserLevelBadge from "./components/gamification/UserLevelBadge";
-import { NAVIGATION_STRUCTURE, isNavItemLocked, getDemoPageMap } from "./components/shared/navigationConfig";
+import { NAVIGATION_STRUCTURE, getDemoPageMap } from "./components/shared/navigationConfig";
 import { DemoProvider, useDemo } from "./components/shared/DemoContext";
 import { DemoBanner } from "./components/demo/DemoBanner";
 import ExitIntentPopup from "./components/demo/ExitIntentPopup";
@@ -341,7 +340,6 @@ function LayoutContent({ children }) {
                     {(section.section === "Core" || openSections[section.section]) && (
                       <div className="space-y-1">
                         {section.items.map((item) => {
-                          const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
                           const navUrl = getNavUrl(item.url);
                           const isActive = location.pathname === item.url || location.pathname === navUrl;
                           const Icon = item.icon;
@@ -349,17 +347,10 @@ function LayoutContent({ children }) {
                           return (
                             <Link
                               key={item.id}
-                              to={isLocked ? '#' : navUrl}
+                              to={navUrl}
                               data-tour={`sidebar-${item.id.toLowerCase()}`}
-                              onClick={(e) => {
-                                if (isLocked) {
-                                  e.preventDefault();
-                                  toast.info(item.unlockHint || "Complete previous steps to unlock");
-                                }
-                              }}
                               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                 isActive ? 'bg-blue-50 text-blue-700' :
-                                isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
                                 'text-gray-700 hover:bg-gray-100'
                               }`}
                             >
@@ -383,10 +374,6 @@ function LayoutContent({ children }) {
                                   {item.subtitle}
                                 </p>
                               </div>
-
-                              {isLocked && (
-                                <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                              )}
                             </Link>
                           );
                         })}
@@ -397,7 +384,6 @@ function LayoutContent({ children }) {
               ) : (
                 <div className="space-y-2">
                   {NAVIGATION_STRUCTURE.flatMap((section) => section.items).map((item) => {
-                    const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
                     const navUrl = getNavUrl(item.url);
                     const isActive = location.pathname === item.url || location.pathname === navUrl;
                     const Icon = item.icon;
@@ -405,16 +391,9 @@ function LayoutContent({ children }) {
                     return (
                       <Link
                         key={item.id}
-                        to={isLocked ? '#' : navUrl}
-                        onClick={(e) => {
-                          if (isLocked) {
-                            e.preventDefault();
-                            toast.info(item.unlockHint || "Complete previous steps to unlock");
-                          }
-                        }}
+                        to={navUrl}
                         className={`flex items-center justify-center p-3 rounded-lg transition-colors ${
                           isActive ? 'bg-blue-50 text-blue-700' :
-                          isLocked ? 'text-gray-400 cursor-not-allowed opacity-60' :
                           'text-gray-700 hover:bg-gray-100'
                         }`}
                         title={item.label}
@@ -545,7 +524,6 @@ function LayoutContent({ children }) {
                     {(section.section === "Core" || openSections[section.section]) && (
                       <div className="space-y-1 mt-2">
                         {section.items.map((item) => {
-                          const isLocked = demoMode ? false : isNavItemLocked(item, selectedProperty);
                           const navUrl = getNavUrl(item.url);
                           const isActive = location.pathname === item.url || location.pathname === navUrl;
                           const Icon = item.icon;
@@ -553,19 +531,12 @@ function LayoutContent({ children }) {
                           return (
                             <Link
                               key={item.id}
-                              to={isLocked ? '#' : navUrl}
+                              to={navUrl}
                               data-tour={`sidebar-${item.id.toLowerCase()}`}
-                              onClick={(e) => {
-                                if (isLocked) {
-                                  e.preventDefault();
-                                  toast.info(item.unlockHint || "Complete previous steps to unlock");
-                                } else {
-                                  setMobileMenuOpen(false);
-                                }
-                              }}
+                              onClick={() => setMobileMenuOpen(false)}
                               className={`flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors ${
                                 isActive ? 'bg-gray-100 font-medium' : ''
-                              } ${isLocked ? 'opacity-60' : ''}`}
+                              }`}
                               style={{ minHeight: '48px' }}
                             >
                               <Icon className="w-5 h-5 text-gray-500" />
@@ -582,7 +553,6 @@ function LayoutContent({ children }) {
                                   {item.subtitle}
                                 </p>
                               </div>
-                              {isLocked && <Lock className="w-4 h-4 text-gray-400" />}
                             </Link>
                           );
                         })}

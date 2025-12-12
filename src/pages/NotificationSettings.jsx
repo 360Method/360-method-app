@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { functions } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import { useNotificationContext } from '@/lib/NotificationContext';
+import { registerPushNotifications, isPushSupported, getNotificationPermission } from '@/lib/pushNotifications';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +14,45 @@ import {
   Smartphone,
   Clock,
   Check,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NotificationSettings() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { pushSupported, pushPermission, updatePushPermission } = useNotificationContext();
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+
+  // Handle enabling push notifications
+  const handleEnablePush = async () => {
+    if (!user?.id) {
+      toast.error('Please sign in to enable push notifications');
+      return;
+    }
+
+    setIsEnablingPush(true);
+    try {
+      const result = await registerPushNotifications(user.id);
+
+      if (result.success) {
+        toast.success('Push notifications enabled!');
+        updatePushPermission();
+        // Also enable the master toggle
+        updateSettingsMutation.mutate({ push_notifications_enabled: true });
+      } else {
+        toast.error(result.error || 'Failed to enable push notifications');
+      }
+    } catch (error) {
+      console.error('Push registration error:', error);
+      toast.error('Failed to enable push notifications');
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
 
   // Get global settings
   const { data: settingsData } = useQuery({
@@ -150,16 +186,59 @@ export default function NotificationSettings() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Push Notifications</p>
-                  <p className="text-sm text-gray-600">Receive push notifications on your devices</p>
+                  <p className="text-sm text-gray-600">
+                    {!pushSupported
+                      ? 'Not supported in this browser'
+                      : pushPermission === 'granted'
+                      ? 'Receive push notifications on this device'
+                      : pushPermission === 'denied'
+                      ? 'Permission denied - enable in browser settings'
+                      : 'Click to enable push notifications'}
+                  </p>
                 </div>
               </div>
-              <Button
-                variant={settingsData?.push_notifications_enabled ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleToggleMaster('push_notifications_enabled', settingsData?.push_notifications_enabled)}
-              >
-                {settingsData?.push_notifications_enabled ? 'Enabled' : 'Disabled'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Show permission status badge */}
+                {pushSupported && pushPermission === 'granted' && (
+                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Active
+                  </Badge>
+                )}
+                {pushSupported && pushPermission === 'denied' && (
+                  <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Blocked
+                  </Badge>
+                )}
+
+                {/* Enable button or toggle */}
+                {pushSupported && pushPermission === 'default' ? (
+                  <Button
+                    size="sm"
+                    onClick={handleEnablePush}
+                    disabled={isEnablingPush}
+                  >
+                    {isEnablingPush ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Enabling...
+                      </>
+                    ) : (
+                      'Enable Push'
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant={settingsData?.push_notifications_enabled ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleToggleMaster('push_notifications_enabled', settingsData?.push_notifications_enabled)}
+                    disabled={!pushSupported || pushPermission !== 'granted'}
+                  >
+                    {settingsData?.push_notifications_enabled ? 'Enabled' : 'Disabled'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </Card>

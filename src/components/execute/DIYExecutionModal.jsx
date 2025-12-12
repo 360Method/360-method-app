@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, CheckCircle2, Upload, Loader2, Clock, DollarSign } from "lucide-react";
 import CompletionCelebration from "./CompletionCelebration";
+import { notifyTaskCompleted } from "@/api/triggerNotification";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [checkedSteps, setCheckedSteps] = useState([]);
   const [timerRunning, setTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -77,7 +80,7 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
   const handleComplete = async () => {
     const actualHours = elapsedSeconds / 3600;
     const actualCostValue = actualCost ? parseFloat(actualCost) : 0;
-    
+
     await completeTaskMutation.mutateAsync({
       status: 'Completed',
       actual_cost: actualCostValue,
@@ -86,11 +89,22 @@ export default function DIYExecutionModal({ task, open, onClose, onComplete }) {
       completion_photos: completionPhotos,
       completion_notes: completionNotes
     });
-    
+
+    // Trigger notification
+    if (user?.id) {
+      notifyTaskCompleted({
+        taskId: task.id,
+        taskTitle: task.title,
+        propertyId: task.property_id,
+        userId: user.id,
+        completedBy: 'diy'
+      });
+    }
+
     // Calculate savings
     const estimatedCost = task.contractor_cost || 0;
     const savings = estimatedCost - actualCostValue;
-    
+
     setCompletionSavings(savings);
     setShowCelebration(true);
   };

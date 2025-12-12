@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useUser, useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { syncCurrentUser } from '@/api/supabaseClient';
+import { identifyUser, claritySetTag } from '@/lib/clarity';
 
 const AuthContext = createContext();
 
@@ -96,6 +97,11 @@ export const useAuth = () => {
   useEffect(() => {
     if (user?.id && user.id !== syncedUserRef.current) {
       syncedUserRef.current = user.id;
+
+      // Identify user in Clarity for session recordings
+      const displayName = user.fullName || user.firstName || user.emailAddresses?.[0]?.emailAddress;
+      identifyUser(user.id, undefined, undefined, displayName);
+
       syncCurrentUser(user)
         .then((syncedUser) => {
           if (syncedUser) {
@@ -122,8 +128,11 @@ export const useAuth = () => {
       // Ensure the active role is actually in the user's roles
       if (roles.includes(newActiveRole)) {
         setActiveRoleState(newActiveRole);
+        // Tag session with user role for filtering in Clarity
+        claritySetTag('role', newActiveRole);
       } else {
         setActiveRoleState(defaultRole);
+        claritySetTag('role', defaultRole);
       }
     }
   }, [user?.id, publicMetadata.active_role, roles]);

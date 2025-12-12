@@ -1,7 +1,11 @@
-import React from 'react';
-import { CheckCircle, Clock, Calendar, DollarSign, TrendingUp, AlertCircle, Trophy } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { CheckCircle, Clock, Calendar, DollarSign, TrendingUp, AlertCircle, Trophy, Plus, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { createPageUrl } from '@/utils';
+import EquityGainBadge from './EquityGainBadge';
 
 // Stock images for project categories
 const PROJECT_IMAGES = {
@@ -57,44 +61,131 @@ const getProjectImage = (project) => {
   return PROJECT_IMAGES[project.category] || PROJECT_IMAGES.default;
 };
 
-export default function MyProjectsTab({ projects, demoMode }) {
+export default function MyProjectsTab({ projects, demoMode, onAddProject }) {
+  // Calculate equity totals
+  const totals = useMemo(() => {
+    const totalBudget = projects.reduce((sum, p) => sum + (p.investment_required || p.budget || 0), 0);
+    const totalValueAdded = projects.reduce((sum, p) => sum + (p.property_value_impact || p.resaleValueIncrease || 0), 0);
+    const totalAnnualSavings = projects.reduce((sum, p) => sum + (p.annual_savings || p.estimatedAnnualSavings || 0), 0);
+    const netEquityGain = totalValueAdded - totalBudget;
+    const completedCount = projects.filter(p => p.status === 'Completed').length;
+    const inProgressCount = projects.filter(p => p.status === 'In Progress').length;
+
+    // Calculate completed projects equity
+    const completedProjects = projects.filter(p => p.status === 'Completed');
+    const completedInvestment = completedProjects.reduce((sum, p) => sum + (p.investment_required || p.budget || 0), 0);
+    const completedValueAdded = completedProjects.reduce((sum, p) => sum + (p.property_value_impact || p.resaleValueIncrease || 0), 0);
+    const completedNetGain = completedValueAdded - completedInvestment;
+
+    return {
+      totalBudget,
+      totalValueAdded,
+      totalAnnualSavings,
+      netEquityGain,
+      completedCount,
+      inProgressCount,
+      completedInvestment,
+      completedValueAdded,
+      completedNetGain
+    };
+  }, [projects]);
+
   if (!projects || projects.length === 0) {
     return (
       <div className="text-center py-12">
+        <Plus className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <p className="text-gray-500 mb-4">No upgrade projects yet</p>
-        <p className="text-sm text-gray-600 mb-6">Browse ideas to get started building value</p>
+        <p className="text-sm text-gray-600 mb-6">Browse ideas or create your own project</p>
+        {!demoMode && onAddProject && (
+          <Button
+            onClick={onAddProject}
+            className="bg-blue-600 hover:bg-blue-700"
+            style={{ minHeight: '48px' }}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Create New Project
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
+      {/* Header with Add Button */}
+      {!demoMode && onAddProject && (
+        <div className="flex justify-end">
+          <Button
+            onClick={onAddProject}
+            className="bg-blue-600 hover:bg-blue-700"
+            style={{ minHeight: '44px' }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
+        </div>
+      )}
+
+      {/* Summary Stats - Row 1: Financial */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 rounded-xl p-4">
-          <div className="text-sm text-blue-700 mb-1">Total Budget</div>
-          <div className="text-2xl font-bold text-blue-900">
-            ${projects.reduce((sum, p) => sum + (p.investment_required || p.budget || 0), 0).toLocaleString()}
+          <div className="text-xs md:text-sm text-blue-700 mb-1">Total Investment</div>
+          <div className="text-xl md:text-2xl font-bold text-blue-900">
+            ${totals.totalBudget.toLocaleString()}
           </div>
         </div>
         <div className="bg-green-50 rounded-xl p-4">
-          <div className="text-sm text-green-700 mb-1">Annual Savings</div>
-          <div className="text-2xl font-bold text-green-900">
-            ${projects.reduce((sum, p) => sum + (p.annual_savings || p.estimatedAnnualSavings || 0), 0).toLocaleString()}
+          <div className="text-xs md:text-sm text-green-700 mb-1">Value Added</div>
+          <div className="text-xl md:text-2xl font-bold text-green-900">
+            +${totals.totalValueAdded.toLocaleString()}
           </div>
         </div>
+        <div className={`rounded-xl p-4 ${totals.netEquityGain >= 0 ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+          <div className={`text-xs md:text-sm mb-1 ${totals.netEquityGain >= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+            Net Equity Gain
+          </div>
+          <div className={`text-xl md:text-2xl font-bold ${totals.netEquityGain >= 0 ? 'text-emerald-900' : 'text-amber-900'}`}>
+            {totals.netEquityGain >= 0 ? '+' : ''}${totals.netEquityGain.toLocaleString()}
+          </div>
+        </div>
+        <div className="bg-teal-50 rounded-xl p-4">
+          <div className="text-xs md:text-sm text-teal-700 mb-1">Annual Savings</div>
+          <div className="text-xl md:text-2xl font-bold text-teal-900">
+            ${totals.totalAnnualSavings.toLocaleString()}/yr
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats - Row 2: Progress */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-purple-50 rounded-xl p-4">
-          <div className="text-sm text-purple-700 mb-1">In Progress</div>
-          <div className="text-2xl font-bold text-purple-900">
-            {projects.filter(p => p.status === 'In Progress').length}
+          <div className="flex items-center gap-2 text-xs md:text-sm text-purple-700 mb-1">
+            <Clock className="w-4 h-4" />
+            In Progress
+          </div>
+          <div className="text-xl md:text-2xl font-bold text-purple-900">
+            {totals.inProgressCount}
           </div>
         </div>
         <div className="bg-gray-50 rounded-xl p-4">
-          <div className="text-sm text-gray-700 mb-1">Completed</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {projects.filter(p => p.status === 'Completed').length}
+          <div className="flex items-center gap-2 text-xs md:text-sm text-gray-700 mb-1">
+            <Trophy className="w-4 h-4" />
+            Completed
+          </div>
+          <div className="text-xl md:text-2xl font-bold text-gray-900">
+            {totals.completedCount}
           </div>
         </div>
+        {totals.completedCount > 0 && (
+          <div className={`col-span-2 md:col-span-1 rounded-xl p-4 ${totals.completedNetGain >= 0 ? 'bg-green-100 border border-green-300' : 'bg-amber-100 border border-amber-300'}`}>
+            <div className={`text-xs md:text-sm mb-1 ${totals.completedNetGain >= 0 ? 'text-green-700' : 'text-amber-700'}`}>
+              Realized Equity (Completed)
+            </div>
+            <div className={`text-xl md:text-2xl font-bold ${totals.completedNetGain >= 0 ? 'text-green-900' : 'text-amber-900'}`}>
+              {totals.completedNetGain >= 0 ? '+' : ''}${totals.completedNetGain.toLocaleString()}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Project Cards */}
@@ -114,6 +205,7 @@ function ProjectCard({ project }) {
   const annualSavings = project.annual_savings || project.estimatedAnnualSavings || 0;
   const valueIncrease = project.property_value_impact || project.resaleValueIncrease || 0;
   const payback = project.payback_period_years || project.paybackPeriod || 0;
+  const netEquityGain = valueIncrease - budget;
 
   const statusColors = {
     'Completed': 'bg-green-100 text-green-800 border-green-300',
@@ -130,36 +222,46 @@ function ProjectCard({ project }) {
   const projectImage = getProjectImage(project);
 
   return (
-    <Card className={`border-2 hover:shadow-lg transition-all overflow-hidden ${
-      project.category === 'Quality of Life' ? 'bg-purple-50/30' : ''
-    }`}>
-      {/* Project Image */}
-      <div className="relative h-48 md:h-56 overflow-hidden">
-        <img
-          src={projectImage}
-          alt={project.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[project.status]} bg-white/90`}>
-              {project.status}
-            </span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColors[project.category]} bg-white/90`}>
-              {project.category}
-            </span>
+    <Link
+      to={createPageUrl("UpgradeProjectDetail") + `?id=${project.id}`}
+      className="block group"
+    >
+      <Card className={`border-2 hover:shadow-xl hover:border-blue-400 transition-all duration-200 overflow-hidden cursor-pointer ${
+        project.category === 'Quality of Life' ? 'bg-purple-50/30' : ''
+      }`}>
+        {/* Project Image */}
+        <div className="relative h-48 md:h-56 overflow-hidden">
+          <img
+            src={projectImage}
+            alt={project.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[project.status]} bg-white/90`}>
+                {project.status}
+              </span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColors[project.category] || 'bg-gray-50 text-gray-700 border-gray-300'} bg-white/90`}>
+                {project.category}
+              </span>
+            </div>
+            <h3 className="text-xl font-bold text-white drop-shadow-lg">{project.title}</h3>
           </div>
-          <h3 className="text-xl font-bold text-white drop-shadow-lg">{project.title}</h3>
+          {/* Top right badges */}
+          <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+            {project.status === 'In Progress' && project.daysRemaining && (
+              <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {project.daysRemaining} days left
+              </div>
+            )}
+            {valueIncrease > 0 && (
+              <EquityGainBadge investment={budget} valueAdded={valueIncrease} size="small" />
+            )}
+          </div>
         </div>
-        {project.status === 'In Progress' && project.daysRemaining && (
-          <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            {project.daysRemaining} days left
-          </div>
-        )}
-      </div>
-      <CardContent className="p-6">
+        <CardContent className="p-6">
 
         {/* Budget & ROI */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -288,5 +390,6 @@ function ProjectCard({ project }) {
         )}
       </CardContent>
     </Card>
+    </Link>
   );
 }

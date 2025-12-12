@@ -27,9 +27,9 @@ export default function HQDashboard() {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['hq-stats'],
     queryFn: async () => {
-      // Get user counts
+      // Get user counts from 'users' table (synced from Clerk)
       const { count: totalUsers } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*', { count: 'exact', head: true });
 
       // Get property counts
@@ -42,11 +42,16 @@ export default function HQDashboard() {
         .from('operators')
         .select('*', { count: 'exact', head: true });
 
+      // Get contractor counts
+      const { count: totalContractors } = await supabase
+        .from('contractors')
+        .select('*', { count: 'exact', head: true });
+
       // Get new users this week
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       const { count: newUsersThisWeek } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', weekAgo.toISOString());
 
@@ -56,16 +61,36 @@ export default function HQDashboard() {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', weekAgo.toISOString());
 
+      // Get active subscriptions
+      const { count: activeSubscriptions } = await supabase
+        .from('user_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      // Get monthly revenue from transactions
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const { data: monthTransactions } = await supabase
+        .from('transactions')
+        .select('amount_total')
+        .eq('status', 'succeeded')
+        .gte('created_at', monthStart.toISOString());
+
+      const monthlyRevenue = (monthTransactions || []).reduce(
+        (sum, t) => sum + (t.amount_total || 0), 0
+      ) / 100; // Convert cents to dollars
+
       return {
         totalUsers: totalUsers || 0,
         totalProperties: totalProperties || 0,
         totalOperators: totalOperators || 0,
-        totalContractors: 0, // Placeholder
+        totalContractors: totalContractors || 0,
         newUsersThisWeek: newUsersThisWeek || 0,
         newPropertiesThisWeek: newPropertiesThisWeek || 0,
-        activeSubscriptions: 0, // Placeholder
-        monthlyRevenue: 0, // Placeholder
-        pendingSupport: 3, // Placeholder
+        activeSubscriptions: activeSubscriptions || 0,
+        monthlyRevenue: monthlyRevenue || 0,
+        pendingSupport: 0,
         systemHealth: 'healthy'
       };
     },
@@ -76,9 +101,9 @@ export default function HQDashboard() {
   const { data: recentActivity = [] } = useQuery({
     queryKey: ['hq-recent-activity'],
     queryFn: async () => {
-      // Get recent users
+      // Get recent users from 'users' table
       const { data: recentUsers } = await supabase
-        .from('profiles')
+        .from('users')
         .select('id, full_name, email, created_at')
         .order('created_at', { ascending: false })
         .limit(5);

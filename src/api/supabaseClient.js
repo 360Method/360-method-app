@@ -3,6 +3,120 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// ============================================
+// INPUT VALIDATION & SANITIZATION
+// ============================================
+
+/**
+ * Validate UUID format
+ * @param {string} id - String to validate as UUID
+ * @returns {boolean} True if valid UUID
+ */
+export function isValidUUID(id) {
+  if (!id || typeof id !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
+/**
+ * Sanitize string input - removes potential XSS vectors
+ * @param {string} str - String to sanitize
+ * @returns {string} Sanitized string
+ */
+export function sanitizeString(str) {
+  if (str === null || str === undefined) return str;
+  if (typeof str !== 'string') return str;
+
+  // Trim whitespace
+  let sanitized = str.trim();
+
+  // Remove null bytes
+  sanitized = sanitized.replace(/\0/g, '');
+
+  // Escape HTML entities for XSS prevention
+  sanitized = sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+
+  return sanitized;
+}
+
+/**
+ * Sanitize object - recursively sanitizes all string values
+ * @param {Object} obj - Object to sanitize
+ * @param {Object} options - { skipFields: ['field1', 'field2'] }
+ * @returns {Object} Sanitized object
+ */
+export function sanitizeObject(obj, options = {}) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item, options));
+
+  const skipFields = options.skipFields || [];
+  const sanitized = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (skipFields.includes(key)) {
+      sanitized[key] = value;
+    } else if (typeof value === 'string') {
+      sanitized[key] = sanitizeString(value);
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeObject(value, options);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
+/**
+ * Validate required fields in an object
+ * @param {Object} obj - Object to validate
+ * @param {Array<string>} requiredFields - List of required field names
+ * @throws {Error} If any required field is missing
+ */
+export function validateRequired(obj, requiredFields) {
+  if (!obj) throw new Error('Data object is required');
+
+  const missing = requiredFields.filter(field => {
+    const value = obj[field];
+    return value === undefined || value === null || value === '';
+  });
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required fields: ${missing.join(', ')}`);
+  }
+}
+
+/**
+ * Validate and sanitize data before database operations
+ * @param {Object} data - Data to validate
+ * @param {Object} schema - Validation schema { required: [], uuid: [] }
+ * @returns {Object} Validated and sanitized data
+ */
+export function validateAndSanitize(data, schema = {}) {
+  // Validate required fields
+  if (schema.required && schema.required.length > 0) {
+    validateRequired(data, schema.required);
+  }
+
+  // Validate UUID fields
+  if (schema.uuid && schema.uuid.length > 0) {
+    for (const field of schema.uuid) {
+      if (data[field] && !isValidUUID(data[field])) {
+        throw new Error(`Invalid UUID format for field: ${field}`);
+      }
+    }
+  }
+
+  // Sanitize all string values (skip certain fields like passwords, tokens)
+  const skipSanitize = ['password', 'token', 'api_key', 'secret'];
+  return sanitizeObject(data, { skipFields: skipSanitize });
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
 }
@@ -167,13 +281,22 @@ export const Property = {
    * @param {Object} data - Property data
    */
   async create(data) {
+    console.log('Property.create called with data:', JSON.stringify(data, null, 2));
+
     const { data: result, error } = await supabase
       .from('properties')
       .insert(data)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase Property.create error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
+      throw error;
+    }
     return result;
   },
 
@@ -385,6 +508,11 @@ function createEntityWrapper(tableName) {
     },
 
     async get(id) {
+      // Validate UUID format
+      if (id && !isValidUUID(id) && !id.startsWith('demo-')) {
+        throw new Error(`Invalid UUID format for id: ${id}`);
+      }
+
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
@@ -395,7 +523,21 @@ function createEntityWrapper(tableName) {
       return data;
     },
 
-    async create(data) {
+    async create(inputData) {
+      // Sanitize input data
+      const data = sanitizeObject(inputData, { skipFields: ['password', 'token', 'api_key'] });
+
+      // Validate UUID fields if present
+      if (data.id && !isValidUUID(data.id) && !data.id.startsWith('demo-')) {
+        throw new Error('Invalid UUID format for id field');
+      }
+      if (data.property_id && !isValidUUID(data.property_id) && !data.property_id.startsWith('demo-')) {
+        throw new Error('Invalid UUID format for property_id field');
+      }
+      if (data.user_id && !isValidUUID(data.user_id)) {
+        throw new Error('Invalid UUID format for user_id field');
+      }
+
       const { data: result, error } = await supabase
         .from(tableName)
         .insert(data)
@@ -406,7 +548,15 @@ function createEntityWrapper(tableName) {
       return result;
     },
 
-    async update(id, data) {
+    async update(id, inputData) {
+      // Validate UUID format
+      if (!isValidUUID(id) && !id.startsWith('demo-')) {
+        throw new Error(`Invalid UUID format for id: ${id}`);
+      }
+
+      // Sanitize input data
+      const data = sanitizeObject(inputData, { skipFields: ['password', 'token', 'api_key'] });
+
       const { data: result, error } = await supabase
         .from(tableName)
         .update({ ...data, updated_at: new Date().toISOString() })
@@ -419,6 +569,11 @@ function createEntityWrapper(tableName) {
     },
 
     async delete(id) {
+      // Validate UUID format
+      if (!isValidUUID(id) && !id.startsWith('demo-')) {
+        throw new Error(`Invalid UUID format for id: ${id}`);
+      }
+
       const { error } = await supabase
         .from(tableName)
         .delete()

@@ -13,7 +13,9 @@ export default function AIGuidanceView({ project, onUpdate }) {
   const generateGuidanceMutation = useMutation({
     mutationFn: async () => {
       setIsGenerating(true);
-      
+
+      console.log('Calling InvokeLLM for AI guidance...');
+
       // Call AI to generate project-specific guidance
       const result = await integrations.InvokeLLM({
         prompt: `You are an expert home improvement advisor. Analyze this renovation project and provide guidance:
@@ -46,29 +48,67 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
         }
       });
 
+      console.log('InvokeLLM result:', result);
       return result;
     },
     onSuccess: (result) => {
-      // Update project with AI guidance
+      console.log('AI Guidance mutation success, result:', result);
+
+      // Validate we got the expected structure
+      if (!result || (!result.project_plan && !result.recommendations)) {
+        console.error('Invalid AI response structure:', result);
+        alert('AI returned an unexpected format. Please try again.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Update project with AI guidance - store in single ai_guidance JSONB column
       Upgrade.update(project.id, {
-        ai_project_plan: result.project_plan,
-        ai_recommendations: result.recommendations,
-        ai_risk_alerts: result.risk_alerts
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['upgrade', project.id] });
+        ai_guidance: {
+          project_plan: result.project_plan || '',
+          recommendations: result.recommendations || [],
+          risk_alerts: result.risk_alerts || [],
+          generated_at: new Date().toISOString()
+        }
+      }).then(async () => {
+        console.log('AI guidance saved successfully');
+        // Invalidate and wait for refetch before updating UI
+        await queryClient.invalidateQueries({ queryKey: ['upgrade', project.id] });
+        await queryClient.refetchQueries({ queryKey: ['upgrade', project.id] });
+        console.log('Query refetched');
         setIsGenerating(false);
         onUpdate?.();
+      }).catch((err) => {
+        console.error('Failed to save AI guidance:', err);
+        alert('Failed to save AI guidance. Please try again.');
+        setIsGenerating(false);
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('AI Guidance mutation failed:', error);
       setIsGenerating(false);
       alert('Failed to generate AI guidance. Please try again.');
     }
   });
 
-  const hasGuidance = project.ai_project_plan || 
-                     (project.ai_recommendations && project.ai_recommendations.length > 0) ||
-                     (project.ai_risk_alerts && project.ai_risk_alerts.length > 0);
+  // Extract guidance from ai_guidance JSONB column
+  // Handle both string (from DB) and object formats
+  let guidance = {};
+  if (project.ai_guidance) {
+    if (typeof project.ai_guidance === 'string') {
+      try {
+        guidance = JSON.parse(project.ai_guidance);
+      } catch (e) {
+        console.error('Failed to parse ai_guidance:', e);
+      }
+    } else {
+      guidance = project.ai_guidance;
+    }
+  }
+
+  const hasGuidance = guidance.project_plan ||
+                     (guidance.recommendations && guidance.recommendations.length > 0) ||
+                     (guidance.risk_alerts && guidance.risk_alerts.length > 0);
 
   if (!hasGuidance) {
     return (
@@ -122,7 +162,7 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
       </div>
 
       {/* Project Plan */}
-      {project.ai_project_plan && (
+      {guidance.project_plan && (
         <Card className="border-2 border-blue-300 bg-blue-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -132,14 +172,14 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
           </CardHeader>
           <CardContent>
             <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-              {project.ai_project_plan}
+              {guidance.project_plan}
             </p>
           </CardContent>
         </Card>
       )}
 
       {/* Recommendations */}
-      {project.ai_recommendations && project.ai_recommendations.length > 0 && (
+      {guidance.recommendations && guidance.recommendations.length > 0 && (
         <Card className="border-2 border-green-300 bg-green-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -149,7 +189,7 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {project.ai_recommendations.map((rec, index) => (
+              {guidance.recommendations.map((rec, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
                     {index + 1}
@@ -163,7 +203,7 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
       )}
 
       {/* Risk Alerts */}
-      {project.ai_risk_alerts && project.ai_risk_alerts.length > 0 && (
+      {guidance.risk_alerts && guidance.risk_alerts.length > 0 && (
         <Card className="border-2 border-red-300 bg-red-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -173,7 +213,7 @@ Format as JSON with keys: project_plan, recommendations (array), risk_alerts (ar
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {project.ai_risk_alerts.map((alert, index) => (
+              {guidance.risk_alerts.map((alert, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <p className="text-gray-800 leading-relaxed flex-1">{alert}</p>

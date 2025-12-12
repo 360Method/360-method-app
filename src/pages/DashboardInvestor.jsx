@@ -9,11 +9,13 @@ import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../components/shared/DemoContext';
 import { getDemoUrl } from '@/components/shared/navigationConfig';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
 import DemoCTA from '../components/demo/DemoCTA';
 
 export default function DashboardInvestor() {
   const navigate = useNavigate();
   const { demoMode, demoData, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -22,18 +24,19 @@ export default function DashboardInvestor() {
 
   // Fetch real data
   const { data: realProperties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
-      const allProps = await Property.list('-created_date');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_date', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: !demoMode
+    enabled: !demoMode && !!user?.id
   });
 
   const properties = demoMode ? (demoData?.properties || []) : realProperties;
 
   // Use demo portfolio stats or calculate from real data
-  const portfolioStats = demoMode 
+  const portfolioStats = demoMode
     ? demoData?.portfolioStats || {
         totalProperties: 3,
         totalUnits: 7,
@@ -45,20 +48,44 @@ export default function DashboardInvestor() {
         avgHealthScore: 81,
         portfolioROI: 18.5
       }
-    : {
-        totalProperties: properties.length,
-        totalUnits: properties.reduce((sum, p) => sum + (p.door_count || 1), 0),
-        totalValue: properties.reduce((sum, p) => sum + (p.current_value || 0), 0),
-        totalEquity: properties.reduce((sum, p) => {
+    : (() => {
+        const totalProperties = properties.length;
+        const totalUnits = properties.reduce((sum, p) => sum + (p.door_count || 1), 0);
+        const totalValue = properties.reduce((sum, p) => sum + (p.current_value || 0), 0);
+        const totalEquity = properties.reduce((sum, p) => {
           const value = p.current_value || 0;
           const debt = p.mortgage_balance || 0;
           return sum + (value - debt);
-        }, 0),
-        monthlyRevenue: properties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0),
-        avgHealthScore: properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / (properties.length || 1)
-      };
+        }, 0);
+        const monthlyRevenue = properties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0);
+        // Estimate monthly expenses: mortgage, insurance, taxes, maintenance reserve (typically 40-50% of rent)
+        const monthlyExpenses = properties.reduce((sum, p) => {
+          const mortgage = p.monthly_mortgage || 0;
+          const insurance = p.monthly_insurance || 0;
+          const taxes = p.monthly_taxes || 0;
+          const maintenance = (p.monthly_rent || 0) * 0.1; // 10% maintenance reserve
+          return sum + mortgage + insurance + taxes + maintenance;
+        }, 0);
+        const netCashFlow = monthlyRevenue - monthlyExpenses;
+        const avgHealthScore = properties.length > 0
+          ? properties.reduce((sum, p) => sum + (p.health_score || 0), 0) / properties.length
+          : 0;
+        // Calculate ROI: (Net Annual Cash Flow / Total Equity) * 100
+        const annualCashFlow = netCashFlow * 12;
+        const portfolioROI = totalEquity > 0 ? (annualCashFlow / totalEquity) * 100 : 0;
 
-  portfolioStats.netCashFlow = portfolioStats.monthlyRevenue - (portfolioStats.monthlyExpenses || 0);
+        return {
+          totalProperties,
+          totalUnits,
+          totalValue,
+          totalEquity,
+          monthlyRevenue,
+          monthlyExpenses,
+          netCashFlow,
+          avgHealthScore,
+          portfolioROI
+        };
+      })();
 
   // Demo properties for cards
   const demoPropertyCards = demoMode ? [
@@ -98,7 +125,24 @@ export default function DashboardInvestor() {
       urgentTasks: 2,
       upcomingTasks: 8
     }
-  ] : properties.slice(0, 3);
+  ] : properties.slice(0, 3).map(p => {
+    // Calculate property-level financials for real data
+    const monthlyRevenue = p.monthly_rent || 0;
+    const monthlyExpenses = (p.monthly_mortgage || 0) + (p.monthly_insurance || 0) +
+                           (p.monthly_taxes || 0) + (monthlyRevenue * 0.1);
+    return {
+      id: p.id,
+      name: p.address || p.street_address,
+      type: p.property_type,
+      units: p.door_count || 1,
+      healthScore: p.health_score || 0,
+      monthlyRevenue,
+      monthlyExpenses,
+      netCashFlow: monthlyRevenue - monthlyExpenses,
+      urgentTasks: p.urgent_task_count || 0,
+      upcomingTasks: p.upcoming_task_count || 0
+    };
+  });
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

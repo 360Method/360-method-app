@@ -1,6 +1,7 @@
 import React from "react";
 import { CartItem, Property, ServicePackage, auth, storage } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ export default function CartReview() {
   const [editFormData, setEditFormData] = React.useState({});
 
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
 
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -57,8 +59,9 @@ export default function CartReview() {
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => Property.list('-created_date'),
+    queryKey: ['properties', authUser?.id],
+    queryFn: () => Property.list('-created_date', authUser?.id),
+    enabled: !!authUser?.id
   });
 
   const { data: cartItems = [] } = useQuery({

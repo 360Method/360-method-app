@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Property, SystemBaseline, PreservationRecommendation, PreservationImpact, auth } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,10 +39,12 @@ const BIG_7_CATEGORIES = [
 export default function Preserve() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('forecast');
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
   // `whyExpanded` state was related to the old "Why Preserve Matters" card.
   // Since that card is being replaced by `StepEducationCard`, this state is no longer needed.
   // const [whyExpanded, setWhyExpanded] = useState(false);
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user: authUser } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -48,7 +53,7 @@ export default function Preserve() {
 
   // Fetch data
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', authUser?.id],
     queryFn: async () => {
       console.log('🔵 PRESERVE: Fetching properties, demoMode:', demoMode);
       if (demoMode) {
@@ -56,11 +61,12 @@ export default function Preserve() {
         console.log('🔵 PRESERVE: Demo properties:', demoProps);
         return demoProps;
       }
-      const realProps = await Property.list();
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const realProps = await Property.list('-created_at', authUser?.id);
       console.log('🔵 PRESERVE: Real properties:', realProps);
       return realProps;
     },
-    enabled: true,
+    enabled: demoMode || !!authUser?.id,
     staleTime: 0 // Force fresh data
   });
 
@@ -129,11 +135,23 @@ export default function Preserve() {
   const canEdit = !demoMode;
 
   // Auto-select first property
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       setSelectedProperty(properties[0].id);
     }
   }, [properties, selectedProperty]);
+
+  // Show prerequisite popup if needed
+  const currentPropertyObj = selectedProperty
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('preserve', currentPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_preserve_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   // Filter recommendations by priority
   const urgentRecommendations = recommendations.filter(r => r.priority === 'URGENT' && r.status === 'PENDING');
@@ -629,6 +647,18 @@ export default function Preserve() {
         <DontWantDIYBanner />
         <DemoCTA />
 
+        {/* Prerequisite Popup */}
+        <PrerequisitePopup
+          isOpen={showPrereqPopup}
+          onClose={() => {
+            setShowPrereqPopup(false);
+            sessionStorage.setItem('dismissed_preserve_prereq', 'true');
+          }}
+          message={prereqInfo.message}
+          requiredStep={prereqInfo.requiredStep}
+          progress={prereqInfo.currentProgress}
+          threshold={prereqInfo.threshold}
+        />
       </div>
     </div>
   );

@@ -17,10 +17,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import InteractiveStepItem from "./InteractiveStepItem";
 import DemoDIYAhaCard from "./DemoDIYAhaCard";
 import { useDemo } from "@/components/shared/DemoContext";
+import { notifyTaskCompleted } from "@/api/triggerNotification";
+import { useAuth } from "@/lib/AuthContext";
+import { useGamification } from "@/lib/GamificationContext";
 
 export default function EnhancedTaskExecutionView({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
   const { demoMode } = useDemo();
+  const { user } = useAuth();
+  const { awardXP, addDisasterPrevented } = useGamification();
 
   // State for task execution
   const [stepCompletions, setStepCompletions] = useState(task?.step_progress || []);
@@ -328,7 +333,7 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
   const handleComplete = async () => {
     const actualHours = elapsedSeconds / 3600;
     const actualCostValue = actualCost ? parseFloat(actualCost) : 0;
-    
+
     await completeTaskMutation.mutateAsync({
       status: 'Completed',
       actual_cost: actualCostValue,
@@ -337,7 +342,53 @@ export default function EnhancedTaskExecutionView({ task, open, onClose, onCompl
       completion_photos: completionPhotos,
       completion_notes: completionNotes
     });
-    
+
+    // Trigger notification
+    if (user?.id) {
+      notifyTaskCompleted({
+        taskId: task.id,
+        taskTitle: task.title,
+        propertyId: task.property_id,
+        userId: user.id,
+        completedBy: 'diy'
+      });
+    }
+
+    // ========================================
+    // GAMIFICATION: Award XP for completing task
+    // ========================================
+    try {
+      // Check if completed before due date
+      const dueDate = task.due_date ? new Date(task.due_date) : null;
+      const completedEarly = dueDate && new Date() < dueDate;
+
+      if (completedEarly) {
+        await awardXP('complete_task_early', {
+          entityType: 'maintenance_task',
+          entityId: task.id,
+          taskTitle: task.title,
+          systemType: task.system_type
+        });
+      } else {
+        await awardXP('complete_task', {
+          entityType: 'maintenance_task',
+          entityId: task.id,
+          taskTitle: task.title,
+          systemType: task.system_type
+        });
+      }
+
+      // Track disaster prevention if there's a delayed fix cost
+      // The difference between delayed cost and current fix cost is the "disaster prevented"
+      const disasterPrevented = (task.delayed_fix_cost || 0) - (task.current_fix_cost || 0);
+      if (disasterPrevented > 0) {
+        await addDisasterPrevented(disasterPrevented);
+      }
+    } catch (err) {
+      console.error('Error awarding XP for task completion:', err);
+      // Don't block the user flow
+    }
+
     setShowCelebration(true);
   };
   

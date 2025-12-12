@@ -11,7 +11,8 @@ import {
   Lightbulb,
   Building2,
   BookOpen,
-  Award
+  Award,
+  Trophy
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
@@ -115,12 +116,19 @@ export const NAVIGATION_STRUCTURE = [
         icon: Award,
         url: createPageUrl("Score360")
       },
-      { 
+      {
         id: "resources",
-        label: "Resources", 
-        subtitle: "Guides & tutorials", 
+        label: "Resources",
+        subtitle: "Guides & tutorials",
         icon: BookOpen,
         url: createPageUrl("Resources")
+      },
+      {
+        id: "achievements",
+        label: "Achievements",
+        subtitle: "Badges & rewards",
+        icon: Trophy,
+        url: createPageUrl("Achievements")
       }
     ]
   },
@@ -217,9 +225,9 @@ export const NAVIGATION_STRUCTURE = [
         requiresActComplete: true,
         unlockHint: "Complete ACT phase to unlock"
       },
-      { 
+      {
         id: "scale",
-        label: "Grow", 
+        label: "Scale",
         subtitle: "Portfolio growth",
         step: "9 of 9",
         icon: Building2,
@@ -233,14 +241,77 @@ export const NAVIGATION_STRUCTURE = [
 
 export function isNavItemLocked(item, selectedProperty) {
   if (!selectedProperty) return false;
-  
+
   if (item.requiresBaselineComplete) {
     return selectedProperty.baseline_completion < 66;
   }
-  
+
   if (item.requiresActComplete) {
     return selectedProperty.baseline_completion < 66;
   }
-  
+
   return false;
+}
+
+// Prerequisite info for showing popups on pages
+export function getPrerequisiteInfo(pageId, selectedProperty) {
+  const BASELINE_THRESHOLD = 66;
+  const currentProgress = selectedProperty?.baseline_completion || 0;
+
+  const pagePrerequisites = {
+    // Phase II: ACT pages - require Baseline
+    prioritize: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to get accurate task prioritization based on your home's actual systems and conditions.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    },
+    schedule: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to schedule maintenance based on your home's specific systems and their conditions.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    },
+    execute: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to track task execution with accurate system information.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    },
+    // Phase III: ADVANCE pages - require Baseline
+    preserve: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to get personalized preservation schedules for your home's systems.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    },
+    upgrade: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to see accurate ROI projections for upgrades based on your home's current condition.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    },
+    scale: {
+      requiresBaseline: true,
+      message: "Complete your Baseline to track portfolio health and wealth projections accurately.",
+      requiredStep: "Baseline",
+      threshold: BASELINE_THRESHOLD
+    }
+  };
+
+  const prereq = pagePrerequisites[pageId?.toLowerCase()];
+
+  if (!prereq) {
+    return { needsPrerequisite: false };
+  }
+
+  const needsPrerequisite = prereq.requiresBaseline && currentProgress < prereq.threshold;
+
+  return {
+    needsPrerequisite,
+    message: prereq.message,
+    requiredStep: prereq.requiredStep,
+    currentProgress,
+    threshold: prereq.threshold
+  };
 }

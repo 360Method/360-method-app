@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { UpgradeTemplate, Upgrade } from '@/api/supabaseClient';
+import { UpgradeTemplate, Upgrade, integrations } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useGamification } from '@/lib/GamificationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +11,96 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ChevronDown, ChevronUp, Calculator, Sparkles,
   AlertCircle, Info, DollarSign, TrendingUp,
-  Home, Hammer, Building2, HardHat, CheckCircle2
+  Home, Hammer, Building2, HardHat, CheckCircle2,
+  FileText, Loader2
 } from 'lucide-react';
 import { getMilestonesForUpgrade } from './upgradeMilestones';
 import AICostDisclaimer from '../shared/AICostDisclaimer';
 import AICostEstimator from './AICostEstimator';
+import ProjectDocuments from './ProjectDocuments';
+
+/**
+ * Generate AI-powered milestones for a project
+ */
+async function generateAIMilestones(projectData) {
+  const { title, category, description, current_state, upgraded_state, investment_required } = projectData;
+
+  const prompt = `You are an expert home improvement project planner. Generate a detailed, actionable project plan with milestones for a homeowner.
+
+PROJECT DETAILS:
+- Title: ${title}
+- Category: ${category}
+- Budget: $${investment_required?.toLocaleString() || 'TBD'}
+${description ? `- Description: ${description}` : ''}
+${current_state ? `- Current State: ${current_state}` : ''}
+${upgraded_state ? `- Target State: ${upgraded_state}` : ''}
+
+Generate 4-8 milestones that guide the homeowner through this project from start to finish. Each milestone should be:
+1. Specific and actionable
+2. In logical order
+3. Include expert tips to avoid common mistakes
+4. Suggest what photos to capture for documentation
+
+Consider phases like:
+- Research & Planning
+- Budgeting & Quotes
+- Material Selection & Procurement
+- Preparation Work
+- Main Work Phases (break down if complex)
+- Quality Inspection
+- Cleanup & Documentation`;
+
+  const result = await integrations.InvokeLLM({
+    prompt,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        milestones: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Clear milestone name (e.g., 'Get 3 Contractor Quotes')" },
+              description: { type: "string", description: "What needs to be done in detail" },
+              ai_guidance: { type: "string", description: "Expert tip or common pitfall to avoid" },
+              typical_duration_days: { type: "number", description: "Realistic estimate in days" },
+              photo_prompts: {
+                type: "array",
+                items: { type: "string" },
+                description: "What photos to capture at this stage"
+              }
+            }
+          }
+        },
+        project_tips: {
+          type: "array",
+          items: { type: "string" },
+          description: "3-5 overall tips for this type of project"
+        }
+      }
+    }
+  });
+
+  // Transform AI response into milestone format expected by the database
+  const milestones = result.milestones?.map((m, index) => ({
+    id: `milestone_${Date.now()}_${index}`,
+    title: m.title,
+    description: m.description,
+    order: index,
+    status: 'Not Started',
+    completed_date: null,
+    photos: [],
+    notes: '',
+    ai_guidance: m.ai_guidance,
+    typical_duration_days: m.typical_duration_days,
+    photo_prompts: m.photo_prompts || []
+  })) || [];
+
+  return {
+    milestones,
+    project_tips: result.project_tips || []
+  };
+}
 
 export default function UpgradeDialog({
   properties,
@@ -25,11 +111,17 @@ export default function UpgradeDialog({
   onCancel
 }) {
   const queryClient = useQueryClient();
+  const { awardXP } = useGamification();
+
+  // Track if we've already awarded XP for this project creation
+  const hasAwardedXPRef = useRef(false);
 
   // UI State
   const [showFinancials, setShowFinancials] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingMilestones, setIsGeneratingMilestones] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,20 +135,21 @@ export default function UpgradeDialog({
     enabled: !!templateId && !project,
   });
 
-  // Form Data
+  // Form Data - categories and status must match database constraints
   const [formData, setFormData] = useState({
     property_id: properties?.[0]?.id || '',
     title: '',
-    category: 'High ROI Renovations',
-    status: 'Identified',
-    project_manager: 'DIY',
+    category: 'Property Value',
+    status: 'Planned',
+    project_manager: 'DIY', // UI-only field, not stored in DB
     description: '',
     investment_required: 0,
     annual_savings: 0,
     property_value_impact: 0,
     current_state: '',
     upgraded_state: '',
-    notes: ''
+    notes: '', // UI-only field, stored in description
+    documents: []
   });
 
   // Pre-fill from template
@@ -88,17 +181,22 @@ export default function UpgradeDialog({
       setFormData({
         property_id: project.property_id,
         title: project.title || '',
-        category: project.category || 'High ROI Renovations',
-        status: project.status || 'Identified',
-        project_manager: project.project_manager || 'DIY',
+        category: project.category || 'Property Value',
+        status: project.status || 'Planned',
+        project_manager: 'DIY', // UI-only field
         description: project.description || '',
         investment_required: project.investment_required || 0,
         annual_savings: project.annual_savings || 0,
         property_value_impact: project.property_value_impact || 0,
         current_state: project.current_state || '',
         upgraded_state: project.upgraded_state || '',
-        notes: project.notes || ''
+        notes: '', // UI-only field
+        documents: project.document_urls || [] // Map from DB column name
       });
+      // Auto-expand documents section if project has documents
+      if (project.document_urls?.length > 0) {
+        setShowDocuments(true);
+      }
     }
   }, [project]);
 
@@ -138,19 +236,24 @@ export default function UpgradeDialog({
       console.log('🚀 Starting project save...');
       console.log('Input data:', data);
 
+      // Build submitData with ONLY columns that exist in the database schema
+      // Schema columns: id, property_id, title, category, description, current_state, upgraded_state,
+      // investment_required, annual_savings, property_value_impact, status, planned_date, completion_date,
+      // photo_urls, document_urls, milestones, ai_guidance, created_at, updated_at
       const submitData = {
-        ...data,
+        property_id: data.property_id,
+        title: data.title,
+        category: data.category,
+        description: data.description || '',
+        current_state: data.current_state || '',
+        upgraded_state: data.upgraded_state || '',
         investment_required: parseFloat(data.investment_required) || 0,
         annual_savings: parseFloat(data.annual_savings) || 0,
         property_value_impact: parseFloat(data.property_value_impact) || 0,
+        status: data.status || 'Planned',
+        // Store documents in document_urls (the actual DB column)
+        document_urls: data.documents || [],
       };
-
-      // Calculate ROI timeline
-      if (submitData.annual_savings > 0 && submitData.investment_required > 0) {
-        submitData.roi_timeline_months = Math.round(
-          (submitData.investment_required / submitData.annual_savings) * 12
-        );
-      }
 
       // CRITICAL: Auto-generate milestones for ALL new projects
       if (!project?.id) {
@@ -159,19 +262,69 @@ export default function UpgradeDialog({
         console.log('Project category:', submitData.category);
 
         let milestones = [];
+        let aiGuidance = null;
 
-        try {
-          milestones = getMilestonesForUpgrade(
-            submitData.title,
-            submitData.category
-          );
+        // Try AI generation first if description is provided
+        if (submitData.description || submitData.current_state || submitData.upgraded_state) {
+          try {
+            console.log('🤖 Attempting AI milestone generation...');
+            setIsGeneratingMilestones(true);
 
-          console.log(`✅ Generated ${milestones.length} milestones`);
-          console.log('Milestone titles:', milestones.map(m => m.title));
+            const aiResult = await generateAIMilestones({
+              title: submitData.title,
+              category: submitData.category,
+              description: submitData.description,
+              current_state: submitData.current_state,
+              upgraded_state: submitData.upgraded_state,
+              investment_required: submitData.investment_required
+            });
 
-          if (milestones.length === 0) {
-            console.warn('⚠️ No milestones generated! Using fallback...');
-            // Absolute fallback - should never happen but just in case
+            if (aiResult.milestones && aiResult.milestones.length > 0) {
+              milestones = aiResult.milestones;
+              aiGuidance = {
+                generated_at: new Date().toISOString(),
+                project_tips: aiResult.project_tips || [],
+                source: 'ai'
+              };
+              console.log(`✅ AI generated ${milestones.length} milestones with expert guidance`);
+            }
+          } catch (aiError) {
+            console.warn('⚠️ AI milestone generation failed, falling back to templates:', aiError.message);
+          } finally {
+            setIsGeneratingMilestones(false);
+          }
+        }
+
+        // Fall back to template-based generation if AI didn't work
+        if (milestones.length === 0) {
+          try {
+            console.log('📋 Using template-based milestone generation...');
+            milestones = getMilestonesForUpgrade(
+              submitData.title,
+              submitData.category
+            );
+
+            console.log(`✅ Generated ${milestones.length} milestones from templates`);
+            console.log('Milestone titles:', milestones.map(m => m.title));
+
+            if (milestones.length === 0) {
+              console.warn('⚠️ No milestones generated! Using fallback...');
+              // Absolute fallback - should never happen but just in case
+              milestones = [{
+                id: `milestone_${Date.now()}`,
+                title: 'Project Planning',
+                description: 'Plan and prepare for this project',
+                order: 0,
+                status: 'Not Started',
+                completed_date: null,
+                photos: [],
+                notes: ''
+              }];
+            }
+
+          } catch (milestoneError) {
+            console.error('❌ Milestone generation failed:', milestoneError);
+            // Even if generation fails, provide a basic milestone
             milestones = [{
               id: `milestone_${Date.now()}`,
               title: 'Project Planning',
@@ -183,29 +336,11 @@ export default function UpgradeDialog({
               notes: ''
             }];
           }
-
-        } catch (milestoneError) {
-          console.error('❌ Milestone generation failed:', milestoneError);
-          // Even if generation fails, provide a basic milestone
-          milestones = [{
-            id: `milestone_${Date.now()}`,
-            title: 'Project Planning',
-            description: 'Plan and prepare for this project',
-            order: 0,
-            status: 'Not Started',
-            completed_date: null,
-            photos: [],
-            notes: ''
-          }];
         }
 
         submitData.milestones = milestones;
-        submitData.progress_percentage = 0;
-        submitData.current_milestone = milestones[0]?.title || 'Not Started';
-
-        // Store template_id if created from template
-        if (template) {
-          submitData.template_id = template.id;
+        if (aiGuidance) {
+          submitData.ai_guidance = aiGuidance;
         }
       }
 
@@ -226,7 +361,7 @@ export default function UpgradeDialog({
 
       return result;
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       console.log('🎉 Save mutation successful!');
       console.log('Result:', result);
       console.log('Milestones saved:', result.milestones?.length || 0);
@@ -235,6 +370,25 @@ export default function UpgradeDialog({
       console.log('🔄 Invalidating React Query cache...');
       queryClient.invalidateQueries({ queryKey: ['upgrades'] });
       queryClient.invalidateQueries({ queryKey: ['upgrade'] });
+
+      // ========================================
+      // GAMIFICATION: Award XP for planning upgrade
+      // Only for NEW projects, not edits
+      // ========================================
+      if (!project?.id && !hasAwardedXPRef.current) {
+        hasAwardedXPRef.current = true;
+        try {
+          await awardXP('plan_upgrade', {
+            entityType: 'upgrade',
+            entityId: result.id,
+            projectTitle: result.title,
+            category: result.category
+          });
+        } catch (err) {
+          console.error('Error awarding XP for planning upgrade:', err);
+          // Don't block the user flow
+        }
+      }
 
       console.log('✅ Queries invalidated, showing success modal');
       setShowSuccess(true);
@@ -307,17 +461,14 @@ export default function UpgradeDialog({
     );
   }
 
+  // Categories must match database constraint in upgrades table
+  // To add more, run migration: supabase/migrations/024_upgrade_category_expansion.sql
   const CATEGORIES = [
-    "High ROI Renovations",
-    "Energy Efficiency",
-    "Rental Income Boosters",
-    "Preventive Replacements",
-    "Curb Appeal",
-    "Interior Updates",
-    "Safety",
-    "Comfort",
     "Property Value",
-    "Rental Appeal"
+    "Energy Efficiency",
+    "Rental Appeal",
+    "Safety",
+    "Comfort"
   ];
 
   return (
@@ -346,12 +497,18 @@ export default function UpgradeDialog({
             </div>
           )}
           {!template && !project && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-xs text-green-800">
-                  ✨ Milestones will be automatically generated based on your project type
-                </p>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3 mt-2">
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-blue-900">
+                    AI-Powered Project Planning
+                  </p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Add a description to get personalized milestones with expert guidance.
+                    Otherwise, we'll use smart templates based on your project type.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -446,11 +603,9 @@ export default function UpgradeDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Identified">💡 Identified</SelectItem>
                     <SelectItem value="Planned">📋 Planned</SelectItem>
                     <SelectItem value="In Progress">🔨 In Progress</SelectItem>
                     <SelectItem value="Completed">✅ Completed</SelectItem>
-                    <SelectItem value="Deferred">⏸️ Deferred</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -672,7 +827,50 @@ export default function UpgradeDialog({
           </div>
 
           {/* ============================================ */}
-          {/* SECTION 3: ADVANCED OPTIONS (Collapsed)    */}
+          {/* SECTION 3: DOCUMENTS (Collapsed)           */}
+          {/* ============================================ */}
+
+          <div className="border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setShowDocuments(!showDocuments)}
+              className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              style={{ minHeight: '56px' }}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-bold text-gray-900">
+                  Documents
+                </h3>
+                {formData.documents?.length > 0 && (
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">
+                    {formData.documents.length} file{formData.documents.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              {showDocuments ? (
+                <ChevronUp className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+
+            {showDocuments && (
+              <div className="mt-4 pl-7">
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload receipts, estimates, contracts, warranties, and photos for this project.
+                </p>
+                <ProjectDocuments
+                  projectId={project?.id || 'new'}
+                  documents={formData.documents || []}
+                  onDocumentsChange={(docs) => handleChange('documents', docs)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ============================================ */}
+          {/* SECTION 4: ADVANCED OPTIONS (Collapsed)    */}
           {/* ============================================ */}
 
           <div className="border-t pt-4">
@@ -770,11 +968,26 @@ export default function UpgradeDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.title || !formData.property_id}
+              disabled={isSubmitting || isGeneratingMilestones || !formData.title || !formData.property_id}
               className="flex-1"
               style={{ minHeight: '48px', backgroundColor: 'var(--primary)' }}
             >
-              {isSubmitting ? 'Saving...' : project ? 'Save Changes' : 'Create Project'}
+              {isGeneratingMilestones ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating AI Milestones...
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : project ? 'Save Changes' : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Create Project
+                </>
+              )}
             </Button>
           </div>
         </form>

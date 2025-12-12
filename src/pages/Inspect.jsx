@@ -2,6 +2,7 @@ import React from "react";
 import { Property, Inspection, SystemBaseline } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,9 @@ import InspectionWalkthrough from "../components/inspect/InspectionWalkthrough";
 import InspectionComplete from "../components/inspect/InspectionComplete";
 import InspectionReport from "../components/inspect/InspectionReport";
 import InspectionWizard from "../components/inspect/InspectionWizard";
+// New inspection flows
+import QuickSpotCheck from "../components/inspect/quick/QuickSpotCheck";
+import FullWalkthrough from "../components/inspect/full/FullWalkthrough";
 import ServiceRequestDialog from "../components/services/ServiceRequestDialog";
 import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import StepNavigation from "../components/navigation/StepNavigation";
@@ -51,9 +55,12 @@ export default function Inspect() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [viewingInspection, setViewingInspection] = React.useState(null);
   const [showWizard, setShowWizard] = React.useState(false);
+  const [confirmingInspection, setConfirmingInspection] = React.useState(null); // 'quick' | 'full' | null
+  const [startingInspection, setStartingInspection] = React.useState(false);
 
   const queryClient = useQueryClient();
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -61,14 +68,16 @@ export default function Inspect() {
   }, [demoMode, markStepVisited]);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await Property.list();
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_at', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
+    enabled: demoMode || !!user?.id
   });
 
   const { data: realInspections = [] } = useQuery({
@@ -215,23 +224,95 @@ export default function Inspect() {
 
   const getDeleteMessage = () => {
     if (!inspectionToDelete) return '';
-    
-    const hasIssues = (inspectionToDelete.issues_found || 0) > 0;
-    
-    let message = `Are you sure you want to delete the ${inspectionToDelete.season} ${inspectionToDelete.year} inspection?`;
-    
+
+    const hasIssues = (inspectionToDelete.issues_count || 0) > 0;
+
+    // Parse notes for season info
+    const notesMatch = (inspectionToDelete.notes || '').match(/^(Spring|Summer|Fall|Winter)\s+(\d{4})/);
+    const displayName = notesMatch
+      ? `${notesMatch[1]} ${notesMatch[2]}`
+      : inspectionToDelete.inspection_type || 'this';
+
+    let message = `Are you sure you want to delete the ${displayName} inspection?`;
+
     if (hasIssues && inspectionToDelete.status === 'Completed') {
-      message += `\n\n⚠️ Warning: This inspection documented ${inspectionToDelete.issues_found} issue(s). Deleting it will permanently remove the inspection report and all findings.`;
+      message += `\n\n⚠️ Warning: This inspection documented ${inspectionToDelete.issues_count} issue(s). Deleting it will permanently remove the inspection report and all findings.`;
     } else if (inspectionToDelete.status === 'In Progress') {
-      message += `\n\n⚠️ Warning: This inspection is in progress (${inspectionToDelete.completion_percentage}% complete). All progress will be lost.`;
+      message += `\n\n⚠️ Warning: This inspection is in progress (${inspectionToDelete.completion_percent || 0}% complete). All progress will be lost.`;
     }
-    
+
     message += '\n\nThis action cannot be undone.';
-    
+
     return message;
   };
 
+  // Helper to get current season
+  const getCurrentSeason = () => {
+    const month = new Date().getMonth();
+    if (month >= 2 && month <= 4) return 'Spring';
+    if (month >= 5 && month <= 7) return 'Summer';
+    if (month >= 8 && month <= 10) return 'Fall';
+    return 'Winter';
+  };
+
+  const getSeasonEmoji = (season) => {
+    const emojis = { Spring: '🌸', Summer: '☀️', Fall: '🍂', Winter: '❄️' };
+    return emojis[season] || '📅';
+  };
+
+  // Quick-start inspection handler - routes to new Quick or Full flow
+  const handleQuickStartInspection = async (type) => {
+    if (demoMode || !selectedPropertyId) return;
+
+    // Route to the new inspection flows
+    if (type === 'quick') {
+      setInspectionView('quick');
+    } else {
+      setInspectionView('full');
+    }
+    setConfirmingInspection(null);
+  };
+
   // Render different views
+
+  // NEW: Quick Spot Check flow
+  if (inspectionView === 'quick' && selectedProperty) {
+    return (
+      <QuickSpotCheck
+        property={selectedProperty}
+        onComplete={() => {
+          handleBackToMain();
+          // Optionally navigate to Priority Queue
+          // handleViewPriorityQueue();
+        }}
+        onCancel={handleBackToMain}
+      />
+    );
+  }
+
+  // NEW: Full Walkthrough flow
+  if (inspectionView === 'full' && selectedProperty) {
+    return (
+      <FullWalkthrough
+        property={selectedProperty}
+        onComplete={() => {
+          handleBackToMain();
+        }}
+        onCancel={handleBackToMain}
+        onViewReport={(inspectionId) => {
+          // Load inspection and view report
+          Inspection.get(inspectionId).then(inspection => {
+            if (inspection) {
+              setCurrentInspection(inspection);
+              setInspectionView('report');
+            }
+          });
+        }}
+      />
+    );
+  }
+
+  // Custom inspection setup (legacy)
   if (inspectionView === 'setup') {
     return (
       <InspectionSetup
@@ -243,6 +324,7 @@ export default function Inspect() {
     );
   }
 
+  // Legacy walkthrough for in-progress inspections
   if (inspectionView === 'walkthrough' && currentInspection) {
     return (
       <InspectionWalkthrough
@@ -359,7 +441,7 @@ export default function Inspect() {
         )}
 
         {/* MAIN METHOD SELECTOR - Clean, focused view */}
-        {selectedPropertyId && hasBaselineSystems && !inProgressInspection && (
+        {selectedPropertyId && hasBaselineSystems && (
           <Card className="border-2 border-orange-200 shadow-2xl mb-8">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#1B365D' }}>
@@ -369,12 +451,12 @@ export default function Inspect() {
             </CardHeader>
             <CardContent className="pb-8">
               <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
-                {/* Quick Inspection Wizard */}
-                <Card 
+                {/* Quick Spot Check */}
+                <Card
                   className={`border-2 border-orange-300 transition-all group hover:shadow-xl bg-white ${
                     canEdit ? 'hover:border-orange-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
                   }`}
-                  onClick={() => canEdit && setShowWizard(true)}
+                  onClick={() => canEdit && handleQuickStartInspection('quick')}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
@@ -382,44 +464,44 @@ export default function Inspect() {
                         <Eye className="w-10 h-10 text-white" />
                       </div>
                       <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
-                        ⚡ Quick Inspection
+                        ⚡ Quick Spot Check
                       </h3>
                       <Badge className="bg-orange-600 text-white mb-4 text-sm px-3 py-1">
                         <Clock className="w-3 h-3 mr-1" />
-                        15-20 minutes
+                        5-10 minutes
                       </Badge>
                       <p className="text-gray-700 mb-6">
-                        Focused check of your 6 essential systems for critical issues.
+                        Pick specific areas to quickly inspect with simple yes/no checks.
                       </p>
                     </div>
-                    
+
                     <div className="bg-orange-50 rounded-lg p-4 mb-6 text-left">
                       <p className="text-sm font-semibold text-orange-900 mb-3">✓ Perfect for:</p>
                       <ul className="text-sm text-orange-800 space-y-2">
-                        <li>• Seasonal check-ins (quarterly)</li>
-                        <li>• Pre-winter/summer prep</li>
-                        <li>• Spot-checking critical systems</li>
-                        <li>• Quick issue identification</li>
+                        <li>• Monthly spot checks</li>
+                        <li>• After storms or events</li>
+                        <li>• Checking specific concerns</li>
+                        <li>• Quick peace of mind</li>
                       </ul>
                     </div>
 
-                    <Button 
+                    <Button
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
                       style={{ backgroundColor: '#EA580C', minHeight: '56px' }}
                       disabled={!canEdit}
                     >
                       <Eye className="w-5 h-5" />
-                      Start Quick Inspection →
+                      Start Quick Spot Check →
                     </Button>
                   </CardContent>
                 </Card>
 
-                {/* Full Property Walkthrough */}
-                <Card 
+                {/* Full Annual Walkthrough */}
+                <Card
                   className={`border-2 border-teal-300 transition-all group hover:shadow-xl bg-white ${
                     canEdit ? 'hover:border-teal-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
                   }`}
-                  onClick={() => canEdit && handleStartPhysicalInspection()}
+                  onClick={() => canEdit && handleQuickStartInspection('full')}
                 >
                   <CardContent className="p-8">
                     <div className="text-center mb-6">
@@ -427,28 +509,28 @@ export default function Inspect() {
                         <PlayCircle className="w-10 h-10 text-white" />
                       </div>
                       <h3 className="text-2xl font-bold mb-3" style={{ color: '#1B365D' }}>
-                        🏠 Full Property Walkthrough
+                        🏠 Full Annual Walkthrough
                       </h3>
                       <Badge className="bg-teal-600 text-white mb-4 text-sm px-3 py-1">
                         <Clock className="w-3 h-3 mr-1" />
                         30-45 minutes
                       </Badge>
                       <p className="text-gray-700 mb-6">
-                        Comprehensive room-by-room inspection with detailed notes.
+                        AI-guided tour with voice instructions. Generates formal report.
                       </p>
                     </div>
-                    
+
                     <div className="bg-teal-50 rounded-lg p-4 mb-6 text-left">
                       <p className="text-sm font-semibold text-teal-900 mb-3">✓ Perfect for:</p>
                       <ul className="text-sm text-teal-800 space-y-2">
-                        <li>• Thorough seasonal inspections</li>
+                        <li>• Annual comprehensive inspection</li>
+                        <li>• Formal inspection reports</li>
                         <li>• Pre/post-tenant turnover</li>
-                        <li>• Post-storm assessments</li>
-                        <li>• Annual comprehensive review</li>
+                        <li>• Documentation for records</li>
                       </ul>
                     </div>
 
-                    <Button 
+                    <Button
                       className="w-full gap-2 text-lg py-6 group-hover:shadow-lg"
                       style={{ backgroundColor: '#0D9488', minHeight: '56px' }}
                       disabled={!canEdit}
@@ -476,6 +558,7 @@ export default function Inspect() {
             </CardContent>
           </Card>
         )}
+
 
         {/* NEW: Step Education Card - Collapsed by default */}
         <StepEducationCard 
@@ -646,11 +729,14 @@ export default function Inspect() {
                     📋 Inspection In Progress
                   </p>
                   <p className="text-sm text-orange-800 mb-3">
-                    {inProgressInspection.season} {inProgressInspection.year} inspection started{' '}
-                    {new Date(inProgressInspection.created_date).toLocaleDateString()}.{' '}
-                    {inProgressInspection.completion_percentage}% complete. Your progress is automatically saved.
+                    {inProgressInspection.inspection_type || 'Seasonal'} inspection started{' '}
+                    {inProgressInspection.start_date || inProgressInspection.created_at
+                      ? new Date(inProgressInspection.start_date || inProgressInspection.created_at).toLocaleDateString()
+                      : 'recently'
+                    }.{' '}
+                    {inProgressInspection.completion_percent || 0}% complete. Your progress is automatically saved.
                   </p>
-                  <Progress value={inProgressInspection.completion_percentage} className="w-full mb-3" />
+                  <Progress value={inProgressInspection.completion_percent || 0} className="w-full mb-3" />
                   <div className="flex flex-col md:flex-row gap-2">
                     <Button
                       onClick={() => handleContinueInspection(inProgressInspection)}
@@ -708,18 +794,23 @@ export default function Inspect() {
             
             <div className="space-y-4">
               {inspections
-                .sort((a, b) => new Date(b.inspection_date || b.created_date) - new Date(a.inspection_date || a.created_date))
+                .sort((a, b) => new Date(b.start_date || b.created_at) - new Date(a.start_date || a.created_at))
                 .map((inspection) => {
                   const isInProgress = inspection.status === 'In Progress';
                   const isCompleted = inspection.status === 'Completed';
-                  const hasUrgentIssues = (inspection.urgent_count || 0) > 0;
-                  
+                  const issuesCount = inspection.issues_count || 0;
+
+                  // Parse notes for season info if stored there
+                  const notesMatch = (inspection.notes || '').match(/^(Spring|Summer|Fall|Winter)\s+(\d{4})/);
+                  const displaySeason = notesMatch ? notesMatch[1] : inspection.inspection_type;
+                  const displayYear = notesMatch ? notesMatch[2] : new Date(inspection.start_date || inspection.created_at).getFullYear();
+
                   return (
-                    <Card 
+                    <Card
                       key={inspection.id}
                       className={`border-2 hover:shadow-lg transition-shadow ${
                         isInProgress ? 'border-orange-300 bg-orange-50' :
-                        hasUrgentIssues ? 'border-red-300 bg-red-50' :
+                        issuesCount > 0 ? 'border-yellow-300 bg-yellow-50' :
                         'border-gray-200'
                       }`}
                     >
@@ -728,47 +819,38 @@ export default function Inspect() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className="font-bold text-xl" style={{ color: '#1B365D' }}>
-                                {inspection.season} {inspection.year}
+                                {displaySeason} {displayYear}
                               </h3>
-                              <Badge style={{ 
+                              <Badge style={{
                                 backgroundColor: isCompleted ? '#28A745' : isInProgress ? '#FF6B35' : '#666666'
                               }}>
                                 {inspection.status}
                               </Badge>
                               {isInProgress && (
                                 <Badge variant="outline">
-                                  {inspection.completion_percentage}% Complete
+                                  {inspection.completion_percent || 0}% Complete
                                 </Badge>
                               )}
                             </div>
-                            
+
                             <p className="text-sm text-gray-600 mb-3">
-                              {new Date(inspection.inspection_date || inspection.created_date).toLocaleDateString('en-US', {
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                              {inspection.duration_minutes > 0 && ` • ${inspection.duration_minutes} minutes`}
+                              {inspection.start_date || inspection.created_at
+                                ? new Date(inspection.start_date || inspection.created_at).toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })
+                                : 'Date not available'
+                              }
                             </p>
 
                             {isCompleted && (
                               <div className="flex flex-wrap gap-4 text-sm">
-                                {(inspection.urgent_count || 0) > 0 && (
-                                  <span className="text-red-600 font-semibold">
-                                    🚨 {inspection.urgent_count} Urgent
-                                  </span>
-                                )}
-                                {(inspection.flag_count || 0) > 0 && (
+                                {issuesCount > 0 ? (
                                   <span className="text-orange-600 font-semibold">
-                                    ⚠️ {inspection.flag_count} Flag
+                                    ⚠️ {issuesCount} Issue{issuesCount > 1 ? 's' : ''} Found
                                   </span>
-                                )}
-                                {(inspection.monitor_count || 0) > 0 && (
-                                  <span className="text-green-600 font-semibold">
-                                    ✅ {inspection.monitor_count} Monitor
-                                  </span>
-                                )}
-                                {inspection.issues_found === 0 && (
+                                ) : (
                                   <span className="text-green-600 font-semibold flex items-center gap-1">
                                     <CheckCircle2 className="w-4 h-4" />
                                     No Issues Found
@@ -862,17 +944,17 @@ export default function Inspect() {
 
       {canEdit && deleteConfirmOpen && (
         <ConfirmDialog
-          open={deleteConfirmOpen}
+          isOpen={deleteConfirmOpen}
           onClose={() => {
             setDeleteConfirmOpen(false);
             setInspectionToDelete(null);
           }}
           onConfirm={handleConfirmDelete}
           title="Delete Inspection?"
-          message={getDeleteMessage()}
+          description={getDeleteMessage()}
           confirmText="Yes, Delete"
           cancelText="Cancel"
-          variant="destructive"
+          confirmVariant="destructive"
         />
       )}
 

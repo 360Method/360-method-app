@@ -111,20 +111,24 @@ export default function Properties() {
     }
   });
 
-  // Check if first time - redirect to onboarding if no properties
+  // Check if first time - redirect to onboarding if no properties and never onboarded
   useEffect(() => {
     if (demoMode) return; // Don't show wizards in demo mode
+    if (!user?.id) return;
 
-    // If user has no properties and tries to add one, redirect to onboarding
-    if (newParam === 'true' && properties.length === 0) {
+    const hasCompletedOnboarding = localStorage.getItem(`onboarding_completed_${user.id}`) === 'true';
+
+    // If user has no properties AND has never completed onboarding, redirect to onboarding
+    if (newParam === 'true' && properties.length === 0 && !hasCompletedOnboarding) {
       navigate(createPageUrl('Onboarding'), { replace: true });
       return;
     }
 
+    // Otherwise just show the quick add modal
     if (newParam === 'true') {
       setShowQuickAdd(true);
     }
-  }, [newParam, properties.length, demoMode, navigate]);
+  }, [newParam, properties.length, demoMode, navigate, user?.id]);
 
   // Handle edit mode
   useEffect(() => {
@@ -154,12 +158,16 @@ export default function Properties() {
 
   const handleAddProperty = (mode = 'quick') => {
     if (demoMode) return; // Don't allow adding in demo mode
-    
+
+    // Check if user has ever completed onboarding before
+    const hasCompletedOnboarding = localStorage.getItem(`onboarding_completed_${user?.id}`) === 'true';
     const hideWelcome = localStorage.getItem('hidePropertyWelcome');
 
-    if (properties.length === 0 && !hideWelcome) {
+    // If user has no properties AND has never completed onboarding, redirect to onboarding
+    if (properties.length === 0 && !hasCompletedOnboarding && !hideWelcome) {
       setShowWelcome(true);
     } else if (mode === 'quick') {
+      // User either has properties, has completed onboarding before, or dismissed welcome
       setShowQuickAdd(true);
     } else if (mode === 'complete') {
       setShowCompleteWizard(true);
@@ -203,10 +211,15 @@ export default function Properties() {
     }, 100);
   };
 
+  // Handle redirect to onboarding when showWelcome is triggered
+  useEffect(() => {
+    if (showWelcome) {
+      navigate(createPageUrl('Onboarding'), { replace: true });
+    }
+  }, [showWelcome, navigate]);
+
   // Show welcome screen - redirect to onboarding instead
   if (showWelcome) {
-    // Redirect to onboarding for new users
-    navigate(createPageUrl('Onboarding'), { replace: true });
     return null;
   }
 
@@ -224,6 +237,12 @@ export default function Properties() {
           setShowSuccessScreen(false);
           setCompletedProperty(null);
           navigate(createPageUrl('Dashboard'));
+        }}
+        onCompleteProfile={(prop) => {
+          setShowSuccessScreen(false);
+          setCompletedProperty(null);
+          setCompletingProperty(prop);
+          setShowProfileWizard(true);
         }}
       />
     );

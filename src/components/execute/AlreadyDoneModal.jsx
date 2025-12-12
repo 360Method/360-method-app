@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle2, Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import CompletionCelebration from "./CompletionCelebration";
+import { notifyTaskCompleted } from "@/api/triggerNotification";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function AlreadyDoneModal({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [completionDate, setCompletionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [actualCost, setActualCost] = useState('');
   const [showCelebration, setShowCelebration] = useState(false);
@@ -27,17 +30,28 @@ export default function AlreadyDoneModal({ task, open, onClose, onComplete }) {
 
   const handleComplete = async () => {
     const actualCostValue = parseFloat(actualCost) || 0;
-    
+
     await completeTaskMutation.mutateAsync({
       status: 'Completed',
       completion_date: completionDate + 'T12:00:00Z',
       actual_cost: actualCostValue
     });
-    
+
+    // Trigger notification
+    if (user?.id) {
+      notifyTaskCompleted({
+        taskId: task.id,
+        taskTitle: task.title,
+        propertyId: task.property_id,
+        userId: user.id,
+        completedBy: 'diy'
+      });
+    }
+
     // Calculate savings
     const estimatedCost = task.contractor_cost || task.operator_cost || 0;
     const savings = estimatedCost - actualCostValue;
-    
+
     setCompletionSavings(savings);
     setShowCelebration(true);
   };

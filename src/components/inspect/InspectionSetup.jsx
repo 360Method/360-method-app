@@ -41,14 +41,13 @@ export default function InspectionSetup({ property, baselineSystems, onComplete,
       
       return Inspection.create({
         property_id: property.id,
-        season: selectedSeason,
-        year: new Date().getFullYear(),
-        inspection_type: inspectionType,
+        inspection_type: inspectionType === 'seasonal' ? 'Seasonal' : inspectionType === 'quick' ? 'Seasonal' : 'Full',
         status: 'In Progress',
-        completion_percentage: 0,
-        issues_found: 0,
+        route_mode: inspectionType === 'seasonal' ? 'physical' : 'area_based',
+        completion_percent: 0,
+        issues_count: 0,
         checklist_items: [],
-        start_time: new Date().toISOString()
+        notes: `${selectedSeason} ${new Date().getFullYear()} - ${inspectionType} Inspection`
       });
     },
     onSuccess: (inspection) => {

@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Property, PortfolioEquity, StrategicRecommendation, WealthProjection, CapitalAllocation, PortfolioBenchmark, auth } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,8 +39,10 @@ import DemoCTA from '../components/demo/DemoCTA';
 export default function Scale() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [activeTab, setActiveTab] = useState('equity-position');
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
   // const [whyExpanded, setWhyExpanded] = useState(false); // This state is no longer needed for the new StepEducationCard
   const { demoMode, demoData, isInvestor, isHomeowner, markStepVisited } = useDemo();
+  const { user: authUser } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -46,21 +51,22 @@ export default function Scale() {
 
   // Fetch data
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', authUser?.id],
     queryFn: async () => {
       console.log('🔵 SCALE: Fetching properties, demoMode:', demoMode);
       if (demoMode) {
-        const demoProps = isInvestor 
+        const demoProps = isInvestor
           ? (demoData?.properties || [])
           : (demoData?.property ? [demoData.property] : []);
         console.log('🔵 SCALE: Demo properties:', demoProps);
         return demoProps;
       }
-      const realProps = await Property.list();
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const realProps = await Property.list('-created_at', authUser?.id);
       console.log('🔵 SCALE: Real properties:', realProps);
       return realProps;
     },
-    enabled: true,
+    enabled: demoMode || !!authUser?.id,
     staleTime: 0
   });
 
@@ -138,7 +144,7 @@ export default function Scale() {
   });
 
   // Auto-select property
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       if (properties.length === 1) {
         setSelectedProperty(properties[0].id);
@@ -147,6 +153,18 @@ export default function Scale() {
       }
     }
   }, [properties, selectedProperty]);
+
+  // Show prerequisite popup if needed
+  const prereqPropertyObj = selectedProperty && selectedProperty !== 'all'
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('scale', prereqPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_scale_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   // Calculate portfolio totals
   const totalValue = equityData.reduce((sum, e) => sum + (e.current_market_value || 0), 0);
@@ -533,6 +551,18 @@ export default function Scale() {
 
         <DemoCTA />
 
+        {/* Prerequisite Popup */}
+        <PrerequisitePopup
+          isOpen={showPrereqPopup}
+          onClose={() => {
+            setShowPrereqPopup(false);
+            sessionStorage.setItem('dismissed_scale_prereq', 'true');
+          }}
+          message={prereqInfo.message}
+          requiredStep={prereqInfo.requiredStep}
+          progress={prereqInfo.currentProgress}
+          threshold={prereqInfo.threshold}
+        />
       </div>
     </div>
   );

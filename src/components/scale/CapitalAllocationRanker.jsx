@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { auth, PreservationRecommendation, Upgrade, PortfolioEquity, CapitalAllocation } from "@/api/supabaseClient";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { auth, PreservationRecommendation, Upgrade, PortfolioEquity } from "@/api/supabaseClient";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Calculator, 
-  TrendingUp, 
-  Sparkles, 
+import {
+  Calculator,
+  TrendingUp,
+  Sparkles,
   DollarSign,
   Shield,
   Home,
@@ -24,7 +24,7 @@ import { createPageUrl } from "@/utils";
 export default function CapitalAllocationRanker({ capitalAllocations, properties }) {
   const [availableAmount, setAvailableAmount] = useState(25000);
   const [generating, setGenerating] = useState(false);
-  const queryClient = useQueryClient();
+  const [localAllocation, setLocalAllocation] = useState(null);
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
@@ -46,16 +46,19 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
     queryFn: () => PortfolioEquity.list()
   });
 
-  // Generate allocation
-  const generateAllocation = useMutation({
-    mutationFn: async (amount) => {
+  // Generate allocation locally (no database required)
+  const handleGenerateAllocation = (amount) => {
+    setGenerating(true);
+
+    // Small delay to show loading state
+    setTimeout(() => {
       const options = [];
 
       // Add PRESERVE options
       for (const rec of preserveRecs) {
         const property = properties.find(p => p.id === rec.property_id);
         const urgencyScore = rec.priority === 'URGENT' ? 10 : rec.priority === 'RECOMMENDED' ? 7 : 4;
-        
+
         options.push({
           rank: null,
           type: 'PRESERVE',
@@ -80,7 +83,7 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
       for (const upgrade of upgrades) {
         const property = properties.find(p => p.id === upgrade.property_id);
         const roiMultiple = (upgrade.property_value_impact || 0) / (upgrade.investment_required || 1);
-        
+
         options.push({
           rank: null,
           type: 'UPGRADE',
@@ -106,7 +109,7 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         if (equity.mortgage_balance > 0) {
           const property = properties.find(p => p.id === equity.property_id);
           const paydownAmount = Math.min(amount, equity.mortgage_balance);
-          
+
           options.push({
             rank: null,
             type: 'MORTGAGE_PAYDOWN',
@@ -128,7 +131,7 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         }
       }
 
-      // Add market investment
+      // Add market investment option
       options.push({
         rank: null,
         type: 'MARKET_INVESTMENT',
@@ -147,13 +150,32 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         composite_score: 0
       });
 
+      // Add real estate down payment option
+      options.push({
+        rank: null,
+        type: 'NEW_PROPERTY',
+        title: 'Down Payment for New Property',
+        amount: amount,
+        expected_return_pct: 15.0,
+        return_type: 'Leveraged Appreciation + Rental Income',
+        financial_benefit: amount * 5 * 0.04, // 20% down = 5x leverage, 4% appreciation
+        strategic_value: 'Portfolio expansion, leverage, tax benefits',
+        risk: 'MEDIUM-HIGH',
+        liquidity_impact: 'LOW',
+        timeline: 'Long-term (5-10 years)',
+        urgency_score: 2,
+        roi_score: 1.15,
+        ai_strength: 'CONSIDER',
+        composite_score: 0
+      });
+
       // Calculate composite scores
       for (const option of options) {
-        const strengthScore = option.ai_strength === 'CRITICAL' ? 1 : 
+        const strengthScore = option.ai_strength === 'CRITICAL' ? 1 :
                              option.ai_strength === 'STRONG' ? 0.85 :
                              option.ai_strength === 'RECOMMENDED' ? 0.7 : 0.4;
-        
-        option.composite_score = 
+
+        option.composite_score =
           (option.urgency_score / 10 * 0.4) +
           (Math.min(option.roi_score / 10, 1) * 0.4) +
           (strengthScore * 0.2);
@@ -181,7 +203,7 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         }
       }
 
-      // Priority 2: High ROI
+      // Priority 2: High ROI items
       for (const opt of options.filter(o => o.roi_score > 5 && o.ai_strength !== 'CRITICAL')) {
         if (remaining >= opt.amount && !allocation.find(a => a.option_rank === opt.rank)) {
           allocation.push({
@@ -195,7 +217,21 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
         }
       }
 
-      // Priority 3: Liquidity
+      // Priority 3: Strong mortgage paydown opportunities
+      for (const opt of options.filter(o => o.type === 'MORTGAGE_PAYDOWN' && o.ai_strength === 'STRONG')) {
+        if (remaining >= opt.amount && !allocation.find(a => a.option_rank === opt.rank)) {
+          allocation.push({
+            option_rank: opt.rank,
+            option_title: opt.title,
+            amount: opt.amount,
+            reason: 'High-interest debt reduction',
+            allocation_pct: (opt.amount / amount) * 100
+          });
+          remaining -= opt.amount;
+        }
+      }
+
+      // Priority 4: Market investment for remaining
       if (remaining > 5000) {
         const marketOpt = options.find(o => o.type === 'MARKET_INVESTMENT');
         if (marketOpt) {
@@ -206,28 +242,54 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
             reason: 'Maintain liquidity and diversification',
             allocation_pct: (remaining / amount) * 100
           });
+          remaining = 0;
         }
       }
 
-      return await CapitalAllocation.create({
+      // If no specific allocations were made, provide a balanced suggestion
+      if (allocation.length === 0) {
+        // Split between market and property reserve
+        const marketAmount = Math.round(amount * 0.6);
+        const reserveAmount = amount - marketAmount;
+
+        allocation.push({
+          option_rank: options.find(o => o.type === 'MARKET_INVESTMENT')?.rank || 1,
+          option_title: 'S&P 500 Index Fund',
+          amount: marketAmount,
+          reason: 'Long-term growth and liquidity',
+          allocation_pct: 60
+        });
+
+        allocation.push({
+          option_rank: 99,
+          option_title: 'Property Emergency Reserve',
+          amount: reserveAmount,
+          reason: 'Maintain cash buffer for unexpected repairs',
+          allocation_pct: 40
+        });
+      }
+
+      const result = {
         available_amount: amount,
         allocation_options: options,
         ai_optimal_allocation: {
           allocation: allocation,
           total_allocated: amount - remaining,
           unallocated: remaining,
-          strategy_summary: `Balanced strategy across ${allocation.length} investments`
+          strategy_summary: allocation.length > 0
+            ? `Balanced strategy across ${allocation.length} investment${allocation.length > 1 ? 's' : ''}`
+            : 'Diversified growth strategy'
         },
         analysis_date: new Date().toISOString()
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['capital-allocations']);
-      setGenerating(false);
-    }
-  });
+      };
 
-  const latestAllocation = capitalAllocations[0];
+      setLocalAllocation(result);
+      setGenerating(false);
+    }, 800);
+  };
+
+  // Use local allocation first, fall back to props
+  const latestAllocation = localAllocation || capitalAllocations?.[0];
 
   return (
     <div className="space-y-6">
@@ -255,11 +317,8 @@ export default function CapitalAllocationRanker({ capitalAllocations, properties
                   style={{ minHeight: '56px' }}
                 />
                 <Button
-                  onClick={() => {
-                    setGenerating(true);
-                    generateAllocation.mutate(availableAmount);
-                  }}
-                  disabled={generating || generateAllocation.isLoading}
+                  onClick={() => handleGenerateAllocation(availableAmount)}
+                  disabled={generating}
                   className="bg-purple-600 hover:bg-purple-700"
                   style={{ minHeight: '56px' }}
                 >

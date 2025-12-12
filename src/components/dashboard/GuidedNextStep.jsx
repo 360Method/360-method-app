@@ -32,6 +32,17 @@ import { useDemo } from '@/components/shared/DemoContext';
  */
 
 const GUIDED_STEPS = {
+  ADD_PROPERTY: {
+    id: 'add_property',
+    title: 'Add Your First Property',
+    description: 'Start by adding a property to track its health, maintenance, and value',
+    icon: Home,
+    iconBgColor: 'bg-blue-600',
+    ctaLabel: 'Add Property',
+    destination: 'Properties',
+    phase: 'AWARE',
+    step: 0,
+  },
   DOCUMENT_SYSTEM: {
     id: 'document_system',
     title: 'Document Your First System',
@@ -112,6 +123,7 @@ const GUIDED_STEPS = {
 };
 
 export function GuidedNextStep({
+  propertiesCount = 0,
   systemsCount = 0,
   tasksCount = 0,
   inspectionsCount = 0,
@@ -123,6 +135,11 @@ export function GuidedNextStep({
 
   // Determine the next step based on user's progress
   const getNextStep = () => {
+    // No properties added yet - this is the first step
+    if (propertiesCount === 0) {
+      return GUIDED_STEPS.ADD_PROPERTY;
+    }
+
     // No systems documented yet
     if (systemsCount === 0) {
       return GUIDED_STEPS.DOCUMENT_SYSTEM;

@@ -1,7 +1,10 @@
-import React from "react";
-import { Property, UpgradeTemplate, Upgrade as UpgradeEntity, auth } from "@/api/supabaseClient";
+import React, { useState, useEffect } from "react";
+import { Property, UpgradeTemplate, Upgrade as UpgradeEntity, auth, SystemBaseline, RegionalCosts, SystemLifespans } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,19 +53,21 @@ export default function Upgrade() {
   const templateIdFromUrl = searchParams.get('template');
   const propertyIdFromUrl = searchParams.get('property');
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user: authUser } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
     if (demoMode) markStepVisited(8);
   }, [demoMode, markStepVisited]);
 
-  const [showNewProjectForm, setShowNewProjectForm] = React.useState(showNewForm);
-  const [editingProject, setEditingProject] = React.useState(null);
-  const [templateId, setTemplateId] = React.useState(templateIdFromUrl);
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || null);
-  const [whyExpanded, setWhyExpanded] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('projects');
-  const [showDeferred, setShowDeferred] = React.useState(false);
+  const [showNewProjectForm, setShowNewProjectForm] = useState(showNewForm);
+  const [editingProject, setEditingProject] = useState(null);
+  const [templateId, setTemplateId] = useState(templateIdFromUrl);
+  const [selectedProperty, setSelectedProperty] = useState(propertyIdFromUrl || null);
+  const [whyExpanded, setWhyExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('projects');
+  const [showDeferred, setShowDeferred] = useState(false);
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
 
   React.useEffect(() => {
     if (showNewForm && templateIdFromUrl) {
@@ -72,13 +77,15 @@ export default function Upgrade() {
   }, [showNewForm, templateIdFromUrl]);
 
   const { data: properties = [], refetch: refetchProperties } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', authUser?.id],
     queryFn: () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return Property.list();
-    }
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      return Property.list('-created_at', authUser?.id);
+    },
+    enabled: demoMode || !!authUser?.id
   });
 
   const { data: user } = useQuery({
@@ -89,6 +96,53 @@ export default function Upgrade() {
   const { data: templates = [] } = useQuery({
     queryKey: ['upgradeTemplates'],
     queryFn: () => UpgradeTemplate.list(),
+    enabled: !demoMode
+  });
+
+  // Get current property object (needed by queries below)
+  const currentProperty = properties.find(p => p.id === selectedProperty);
+
+  // Fetch system baselines for the selected property (for personalized recommendations)
+  const { data: systems = [], isLoading: systemsLoading } = useQuery({
+    queryKey: ['systems-for-upgrade', selectedProperty],
+    queryFn: async () => {
+      if (demoMode) {
+        // Return demo systems for personalized recommendations
+        return demoData?.systems || [];
+      }
+      if (!selectedProperty) return [];
+      return SystemBaseline.filter({ property_id: selectedProperty });
+    },
+    enabled: demoMode || !!selectedProperty
+  });
+
+  // Fetch regional costs for the selected property's ZIP code
+  const { data: regionalCosts = null } = useQuery({
+    queryKey: ['regional-costs', currentProperty?.zip_code],
+    queryFn: async () => {
+      if (!currentProperty?.zip_code) return null;
+      try {
+        return await RegionalCosts.getByZip(currentProperty.zip_code);
+      } catch (e) {
+        console.log('No regional costs found for ZIP:', currentProperty.zip_code);
+        return null;
+      }
+    },
+    enabled: !demoMode && !!currentProperty?.zip_code
+  });
+
+  // Fetch system lifespan reference data (cached indefinitely)
+  const { data: lifespanData = {} } = useQuery({
+    queryKey: ['system-lifespans'],
+    queryFn: async () => {
+      try {
+        return await SystemLifespans.getAllAsMap();
+      } catch (e) {
+        console.log('Could not fetch lifespan data, using defaults');
+        return {};
+      }
+    },
+    staleTime: Infinity, // Reference data doesn't change often
     enabled: !demoMode
   });
 
@@ -124,7 +178,7 @@ export default function Upgrade() {
 
   const canEdit = !demoMode;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedProperty && properties.length > 0) {
       // For investor demo, default to Oak Ridge Drive (demo-investor-2)
       if (isInvestor) {
@@ -140,8 +194,17 @@ export default function Upgrade() {
     }
   }, [properties, selectedProperty, isInvestor]);
 
-  // Get current property object
-  const currentProperty = properties.find(p => p.id === selectedProperty);
+  // Show prerequisite popup if needed
+  const prereqPropertyObj = selectedProperty
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('upgrade', prereqPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_upgrade_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   // Filter projects by status
   const activeProjects = allUpgrades.filter(u =>
@@ -417,11 +480,42 @@ export default function Upgrade() {
             </TabsList>
 
             <TabsContent value="projects" className="mt-6">
-              <MyProjectsTab projects={allUpgrades} demoMode={demoMode} />
+              <MyProjectsTab
+                projects={allUpgrades}
+                demoMode={demoMode}
+                onAddProject={() => {
+                  setTemplateId(null);
+                  setEditingProject(null);
+                  setShowNewProjectForm(true);
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="browse" className="mt-6">
-              <BrowseIdeasTab />
+              <BrowseIdeasTab
+                property={currentProperty}
+                systems={systems}
+                regionalCosts={regionalCosts}
+                lifespanData={lifespanData}
+                isLoading={systemsLoading}
+                onStartProject={(recommendation) => {
+                  // Pre-fill form with recommendation data
+                  setTemplateId(null);
+                  setEditingProject({
+                    property_id: selectedProperty,
+                    title: recommendation.title,
+                    description: recommendation.description,
+                    category: recommendation.category,
+                    investment_required: recommendation.estimatedCost,
+                    property_value_impact: recommendation.valueImpact,
+                    annual_savings: recommendation.annual_savings || 0,
+                    status: 'Planned',
+                    source_system_id: recommendation.systemId,
+                    source_recommendation: recommendation,
+                  });
+                  setShowNewProjectForm(true);
+                }}
+              />
             </TabsContent>
           </Tabs>
         )}
@@ -429,6 +523,18 @@ export default function Upgrade() {
         <DontWantDIYBanner />
         <DemoCTA />
 
+        {/* Prerequisite Popup */}
+        <PrerequisitePopup
+          isOpen={showPrereqPopup}
+          onClose={() => {
+            setShowPrereqPopup(false);
+            sessionStorage.setItem('dismissed_upgrade_prereq', 'true');
+          }}
+          message={prereqInfo.message}
+          requiredStep={prereqInfo.requiredStep}
+          progress={prereqInfo.currentProgress}
+          threshold={prereqInfo.threshold}
+        />
       </div>
     </div>
   );

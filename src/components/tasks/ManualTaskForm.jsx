@@ -1,6 +1,7 @@
 import React from "react";
 import { MaintenanceTask, storage, integrations } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useGamification } from "@/lib/GamificationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -261,6 +262,7 @@ function getPropertyFlowType(property) {
 
 export default function ManualTaskForm({ propertyId, property, onComplete, onCancel, open = true, prefilledDate = null, editingTask = null }) {
   const queryClient = useQueryClient();
+  const { awardXP } = useGamification();
   const [step, setStep] = React.useState(1);
   const [formData, setFormData] = React.useState(editingTask || {
     title: "",
@@ -318,13 +320,39 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
     onSuccess: async (savedTasks) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
-      
+
       const firstTask = Array.isArray(savedTasks) ? savedTasks[0] : savedTasks;
-      
+
+      // ========================================
+      // GAMIFICATION: Award XP for logging maintenance task
+      // Only for new tasks, not edits
+      // ========================================
+      if (!isEditing) {
+        try {
+          await awardXP('log_maintenance', {
+            entityType: 'maintenance_task',
+            entityId: firstTask.id,
+            taskTitle: firstTask.title
+          });
+
+          // Award bonus XP if photos/receipts were added
+          if (photos.length > 0) {
+            await awardXP('add_receipt', {
+              entityType: 'maintenance_task',
+              entityId: firstTask.id,
+              photoCount: photos.length
+            });
+          }
+        } catch (err) {
+          console.error('Error awarding XP for logging maintenance:', err);
+          // Don't block the user flow
+        }
+      }
+
       setAiEnriching(true);
       const cascadeResult = await enrichTaskWithAI(firstTask.id, firstTask, photos);
       setAiEnriching(false);
-      
+
       if (cascadeResult) {
         setAiAnalysis(cascadeResult);
         setShowAiResults(true);

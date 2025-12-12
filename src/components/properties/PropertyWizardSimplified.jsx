@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, MapPin, Home, Save, Lightbulb, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
+import { useAuth } from "@/lib/AuthContext";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function PropertyWizardSimplified({ onComplete, onCancel, existingProperty }) {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(existingProperty || {
     address: '',
@@ -41,15 +43,47 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      // Build clean data with ONLY valid database columns
+      const cleanData = {
+        // User ID - REQUIRED for RLS filtering
+        user_id: user?.id,
+
+        // Address fields
+        address: data.formatted_address || data.street_address || data.address,
+        street_address: data.street_address,
+        formatted_address: data.formatted_address,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zip_code,
+
+        // Property classification
+        property_type: data.property_type,
+        property_use_type: data.property_use_type,
+
+        // Property details
+        year_built: data.year_built ? parseInt(data.year_built) : undefined,
+        square_footage: data.square_footage ? parseInt(data.square_footage) : undefined,
+        bedrooms: data.bedrooms !== undefined && data.bedrooms !== null ? parseInt(data.bedrooms) : undefined,
+        bathrooms: data.bathrooms ? parseFloat(data.bathrooms) : undefined,
+
+        // Status
+        setup_completed: true,
+        is_draft: false,
+        baseline_completion: 0,
+        health_score: 0
+      };
+
+      // Remove undefined/null values (but NOT user_id even if somehow undefined)
+      Object.keys(cleanData).forEach(key => {
+        if (key !== 'user_id' && (cleanData[key] === undefined || cleanData[key] === null || cleanData[key] === '')) {
+          delete cleanData[key];
+        }
+      });
+
       if (existingProperty?.id) {
-        return await Property.update(existingProperty.id, data);
+        return await Property.update(existingProperty.id, cleanData);
       } else {
-        return await Property.create({
-          ...data,
-          setup_completed: true,
-          baseline_completion: 0,
-          health_score: 0
-        });
+        return await Property.create(cleanData);
       }
     },
     onSuccess: (savedProperty) => {
@@ -205,19 +239,46 @@ If you cannot find specific information, return null for those fields and set co
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
+      // Build clean draft data with ONLY valid database columns
+      const cleanDraftData = {
+        // User ID - REQUIRED for RLS filtering
+        user_id: user?.id,
+
+        // Address fields
+        address: formData.formatted_address || formData.street_address || formData.address || "Draft Property",
+        street_address: formData.street_address,
+        formatted_address: formData.formatted_address,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zip_code,
+
+        // Property classification
+        property_type: formData.property_type,
+        property_use_type: formData.property_use_type,
+
+        // Property details
+        year_built: formData.year_built ? parseInt(formData.year_built) : undefined,
+        square_footage: formData.square_footage ? parseInt(formData.square_footage) : undefined,
+        bedrooms: formData.bedrooms !== undefined && formData.bedrooms !== null ? parseInt(formData.bedrooms) : undefined,
+        bathrooms: formData.bathrooms ? parseFloat(formData.bathrooms) : undefined,
+
+        // Draft status
+        is_draft: true,
+        draft_step: currentStep,
+        setup_completed: false
+      };
+
+      // Remove undefined/null values (but NOT user_id)
+      Object.keys(cleanDraftData).forEach(key => {
+        if (key !== 'user_id' && (cleanDraftData[key] === undefined || cleanDraftData[key] === null || cleanDraftData[key] === '')) {
+          delete cleanDraftData[key];
+        }
+      });
+
       if (existingProperty?.id) {
-        await Property.update(existingProperty.id, {
-          ...formData,
-          is_draft: true,
-          draft_step: currentStep
-        });
+        await Property.update(existingProperty.id, cleanDraftData);
       } else {
-        await Property.create({
-          ...formData,
-          is_draft: true,
-          draft_step: currentStep,
-          setup_completed: false
-        });
+        await Property.create(cleanDraftData);
       }
       onCancel();
     } catch (error) {

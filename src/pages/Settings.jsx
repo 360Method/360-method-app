@@ -86,11 +86,13 @@ export default function Settings() {
   }, [searchParams, queryClient, setSearchParams]);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
-      const allProps = await Property.list();
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_at', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
+    enabled: !!user?.id
   });
 
   // Fetch subscription status

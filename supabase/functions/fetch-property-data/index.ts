@@ -178,12 +178,15 @@ serve(async (req) => {
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
 
     if (!rapidApiKey) {
+      // Return a graceful response instead of error - onboarding can continue without API data
       return new Response(
         JSON.stringify({
-          error: "RAPIDAPI_KEY not configured",
-          message: "Please set RAPIDAPI_KEY in Supabase Edge Function secrets"
+          success: false,
+          cached: false,
+          data: null,
+          message: "Property data API not configured. Manual entry will be used."
         }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

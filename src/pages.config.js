@@ -84,6 +84,7 @@ import DemoOverwhelmedScore from './pages/DemoOverwhelmedScore';
 import DemoImprovingScore from './pages/DemoImprovingScore';
 import DemoExcellentScore from './pages/DemoExcellentScore';
 import Score360 from './pages/Score360';
+import Achievements from './pages/Achievements';
 import PortalDashboard from './pages/PortalDashboard';
 import PortalMenu from './pages/PortalMenu';
 import PortalMarketplace from './pages/PortalMarketplace';
@@ -243,6 +244,7 @@ export const PAGES = {
     "DemoImprovingScore": DemoImprovingScore,
     "DemoExcellentScore": DemoExcellentScore,
     "Score360": Score360,
+    "Achievements": Achievements,
     "PortalDashboard": PortalDashboard,
     "PortalMenu": PortalMenu,
     "PortalMarketplace": PortalMarketplace,

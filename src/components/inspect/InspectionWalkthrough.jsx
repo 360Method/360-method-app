@@ -9,6 +9,9 @@ import { CheckCircle2, ChevronRight, MapPin, Navigation, ArrowLeft, Loader2, Ale
 import AreaInspection from "./AreaInspection";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import { format } from 'date-fns';
+import { notifyInspectionCompleted } from "@/api/triggerNotification";
+import { useAuth } from "@/lib/AuthContext";
+import { useGamification } from "@/lib/GamificationContext";
 
 // Physical zone-based routing for efficient inspection
 const INSPECTION_ZONES = [
@@ -168,6 +171,15 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
   const [isSaving, setIsSaving] = React.useState(false);
 
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { awardXP, checkAchievement, hasAchievement } = useGamification();
+
+  // Track if we've already awarded "start inspection" XP for this session
+  const hasAwardedStartXP = React.useRef(false);
+
+  // Track completed areas for XP awards (to avoid duplicate awards on re-renders)
+  const awardedAreasRef = React.useRef(new Set());
+  const awardedIssuesRef = React.useRef(0);
 
   const { data: baselineSystems = [] } = useQuery({
     queryKey: ['systemBaselines', property.id],
@@ -213,6 +225,23 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
     return acc;
   }, {});
 
+  // ========================================
+  // GAMIFICATION: Award XP when starting inspection
+  // Only awards once per component mount (new inspection session)
+  // ========================================
+  React.useEffect(() => {
+    if (!hasAwardedStartXP.current && inspection?.id) {
+      hasAwardedStartXP.current = true;
+      awardXP('start_inspection', {
+        entityType: 'inspection',
+        entityId: inspection.id,
+        season: inspection.season
+      }).catch(err => {
+        console.error('Error awarding start inspection XP:', err);
+      });
+    }
+  }, [inspection?.id, awardXP]);
+
   const getProgress = () => {
     if (routeMode === 'physical') {
       const totalZones = INSPECTION_ZONES.length;
@@ -256,6 +285,32 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         completion_percentage: completionPercent,
         status: completionPercent === 100 ? 'Completed' : 'In Progress'
       });
+
+      // ========================================
+      // GAMIFICATION: Award XP for completing room
+      // ========================================
+      if (!awardedAreasRef.current.has(areaId)) {
+        awardedAreasRef.current.add(areaId);
+        const areaName = INSPECTION_AREAS.find(a => a.id === areaId)?.name || areaId;
+        await awardXP('complete_room', {
+          entityType: 'inspection_area',
+          entityId: `${inspection.id}-${areaId}`,
+          areaName
+        });
+      }
+
+      // Award XP for finding issues (only for newly found issues)
+      const issuesInThisArea = data.length;
+      if (issuesInThisArea > awardedIssuesRef.current) {
+        const newIssues = issuesInThisArea - awardedIssuesRef.current;
+        for (let i = 0; i < newIssues; i++) {
+          await awardXP('find_issue', {
+            entityType: 'inspection_issue',
+            inspectionId: inspection.id
+          });
+        }
+        awardedIssuesRef.current = issuesInThisArea;
+      }
     } catch (error) {
       console.error('Failed to save inspection progress:', error);
     }
@@ -361,6 +416,42 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
       queryClient.invalidateQueries({ queryKey: ['systemBaselines'] });
       queryClient.invalidateQueries({ queryKey: ['inspections'] });
       queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
+
+      // Trigger notification for inspection completion
+      if (user?.id) {
+        notifyInspectionCompleted({
+          inspectionId: inspection.id,
+          propertyId: property.id,
+          userId: user.id,
+          issueCount: issuesCount,
+          healthScore: null // Could calculate health score here if available
+        });
+      }
+
+      // ========================================
+      // GAMIFICATION: Award XP for completing inspection
+      // ========================================
+      try {
+        await awardXP('complete_inspection', {
+          entityType: 'inspection',
+          entityId: inspection.id,
+          issuesFound: issuesCount,
+          season: inspection.season
+        });
+
+        // Check for first inspection achievement
+        if (!hasAchievement('first_inspection')) {
+          await checkAchievement('first_inspection');
+        }
+
+        // Check for eagle eye achievement (10+ issues found total)
+        if (issuesCount >= 10 && !hasAchievement('eagle_eye')) {
+          await checkAchievement('eagle_eye');
+        }
+      } catch (err) {
+        console.error('Error awarding inspection completion XP:', err);
+        // Don't block the user flow
+      }
 
       onComplete();
     } catch (error) {

@@ -2,6 +2,7 @@ import React from "react";
 // MIGRATED: Using Supabase instead of Base44
 import { Property, SystemBaseline } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -211,6 +212,7 @@ export default function Baseline() {
   const fromOnboarding = urlParams.get('fromOnboarding') === 'true';
   const welcomeNew = urlParams.get('welcome') === 'true';
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user } = useAuth();
   
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -258,13 +260,15 @@ export default function Baseline() {
   }, [welcomeNew, fromOnboarding, demoMode]);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', user?.id],
     queryFn: () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      return Property.list('-created_at');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      return Property.list('-created_at', user?.id);
     },
+    enabled: demoMode || !!user?.id,
     initialData: () => {
       // Provide initial data immediately for demo mode
       if (demoMode && demoData) {

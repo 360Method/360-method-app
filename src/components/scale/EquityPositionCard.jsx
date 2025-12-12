@@ -5,25 +5,98 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Home, 
-  ChevronDown, 
+import { Label } from "@/components/ui/label";
+import {
+  DollarSign,
+  TrendingUp,
+  Home,
+  ChevronDown,
   ChevronRight,
   RefreshCw,
   Edit,
-  Building2
+  Building2,
+  Lightbulb,
+  Save,
+  X
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import PropertyEquityCard from "./PropertyEquityCard";
 import DisclaimerBox from "./DisclaimerBox";
 
-export default function EquityPositionCard({ equityData, properties, selectedProperty }) {
+export default function EquityPositionCard({ equityData, properties, selectedProperty, onEquityUpdate }) {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [expandedProperty, setExpandedProperty] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
+
+  // Initialize form data when dialog opens
+  const openUpdateDialog = (equity) => {
+    setFormData({
+      id: equity?.id,
+      property_id: equity?.property_id || selectedProperty,
+      current_market_value: equity?.current_market_value || '',
+      mortgage_balance: equity?.mortgage_balance || '',
+      mortgage_interest_rate: equity?.mortgage_interest_rate || '',
+      mortgage_payment_monthly: equity?.mortgage_payment_monthly || '',
+      valuation_source: equity?.valuation_source || 'Manual Entry',
+      is_rental: equity?.is_rental || false,
+      monthly_rent: equity?.monthly_rent || '',
+      annual_expenses: equity?.annual_expenses || ''
+    });
+    setShowUpdateDialog(true);
+  };
+
+  // Handle form input changes
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Calculate derived values
+  const calculateEquity = () => {
+    const marketValue = parseFloat(formData.current_market_value) || 0;
+    const mortgageBalance = parseFloat(formData.mortgage_balance) || 0;
+    const equityDollars = marketValue - mortgageBalance;
+    const equityPercentage = marketValue > 0 ? (equityDollars / marketValue) * 100 : 0;
+    return { equityDollars, equityPercentage };
+  };
+
+  // Save equity data
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { equityDollars, equityPercentage } = calculateEquity();
+
+      const dataToSave = {
+        ...formData,
+        current_market_value: parseFloat(formData.current_market_value) || 0,
+        mortgage_balance: parseFloat(formData.mortgage_balance) || 0,
+        mortgage_interest_rate: parseFloat(formData.mortgage_interest_rate) || null,
+        mortgage_payment_monthly: parseFloat(formData.mortgage_payment_monthly) || null,
+        monthly_rent: parseFloat(formData.monthly_rent) || null,
+        annual_expenses: parseFloat(formData.annual_expenses) || null,
+        equity_dollars: equityDollars,
+        equity_percentage: equityPercentage,
+        total_debt: parseFloat(formData.mortgage_balance) || 0,
+        valuation_date: new Date().toISOString()
+      };
+
+      if (formData.id) {
+        await PortfolioEquity.update(formData.id, dataToSave);
+      } else {
+        await PortfolioEquity.create(dataToSave);
+      }
+
+      queryClient.invalidateQueries(['portfolio-equity']);
+      if (onEquityUpdate) onEquityUpdate();
+      setShowUpdateDialog(false);
+    } catch (error) {
+      console.error('Error saving equity data:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // For portfolio view
   const isPortfolioView = selectedProperty === 'all';
@@ -43,22 +116,189 @@ export default function EquityPositionCard({ equityData, properties, selectedPro
     { year: 'Today', equity: singleEquity.equity_dollars }
   ] : [];
 
+  // Calculate preview equity for dialog
+  const previewEquity = calculateEquity();
+
+  // Reusable dialog component
+  const UpdateDialog = () => (
+    <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-purple-600" />
+            {formData.id ? 'Update Equity Position' : 'Add Equity Data'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Market Value */}
+          <div className="space-y-2">
+            <Label htmlFor="market_value">Current Market Value *</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <Input
+                id="market_value"
+                type="number"
+                placeholder="450000"
+                value={formData.current_market_value}
+                onChange={(e) => handleInputChange('current_market_value', e.target.value)}
+                className="pl-7"
+              />
+            </div>
+            <p className="text-xs text-gray-500">Zillow estimate, recent appraisal, or comparable sales</p>
+          </div>
+
+          {/* Mortgage Balance */}
+          <div className="space-y-2">
+            <Label htmlFor="mortgage">Mortgage Balance</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <Input
+                id="mortgage"
+                type="number"
+                placeholder="280000"
+                value={formData.mortgage_balance}
+                onChange={(e) => handleInputChange('mortgage_balance', e.target.value)}
+                className="pl-7"
+              />
+            </div>
+          </div>
+
+          {/* Interest Rate */}
+          <div className="space-y-2">
+            <Label htmlFor="rate">Mortgage Interest Rate</Label>
+            <div className="relative">
+              <Input
+                id="rate"
+                type="number"
+                step="0.125"
+                placeholder="3.5"
+                value={formData.mortgage_interest_rate}
+                onChange={(e) => handleInputChange('mortgage_interest_rate', e.target.value)}
+                className="pr-7"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+            </div>
+          </div>
+
+          {/* Monthly Payment */}
+          <div className="space-y-2">
+            <Label htmlFor="payment">Monthly Payment (P&I)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <Input
+                id="payment"
+                type="number"
+                placeholder="1850"
+                value={formData.mortgage_payment_monthly}
+                onChange={(e) => handleInputChange('mortgage_payment_monthly', e.target.value)}
+                className="pl-7"
+              />
+            </div>
+          </div>
+
+          {/* Rental Property Toggle */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <input
+              type="checkbox"
+              id="is_rental"
+              checked={formData.is_rental}
+              onChange={(e) => handleInputChange('is_rental', e.target.checked)}
+              className="w-4 h-4"
+            />
+            <Label htmlFor="is_rental" className="cursor-pointer">This is a rental property</Label>
+          </div>
+
+          {/* Rental Fields */}
+          {formData.is_rental && (
+            <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="space-y-2">
+                <Label htmlFor="rent">Monthly Rent</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <Input
+                    id="rent"
+                    type="number"
+                    placeholder="2200"
+                    value={formData.monthly_rent}
+                    onChange={(e) => handleInputChange('monthly_rent', e.target.value)}
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expenses">Annual Operating Expenses</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <Input
+                    id="expenses"
+                    type="number"
+                    placeholder="8000"
+                    value={formData.annual_expenses}
+                    onChange={(e) => handleInputChange('annual_expenses', e.target.value)}
+                    className="pl-7"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">Taxes, insurance, maintenance, vacancy</p>
+              </div>
+            </div>
+          )}
+
+          {/* Equity Preview */}
+          {(formData.current_market_value || formData.mortgage_balance) && (
+            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+              <p className="text-xs text-gray-600 mb-1">CALCULATED EQUITY</p>
+              <p className="text-2xl font-bold text-green-700">
+                ${previewEquity.equityDollars.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                {previewEquity.equityPercentage.toFixed(1)}% equity position
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setShowUpdateDialog(false)}>
+            <X className="w-4 h-4 mr-2" />
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !formData.current_market_value}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            {saving ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Empty state
   if (equityData.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-12 text-center">
-          <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No Equity Data Yet</h3>
-          <p className="text-gray-600 mb-6">
-            Set up your property's financial position to unlock wealth tracking and strategic analysis.
-          </p>
-          <Button onClick={() => setShowUpdateDialog(true)} className="bg-purple-600 hover:bg-purple-700">
-            <DollarSign className="w-5 h-5 mr-2" />
-            Add Equity Data
-          </Button>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No Equity Data Yet</h3>
+            <p className="text-gray-600 mb-6">
+              Set up your property's financial position to unlock wealth tracking and strategic analysis.
+            </p>
+            <Button onClick={() => openUpdateDialog(null)} className="bg-purple-600 hover:bg-purple-700">
+              <DollarSign className="w-5 h-5 mr-2" />
+              Add Equity Data
+            </Button>
+          </CardContent>
+        </Card>
+        <UpdateDialog />
+      </>
     );
   }
 
@@ -99,7 +339,7 @@ export default function EquityPositionCard({ equityData, properties, selectedPro
                 )}
               </div>
               <div className="flex gap-2 mt-3">
-                <Button size="sm" variant="outline" onClick={() => setShowUpdateDialog(true)}>
+                <Button size="sm" variant="outline" onClick={() => openUpdateDialog(singleEquity)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Update Manually
                 </Button>
@@ -237,6 +477,7 @@ export default function EquityPositionCard({ equityData, properties, selectedPro
         </Card>
 
         <DisclaimerBox />
+        <UpdateDialog />
       </div>
     );
   }
@@ -313,13 +554,14 @@ export default function EquityPositionCard({ equityData, properties, selectedPro
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowUpdateDialog(true)}>
+          <Button variant="outline" onClick={() => openUpdateDialog(equityData[0])}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Update All Values
           </Button>
         </div>
 
         <DisclaimerBox />
+        <UpdateDialog />
       </div>
     );
   }

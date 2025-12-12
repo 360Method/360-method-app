@@ -55,11 +55,36 @@ const CONDITION_SCORES = {
  * @returns {Object} { score, breakdown, recommendations }
  */
 export function calculateHealthScore({
-  property = {},
+  property = null,
   systems = [],
   tasks = [],
   inspections = []
 }) {
+  // If no property exists, return 0 score with appropriate messaging
+  if (!property) {
+    return {
+      score: 0,
+      breakdown: {
+        systemAge: { score: 0, weight: 40, contribution: 0 },
+        condition: { score: 0, weight: 30, contribution: 0 },
+        tasks: { score: 0, weight: 20, contribution: 0 },
+        inspections: { score: 0, weight: 10, contribution: 0 }
+      },
+      recommendations: [{
+        priority: 'high',
+        action: 'Add your first property',
+        impact: 'Start tracking',
+        description: 'Add a property to begin tracking its health and building your maintenance history.'
+      }],
+      metrics: {
+        totalSystems: 0,
+        overdueTasks: 0,
+        criticalTasks: 0,
+        totalInspections: 0
+      }
+    };
+  }
+
   const currentYear = new Date().getFullYear();
   const now = new Date();
 

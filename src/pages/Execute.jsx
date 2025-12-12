@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Property, MaintenanceTask } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,25 +32,29 @@ export default function ExecutePage() {
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     if (demoMode) markStepVisited(6);
   }, [demoMode]);
 
-  const [selectedProperty, setSelectedProperty] = React.useState(propertyIdFromUrl || 'all');
+  const [selectedProperty, setSelectedProperty] = useState(propertyIdFromUrl || 'all');
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', demoMode],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await Property.list('-created_date');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_date', user?.id);
       return allProps.filter(p => !p.is_draft);
-    }
+    },
+    enabled: demoMode || !!user?.id
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (propertyIdFromUrl && properties.length > 0) {
       const foundProperty = properties.find(p => p.id === propertyIdFromUrl);
       if (foundProperty) {
@@ -57,6 +64,18 @@ export default function ExecutePage() {
       setSelectedProperty(properties[0].id);
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
+
+  // Show prerequisite popup if needed
+  const currentPropertyObj = selectedProperty !== 'all'
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('execute', currentPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_execute_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   const { data: realTasks = [] } = useQuery({
     queryKey: ['tasks', 'execute', selectedProperty],
@@ -506,6 +525,19 @@ export default function ExecutePage() {
         </Card>
 
         <DemoCTA />
+
+        {/* Prerequisite Popup */}
+        <PrerequisitePopup
+          isOpen={showPrereqPopup}
+          onClose={() => {
+            setShowPrereqPopup(false);
+            sessionStorage.setItem('dismissed_execute_prereq', 'true');
+          }}
+          message={prereqInfo.message}
+          requiredStep={prereqInfo.requiredStep}
+          progress={prereqInfo.currentProgress}
+          threshold={prereqInfo.threshold}
+        />
       </div>
     </div>
   );

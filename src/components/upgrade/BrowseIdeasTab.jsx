@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { Zap, Home, Leaf, Sparkles, X, CheckCircle, Shield, Droplet, Wind, Lightbulb, Palette } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Zap, Home, Leaf, Sparkles, X, CheckCircle, Shield, Droplet, Wind, Lightbulb, Palette, DollarSign } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { useDemo } from '../shared/DemoContext';
+import ForYouSection, { NoSystemsPrompt } from './ForYouSection';
+import { useNavigate } from 'react-router-dom';
 
 const HOMEOWNER_UPGRADE_IDEAS = [
   {
@@ -11,13 +14,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Lightbulb,
     color: 'yellow',
-    image: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=600&h=400&fit=crop', // Smart thermostat on wall
-
+    image: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=600&h=400&fit=crop',
     typicalCost: { min: 1500, max: 3000 },
     annualSavings: { min: 450, max: 750 },
     paybackPeriod: { min: 2.0, max: 6.7 },
     roi10Year: '150-500%',
-    
     benefits: [
       'Smart thermostats + LED conversion bundle',
       'Reduce energy bills 20-30% year-round',
@@ -25,14 +26,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Track usage patterns and optimize',
       'Increase home value $2K-$3K'
     ],
-    
     considerations: [
       'Smart thermostats: $250-500 each',
       'LED conversion: $350-600 for whole home',
       'DIY-friendly installation',
       'Immediate comfort improvement'
     ],
-    
     difficulty: 'Easy DIY',
     timeframe: '1 weekend',
     tags: ['Energy Savings', 'DIY-Friendly', 'Quick Payback']
@@ -43,13 +42,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Home,
     color: 'orange',
-    image: 'https://images.unsplash.com/photo-1607400201889-565b1ee75f8e?w=600&h=400&fit=crop', // Attic insulation installation
-
+    image: 'https://images.unsplash.com/photo-1607400201889-565b1ee75f8e?w=600&h=400&fit=crop',
     typicalCost: { min: 1800, max: 2800 },
     annualSavings: { min: 350, max: 600 },
     paybackPeriod: { min: 3.0, max: 8.0 },
     roi10Year: '125-333%',
-    
     benefits: [
       'Reduce heating/cooling costs 25-35%',
       'Even temperature throughout home',
@@ -57,14 +54,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Quieter home (sound dampening)',
       'Increase home value $1,500-$2,000'
     ],
-    
     considerations: [
       'Boost from R-30 to R-49 (Pacific NW)',
       'Professional blown-in installation',
       'One-time investment, lifetime benefit',
       'Eligible for tax credits'
     ],
-    
     difficulty: 'Professional Recommended',
     timeframe: '1 day',
     tags: ['Energy Savings', 'Comfort', 'Tax Credit']
@@ -75,13 +70,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Palette,
     color: 'purple',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop', // Modern kitchen renovation
-
+    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop',
     typicalCost: { min: 3500, max: 6500 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 5000, max: 9000 },
     roi: '140-180%',
-    
     benefits: [
       'Subway tile backsplash + cabinet refresh',
       'Modern look without full remodel',
@@ -89,14 +82,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Start every day in a space you love',
       'Increase home value $5K-$9K'
     ],
-    
     considerations: [
       'DIY backsplash: Save $1,200 in labor',
       'Paint cabinets vs replace (10x cheaper)',
       'New hardware makes huge impact',
       'Weekend project with big visual impact'
     ],
-    
     difficulty: 'Moderate DIY',
     timeframe: '2-3 weekends',
     tags: ['Quality of Life', 'DIY Option', 'High Impact']
@@ -107,13 +98,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Droplet,
     color: 'blue',
-    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop', // Smart irrigation sprinkler system
-
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=400&fit=crop',
     typicalCost: { min: 800, max: 1500 },
     annualSavings: { min: 200, max: 400 },
     paybackPeriod: { min: 2.0, max: 7.5 },
     roi10Year: '133-500%',
-    
     benefits: [
       'Low-flow fixtures + smart irrigation',
       'Reduce water bills 30-40%',
@@ -121,14 +110,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Smart sprinkler controller saves water',
       'Eco-friendly + lower utility costs'
     ],
-    
     considerations: [
       'Low-flow showerheads/faucets: $200-400',
       'Smart irrigation controller: $150-300',
       'Native plants reduce water needs',
       'Fast DIY installation'
     ],
-    
     difficulty: 'Easy DIY',
     timeframe: '1 day',
     tags: ['Water Savings', 'Eco-Friendly', 'DIY-Friendly']
@@ -139,13 +126,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Leaf,
     color: 'green',
-    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop', // Outdoor patio deck with furniture
-
+    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop',
     typicalCost: { min: 2500, max: 5000 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 4000, max: 7500 },
     roi: '150-200%',
-    
     benefits: [
       'Deck refresh + patio upgrade',
       'Extend living space outdoors',
@@ -153,14 +138,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Enjoy Pacific NW summers',
       'Increase home value $4K-$7.5K'
     ],
-    
     considerations: [
       'Deck staining/sealing: $800-1,500',
       'Patio furniture + fire pit: $1,200-2,500',
       'String lights + landscaping: $500-1,000',
       'Creates outdoor room for enjoyment'
     ],
-    
     difficulty: 'DIY or Professional',
     timeframe: '1-2 weekends',
     tags: ['Quality of Life', 'Entertaining', 'Resale Value']
@@ -171,13 +154,11 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Sparkles,
     color: 'blue',
-    image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&h=400&fit=crop', // Modern bathroom with vanity
-
+    image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&h=400&fit=crop',
     typicalCost: { min: 3000, max: 5500 },
     annualSavings: { min: 0, max: 0 },
     resaleValueIncrease: { min: 5500, max: 9000 },
     roi: '164-250%',
-    
     benefits: [
       'New vanity, fixtures, and lighting',
       'Spa-like experience at home',
@@ -185,14 +166,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Improved functionality',
       'Increase home value $5.5K-$9K'
     ],
-    
     considerations: [
       'Focus on high-impact updates',
       'Paint, fixtures, hardware = biggest impact',
       'Skip full gut remodel',
       'Can DIY many components'
     ],
-    
     difficulty: 'Moderate DIY or Professional',
     timeframe: '1-2 weekends',
     tags: ['Quality of Life', 'High ROI', 'Daily Use']
@@ -203,12 +182,10 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Health & Safety',
     icon: Wind,
     color: 'purple',
-    image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop', // HVAC air quality system
-
+    image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop',
     typicalCost: { min: 1200, max: 2200 },
     annualSavings: { min: 0, max: 0 },
     healthBenefit: 'Significant',
-    
     benefits: [
       'HEPA filtration + ventilation upgrade',
       'Reduce allergens and pollutants',
@@ -216,14 +193,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Healthier indoor environment',
       'Especially valuable for families with allergies'
     ],
-    
     considerations: [
       'Whole-home HEPA: $800-1,500',
       'Smart air quality monitors: $150-300',
       'ERV/HRV ventilation: $1,500-3,000',
       'Health investment, not just financial ROI'
     ],
-    
     difficulty: 'Professional Required',
     timeframe: '1 day',
     tags: ['Health', 'Quality of Life', 'Family Friendly']
@@ -234,12 +209,10 @@ const HOMEOWNER_UPGRADE_IDEAS = [
     category: 'Quality of Life',
     icon: Home,
     color: 'orange',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop', // Organized garage workshop
-
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
     typicalCost: { min: 1500, max: 3000 },
     annualSavings: { min: 0, max: 0 },
     diySavings: 'High',
-    
     benefits: [
       'Workbench + tool storage + lighting',
       'Enable more DIY projects',
@@ -247,14 +220,12 @@ const HOMEOWNER_UPGRADE_IDEAS = [
       'Functional workspace for hobbies',
       'Organized, efficient storage'
     ],
-    
     considerations: [
       'Quality workbench: $400-800',
       'Tool storage system: $600-1,200',
       'LED lighting upgrade: $200-400',
       'Enables DIY for future projects'
     ],
-    
     difficulty: 'Easy DIY',
     timeframe: '2-3 days',
     tags: ['DIY Enabler', 'Organization', 'Hobby Space']
@@ -268,14 +239,12 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Sparkles,
     color: 'purple',
-    image: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop', // Washer dryer laundry room
-
+    image: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&h=400&fit=crop',
     typicalCost: { min: 2500, max: 3500 },
     rentIncrease: { min: 75, max: 125 },
     annualIncome: { min: 900, max: 1500 },
     paybackPeriod: { min: 1.7, max: 3.9 },
     roi10Year: '257-600%',
-    
     benefits: [
       'Increase rent $75-$125/month per unit',
       'Appeal to premium tenants (families, professionals)',
@@ -283,14 +252,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Competitive advantage in rental market',
       'Tenants cover water/electricity for W/D'
     ],
-    
     considerations: [
       'Requires 120V outlet + water supply + drain',
       'May need electrical panel upgrade',
       'Cost per unit: $2,500-$3,500',
       'Consider stackable units for small spaces'
     ],
-    
     difficulty: 'Professional Required',
     timeframe: '1-2 days per unit',
     tags: ['Rent Boost', 'Tenant Retention', 'High ROI']
@@ -301,14 +268,12 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Home,
     color: 'green',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop', // Modern apartment living room
-
+    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop',
     typicalCost: { min: 3500, max: 5500 },
     rentIncrease: { min: 100, max: 200 },
     annualIncome: { min: 1200, max: 2400 },
     paybackPeriod: { min: 1.5, max: 4.6 },
     roi10Year: '218-686%',
-    
     benefits: [
       'Justify $100-$200/month rent increase',
       'New flooring, paint, fixtures, hardware',
@@ -316,14 +281,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Reduce vacancy time by 7-14 days',
       'Compete with new construction rentals'
     ],
-    
     considerations: [
       'Schedule during turnover (no tenant disruption)',
       'LVP flooring is durable + renter-friendly',
       'Fresh paint = instant transformation',
       'Modern fixtures signal "well-maintained"'
     ],
-    
     difficulty: 'Professional Recommended',
     timeframe: '3-5 days',
     tags: ['Rent Boost', 'Fast Lease', 'Premium Tenants']
@@ -334,13 +297,11 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Home,
     color: 'blue',
-    image: 'https://images.unsplash.com/photo-1604079628040-94301bb21b91?w=600&h=400&fit=crop', // Window installation
-
+    image: 'https://images.unsplash.com/photo-1604079628040-94301bb21b91?w=600&h=400&fit=crop',
     typicalCost: { min: 2500, max: 3500 },
     annualSavings: { min: 150, max: 300 },
     paybackPeriod: { min: 8.3, max: 23.3 },
     roi10Year: '43-120%',
-    
     benefits: [
       'Reduce tenant utility complaints',
       'Cut heating/cooling costs 15-25%',
@@ -348,14 +309,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Improve tenant comfort = retention',
       'Reduce maintenance calls (no drafts)'
     ],
-    
     considerations: [
       'Cost per unit: $2,500-$3,500 for typical rental',
       'Double-pane minimum for rental market',
       'Schedule during turnover if possible',
       'Tenants appreciate lower utility bills'
     ],
-    
     difficulty: 'Professional Required',
     timeframe: '1-2 days per unit',
     tags: ['Tenant Comfort', 'Energy Savings', 'Rent Boost']
@@ -366,14 +325,12 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Shield,
     color: 'purple',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&h=400&fit=crop', // Smart home devices
-
+    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&h=400&fit=crop',
     typicalCost: { min: 800, max: 1500 },
     rentIncrease: { min: 50, max: 75 },
     annualIncome: { min: 600, max: 900 },
     paybackPeriod: { min: 0.9, max: 2.5 },
     roi10Year: '400-1125%',
-    
     benefits: [
       'Justify $50-$75/month rent premium',
       'Smart locks = remote access (no keys)',
@@ -381,14 +338,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Video doorbell = tenant safety',
       'Appeal to tech-savvy renters'
     ],
-    
     considerations: [
       'One-time purchase, no monthly fees',
       'Remote property access for emergencies',
       'Energy monitoring helps catch HVAC abuse',
       'Market as "Smart Home Rental"'
     ],
-    
     difficulty: 'Moderate DIY',
     timeframe: '4-6 hours',
     tags: ['Rent Boost', 'Remote Access', 'Premium Appeal']
@@ -399,13 +354,11 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Curb Appeal',
     icon: Leaf,
     color: 'green',
-    image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop', // Professional landscaping yard
-
+    image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop',
     typicalCost: { min: 1500, max: 3500 },
     annualIncome: { min: 0, max: 0 },
     resaleValueIncrease: { min: 3000, max: 6000 },
     roi: '133-400%',
-    
     benefits: [
       'Reduce vacancy time 5-10 days',
       'First impressions = faster lease',
@@ -413,14 +366,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Fewer tenant complaints about "curb appeal"',
       'Property value boost: $3K-$6K'
     ],
-    
     considerations: [
       'Low-maintenance landscaping = less cost',
       'Native plants reduce water usage',
       'Bark mulch + clean beds = instant upgrade',
       'Good lighting = safety + visual appeal'
     ],
-    
     difficulty: 'DIY or Professional',
     timeframe: '2-3 days',
     tags: ['Fast Lease', 'Property Value', 'Tenant Appeal']
@@ -431,14 +382,12 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Rental Income Boosters',
     icon: Home,
     color: 'orange',
-    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&h=400&fit=crop', // Luxury vinyl plank flooring
-
+    image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=600&h=400&fit=crop',
     typicalCost: { min: 2500, max: 4500 },
     rentIncrease: { min: 50, max: 100 },
     annualIncome: { min: 600, max: 1200 },
     paybackPeriod: { min: 2.1, max: 7.5 },
     roi10Year: '133-480%',
-    
     benefits: [
       'Luxury Vinyl Plank = waterproof + durable',
       'Withstands tenant wear (pets, kids)',
@@ -446,14 +395,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Easy to clean = lower turnover costs',
       'Justify $50-$100/mo rent increase'
     ],
-    
     considerations: [
       'LVP > carpet for rentals (longevity)',
       'Cost per sqft: $2.50-$4.50 installed',
       'Schedule during turnover',
       'Saves on carpet replacement every 3-5 years'
     ],
-    
     difficulty: 'Professional Recommended',
     timeframe: '2-3 days',
     tags: ['Durable', 'Rent Boost', 'Low Maintenance']
@@ -464,13 +411,11 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Energy Efficiency',
     icon: Zap,
     color: 'yellow',
-    image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?w=600&h=400&fit=crop', // LED lighting installation
-
+    image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?w=600&h=400&fit=crop',
     typicalCost: { min: 200, max: 500 },
     annualSavings: { min: 120, max: 300 },
     paybackPeriod: { min: 0.7, max: 4.2 },
     roi10Year: '240-1500%',
-    
     benefits: [
       'Reduce electric bill 50-75%',
       'LEDs last 10+ years (no bulb replacements)',
@@ -478,14 +423,12 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Minimal investment, fast payback',
       'Landlord or tenant pays less on utilities'
     ],
-    
     considerations: [
       'Cost per unit: $200-$500 for full conversion',
       'DIY-friendly installation',
       'Instant upgrade feel',
       'Great for turnover prep'
     ],
-    
     difficulty: 'Easy DIY',
     timeframe: '2-4 hours per unit',
     tags: ['Quick Win', 'Energy Savings', 'DIY-Friendly']
@@ -496,13 +439,11 @@ const INVESTOR_UPGRADE_IDEAS = [
     category: 'Curb Appeal',
     icon: Home,
     color: 'red',
-    image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&h=400&fit=crop', // Parking lot with striping
-
+    image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&h=400&fit=crop',
     typicalCost: { min: 1500, max: 3500 },
     annualIncome: { min: 0, max: 0 },
     resaleValueIncrease: { min: 2500, max: 5000 },
     roi: '100-333%',
-    
     benefits: [
       'Defined spaces = fewer tenant disputes',
       'LED security lighting = safety perception',
@@ -510,72 +451,203 @@ const INVESTOR_UPGRADE_IDEAS = [
       'Professional appearance = tenant retention',
       'Property value boost'
     ],
-    
     considerations: [
       'Multi-unit properties only',
       'Striping: $500-$1,200',
       'LED lighting: $800-$1,500',
       'Seal coating: $600-$1,200'
     ],
-    
     difficulty: 'Professional Required',
     timeframe: '2-3 days',
     tags: ['Safety', 'Tenant Satisfaction', 'Property Value']
   }
 ];
 
-export default function BrowseIdeasTab() {
+// Budget range configuration
+const BUDGET_RANGES = [
+  { value: 'all', label: 'All Budgets', min: 0, max: Infinity },
+  { value: 'under2k', label: 'Under $2K', min: 0, max: 2000 },
+  { value: '2k-5k', label: '$2K - $5K', min: 2000, max: 5000 },
+  { value: '5k-10k', label: '$5K - $10K', min: 5000, max: 10000 },
+  { value: 'over10k', label: '$10K+', min: 10000, max: Infinity },
+];
+
+export default function BrowseIdeasTab({
+  property,
+  systems = [],
+  regionalCosts,
+  lifespanData,
+  isLoading = false,
+  onStartProject
+}) {
   const { demoMode, isInvestor } = useDemo();
-  const [filter, setFilter] = useState('all');
+  const navigate = useNavigate();
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [budgetFilter, setBudgetFilter] = useState('all');
   const [selectedIdea, setSelectedIdea] = useState(null);
 
   // Use homeowner ideas in homeowner demo mode, investor ideas otherwise
   const UPGRADE_IDEAS = (demoMode && !isInvestor) ? HOMEOWNER_UPGRADE_IDEAS : INVESTOR_UPGRADE_IDEAS;
 
-  const categories = (demoMode && !isInvestor) 
+  const categories = (demoMode && !isInvestor)
     ? ['all', 'Energy Efficiency', 'Quality of Life', 'Health & Safety']
     : ['all', 'Rental Income Boosters', 'Energy Efficiency', 'Curb Appeal'];
 
-  const filteredIdeas = filter === 'all' 
-    ? UPGRADE_IDEAS 
-    : UPGRADE_IDEAS.filter(idea => idea.category === filter);
+  // Filter ideas by category and budget
+  const filteredIdeas = useMemo(() => {
+    let ideas = UPGRADE_IDEAS;
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      ideas = ideas.filter(idea => idea.category === categoryFilter);
+    }
+
+    // Budget filter
+    if (budgetFilter !== 'all') {
+      const range = BUDGET_RANGES.find(r => r.value === budgetFilter);
+      if (range) {
+        ideas = ideas.filter(idea => {
+          const avgCost = (idea.typicalCost.min + idea.typicalCost.max) / 2;
+          return avgCost >= range.min && avgCost < range.max;
+        });
+      }
+    }
+
+    return ideas;
+  }, [UPGRADE_IDEAS, categoryFilter, budgetFilter]);
+
+  // Check if user has systems documented (for showing personalized recommendations)
+  const hasSystemsDocumented = demoMode || (systems && systems.length > 0);
+
+  // Handle starting a project from an idea
+  const handleStartFromIdea = (idea) => {
+    if (onStartProject) {
+      // Convert idea format to recommendation format
+      const avgCost = (idea.typicalCost.min + idea.typicalCost.max) / 2;
+      const valueAdded = idea.resaleValueIncrease
+        ? (idea.resaleValueIncrease.min + idea.resaleValueIncrease.max) / 2
+        : avgCost * 0.7; // Assume 70% ROI if not specified
+
+      onStartProject({
+        title: idea.title,
+        description: idea.benefits.join('. '),
+        category: idea.category,
+        estimatedCost: avgCost,
+        valueImpact: valueAdded,
+        annual_savings: idea.annualSavings ? (idea.annualSavings.min + idea.annualSavings.max) / 2 : 0,
+        investment_required: avgCost,
+        property_value_impact: valueAdded,
+      });
+    }
+    setSelectedIdea(null);
+  };
 
   return (
     <div>
-      {/* Category Filter */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 hide-scrollbar">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setFilter(cat)}
-            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
-              filter === cat
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+      {/* Personalized "For You" Section */}
+      {hasSystemsDocumented ? (
+        <ForYouSection
+          property={property}
+          systems={systems}
+          regionalCosts={regionalCosts}
+          lifespanData={lifespanData}
+          isLoading={isLoading}
+          onStartProject={onStartProject}
+        />
+      ) : (
+        <NoSystemsPrompt
+          onGoToBaseline={() => navigate('/Baseline')}
+        />
+      )}
+
+      {/* Section Divider */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex-1 h-px bg-gray-200" />
+        <h2 className="text-lg font-semibold text-gray-700">Browse All Ideas</h2>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Filter Row */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Category Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar flex-1">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+                categoryFilter === cat
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              style={{ minHeight: '44px' }}
+            >
+              {cat === 'all' ? 'All Categories' : cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Budget Filter */}
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-gray-500" />
+          <select
+            value={budgetFilter}
+            onChange={(e) => setBudgetFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             style={{ minHeight: '44px' }}
           >
-            {cat}
-          </button>
-        ))}
+            {BUDGET_RANGES.map(range => (
+              <option key={range.value} value={range.value}>
+                {range.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600">
+          Showing {filteredIdeas.length} upgrade idea{filteredIdeas.length !== 1 ? 's' : ''}
+          {categoryFilter !== 'all' && ` in ${categoryFilter}`}
+          {budgetFilter !== 'all' && ` (${BUDGET_RANGES.find(r => r.value === budgetFilter)?.label})`}
+        </p>
       </div>
 
       {/* Ideas Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredIdeas.map(idea => (
-          <IdeaCard 
-            key={idea.id} 
-            idea={idea}
-            onClick={() => setSelectedIdea(idea)}
-          />
-        ))}
-      </div>
+      {filteredIdeas.length > 0 ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredIdeas.map(idea => (
+            <IdeaCard
+              key={idea.id}
+              idea={idea}
+              onClick={() => setSelectedIdea(idea)}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-600 mb-2">No ideas match your current filters.</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCategoryFilter('all');
+                setBudgetFilter('all');
+              }}
+            >
+              Clear Filters
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Detail Modal */}
       {selectedIdea && (
-        <IdeaDetailModal 
+        <IdeaDetailModal
           idea={selectedIdea}
           onClose={() => setSelectedIdea(null)}
+          onStart={() => handleStartFromIdea(selectedIdea)}
         />
       )}
     </div>
@@ -583,18 +655,6 @@ export default function BrowseIdeasTab() {
 }
 
 function IdeaCard({ idea, onClick }) {
-  const colorClasses = {
-    yellow: 'border-yellow-300 text-yellow-700 bg-yellow-100',
-    blue: 'border-blue-300 text-blue-700 bg-blue-100',
-    purple: 'border-purple-300 text-purple-700 bg-purple-100',
-    red: 'border-red-300 text-red-700 bg-red-100',
-    orange: 'border-orange-300 text-orange-700 bg-orange-100',
-    green: 'border-green-300 text-green-700 bg-green-100',
-    pink: 'border-pink-300 text-pink-700 bg-pink-100'
-  };
-
-  const Icon = idea.icon;
-
   return (
     <Card
       onClick={onClick}
@@ -621,7 +681,6 @@ function IdeaCard({ idea, onClick }) {
         </div>
       </div>
       <CardContent className="p-4">
-
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600">Cost:</span>
@@ -656,7 +715,7 @@ function IdeaCard({ idea, onClick }) {
             </>
           )}
 
-          {idea.annualIncome && (
+          {idea.annualIncome && idea.annualIncome.max > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-600">Annual Income:</span>
               <span className="font-semibold text-green-600">
@@ -676,16 +735,14 @@ function IdeaCard({ idea, onClick }) {
         </div>
 
         <button className="mt-4 w-full px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 font-semibold text-sm transition-colors">
-          View Details →
+          View Details
         </button>
       </CardContent>
     </Card>
   );
 }
 
-function IdeaDetailModal({ idea, onClose }) {
-  const Icon = idea.icon;
-
+function IdeaDetailModal({ idea, onClose, onStart }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -717,7 +774,6 @@ function IdeaDetailModal({ idea, onClose }) {
         </div>
 
         <div className="p-6 md:p-8">
-
           {/* Cost & ROI */}
           <div className="grid md:grid-cols-3 gap-4 mb-8">
             <div className="bg-gray-50 rounded-lg p-4">
@@ -736,7 +792,7 @@ function IdeaDetailModal({ idea, onClose }) {
               </div>
             )}
 
-            {idea.annualIncome && (
+            {idea.annualIncome && idea.annualIncome.max > 0 && (
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-sm text-blue-700 mb-1">Annual Income</div>
                 <div className="text-2xl font-bold text-blue-900">
@@ -791,7 +847,7 @@ function IdeaDetailModal({ idea, onClose }) {
             <ul className="space-y-2">
               {idea.considerations.map((consideration, idx) => (
                 <li key={idx} className="flex items-start gap-2 text-gray-700">
-                  <div className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600 font-bold">•</div>
+                  <div className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600 font-bold"></div>
                   <span>{consideration}</span>
                 </li>
               ))}
@@ -815,7 +871,7 @@ function IdeaDetailModal({ idea, onClose }) {
 
           {/* CTA */}
           <Button
-            onClick={() => {}}
+            onClick={onStart}
             className="w-full bg-blue-600 hover:bg-blue-700"
             style={{ minHeight: '48px' }}
           >

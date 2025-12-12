@@ -1,25 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SystemBaseline, MaintenanceTask, PreservationRecommendation, PortfolioEquity } from "@/api/supabaseClient";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Home, 
-  Building2, 
-  AlertTriangle, 
+import {
+  Home,
+  Building2,
+  AlertTriangle,
   ArrowRight,
   MoreVertical,
   DollarSign,
   Activity,
-  Award
+  Award,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import ScoreBadge from "@/components/score/ScoreBadge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { createPageUrl } from "@/utils";
 import { Link } from "react-router-dom";
 
 export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoData = null }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isPrimary = property.property_use_type === 'primary';
   const isDemo = property.is_demo || demoData;
 
@@ -78,6 +82,7 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
   };
 
   return (
+    <>
     <Card className="border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
@@ -114,44 +119,20 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>✏️ Edit Basic Details</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={createPageUrl('Properties') + `?complete=${property.id}`}>
-                  💰 Edit Financial Profile
-                </Link>
+            <DropdownMenuContent align="end" className="flex flex-row gap-1 p-1">
+              <DropdownMenuItem onClick={onEdit} className="flex items-center gap-1">
+                <Pencil className="w-4 h-4" /> Edit Details
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={createPageUrl('Baseline') + `?property=${property.id}`}>
-                  📊 View Systems (AWARE)
+                <Link to={createPageUrl('Properties') + `?complete=${property.id}`} className="flex items-center gap-1">
+                  <DollarSign className="w-4 h-4" /> Edit Financials
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={createPageUrl('Prioritize') + `?property=${property.id}`}>
-                  ✅ View Tasks (ACT)
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={createPageUrl('Upgrade') + `?property=${property.id}`}>
-                  🔧 View Upgrades (ADVANCE)
-                </Link>
-              </DropdownMenuItem>
-              {property.totalScore && (
-                <DropdownMenuItem asChild>
-                  <Link to={createPageUrl('PropertyScore') + `?property=${property.id}`}>
-                    ⭐ 360° Score Breakdown
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              {equityData && (
-                <DropdownMenuItem asChild>
-                  <Link to={createPageUrl('Scale') + `?property=${property.id}`}>
-                    💰 View Portfolio CFO (SCALE)
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                🗑️ Delete Property
+              <DropdownMenuItem
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-1 text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -349,5 +330,36 @@ export default function EnhancedPropertyCard({ property, onEdit, onDelete, demoD
 
       </CardContent>
     </Card>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+            <AlertTriangle className="w-5 h-5" />
+            Delete Property?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>Are you sure you want to delete <strong>{property.address}</strong>?</p>
+            <p className="text-red-600 font-medium">
+              This action cannot be undone. All associated data including systems, tasks, inspections, and history will be permanently deleted.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              onDelete?.(property.id);
+              setShowDeleteConfirm(false);
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            Delete Property
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

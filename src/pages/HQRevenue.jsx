@@ -31,39 +31,149 @@ import { toast } from 'sonner';
 export default function HQRevenue() {
   const [timeRange, setTimeRange] = useState('30d');
 
-  // Fetch revenue metrics
+  // Calculate date ranges based on timeRange
+  const getDateRange = (range) => {
+    const now = new Date();
+    const start = new Date();
+    const previousStart = new Date();
+    const previousEnd = new Date();
+
+    switch (range) {
+      case '7d':
+        start.setDate(now.getDate() - 7);
+        previousStart.setDate(now.getDate() - 14);
+        previousEnd.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        start.setDate(now.getDate() - 30);
+        previousStart.setDate(now.getDate() - 60);
+        previousEnd.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        start.setDate(now.getDate() - 90);
+        previousStart.setDate(now.getDate() - 180);
+        previousEnd.setDate(now.getDate() - 90);
+        break;
+      case '1y':
+        start.setFullYear(now.getFullYear() - 1);
+        previousStart.setFullYear(now.getFullYear() - 2);
+        previousEnd.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        start.setDate(now.getDate() - 30);
+        previousStart.setDate(now.getDate() - 60);
+        previousEnd.setDate(now.getDate() - 30);
+    }
+    return { start, previousStart, previousEnd, now };
+  };
+
+  // Fetch revenue metrics from real data
   const { data: metrics = {}, isLoading, refetch } = useQuery({
     queryKey: ['hq-revenue', timeRange],
     queryFn: async () => {
-      // These would typically come from Stripe or a dedicated analytics table
-      // For now, we'll return placeholder data
+      const { start, previousStart, previousEnd, now } = getDateRange(timeRange);
+
+      // Get current period transactions
+      const { data: currentTransactions } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'succeeded')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', now.toISOString());
+
+      // Get previous period transactions
+      const { data: previousTransactions } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'succeeded')
+        .gte('created_at', previousStart.toISOString())
+        .lte('created_at', previousEnd.toISOString());
+
+      // Get refunds
+      const { data: refunds } = await supabase
+        .from('transactions')
+        .select('*')
+        .in('status', ['refunded', 'partially_refunded'])
+        .gte('created_at', start.toISOString());
+
+      // Get active subscriptions
+      const { count: activeSubscribers } = await supabase
+        .from('user_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      // Get subscribers count from previous period (approximate)
+      const { count: previousSubscribers } = await supabase
+        .from('user_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .lte('created_at', previousEnd.toISOString());
+
+      // Calculate totals (amounts are in cents)
+      const totalRevenue = (currentTransactions || []).reduce((sum, t) => sum + (t.amount_total || 0), 0) / 100;
+      const previousRevenue = (previousTransactions || []).reduce((sum, t) => sum + (t.amount_total || 0), 0) / 100;
+
+      const subscriptionRevenue = (currentTransactions || [])
+        .filter(t => t.type === 'subscription')
+        .reduce((sum, t) => sum + (t.amount_total || 0), 0) / 100;
+
+      const transactionRevenue = (currentTransactions || [])
+        .filter(t => t.type !== 'subscription')
+        .reduce((sum, t) => sum + (t.amount_total || 0), 0) / 100;
+
+      const refundAmount = (refunds || []).reduce((sum, t) => sum + (t.refund_amount || 0), 0) / 100;
+
+      const avgRevenuePerUser = activeSubscribers > 0 ? totalRevenue / activeSubscribers : 0;
+
       return {
-        totalRevenue: 12500,
-        previousRevenue: 10200,
-        subscriptionRevenue: 8500,
-        transactionRevenue: 4000,
-        activeSubscribers: 45,
-        previousSubscribers: 38,
-        avgRevenuePerUser: 277.78,
-        transactions: 156,
-        refunds: 3,
-        refundAmount: 450
+        totalRevenue,
+        previousRevenue,
+        subscriptionRevenue,
+        transactionRevenue,
+        activeSubscribers: activeSubscribers || 0,
+        previousSubscribers: previousSubscribers || 0,
+        avgRevenuePerUser,
+        transactions: (currentTransactions || []).length,
+        refunds: (refunds || []).length,
+        refundAmount
       };
     }
   });
 
-  // Fetch recent transactions
+  // Fetch recent transactions from real data
   const { data: transactions = [] } = useQuery({
     queryKey: ['hq-transactions'],
     queryFn: async () => {
-      // Placeholder data - would come from Stripe or invoices table
-      return [
-        { id: 1, type: 'subscription', amount: 49.99, user: 'john@example.com', date: new Date().toISOString(), status: 'completed' },
-        { id: 2, type: 'one-time', amount: 199.00, user: 'sarah@example.com', date: new Date(Date.now() - 86400000).toISOString(), status: 'completed' },
-        { id: 3, type: 'subscription', amount: 49.99, user: 'mike@example.com', date: new Date(Date.now() - 172800000).toISOString(), status: 'completed' },
-        { id: 4, type: 'refund', amount: -149.00, user: 'lisa@example.com', date: new Date(Date.now() - 259200000).toISOString(), status: 'refunded' },
-        { id: 5, type: 'one-time', amount: 299.00, user: 'alex@example.com', date: new Date(Date.now() - 345600000).toISOString(), status: 'completed' },
-      ];
+      const { data: recentTransactions } = await supabase
+        .from('transactions')
+        .select(`
+          id,
+          type,
+          amount_total,
+          status,
+          created_at,
+          user_id
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Get user emails for display
+      const userIds = [...new Set((recentTransactions || []).map(t => t.user_id).filter(Boolean))];
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds.length > 0 ? userIds : ['']);
+
+      const userMap = (users || []).reduce((acc, u) => ({ ...acc, [u.id]: u.email }), {});
+
+      return (recentTransactions || []).map(t => ({
+        id: t.id,
+        type: t.type,
+        amount: (t.amount_total || 0) / 100,
+        user: userMap[t.user_id] || 'Unknown',
+        date: t.created_at,
+        status: t.status === 'succeeded' ? 'completed' : t.status
+      }));
     }
   });
 

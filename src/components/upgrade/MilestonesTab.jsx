@@ -1,56 +1,340 @@
-import React, { useState } from 'react';
-import { Upgrade } from '@/api/supabaseClient';
+import React, { useState, useRef } from 'react';
+import { Upgrade, integrations, supabase } from '@/api/supabaseClient';
+import { useGamification } from '@/lib/GamificationContext';
+
+// Helper to decode HTML entities in milestone data
+const decodeHtmlEntities = (text) => {
+  if (!text) return text;
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+};
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  CheckCircle2, Circle, Clock, Camera, MessageSquare, 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  CheckCircle2, Circle, Clock, Camera, MessageSquare,
   Edit, Trash2, ChevronDown, ChevronUp, Plus,
-  AlertCircle
+  AlertCircle, Sparkles, Loader2, RefreshCw, Image as ImageIcon, X
 } from 'lucide-react';
 
+/**
+ * Generate AI-powered milestones for a project (regeneration)
+ */
+async function regenerateAIMilestones(project, additionalContext = '') {
+  const prompt = `You are an expert home improvement project planner. Generate a detailed, actionable project plan with milestones for a homeowner.
+
+PROJECT DETAILS:
+- Title: ${project.title}
+- Category: ${project.category}
+- Budget: $${project.investment_required?.toLocaleString() || 'TBD'}
+${project.description ? `- Description: ${project.description}` : ''}
+${project.current_state ? `- Current State: ${project.current_state}` : ''}
+${project.upgraded_state ? `- Target State: ${project.upgraded_state}` : ''}
+
+${additionalContext ? `ADDITIONAL CONTEXT FROM USER:\n${additionalContext}\n` : ''}
+
+Generate 4-8 milestones that guide the homeowner through this project from start to finish. Each milestone should be:
+1. Specific and actionable
+2. In logical order
+3. Include expert tips to avoid common mistakes
+4. Suggest what photos to capture for documentation
+
+Consider phases like:
+- Research & Planning
+- Budgeting & Quotes
+- Material Selection & Procurement
+- Preparation Work
+- Main Work Phases (break down if complex)
+- Quality Inspection
+- Cleanup & Documentation`;
+
+  const result = await integrations.InvokeLLM({
+    prompt,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        milestones: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Clear milestone name" },
+              description: { type: "string", description: "What needs to be done" },
+              ai_guidance: { type: "string", description: "Expert tip or common pitfall" },
+              typical_duration_days: { type: "number", description: "Realistic estimate in days" },
+              photo_prompts: {
+                type: "array",
+                items: { type: "string" },
+                description: "What photos to capture"
+              }
+            }
+          }
+        },
+        project_tips: {
+          type: "array",
+          items: { type: "string" },
+          description: "3-5 overall tips for this type of project"
+        }
+      }
+    }
+  });
+
+  // Transform AI response into milestone format
+  const milestones = result.milestones?.map((m, index) => ({
+    id: `milestone_${Date.now()}_${index}`,
+    title: m.title,
+    description: m.description,
+    order: index,
+    status: 'Not Started',
+    completed_date: null,
+    photos: [],
+    notes: '',
+    ai_guidance: m.ai_guidance,
+    typical_duration_days: m.typical_duration_days,
+    photo_prompts: m.photo_prompts || []
+  })) || [];
+
+  return {
+    milestones,
+    project_tips: result.project_tips || []
+  };
+}
+
 export default function MilestonesTab({ project, onUpdate }) {
+  const { awardXP } = useGamification();
   const [expandedMilestone, setExpandedMilestone] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [regenerateContext, setRegenerateContext] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState('');
+  const [isAnalyzingRisks, setIsAnalyzingRisks] = useState(false);
+  const [riskAnalysis, setRiskAnalysis] = useState(null);
+
+  // Track if we've awarded XP for completing this project
+  const hasAwardedCompleteXPRef = useRef(false);
+
+  // Parse existing risk analysis from project's ai_guidance field
+  React.useEffect(() => {
+    if (project.ai_guidance) {
+      let guidance = project.ai_guidance;
+      if (typeof guidance === 'string') {
+        try {
+          guidance = JSON.parse(guidance);
+        } catch (e) {
+          console.error('Failed to parse ai_guidance:', e);
+          return;
+        }
+      }
+      // Extract risk_analysis from ai_guidance if it exists
+      if (guidance.risk_analysis) {
+        setRiskAnalysis(guidance.risk_analysis);
+      }
+    }
+  }, [project.ai_guidance]);
+
+  // AI Risk Analysis function
+  const analyzeRisks = async () => {
+    if (!project.milestones || project.milestones.length === 0) {
+      alert('Add milestones first before analyzing risks.');
+      return;
+    }
+
+    setIsAnalyzingRisks(true);
+
+    try {
+      const milestonesText = project.milestones.map((m, i) =>
+        `${i + 1}. ${m.title} (Status: ${m.status}, Duration: ${m.typical_duration_days || 'unknown'} days)`
+      ).join('\n');
+
+      const result = await integrations.InvokeLLM({
+        prompt: `You are an expert project manager analyzing a home improvement project for risks and optimization.
+
+PROJECT: ${project.title}
+CATEGORY: ${project.category}
+BUDGET: $${project.investment_required?.toLocaleString() || 'TBD'}
+
+MILESTONES:
+${milestonesText}
+
+Analyze these milestones and provide:
+1. Dependency warnings (which milestones depend on others being complete first)
+2. Sequencing issues (are they in the right order?)
+3. Risk alerts (what could go wrong at each critical milestone)
+4. Timeline risks (seasonal issues, contractor availability, etc.)
+5. An optimized sequence recommendation if current order isn't ideal
+6. A risk score from 1-10 (10 = highest risk)
+
+Be specific about WHICH milestones have issues.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            risk_score: { type: "number" },
+            risk_summary: { type: "string" },
+            dependency_warnings: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  milestone_index: { type: "number" },
+                  depends_on: { type: "number" },
+                  warning: { type: "string" }
+                }
+              }
+            },
+            sequencing_issues: { type: "array", items: { type: "string" } },
+            critical_risks: { type: "array", items: { type: "string" } },
+            timeline_risks: { type: "array", items: { type: "string" } },
+            optimization_suggestion: { type: "string" }
+          }
+        }
+      });
+
+      if (!result || !result.risk_summary) {
+        throw new Error('Invalid AI response');
+      }
+
+      const analysisWithTimestamp = {
+        ...result,
+        analyzed_at: new Date().toISOString()
+      };
+
+      // Parse existing ai_guidance to preserve other data
+      let existingGuidance = {};
+      if (project.ai_guidance) {
+        if (typeof project.ai_guidance === 'string') {
+          try {
+            existingGuidance = JSON.parse(project.ai_guidance);
+          } catch (e) {
+            existingGuidance = {};
+          }
+        } else {
+          existingGuidance = project.ai_guidance;
+        }
+      }
+
+      // Save to database inside ai_guidance field
+      await Upgrade.update(project.id, {
+        ai_guidance: {
+          ...existingGuidance,
+          risk_analysis: analysisWithTimestamp
+        }
+      });
+
+      setRiskAnalysis(analysisWithTimestamp);
+      console.log('✅ Risk analysis complete');
+
+    } catch (error) {
+      console.error('❌ Risk analysis failed:', error);
+      alert('Failed to analyze risks. Please try again.');
+    } finally {
+      setIsAnalyzingRisks(false);
+    }
+  };
+
+  const handleRegenerateMilestones = async () => {
+    // Warn user if there are completed milestones
+    const completedCount = project.milestones?.filter(m => m.status === 'Completed').length || 0;
+    if (completedCount > 0) {
+      const confirmed = window.confirm(
+        `Warning: You have ${completedCount} completed milestone(s). Regenerating will replace ALL existing milestones and you'll lose progress tracking. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    setIsRegenerating(true);
+    setRegenerateError('');
+
+    try {
+      console.log('🤖 Regenerating milestones with AI...');
+
+      const aiResult = await regenerateAIMilestones(project, regenerateContext);
+
+      if (!aiResult.milestones || aiResult.milestones.length === 0) {
+        throw new Error('AI did not generate any milestones');
+      }
+
+      // Update project with new milestones
+      await Upgrade.update(project.id, {
+        milestones: aiResult.milestones,
+        ai_guidance: {
+          generated_at: new Date().toISOString(),
+          project_tips: aiResult.project_tips || [],
+          source: 'ai-regenerated',
+          context_provided: !!regenerateContext
+        }
+      });
+
+      console.log(`✅ Regenerated ${aiResult.milestones.length} milestones`);
+
+      setShowRegenerateDialog(false);
+      setRegenerateContext('');
+      onUpdate();
+
+    } catch (error) {
+      console.error('❌ Failed to regenerate milestones:', error);
+      setRegenerateError(error.message || 'Failed to generate new milestones. Please try again.');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleStatusChange = async (milestoneId, newStatus) => {
     try {
-      const updatedMilestones = project.milestones.map(m => 
-        m.id === milestoneId 
-          ? { 
-              ...m, 
+      const updatedMilestones = project.milestones.map(m =>
+        m.id === milestoneId
+          ? {
+              ...m,
               status: newStatus,
               completed_date: newStatus === 'Completed' ? new Date().toISOString() : null
             }
           : m
       );
 
-      // Calculate progress
+      // Calculate progress for display (not stored in DB)
       const completedCount = updatedMilestones.filter(m => m.status === 'Completed').length;
       const progressPercent = Math.round((completedCount / updatedMilestones.length) * 100);
-      
-      // Find next incomplete milestone
-      const nextIncomplete = updatedMilestones.find(m => m.status !== 'Completed');
-      const currentMilestone = nextIncomplete ? nextIncomplete.title : 'All Complete';
 
       // Update project status if all milestones complete
-      const newProjectStatus = progressPercent === 100 ? 'Completed' : 
-                               progressPercent > 0 ? 'In Progress' : 
+      const newProjectStatus = progressPercent === 100 ? 'Completed' :
+                               progressPercent > 0 ? 'In Progress' :
                                project.status;
 
+      // Only update columns that exist in the database schema
       await Upgrade.update(project.id, {
         milestones: updatedMilestones,
-        progress_percentage: progressPercent,
-        current_milestone: currentMilestone,
         status: newProjectStatus
       });
 
-      console.log('✅ Milestone updated:', milestoneId, '→', newStatus);
+      console.log('Milestone updated:', milestoneId, '->', newStatus);
       console.log('Progress:', progressPercent + '%');
-      
+
+      // ========================================
+      // GAMIFICATION: Award XP when upgrade project is completed
+      // ========================================
+      if (newProjectStatus === 'Completed' && project.status !== 'Completed' && !hasAwardedCompleteXPRef.current) {
+        hasAwardedCompleteXPRef.current = true;
+        try {
+          await awardXP('complete_upgrade', {
+            entityType: 'upgrade',
+            entityId: project.id,
+            projectTitle: project.title,
+            category: project.category
+          });
+        } catch (err) {
+          console.error('Error awarding XP for upgrade completion:', err);
+          // Don't block the user flow
+        }
+      }
+
       onUpdate();
     } catch (error) {
-      console.error('❌ Failed to update milestone:', error);
+      console.error('Failed to update milestone:', error);
       alert('Failed to update milestone. Please try again.');
     }
   };
@@ -61,7 +345,221 @@ export default function MilestonesTab({ project, onUpdate }) {
 
   return (
     <div className="space-y-4">
-      
+
+      {/* AI Actions Row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          onClick={() => setShowRegenerateDialog(true)}
+          variant="outline"
+          className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+          style={{ minHeight: '48px' }}
+        >
+          <Sparkles className="w-5 h-5 mr-2" />
+          Regenerate Milestones with AI
+        </Button>
+        <Button
+          onClick={analyzeRisks}
+          variant="outline"
+          disabled={isAnalyzingRisks || !project.milestones?.length}
+          className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+          style={{ minHeight: '48px' }}
+        >
+          {isAnalyzingRisks ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Analyzing Risks...
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-5 h-5 mr-2" />
+              Analyze Risks & Dependencies
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* AI Risk Analysis Results */}
+      {riskAnalysis && (
+        <div className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <h3 className="font-bold text-gray-900">AI Risk Analysis</h3>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+              riskAnalysis.risk_score <= 3 ? 'bg-green-100 text-green-700' :
+              riskAnalysis.risk_score <= 6 ? 'bg-yellow-100 text-yellow-700' :
+              'bg-red-100 text-red-700'
+            }`}>
+              Risk Score: {riskAnalysis.risk_score}/10
+            </div>
+          </div>
+
+          {/* Risk Summary */}
+          <p className="text-sm text-gray-700">{riskAnalysis.risk_summary}</p>
+
+          {/* Dependency Warnings */}
+          {riskAnalysis.dependency_warnings?.length > 0 && (
+            <div className="bg-white rounded-lg p-3 border border-amber-200">
+              <p className="text-xs font-semibold text-amber-800 mb-2">⚠️ Dependency Warnings</p>
+              <ul className="space-y-1">
+                {riskAnalysis.dependency_warnings.map((dep, i) => (
+                  <li key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                    <span className="text-amber-500">→</span>
+                    {dep.warning}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Sequencing Issues */}
+          {riskAnalysis.sequencing_issues?.length > 0 && (
+            <div className="bg-white rounded-lg p-3 border border-orange-200">
+              <p className="text-xs font-semibold text-orange-800 mb-2">🔄 Sequencing Issues</p>
+              <ul className="space-y-1">
+                {riskAnalysis.sequencing_issues.map((issue, i) => (
+                  <li key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                    <span className="text-orange-500">•</span>
+                    {issue}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Critical Risks */}
+          {riskAnalysis.critical_risks?.length > 0 && (
+            <div className="bg-white rounded-lg p-3 border border-red-200">
+              <p className="text-xs font-semibold text-red-800 mb-2">🚨 Critical Risks</p>
+              <ul className="space-y-1">
+                {riskAnalysis.critical_risks.map((risk, i) => (
+                  <li key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                    <span className="text-red-500">!</span>
+                    {risk}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Timeline Risks */}
+          {riskAnalysis.timeline_risks?.length > 0 && (
+            <div className="bg-white rounded-lg p-3 border border-purple-200">
+              <p className="text-xs font-semibold text-purple-800 mb-2">📅 Timeline Risks</p>
+              <ul className="space-y-1">
+                {riskAnalysis.timeline_risks.map((risk, i) => (
+                  <li key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                    <span className="text-purple-500">⏱</span>
+                    {risk}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Optimization Suggestion */}
+          {riskAnalysis.optimization_suggestion && (
+            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+              <p className="text-xs font-semibold text-green-800 mb-1">💡 Optimization Suggestion</p>
+              <p className="text-xs text-gray-700">{riskAnalysis.optimization_suggestion}</p>
+            </div>
+          )}
+
+          {/* Timestamp */}
+          {riskAnalysis.analyzed_at && (
+            <p className="text-xs text-gray-400 text-right">
+              Last analyzed: {new Date(riskAnalysis.analyzed_at).toLocaleString()}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Regenerate Dialog */}
+      <Dialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              Regenerate Milestones with AI
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <p className="text-sm text-gray-700">
+              AI will create a new set of personalized milestones based on your project details.
+              This will <strong>replace all existing milestones</strong>.
+            </p>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Additional Context (Optional)
+              </label>
+              <Textarea
+                value={regenerateContext}
+                onChange={(e) => setRegenerateContext(e.target.value)}
+                placeholder="Add any additional details to help AI create better milestones. For example: I'm doing this myself (DIY), I have a contractor starting next week, I need to finish before winter, etc."
+                rows={5}
+                style={{ minHeight: '140px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                The more context you provide, the more tailored your milestones will be.
+              </p>
+            </div>
+
+            {regenerateError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <p className="text-sm text-red-800">{regenerateError}</p>
+                </div>
+              </div>
+            )}
+
+            {project.milestones?.some(m => m.status === 'Completed') && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <p className="text-sm text-amber-800">
+                    You have completed milestones. Regenerating will reset all progress.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => setShowRegenerateDialog(false)}
+                variant="outline"
+                disabled={isRegenerating}
+                className="flex-1"
+                style={{ minHeight: '48px' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRegenerateMilestones}
+                disabled={isRegenerating}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                style={{ minHeight: '48px' }}
+              >
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate New Milestones
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* No Milestones Warning */}
       {(!project.milestones || project.milestones.length === 0) && (
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
@@ -70,7 +568,8 @@ export default function MilestonesTab({ project, onUpdate }) {
             <div>
               <p className="font-semibold text-yellow-900 mb-1">No Milestones Yet</p>
               <p className="text-sm text-yellow-800">
-                Add milestones to break your project into manageable steps and track progress.
+                Click "Regenerate Milestones with AI" above to get personalized project steps,
+                or add your own custom milestones below.
               </p>
             </div>
           </div>
@@ -119,21 +618,107 @@ export default function MilestonesTab({ project, onUpdate }) {
 }
 
 // Milestone Card Component (Mobile-First)
-function MilestoneCard({ 
-  milestone, 
-  index, 
-  isExpanded, 
-  onToggleExpand, 
+function MilestoneCard({
+  milestone,
+  index,
+  isExpanded,
+  onToggleExpand,
   onStatusChange,
   project,
   onUpdate
 }) {
   const [showEditForm, setShowEditForm] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [editData, setEditData] = useState({
     title: milestone.title,
     description: milestone.description || '',
     notes: milestone.notes || ''
   });
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setIsUploadingPhoto(true);
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        // Validate file size (5MB max for photos)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`Photo ${file.name} is too large. Maximum size is 5MB.`);
+        }
+
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `milestones/${project.id}/${milestone.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        // Upload to Supabase storage using upgrade-documents bucket
+        const { data, error } = await supabase.storage
+          .from('upgrade-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('upgrade-documents')
+          .getPublicUrl(fileName);
+
+        return urlData.publicUrl;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+
+      // Update milestone with new photos
+      const updatedMilestones = project.milestones.map(m =>
+        m.id === milestone.id
+          ? { ...m, photos: [...(m.photos || []), ...uploadedUrls] }
+          : m
+      );
+
+      await Upgrade.update(project.id, {
+        milestones: updatedMilestones
+      });
+
+      console.log(`✅ Added ${uploadedUrls.length} photo(s) to milestone:`, milestone.id);
+      onUpdate();
+
+    } catch (error) {
+      console.error('❌ Failed to upload photo:', error);
+      alert(error.message || 'Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemovePhoto = async (photoIndex) => {
+    if (!window.confirm('Remove this photo?')) return;
+
+    try {
+      const updatedPhotos = milestone.photos.filter((_, i) => i !== photoIndex);
+      const updatedMilestones = project.milestones.map(m =>
+        m.id === milestone.id ? { ...m, photos: updatedPhotos } : m
+      );
+
+      await Upgrade.update(project.id, {
+        milestones: updatedMilestones
+      });
+
+      console.log('✅ Photo removed from milestone:', milestone.id);
+      onUpdate();
+    } catch (error) {
+      console.error('❌ Failed to remove photo:', error);
+      alert('Failed to remove photo. Please try again.');
+    }
+  };
   
   const statusBg = {
     'Completed': 'bg-green-50 border-green-300',
@@ -173,22 +758,16 @@ function MilestoneCard({
 
     try {
       const updatedMilestones = project.milestones.filter(m => m.id !== milestone.id);
-      
-      // Recalculate progress
-      const completedCount = updatedMilestones.filter(m => m.status === 'Completed').length;
-      const progressPercent = updatedMilestones.length > 0 
-        ? Math.round((completedCount / updatedMilestones.length) * 100) 
-        : 0;
 
+      // Only update milestones column (progress is calculated on the fly)
       await Upgrade.update(project.id, {
-        milestones: updatedMilestones,
-        progress_percentage: progressPercent
+        milestones: updatedMilestones
       });
 
-      console.log('✅ Milestone deleted:', milestone.id);
+      console.log('Milestone deleted:', milestone.id);
       onUpdate();
     } catch (error) {
-      console.error('❌ Failed to delete milestone:', error);
+      console.error('Failed to delete milestone:', error);
       alert('Failed to delete milestone. Please try again.');
     }
   };
@@ -265,7 +844,7 @@ function MilestoneCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h4 className="font-bold text-gray-900 text-sm sm:text-base">
-              {index + 1}. {milestone.title}
+              {index + 1}. {decodeHtmlEntities(milestone.title)}
             </h4>
             <button
               onClick={onToggleExpand}
@@ -330,7 +909,7 @@ function MilestoneCard({
           {/* Description */}
           {milestone.description && (
             <div>
-              <p className="text-sm text-gray-700">{milestone.description}</p>
+              <p className="text-sm text-gray-700">{decodeHtmlEntities(milestone.description)}</p>
             </div>
           )}
 
@@ -341,32 +920,94 @@ function MilestoneCard({
                 <MessageSquare className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-blue-900 mb-1">
-                    💡 AI Guidance
+                    AI Guidance
                   </p>
-                  <p className="text-xs text-blue-800">{milestone.ai_guidance}</p>
+                  <p className="text-xs text-blue-800">{decodeHtmlEntities(milestone.ai_guidance)}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Photos */}
-          {milestone.photos && milestone.photos.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">
-                📸 Photos ({milestone.photos.length})
+          {/* Photos Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-700">
+                📸 Photos {milestone.photos?.length > 0 && `(${milestone.photos.length})`}
               </p>
+              <label className="cursor-pointer">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  disabled={isUploadingPhoto}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  style={{ minHeight: '32px' }}
+                  disabled={isUploadingPhoto}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploadingPhoto ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-3 h-3 mr-1" />
+                      Add Photos
+                    </>
+                  )}
+                </Button>
+              </label>
+            </div>
+
+            {/* Photo Prompts from AI */}
+            {milestone.photo_prompts && milestone.photo_prompts.length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-2">
+                <p className="text-xs text-gray-600 mb-1">📷 Suggested photos to capture:</p>
+                <ul className="text-xs text-gray-700 list-disc list-inside space-y-0.5">
+                  {milestone.photo_prompts.map((prompt, i) => (
+                    <li key={i}>{prompt}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Photo Grid with Remove Option */}
+            {milestone.photos && milestone.photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {milestone.photos.map((photo, i) => (
-                  <img
-                    key={i}
-                    src={photo}
-                    alt={`Milestone ${i + 1}`}
-                    className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
-                  />
+                  <div key={i} className="relative group">
+                    <img
+                      src={photo}
+                      alt={`Milestone photo ${i + 1}`}
+                      className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(i)}
+                      className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ minHeight: '24px', minWidth: '24px' }}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">No photos yet</p>
+              </div>
+            )}
+          </div>
 
           {/* Notes */}
           {milestone.notes && (

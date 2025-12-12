@@ -240,11 +240,12 @@ export default function DashboardHomeowner() {
       </div>
 
       {/* Guided Next Step - Shows recommended action based on progress */}
-      {!demoMode && systems.length === 0 && (
+      {!demoMode && (realProperties.length === 0 || systems.length === 0) && (
         <GuidedNextStep
+          propertiesCount={realProperties.length}
           systemsCount={systems.length}
           tasksCount={allTasks.length}
-          inspectionsCount={0}
+          inspectionsCount={inspections.length}
           className="mb-8"
         />
       )}
@@ -254,78 +255,88 @@ export default function DashboardHomeowner() {
         {/* Health Score - Links to 360° Score */}
         <div
           data-tour="health-score"
-          className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
+          className={`bg-gradient-to-br ${realProperties.length === 0 ? 'from-gray-50 to-gray-100 border-gray-300' : 'from-green-50 to-emerald-100 border-green-300'} border-2 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all`}
+          onClick={() => realProperties.length === 0 ? navigate(createPageUrl('Properties')) : navigate(demoMode ? getDemoUrl('Score360', demoMode) : createPageUrl('Score360') + (property?.id ? `?property_id=${property.id}` : ''))}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-              <Shield className="w-6 h-6 text-green-700" />
+            <div className={`w-12 h-12 ${realProperties.length === 0 ? 'bg-gray-200' : 'bg-green-200'} rounded-full flex items-center justify-center`}>
+              <Shield className={`w-6 h-6 ${realProperties.length === 0 ? 'text-gray-500' : 'text-green-700'}`} />
             </div>
-            <span className="text-xs font-semibold text-green-700 bg-green-200 px-3 py-1 rounded-full">
-              {healthScore >= 90 ? 'EXCELLENT' : healthScore >= 75 ? 'GOOD' : healthScore >= 65 ? 'FAIR' : 'NEEDS ATTENTION'}
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${realProperties.length === 0 ? 'text-gray-600 bg-gray-200' : healthScore >= 90 ? 'text-green-700 bg-green-200' : healthScore >= 75 ? 'text-green-700 bg-green-200' : healthScore >= 65 ? 'text-yellow-700 bg-yellow-200' : 'text-red-700 bg-red-200'}`}>
+              {realProperties.length === 0 ? 'NO PROPERTY' : healthScore >= 90 ? 'EXCELLENT' : healthScore >= 75 ? 'GOOD' : healthScore >= 65 ? 'FAIR' : 'NEEDS ATTENTION'}
             </span>
           </div>
 
           <div className="mb-2">
-            <div className="text-sm text-green-800 mb-1">360° Health Score</div>
-            <div className="text-5xl font-bold text-green-900">{healthScore}</div>
-            <div className="text-xs text-green-700 mt-1">out of 100</div>
+            <div className={`text-sm ${realProperties.length === 0 ? 'text-gray-600' : 'text-green-800'} mb-1`}>360° Health Score</div>
+            <div className={`text-5xl font-bold ${realProperties.length === 0 ? 'text-gray-400' : 'text-green-900'}`}>
+              {realProperties.length === 0 ? '--' : healthScore}
+            </div>
+            <div className={`text-xs ${realProperties.length === 0 ? 'text-gray-500' : 'text-green-700'} mt-1`}>
+              {realProperties.length === 0 ? 'Add a property to start' : 'out of 100'}
+            </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-green-300">
+          <div className={`mt-4 pt-4 border-t ${realProperties.length === 0 ? 'border-gray-200' : 'border-green-300'}`}>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-800">View full report →</span>
-              <ArrowRight className="w-4 h-4 text-green-700" />
+              <span className={realProperties.length === 0 ? 'text-gray-600' : 'text-green-800'}>
+                {realProperties.length === 0 ? 'Add property →' : 'View full report →'}
+              </span>
+              <ArrowRight className={`w-4 h-4 ${realProperties.length === 0 ? 'text-gray-500' : 'text-green-700'}`} />
             </div>
           </div>
 
           {/* Mini health breakdown */}
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-800">Critical Systems:</span>
-              <span className="font-semibold text-green-900">{criticalSystems.length}/{systems.length} Healthy</span>
+          {realProperties.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-green-800">Critical Systems:</span>
+                <span className="font-semibold text-green-900">{criticalSystems.length}/{systems.length} Healthy</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-green-800">Attention Needed:</span>
+                <span className="font-semibold text-yellow-700">{attentionNeeded.length} items</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-800">Attention Needed:</span>
-              <span className="font-semibold text-yellow-700">{attentionNeeded.length} items</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Prevented Costs */}
-        <div 
+        <div
           data-tour="prevented-costs"
-          className="bg-gradient-to-br from-blue-50 to-sky-100 border-2 border-blue-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(createPageUrl('Track'))}
+          className={`bg-gradient-to-br ${realProperties.length === 0 ? 'from-gray-50 to-gray-100 border-gray-300' : 'from-blue-50 to-sky-100 border-blue-300'} border-2 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all`}
+          onClick={() => realProperties.length === 0 ? navigate(createPageUrl('Properties')) : navigate(createPageUrl('Track'))}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-blue-700" />
+            <div className={`w-12 h-12 ${realProperties.length === 0 ? 'bg-gray-200' : 'bg-blue-200'} rounded-full flex items-center justify-center`}>
+              <DollarSign className={`w-6 h-6 ${realProperties.length === 0 ? 'text-gray-500' : 'text-blue-700'}`} />
             </div>
-            <span className="text-xs font-semibold text-blue-700 bg-blue-200 px-3 py-1 rounded-full">
-              YTD 2025
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${realProperties.length === 0 ? 'text-gray-600 bg-gray-200' : 'text-blue-700 bg-blue-200'}`}>
+              {realProperties.length === 0 ? 'NO DATA' : 'YTD 2025'}
             </span>
           </div>
-          
+
           <div className="mb-2">
-            <div className="text-sm text-blue-800 mb-1">Disasters Prevented</div>
-            <div className="text-5xl font-bold text-blue-900">
-              ${(preventedCosts / 1000).toFixed(1)}K
+            <div className={`text-sm ${realProperties.length === 0 ? 'text-gray-600' : 'text-blue-800'} mb-1`}>Disasters Prevented</div>
+            <div className={`text-5xl font-bold ${realProperties.length === 0 ? 'text-gray-400' : 'text-blue-900'}`}>
+              {realProperties.length === 0 ? '$0' : `$${(preventedCosts / 1000).toFixed(1)}K`}
             </div>
-            <div className="text-xs text-blue-700 mt-1">cascade failures stopped</div>
+            <div className={`text-xs ${realProperties.length === 0 ? 'text-gray-500' : 'text-blue-700'} mt-1`}>
+              {realProperties.length === 0 ? 'Track maintenance to see savings' : 'cascade failures stopped'}
+            </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-blue-300">
+          <div className={`mt-4 pt-4 border-t ${realProperties.length === 0 ? 'border-gray-200' : 'border-blue-300'}`}>
             <div className="flex items-center justify-between text-sm mb-3">
-              <span className="text-blue-800">Maintenance spent:</span>
-              <span className="font-semibold text-blue-900">
-                ${ytdMaintenanceSpent.toLocaleString()}
+              <span className={realProperties.length === 0 ? 'text-gray-600' : 'text-blue-800'}>Maintenance spent:</span>
+              <span className={`font-semibold ${realProperties.length === 0 ? 'text-gray-500' : 'text-blue-900'}`}>
+                {realProperties.length === 0 ? '$0' : `$${ytdMaintenanceSpent.toLocaleString()}`}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-blue-800">Net savings:</span>
-              <span className="font-bold text-green-600">
-                ${(preventedCosts - ytdMaintenanceSpent).toLocaleString()}
+              <span className={realProperties.length === 0 ? 'text-gray-600' : 'text-blue-800'}>Net savings:</span>
+              <span className={`font-bold ${realProperties.length === 0 ? 'text-gray-500' : 'text-green-600'}`}>
+                {realProperties.length === 0 ? '$0' : `$${(preventedCosts - ytdMaintenanceSpent).toLocaleString()}`}
               </span>
             </div>
           </div>
@@ -333,22 +344,24 @@ export default function DashboardHomeowner() {
 
         {/* Wealth Building */}
         <div
-          className="bg-gradient-to-br from-purple-50 to-violet-100 border-2 border-purple-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate(createPageUrl('Scale'))}
+          className={`bg-gradient-to-br ${realProperties.length === 0 ? 'from-gray-50 to-gray-100 border-gray-300' : 'from-purple-50 to-violet-100 border-purple-300'} border-2 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all`}
+          onClick={() => realProperties.length === 0 ? navigate(createPageUrl('Properties')) : navigate(createPageUrl('Scale'))}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-purple-700" />
+            <div className={`w-12 h-12 ${realProperties.length === 0 ? 'bg-gray-200' : 'bg-purple-200'} rounded-full flex items-center justify-center`}>
+              <TrendingUp className={`w-6 h-6 ${realProperties.length === 0 ? 'text-gray-500' : 'text-purple-700'}`} />
             </div>
-            <span className="text-xs font-semibold text-purple-700 bg-purple-200 px-3 py-1 rounded-full">
-              10-YR
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${realProperties.length === 0 ? 'text-gray-600 bg-gray-200' : 'text-purple-700 bg-purple-200'}`}>
+              {realProperties.length === 0 ? 'NO DATA' : '10-YR'}
             </span>
           </div>
 
           <div className="mb-2">
-            <div className="text-sm text-purple-800 mb-1">Projected Wealth Gain</div>
-            <div className="text-5xl font-bold text-purple-900">
-              {wealthMetrics.hasProjection ? (
+            <div className={`text-sm ${realProperties.length === 0 ? 'text-gray-600' : 'text-purple-800'} mb-1`}>Projected Wealth Gain</div>
+            <div className={`text-5xl font-bold ${realProperties.length === 0 ? 'text-gray-400' : 'text-purple-900'}`}>
+              {realProperties.length === 0 ? (
+                '$0'
+              ) : wealthMetrics.hasProjection ? (
                 wealthMetrics.projectedGain >= 1000000
                   ? `$${(wealthMetrics.projectedGain / 1000000).toFixed(1)}M`
                   : `$${Math.round(wealthMetrics.projectedGain / 1000)}K`
@@ -356,26 +369,28 @@ export default function DashboardHomeowner() {
                 <span className="text-2xl text-purple-600">Set up equity</span>
               )}
             </div>
-            <div className="text-xs text-purple-700 mt-1">
-              {wealthMetrics.hasProjection
-                ? `equity growth by ${wealthMetrics.targetYear}`
-                : 'Add property value to see projections'}
+            <div className={`text-xs ${realProperties.length === 0 ? 'text-gray-500' : 'text-purple-700'} mt-1`}>
+              {realProperties.length === 0
+                ? 'Add a property to track wealth'
+                : wealthMetrics.hasProjection
+                  ? `equity growth by ${wealthMetrics.targetYear}`
+                  : 'Add property value to see projections'}
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-purple-300">
+          <div className={`mt-4 pt-4 border-t ${realProperties.length === 0 ? 'border-gray-200' : 'border-purple-300'}`}>
             <div className="flex items-center justify-between text-sm mb-3">
-              <span className="text-purple-800">Current equity:</span>
-              <span className="font-semibold text-purple-900">
-                {wealthMetrics.currentEquity > 0
+              <span className={realProperties.length === 0 ? 'text-gray-600' : 'text-purple-800'}>Current equity:</span>
+              <span className={`font-semibold ${realProperties.length === 0 ? 'text-gray-500' : 'text-purple-900'}`}>
+                {realProperties.length === 0 ? '--' : wealthMetrics.currentEquity > 0
                   ? `$${Math.round(wealthMetrics.currentEquity / 1000)}K`
                   : '--'}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-purple-800">Property value:</span>
-              <span className="font-semibold text-purple-900">
-                {wealthMetrics.currentValue > 0
+              <span className={realProperties.length === 0 ? 'text-gray-600' : 'text-purple-800'}>Property value:</span>
+              <span className={`font-semibold ${realProperties.length === 0 ? 'text-gray-500' : 'text-purple-900'}`}>
+                {realProperties.length === 0 ? '--' : wealthMetrics.currentValue > 0
                   ? `$${Math.round(wealthMetrics.currentValue / 1000)}K`
                   : '--'}
               </span>

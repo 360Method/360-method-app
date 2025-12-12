@@ -6,7 +6,7 @@ import { CheckCircle2, Home, ArrowRight, Plus, LayoutDashboard } from "lucide-re
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 
-export default function PropertySuccessScreen({ property, onAddAnother, onGoToDashboard }) {
+export default function PropertySuccessScreen({ property, onAddAnother, onGoToDashboard, onCompleteProfile }) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function PropertySuccessScreen({ property, onAddAnother, onGoToDa
               {/* Complete Full Profile */}
               <div className="text-center pt-2">
                 <button
-                  onClick={() => navigate(createPageUrl('Properties') + `?complete=${property.id}`)}
+                  onClick={() => onCompleteProfile ? onCompleteProfile(property) : navigate(createPageUrl('Properties') + `?complete=${property.id}`)}
                   className="text-gray-600 hover:text-gray-900 text-sm underline"
                 >
                   Or complete full property profile →

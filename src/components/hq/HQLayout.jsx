@@ -67,14 +67,20 @@ const HQ_NAVIGATION = [
 
 export default function HQLayout({ children }) {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole, dbUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
-  // Check for admin role
-  // In development, allow access if DEV_ADMIN_ACCESS is true
+  // Check for admin role - multiple ways to grant admin access:
+  // 1. Development mode (for testing)
+  // 2. hasRole('admin') - from Clerk publicMetadata roles array
+  // 3. dbUser.is_admin - from Supabase users table
+  // 4. Legacy: user_metadata.role === 'admin'
   const isDev = import.meta.env.DEV;
-  const isAdmin = isDev || user?.role === 'admin' || user?.user_metadata?.role === 'admin';
+  const isAdmin = isDev ||
+    hasRole?.('admin') ||
+    dbUser?.is_admin === true ||
+    user?.user_metadata?.role === 'admin';
 
   if (!isAdmin) {
     return (

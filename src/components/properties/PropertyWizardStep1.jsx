@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Loader2, Sparkles, Home, CheckCircle2, Building2, Wrench } from "lucide-react";
+import { MapPin, Loader2, Sparkles, Home, Building2, Wrench } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
 import AddressVerificationMap from "./AddressVerificationMap";
 import { checkServiceAvailability } from "../shared/ServiceAreaChecker";
@@ -60,7 +60,6 @@ export default function PropertyWizardStep1({ data, onChange, onNext, onCancel }
   const [propertyDataFetched, setPropertyDataFetched] = React.useState(false);
   const [aiPropertyData, setAiPropertyData] = React.useState(null);
   const [appliedFields, setAppliedFields] = React.useState({});
-  const [successMessage, setSuccessMessage] = React.useState(null);
   const [operatorInfo, setOperatorInfo] = React.useState(null);
   const [checkingOperator, setCheckingOperator] = React.useState(false);
 
@@ -197,113 +196,133 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
       if (response) {
         setAiPropertyData(response);
         setPropertyDataFetched(true);
-        
-        // Auto-apply high-confidence data
-        if (response.confidence === "high") {
-          const updates = {};
-          if (response.year_built) updates.year_built = response.year_built;
-          if (response.square_footage) updates.square_footage = response.square_footage;
-          if (response.bedrooms) updates.bedrooms = response.bedrooms;
-          if (response.bathrooms) updates.bathrooms = response.bathrooms;
-          
-          // Map stories
-          if (response.stories) {
-            const storiesMap = {
-              '1': 'Single-Story',
-              'one': 'Single-Story',
-              'single': 'Single-Story',
-              '2': 'Two-Story',
-              'two': 'Two-Story',
-              '3': 'Three+ Story',
-              'three': 'Three+ Story',
-              'split': 'Split-Level',
-              'tri-level': 'Tri-Level',
-              'trilevel': 'Tri-Level'
-            };
-            const lowerStories = response.stories.toLowerCase();
-            for (const [key, value] of Object.entries(storiesMap)) {
-              if (lowerStories.includes(key)) {
-                updates.stories = value;
-                break;
-              }
+
+        // Auto-apply ALL fetched data (users can edit in Step 2)
+        // Mark all applied fields so Step 2 shows AI badge
+        const updates = {};
+        const applied = {};
+
+        if (response.year_built) {
+          updates.year_built = response.year_built;
+          applied.year_built = true;
+        }
+        if (response.square_footage) {
+          updates.square_footage = response.square_footage;
+          applied.square_footage = true;
+        }
+        if (response.bedrooms) {
+          updates.bedrooms = response.bedrooms;
+          applied.bedrooms = true;
+        }
+        if (response.bathrooms) {
+          updates.bathrooms = response.bathrooms;
+          applied.bathrooms = true;
+        }
+
+        // Map stories
+        if (response.stories) {
+          const storiesMap = {
+            '1': 'Single-Story',
+            'one': 'Single-Story',
+            'single': 'Single-Story',
+            '2': 'Two-Story',
+            'two': 'Two-Story',
+            '3': 'Three+ Story',
+            'three': 'Three+ Story',
+            'split': 'Split-Level',
+            'tri-level': 'Tri-Level',
+            'trilevel': 'Tri-Level'
+          };
+          const lowerStories = response.stories.toLowerCase();
+          for (const [key, value] of Object.entries(storiesMap)) {
+            if (lowerStories.includes(key)) {
+              updates.stories = value;
+              applied.stories = true;
+              break;
             }
           }
-          
-          // Map foundation type
-          if (response.foundation_type) {
-            const foundationMap = {
-              'slab': 'Concrete Slab',
-              'concrete slab': 'Concrete Slab',
-              'crawl': 'Crawlspace',
-              'crawlspace': 'Crawlspace',
-              'full basement': 'Full Basement',
-              'basement': 'Full Basement',
-              'partial basement': 'Partial Basement',
-              'pier': 'Pier & Beam',
-              'beam': 'Pier & Beam',
-              'raised': 'Pier & Beam',
-              'mixed': 'Mixed'
-            };
-            const lowerFoundation = response.foundation_type.toLowerCase();
-            for (const [key, value] of Object.entries(foundationMap)) {
-              if (lowerFoundation.includes(key)) {
-                updates.foundation_type = value;
-                break;
-              }
+        }
+
+        // Map foundation type
+        if (response.foundation_type) {
+          const foundationMap = {
+            'slab': 'Concrete Slab',
+            'concrete slab': 'Concrete Slab',
+            'crawl': 'Crawlspace',
+            'crawlspace': 'Crawlspace',
+            'full basement': 'Full Basement',
+            'basement': 'Full Basement',
+            'partial basement': 'Partial Basement',
+            'pier': 'Pier & Beam',
+            'beam': 'Pier & Beam',
+            'raised': 'Pier & Beam',
+            'mixed': 'Mixed'
+          };
+          const lowerFoundation = response.foundation_type.toLowerCase();
+          for (const [key, value] of Object.entries(foundationMap)) {
+            if (lowerFoundation.includes(key)) {
+              updates.foundation_type = value;
+              applied.foundation_type = true;
+              break;
             }
           }
-          
-          // Map garage type
-          if (response.garage_type) {
-            const garageMap = {
-              'none': 'None',
-              'no garage': 'None',
-              'attached 1': 'Attached 1-car',
-              '1-car attached': 'Attached 1-car',
-              'single car': 'Attached 1-car',
-              'attached 2': 'Attached 2-car',
-              '2-car attached': 'Attached 2-car',
-              'double garage': 'Attached 2-car',
-              'attached 3': 'Attached 3+ car',
-              '3-car': 'Attached 3+ car',
-              'detached': 'Detached',
-              'carport': 'Carport'
-            };
-            const lowerGarage = response.garage_type.toLowerCase();
-            for (const [key, value] of Object.entries(garageMap)) {
-              if (lowerGarage.includes(key)) {
-                updates.garage_type = value;
-                break;
-              }
+        }
+
+        // Map garage type
+        if (response.garage_type) {
+          const garageMap = {
+            'none': 'None',
+            'no garage': 'None',
+            'attached 1': 'Attached 1-car',
+            '1-car attached': 'Attached 1-car',
+            'single car': 'Attached 1-car',
+            'attached 2': 'Attached 2-car',
+            '2-car attached': 'Attached 2-car',
+            'double garage': 'Attached 2-car',
+            'attached 3': 'Attached 3+ car',
+            '3-car': 'Attached 3+ car',
+            'detached': 'Detached',
+            'carport': 'Carport'
+          };
+          const lowerGarage = response.garage_type.toLowerCase();
+          for (const [key, value] of Object.entries(garageMap)) {
+            if (lowerGarage.includes(key)) {
+              updates.garage_type = value;
+              applied.garage_type = true;
+              break;
             }
           }
-          
-          if (response.property_type) {
-            // Map to our property types
-            const typeMap = {
-              'single family': 'Single-Family Home',
-              'single-family': 'Single-Family Home',
-              'sfr': 'Single-Family Home',
-              'duplex': 'Duplex',
-              'triplex': 'Triplex',
-              'fourplex': 'Fourplex',
-              'condo': 'Condo/Townhouse',
-              'townhouse': 'Condo/Townhouse',
-              'mobile': 'Mobile/Manufactured Home',
-              'manufactured': 'Mobile/Manufactured Home'
-            };
-            const lowerType = response.property_type.toLowerCase();
-            for (const [key, value] of Object.entries(typeMap)) {
-              if (lowerType.includes(key)) {
-                updates.property_type = value;
-                break;
-              }
+        }
+
+        if (response.property_type) {
+          // Map to our property types
+          const typeMap = {
+            'single family': 'Single-Family Home',
+            'single-family': 'Single-Family Home',
+            'sfr': 'Single-Family Home',
+            'duplex': 'Duplex',
+            'triplex': 'Triplex',
+            'fourplex': 'Fourplex',
+            'condo': 'Condo/Townhouse',
+            'townhouse': 'Condo/Townhouse',
+            'mobile': 'Mobile/Manufactured Home',
+            'manufactured': 'Mobile/Manufactured Home'
+          };
+          const lowerType = response.property_type.toLowerCase();
+          for (const [key, value] of Object.entries(typeMap)) {
+            if (lowerType.includes(key)) {
+              updates.property_type = value;
+              break;
             }
           }
-          if (response.last_sale_price) updates.purchase_price = response.last_sale_price;
-          if (response.estimated_value) updates.current_value = response.estimated_value;
-          
+        }
+        if (response.last_sale_price) updates.purchase_price = response.last_sale_price;
+        if (response.estimated_value) updates.current_value = response.estimated_value;
+
+        // Apply all fetched data
+        if (Object.keys(updates).length > 0) {
           onChange(updates);
+          setAppliedFields(applied);
         }
       }
     } catch (error) {
@@ -329,22 +348,6 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
       return;
     }
     onNext();
-  };
-
-  const applyAiData = (field, value) => {
-    onChange({ [field]: value });
-    setAppliedFields(prev => ({ ...prev, [field]: true }));
-    
-    // Show success message for fields that won't be visible until later steps
-    if (field === 'current_value' || field === 'purchase_price') {
-      const fieldLabel = field === 'current_value' ? 'Estimated value' : 'Purchase price';
-      setSuccessMessage(`${fieldLabel} of $${value.toLocaleString()} saved! You'll see it in Step 4.`);
-      
-      // Auto-hide after 4 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 4000);
-    }
   };
 
   return (
@@ -473,22 +476,6 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
         </Card>
       )}
 
-      {/* Success Message Toast */}
-      {successMessage && (
-        <Card className="border-2 border-green-300 bg-green-50 shadow-lg mb-6 animate-in fade-in-50 slide-in-from-top-5 duration-500">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-green-900">✓ Saved Successfully!</p>
-                <p className="text-sm text-gray-700">{successMessage}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* AI Property Data Loading/Display */}
       {formData.address_verified && (
@@ -526,187 +513,59 @@ Return ONLY the data you can confirm from reliable sources. Use null for missing
               <div className="space-y-3">
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="font-semibold text-green-900 mb-2">
-                    ✨ Found Property Data!
+                    ✨ Property Data Found & Auto-Applied!
                   </p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 mb-2">
                     Source: {aiPropertyData.data_source}
                   </p>
-                  <Badge className={`mt-2 ${
-                    aiPropertyData.confidence === 'high' ? 'bg-green-600' :
-                    aiPropertyData.confidence === 'medium' ? 'bg-yellow-600' :
-                    'bg-gray-600'
-                  } text-white`}>
-                    {aiPropertyData.confidence} confidence
-                  </Badge>
+                  <p className="text-sm text-gray-600">
+                    This data has been pre-filled in the next step. You can review and edit as needed.
+                  </p>
                 </div>
 
-                {/* Display found data with apply buttons */}
-                <div className="grid md:grid-cols-2 gap-3">
+                {/* Display found data - all auto-applied */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {aiPropertyData.year_built && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Year Built</p>
-                      <p className="font-bold text-lg">{aiPropertyData.year_built}</p>
-                      {appliedFields.year_built ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('year_built', aiPropertyData.year_built)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Year Built</p>
+                      <p className="font-semibold">{aiPropertyData.year_built}</p>
                     </div>
                   )}
-                  
                   {aiPropertyData.square_footage && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Square Footage</p>
-                      <p className="font-bold text-lg">{aiPropertyData.square_footage.toLocaleString()} sq ft</p>
-                      {appliedFields.square_footage ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('square_footage', aiPropertyData.square_footage)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Sq Ft</p>
+                      <p className="font-semibold">{aiPropertyData.square_footage.toLocaleString()}</p>
                     </div>
                   )}
-
                   {aiPropertyData.bedrooms && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Bedrooms</p>
-                      <p className="font-bold text-lg">{aiPropertyData.bedrooms}</p>
-                      {appliedFields.bedrooms ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('bedrooms', aiPropertyData.bedrooms)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Beds</p>
+                      <p className="font-semibold">{aiPropertyData.bedrooms}</p>
                     </div>
                   )}
-
                   {aiPropertyData.bathrooms && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Bathrooms</p>
-                      <p className="font-bold text-lg">{aiPropertyData.bathrooms}</p>
-                      {appliedFields.bathrooms ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('bathrooms', aiPropertyData.bathrooms)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Baths</p>
+                      <p className="font-semibold">{aiPropertyData.bathrooms}</p>
                     </div>
                   )}
-
                   {aiPropertyData.stories && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Stories</p>
-                      <p className="font-bold text-lg">{aiPropertyData.stories}</p>
-                      {appliedFields.stories ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('stories', aiPropertyData.stories)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Stories</p>
+                      <p className="font-semibold">{aiPropertyData.stories}</p>
                     </div>
                   )}
-
-                  {aiPropertyData.foundation_type && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Foundation Type</p>
-                      <p className="font-bold text-lg">{aiPropertyData.foundation_type}</p>
-                      {appliedFields.foundation_type ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('foundation_type', aiPropertyData.foundation_type)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {aiPropertyData.garage_type && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Garage Type</p>
-                      <p className="font-bold text-lg">{aiPropertyData.garage_type}</p>
-                      {appliedFields.garage_type ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Applied
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('garage_type', aiPropertyData.garage_type)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
                   {aiPropertyData.estimated_value && (
-                    <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-1">Estimated Value</p>
-                      <p className="font-bold text-lg">${aiPropertyData.estimated_value.toLocaleString()}</p>
-                      {appliedFields.current_value ? (
-                        <Badge className="mt-2 bg-green-600 text-white">
-                          ✓ Saved for Step 4
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => applyAiData('current_value', aiPropertyData.estimated_value)}
-                          className="mt-2 bg-purple-600 hover:bg-purple-700"
-                        >
-                          Use This Value
-                        </Button>
-                      )}
+                    <div className="p-2 bg-white border border-green-200 rounded-lg">
+                      <p className="text-xs text-gray-500">Est. Value</p>
+                      <p className="font-semibold">${aiPropertyData.estimated_value.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-xs text-gray-700">
-                    💡 <strong>Tip:</strong> This data comes from public records and may not be 100% accurate. 
-                    You can adjust any values in the next steps.
+                    💡 <strong>All data auto-applied!</strong> Review and adjust values in the next step if needed.
                   </p>
                 </div>
               </div>

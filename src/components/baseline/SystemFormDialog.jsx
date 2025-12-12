@@ -1,15 +1,16 @@
 
 import React from "react";
 import { SystemBaseline, storage, integrations } from "@/api/supabaseClient";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useGamification } from "@/lib/GamificationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2, Shield, DollarSign } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Upload, X, Lightbulb, Plus, Sparkles, AlertCircle, CheckCircle2, Shield, DollarSign, Camera } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -17,6 +18,549 @@ import { analyzePreservationOpportunity, generateAIPreservationPlan } from "../s
 import { useDraftSave } from "./useDraftSave";
 import DraftRecoveryDialog from "./DraftRecoveryDialog";
 import SystemFormDialogMobile from "./SystemFormDialogMobile"; // Added import
+
+// System-specific AI prompts for comprehensive photo analysis
+const AI_PROMPTS = {
+  "HVAC System": `You are analyzing a photo of an HVAC system (furnace, AC unit, heat pump, or air handler).
+
+Look for ANY of these:
+1. Data plate/sticker with brand name, model number, serial number
+2. The unit itself - identify brand from logo/design (Carrier, Trane, Lennox, Rheem, Goodman, Bryant, York, Amana, etc.)
+3. Installation date stickers (often on side panel)
+4. Energy rating labels (yellow EnergyGuide)
+5. Service stickers from HVAC companies (may show install/service dates)
+
+From the serial number, try to decode the manufacture year:
+- Carrier/Bryant: 1st two digits = week, next two = year (e.g., 2519 = 2019)
+- Trane/American Standard: First digit 0-9 = 2010-2019, letters A-L = 2020-2031
+- Lennox: First two digits = year
+- Rheem/Goodman: First two digits = year after 2000
+
+Return JSON with:
+- brand: string (brand name you can identify)
+- model: string (model number if visible)
+- year: string (4-digit year, installation/manufacture year)
+- condition: string (excellent, good, fair, poor - based on visible rust, damage, age)
+- notes: string (type of unit, condition observations)
+
+If you can't see something clearly, leave it as empty string.`,
+
+  "Plumbing System": `You are analyzing a photo of plumbing equipment (water heater, pipes, shutoffs).
+
+Identify:
+1. If water heater: Type (Tank vs Tankless), Fuel (Gas vs Electric), Brand, Capacity
+2. Brand from logo (Rheem, A.O. Smith, Bradford White, Rinnai, State, etc.)
+3. Data plate info (model, serial, date)
+4. Pipe materials if visible (copper, PEX, galvanized, PVC)
+5. Washing machine hoses (rubber = high risk, braided stainless = safe)
+
+Serial number date codes:
+- Rheem: First 4 digits = MMYY (e.g., 0721 = July 2021)
+- A.O. Smith: First letter = year (A=2005, B=2006... N=2018, P=2019, R=2020)
+- Bradford White: First 2 letters = year and month
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- type: string (tank_gas, tank_electric, tankless_gas, tankless_electric, heat_pump, pipes, shutoff)
+- capacity: string (gallons if water heater)
+- condition: string (excellent, good, fair, poor)
+- notes: string (observations, safety concerns)
+
+Be accurate - leave as empty string if unsure.`,
+
+  "Electrical System": `You are analyzing a photo of an electrical panel or wiring.
+
+Identify:
+1. Panel brand (Square D, Siemens, GE, Eaton/Cutler-Hammer, Murray, Federal Pacific, Zinsco)
+2. Main breaker amperage (large breaker at top: 60, 100, 150, 200, or 400 amp)
+3. Panel age (date stickers, or estimate from brand/style)
+4. Safety concerns:
+   - Federal Pacific or Zinsco panels = URGENT fire hazard!
+   - Double-tapped breakers (two wires on one breaker)
+   - Rust or corrosion
+   - Missing knockouts
+
+If showing wiring:
+- Copper (orange/brown) = modern, safe
+- Aluminum (silver) = 1960s-70s, needs monitoring
+- Cloth-wrapped (fabric) = very old, may be knob & tube
+
+Return JSON with:
+- brand: string (panel manufacturer)
+- model: string
+- year: string (4-digit panel install year)
+- panel_capacity: string (60, 100, 150, 200, 400)
+- wiring_type: string (copper, aluminum, knob_tube, mixed)
+- condition: string (excellent, good, fair, poor)
+- safety_concerns: string (any red flags - ESPECIALLY Federal Pacific or Zinsco!)
+- notes: string (general observations)
+
+IMPORTANT: Flag Federal Pacific or Zinsco panels as URGENT safety concern.`,
+
+  "Roof System": `You are analyzing a photo of a roof.
+
+Identify:
+1. Material type:
+   - Asphalt shingles (layered rectangles, most common)
+   - Metal (standing seam panels or corrugated)
+   - Tile (curved clay/concrete)
+   - Slate (flat stone pieces)
+   - Wood shake (wooden shingles)
+   - Flat/membrane (rubber or tar)
+
+2. Condition observations:
+   - Missing/damaged shingles
+   - Curling or buckling
+   - Moss/algae growth
+   - Granule loss
+   - Flashing condition
+
+3. Age estimation from condition:
+   - New (0-5 years): crisp edges, consistent color
+   - Mid-life (5-15 years): some weathering, slight curling
+   - Aging (15-25 years): significant wear, granule loss
+   - End of life (25+ years): major curling, missing pieces
+
+Return JSON with:
+- material_type: string (asphalt, metal, tile, slate, wood, flat)
+- year: string (4-digit estimated install year based on condition)
+- condition: string (excellent, good, fair, poor)
+- layers: string (single, multiple - if visible)
+- notes: string (specific condition observations)`,
+
+  "Foundation & Structure": `You are analyzing foundation or structural elements.
+
+Look for:
+1. Foundation type (poured concrete, concrete block, brick, stone, pier)
+2. Cracks - note location, width, pattern (vertical, horizontal, stair-step)
+3. Water stains or efflorescence (white mineral deposits)
+4. Bowing, bulging, or leaning walls
+5. Mortar condition in block/brick foundations
+6. Support posts and beams condition
+
+Return JSON with:
+- foundation_type: string (poured_concrete, block, brick, stone, pier)
+- year: string (estimated age if determinable)
+- condition: string (excellent, good, fair, poor)
+- crack_severity: string (none, hairline, minor, major)
+- water_signs: string (none, stains, active_leak, efflorescence)
+- notes: string (detailed observations, specific concerns)`,
+
+  "Water & Sewer/Septic": `You are analyzing water supply or sewer/septic components.
+
+Look for:
+1. Water meter location and condition
+2. Main shutoff valve type and location
+3. Sewer cleanout location
+4. Septic tank lid/access point
+5. Visible pipe materials
+6. Any signs of leaks or backups
+
+Return JSON with:
+- component_type: string (water_main, sewer_line, septic_tank, well, cleanout)
+- material: string (copper, PVC, cast_iron, galvanized, clay)
+- year: string (estimated installation year)
+- condition: string (excellent, good, fair, poor)
+- notes: string (observations, location details)`,
+
+  "Exterior Siding & Envelope": `You are analyzing exterior siding or building envelope.
+
+Identify:
+1. Siding material (vinyl, wood, fiber cement, brick, stucco, aluminum)
+2. Condition of caulking and seals
+3. Paint condition
+4. Any rot, cracks, or damage
+5. Trim and soffit condition
+
+Return JSON with:
+- material: string (vinyl, wood, fiber_cement, brick, stucco, aluminum)
+- year: string (estimated installation year)
+- condition: string (excellent, good, fair, poor)
+- paint_condition: string (new, good, fading, peeling)
+- notes: string (damage, concerns, maintenance needs)`,
+
+  "Windows & Doors": `You are analyzing windows or doors.
+
+Identify:
+1. Window brand (if visible on glass corner)
+2. Type: single pane, double pane, triple pane
+3. Frame material (wood, vinyl, aluminum, fiberglass)
+4. Seal condition (any condensation between panes = seal failure)
+5. Weatherstripping condition
+
+Return JSON with:
+- brand: string (manufacturer if visible)
+- year: string (installation year if known)
+- type: string (single_pane, double_pane, triple_pane)
+- frame_material: string (wood, vinyl, aluminum, fiberglass)
+- condition: string (excellent, good, fair, poor)
+- seal_status: string (good, condensation, failed)
+- notes: string (specific observations)`,
+
+  "Gutters & Downspouts": `You are analyzing gutters and downspouts.
+
+Identify:
+1. Material (aluminum, steel, copper, vinyl)
+2. Style (K-style, half-round)
+3. Condition - sagging, separation, damage
+4. Debris accumulation
+5. Gutter guards presence
+6. Downspout discharge location
+
+Return JSON with:
+- material: string (aluminum, steel, copper, vinyl)
+- year: string (estimated installation year)
+- condition: string (excellent, good, fair, poor)
+- guards_installed: string (yes, no, partial)
+- notes: string (debris level, damage, discharge concerns)`,
+
+  "Landscaping & Grading": `You are analyzing landscaping and grading around a home.
+
+Look for:
+1. Ground slope direction relative to foundation
+2. Low spots where water might pool
+3. Distance of plants/trees from foundation
+4. Retaining wall condition
+5. Drainage features (swales, french drains)
+
+Return JSON with:
+- grading_direction: string (away_from_house, toward_house, flat, mixed)
+- condition: string (excellent, good, fair, poor)
+- drainage_features: string (swale, french_drain, none, unknown)
+- tree_proximity: string (safe, concerning, too_close)
+- notes: string (specific concerns, recommendations)`,
+
+  "Driveways & Hardscaping": `You are analyzing driveways or hardscaping.
+
+Identify:
+1. Surface material (asphalt, concrete, pavers, gravel)
+2. Cracks, potholes, heaving
+3. Drainage patterns
+4. Edge condition
+5. Last sealing (asphalt)
+
+Return JSON with:
+- material: string (asphalt, concrete, pavers, gravel)
+- year: string (estimated installation year)
+- condition: string (excellent, good, fair, poor)
+- crack_severity: string (none, hairline, minor, major)
+- notes: string (specific damage, drainage issues)`,
+
+  "Attic & Insulation": `You are analyzing attic space or insulation.
+
+Look for:
+1. Insulation type (fiberglass batts, blown-in, spray foam)
+2. Insulation depth/R-value
+3. Ventilation (soffit vents, ridge vents, gable vents)
+4. Moisture stains or mold
+5. Roof deck condition from inside
+6. Pest activity signs
+
+Return JSON with:
+- insulation_type: string (fiberglass_batts, blown_in, spray_foam, none)
+- r_value: string (estimated R-value or depth)
+- ventilation: string (adequate, poor, none)
+- condition: string (excellent, good, fair, poor)
+- moisture_signs: string (none, stains, mold, active_leak)
+- notes: string (observations, pest signs, concerns)`,
+
+  "Basement/Crawlspace": `You are analyzing a basement or crawlspace.
+
+Look for:
+1. Foundation wall condition
+2. Water stains or moisture
+3. Sump pump presence and condition
+4. Support posts and beams
+5. Floor drain location
+6. Insulation on walls/ceiling
+
+Return JSON with:
+- space_type: string (full_basement, partial_basement, crawlspace)
+- condition: string (excellent, good, fair, poor)
+- moisture_level: string (dry, damp, wet, flooded)
+- sump_pump: string (present_working, present_unknown, none)
+- notes: string (cracks, water signs, structural concerns)`,
+
+  "Garage & Overhead Door": `You are analyzing a garage or overhead door.
+
+Identify:
+1. Door brand (often on motor unit)
+2. Door type (sectional, roll-up, swing)
+3. Opener brand and model
+4. Spring type (torsion or extension)
+5. Safety sensor condition
+6. Overall door condition
+
+Return JSON with:
+- brand: string (door or opener brand)
+- model: string (model number)
+- year: string (installation year if visible)
+- door_type: string (sectional, roll_up, swing)
+- spring_type: string (torsion, extension)
+- condition: string (excellent, good, fair, poor)
+- notes: string (opener details, maintenance needs)`,
+
+  "Refrigerator": `You are analyzing a refrigerator.
+
+Look for model/serial plate (inside fridge, on back, or side). Identify:
+1. Brand (GE, Whirlpool, Samsung, LG, Frigidaire, etc.)
+2. Model number
+3. Manufacturing date from serial
+4. Capacity if shown
+5. Overall condition
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- capacity: string (cubic feet if shown)
+- condition: string (excellent, good, fair, poor)
+- notes: string (features, issues observed)`,
+
+  "Range/Oven": `You are analyzing a range or oven.
+
+Look for model/serial plate (drawer under oven, side, or back). Identify:
+1. Brand
+2. Fuel type (gas or electric)
+3. Type (freestanding, slide-in, wall oven)
+4. Model number
+5. Manufacturing date
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- fuel_type: string (gas, electric, dual_fuel)
+- oven_type: string (freestanding, slide_in, wall_oven)
+- condition: string (excellent, good, fair, poor)
+- notes: string (features, condition details)`,
+
+  "Dishwasher": `You are analyzing a dishwasher.
+
+Look for model/serial plate (top edge or side of door, inside). Identify:
+1. Brand
+2. Model number
+3. Manufacturing date
+4. Any visible issues (rust, leaks)
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- condition: string (excellent, good, fair, poor)
+- notes: string (features, issues)`,
+
+  "Washing Machine": `You are analyzing a washing machine.
+
+Look for model/serial plate (inside lid, back, or side). Identify:
+1. Brand
+2. Type (top load vs front load)
+3. Model number
+4. Manufacturing date
+5. CRITICAL: Supply hose type (rubber = high flood risk, braided stainless = safe)
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- type: string (top_load, front_load)
+- hose_type: string (rubber_high_risk, braided_stainless, unknown)
+- condition: string (excellent, good, fair, poor)
+- notes: string (capacity, features, hose concerns)`,
+
+  "Dryer": `You are analyzing a dryer.
+
+Look for model/serial plate (inside door, back). Identify:
+1. Brand
+2. Fuel type (gas or electric)
+3. Model number
+4. Manufacturing date
+5. Vent type if visible
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- fuel_type: string (gas, electric)
+- condition: string (excellent, good, fair, poor)
+- notes: string (vent type, lint trap condition)`,
+
+  "Microwave": `You are analyzing a microwave.
+
+Look for model/serial plate (inside door, back, or side). Identify:
+1. Brand
+2. Type (countertop, over-range, built-in)
+3. Model number
+4. Manufacturing date
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit manufacture year)
+- type: string (countertop, over_range, built_in)
+- condition: string (excellent, good, fair, poor)
+- notes: string (wattage, features)`,
+
+  "Garbage Disposal": `You are analyzing a garbage disposal.
+
+Look for label on unit under sink. Identify:
+1. Brand (InSinkErator, Waste King, Moen, etc.)
+2. Model/horsepower
+3. Installation date if visible
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit installation year)
+- horsepower: string (1/3, 1/2, 3/4, 1)
+- condition: string (excellent, good, fair, poor)
+- notes: string (noise level, grinding quality)`,
+
+  "Smoke Detector": `You are analyzing a smoke detector.
+
+Look for:
+1. Brand (First Alert, Kidde, Nest, etc.)
+2. Type (ionization, photoelectric, combination)
+3. Power source (battery, hardwired, hardwired+battery)
+4. Manufacturing date (usually on back)
+5. Expiration date (detectors expire after 10 years!)
+
+Return JSON with:
+- brand: string
+- type: string (ionization, photoelectric, combination)
+- power_source: string (battery, hardwired, hardwired_battery)
+- year: string (4-digit manufacture year)
+- expiration_year: string (4-digit - add 10 years to manufacture)
+- location: string (location in home if mentioned)
+- condition: string (excellent, good, fair, poor)
+- notes: string (test status, battery type)`,
+
+  "CO Detector": `You are analyzing a carbon monoxide detector.
+
+Look for:
+1. Brand
+2. Power source
+3. Manufacturing date
+4. Expiration date (CO detectors expire after 5-7 years!)
+5. Display type (digital readout or just alarm)
+
+Return JSON with:
+- brand: string
+- power_source: string (battery, plug_in, hardwired)
+- year: string (4-digit manufacture year)
+- expiration_year: string (add 5-7 years to manufacture date)
+- has_display: string (yes, no)
+- location: string (location in home)
+- condition: string (excellent, good, fair, poor)
+- notes: string (test status, features)`,
+
+  "Fire Extinguisher": `You are analyzing a fire extinguisher.
+
+Look for:
+1. Type/class (A, B, C, ABC, K)
+2. Size/weight
+3. Brand
+4. Manufacturing date
+5. Last inspection tag date
+6. Pressure gauge reading
+
+Return JSON with:
+- brand: string
+- type: string (A, B, C, ABC, K)
+- size: string (weight in lbs)
+- year: string (4-digit manufacture year)
+- last_inspection: string (date if tag visible)
+- pressure_status: string (good, low, overcharged)
+- location: string (location in home)
+- condition: string (excellent, good, fair, poor)
+- notes: string (mounting, accessibility)`,
+
+  "Radon Test": `You are analyzing radon testing equipment or results.
+
+Look for:
+1. Test type (short-term, long-term, continuous monitor)
+2. Brand/model
+3. Test date
+4. Results if visible (pCi/L reading)
+
+Return JSON with:
+- test_type: string (short_term, long_term, continuous_monitor)
+- brand: string
+- year: string (test year)
+- reading: string (pCi/L if visible)
+- location: string (where tested)
+- notes: string (mitigation status, retest needs)`,
+
+  "Security System": `You are analyzing a security system.
+
+Look for:
+1. Brand (ADT, Vivint, SimpliSafe, Ring, etc.)
+2. Panel type
+3. Component types (door sensors, motion, cameras)
+4. Monitoring status
+
+Return JSON with:
+- brand: string
+- system_type: string (professional, diy, hybrid)
+- year: string (installation year)
+- monitoring: string (professional, self, none)
+- components: string (list of visible components)
+- condition: string (excellent, good, fair, poor)
+- notes: string (features, coverage)`
+};
+
+// Photo tips for each system type
+const PHOTO_TIPS = {
+  "HVAC System": ["The whole unit", "Data plate/sticker", "Brand logo", "Yellow energy label"],
+  "Plumbing System": ["Water heater tank", "Rating plate", "Main shutoff valve", "Supply hoses"],
+  "Electrical System": ["Panel door open", "Main breaker", "Panel label", "Any date stickers"],
+  "Roof System": ["Overview of roof", "Close-up of shingles", "Problem areas", "Vents & flashing"],
+  "Foundation & Structure": ["Foundation walls", "Any cracks", "Water stains", "Support beams"],
+  "Water & Sewer/Septic": ["Water meter", "Cleanout cap", "Septic access", "Main shutoff"],
+  "Exterior Siding & Envelope": ["Full wall view", "Close-up of siding", "Caulking/seals", "Any damage"],
+  "Windows & Doors": ["Full window/door", "Brand label", "Weatherstripping", "Any condensation"],
+  "Gutters & Downspouts": ["Gutter run", "Downspout", "Any sagging", "Discharge area"],
+  "Landscaping & Grading": ["Slope near foundation", "Drainage areas", "Trees near house", "Low spots"],
+  "Driveways & Hardscaping": ["Full driveway", "Cracks/damage", "Edges", "Drainage"],
+  "Attic & Insulation": ["Insulation coverage", "Ventilation", "Roof deck", "Any stains"],
+  "Basement/Crawlspace": ["Foundation walls", "Floor/ground", "Sump pump", "Any moisture"],
+  "Garage & Overhead Door": ["Door exterior", "Opener unit", "Springs", "Safety sensors"],
+  "Refrigerator": ["Model plate (inside)", "Full unit", "Back panel", "Ice maker"],
+  "Range/Oven": ["Model plate (drawer)", "Burners/elements", "Full unit", "Control panel"],
+  "Dishwasher": ["Model plate (door edge)", "Inside tub", "Full unit", "Spray arms"],
+  "Washing Machine": ["Model plate", "Supply hoses", "Full unit", "Controls"],
+  "Dryer": ["Model plate", "Vent connection", "Full unit", "Lint trap"],
+  "Microwave": ["Model plate", "Full unit", "Inside", "Controls"],
+  "Garbage Disposal": ["Unit under sink", "Model label", "Reset button", "Splash guard"],
+  "Smoke Detector": ["Full unit", "Back/date label", "Test button", "Location shot"],
+  "CO Detector": ["Full unit", "Back/date label", "Display", "Location shot"],
+  "Fire Extinguisher": ["Full unit", "Pressure gauge", "Inspection tag", "Type label"],
+  "Radon Test": ["Test device", "Results display", "Location", "Test date"],
+  "Security System": ["Main panel", "Sensors", "Cameras", "Keypad"]
+};
+
+// Default for any system not specifically listed
+const DEFAULT_AI_PROMPT = `You are analyzing a photo of home equipment or systems.
+
+Look for:
+1. Brand name and logo
+2. Model number
+3. Serial number (may contain date code)
+4. Installation date stickers
+5. Condition indicators
+
+Return JSON with:
+- brand: string
+- model: string
+- year: string (4-digit year if determinable)
+- condition: string (excellent, good, fair, poor)
+- notes: string (any useful observations)
+
+Be accurate - leave as empty string if unsure.`;
+
+const DEFAULT_PHOTO_TIPS = ["Full unit photo", "Model/serial plate", "Brand logo", "Any damage"];
 
 const SYSTEM_IMPORTANCE = {
   "HVAC System": "Your HVAC system prevents $8,000+ emergency replacements during peak seasons when you need it most. Failed systems in summer heat or winter cold mean no availability and premium pricing. Regular documentation helps you track age, plan for replacement, and catch problems before they become expensive disasters.",
@@ -312,8 +856,7 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
         manual_urls: [],
         estimated_lifespan_years: "",
         replacement_cost_estimate: "",
-        key_components: {},
-        is_required: editingSystem.is_required
+        key_components: {}
       };
     }
 
@@ -359,6 +902,16 @@ export default function SystemFormDialog({ open, onClose, propertyId, editingSys
   const [isDirty, setIsDirty] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  // Gamification hooks
+  const { awardXP, checkAchievement, hasAchievement } = useGamification();
+
+  // Query to count existing systems for achievement checks
+  const { data: existingSystems = [] } = useQuery({
+    queryKey: ['systemBaselines', propertyId],
+    queryFn: () => propertyId ? SystemBaseline.filter({ property_id: propertyId }) : Promise.resolve([]),
+    enabled: !!propertyId
+  });
 
   // Draft save integration
   const draftKey = `baseline-draft-${propertyId}-${formData.system_type}`;
@@ -542,8 +1095,7 @@ Be specific, practical, and focus on preventing expensive failures.`;
         estimated_lifespan_years: parseInt(data.estimated_lifespan_years) || null,
         replacement_cost_estimate: parseFloat(data.replacement_cost_estimate) || null,
         photo_urls: photos,
-        manual_urls: manuals.map(m => m.url), // Save only the URLs
-        is_required: editingSystem?.is_required || false
+        manual_urls: manuals.map(m => m.url) // Save only the URLs
       };
 
       if (editingSystem?.id) {
@@ -561,6 +1113,51 @@ Be specific, practical, and focus on preventing expensive failures.`;
         icon: '✅',
         duration: 2000
       });
+
+      // ========================================
+      // GAMIFICATION: Award XP for documenting system
+      // Only award XP when creating NEW systems, not editing
+      // ========================================
+      if (!editingSystem?.id) {
+        try {
+          // Award XP based on whether photos were included
+          const hasPhotos = photos.length > 0;
+          if (hasPhotos) {
+            await awardXP('document_system_with_photo', {
+              entityType: 'system_baseline',
+              entityId: savedSystem.id,
+              systemType: formData.system_type
+            });
+          } else {
+            await awardXP('document_system', {
+              entityType: 'system_baseline',
+              entityId: savedSystem.id,
+              systemType: formData.system_type
+            });
+          }
+
+          // Check for achievements based on system count
+          const newSystemCount = existingSystems.length + 1;
+
+          // First system achievement
+          if (newSystemCount === 1 && !hasAchievement('first_system')) {
+            await checkAchievement('first_system');
+          }
+
+          // Baseline starter (4 systems)
+          if (newSystemCount >= 4 && !hasAchievement('baseline_starter')) {
+            await checkAchievement('baseline_starter');
+          }
+
+          // Baseline complete (16 systems)
+          if (newSystemCount >= 16 && !hasAchievement('baseline_complete')) {
+            await checkAchievement('baseline_complete');
+          }
+        } catch (err) {
+          console.error('Error awarding XP for system documentation:', err);
+          // Don't block the user flow if XP award fails
+        }
+      }
 
       let analysisWasAttemptedAndSuccessful = false;
       if (savedSystem.installation_year && savedSystem.system_type) {
@@ -655,47 +1252,58 @@ Be specific, practical, and focus on preventing expensive failures.`;
   };
 
   const handleBarcodeUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-    setScanningBarcode(true); // Changed from scanningBarcode.current = true
-    const scanToast = toast.loading('AI scanning data plate...', { icon: '🤖' });
+    setScanningBarcode(true);
+    const scanToast = toast.loading(
+      files.length > 1
+        ? `🤖 AI analyzing ${files.length} photos...`
+        : '🤖 AI analyzing your photo...',
+      { icon: '🔍' }
+    );
 
     try {
-      // Upload the barcode image
-      const { file_url } = await storage.uploadFile(file);
+      // Upload all photos
+      const uploadPromises = files.map(file => storage.uploadFile(file));
+      const uploadResults = await Promise.all(uploadPromises);
+      const file_urls = uploadResults.map(r => r.file_url);
 
-      // Use AI to extract product info from data plate
-      const result = await integrations.InvokeLLM({
-        prompt: `You are analyzing a product data plate or model label. Extract the following information:
+      // Get system-specific prompt or use default
+      const prompt = AI_PROMPTS[formData.system_type] || DEFAULT_AI_PROMPT;
 
-        1. Brand/Manufacturer name
-        2. Model number
-        3. Serial number (if visible)
-        4. Year of manufacture or installation date (look for "MFG Date", "Mfg Year", "Date", or year numbers)
-
-        Be thorough - look for ALL text on the plate. Years might be in formats like:
-        - "2015"
-        - "MFG 03/2018"
-        - "Date: 2020"
-
-        Return ONLY valid data you can clearly read. If you cannot find a field, return an empty string for it.
-
-        Return as JSON.`,
-        file_urls: file_url,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            brand: { type: "string" },
-            model: { type: "string" },
-            serial: { type: "string" },
-            year: { type: "string" }
-          },
-          required: ["brand", "model", "serial", "year"]
+      // Build response schema
+      const response_json_schema = {
+        type: "object",
+        properties: {
+          brand: { type: "string" },
+          model: { type: "string" },
+          year: { type: "string" },
+          condition: { type: "string" },
+          notes: { type: "string" },
+          safety_concerns: { type: "string" }
         }
+      };
+
+      // Use AI to extract product info with system-specific prompt
+      const result = await integrations.InvokeLLM({
+        prompt,
+        file_urls: files.length === 1 ? file_urls[0] : file_urls,
+        response_json_schema
       });
 
       console.log("AI extraction result:", result);
+
+      // Check for safety concerns (Federal Pacific/Zinsco panels)
+      if (result?.safety_concerns && result.safety_concerns.toLowerCase().includes('federal pacific') ||
+          result?.safety_concerns && result.safety_concerns.toLowerCase().includes('zinsco') ||
+          result?.brand && result.brand.toLowerCase().includes('federal pacific') ||
+          result?.brand && result.brand.toLowerCase().includes('zinsco')) {
+        toast.error(
+          '⚠️ SAFETY ALERT: This panel brand is a known fire hazard! Please consult a licensed electrician immediately.',
+          { duration: 10000, icon: '🔥' }
+        );
+      }
 
       // Populate form with extracted data
       if (result && (result.brand || result.model || result.year)) {
@@ -712,13 +1320,32 @@ Be specific, practical, and focus on preventing expensive failures.`;
         }
 
         // Update form based on system type
-        if (brandModel || extractedYear) {
+        if (brandModel || extractedYear || result.condition) {
           setFormData(prev => {
             const updates = { ...prev };
 
             // Set brand/model for all systems
             if (brandModel) {
               updates.brand_model = brandModel;
+            }
+
+            // Set condition if detected
+            if (result.condition) {
+              const conditionMap = {
+                'excellent': 'Excellent',
+                'good': 'Good',
+                'fair': 'Fair',
+                'poor': 'Poor'
+              };
+              const normalizedCondition = conditionMap[result.condition.toLowerCase()];
+              if (normalizedCondition) {
+                updates.condition = normalizedCondition;
+              }
+            }
+
+            // Add notes if present
+            if (result.notes && !prev.condition_notes) {
+              updates.condition_notes = result.notes;
             }
 
             // For Plumbing System, populate water heater year in key_components
@@ -737,12 +1364,13 @@ Be specific, practical, and focus on preventing expensive failures.`;
             return updates;
           });
 
-          // Add image to photos only if not already present
-          if (!photos.includes(file_url)) {
-            setPhotos(prev => [...prev, file_url]);
+          // Add images to photos only if not already present
+          const newPhotos = file_urls.filter(url => !photos.includes(url));
+          if (newPhotos.length > 0) {
+            setPhotos(prev => [...prev, ...newPhotos]);
           }
 
-          toast.success(`Data extracted! ${brandModel ? `Brand: ${brandModel}` : ''} ${extractedYear ? `Year: ${extractedYear}` : ''}`, {
+          toast.success(`✨ Data extracted! ${brandModel ? `Brand: ${brandModel}` : ''} ${extractedYear ? `Year: ${extractedYear}` : ''}`, {
             id: scanToast,
             icon: '✨',
             duration: 4000
@@ -1692,59 +2320,79 @@ Be specific, practical, and focus on preventing expensive failures.`;
               </div>
             )}
 
-            {/* Barcode Scanner for Systems with Model/Serial Numbers */}
+            {/* Photo Tips Guide */}
+            {(PHOTO_TIPS[formData.system_type] || DEFAULT_PHOTO_TIPS).length > 0 && (
+              <Card className="border-2 border-gray-200 bg-gray-50">
+                <CardContent className="p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-gray-600" />
+                    📸 What to photograph:
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {(PHOTO_TIPS[formData.system_type] || DEFAULT_PHOTO_TIPS).map((tip, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <span className="text-gray-700">{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3 bg-blue-50 p-2 rounded">
+                    💡 <strong>Tip:</strong> Any photo works! Our AI can identify your equipment from the whole unit, a logo, or data plate. Take multiple photos for best results!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* AI Smart Scan - Primary Action */}
             {showBarcodeScanner && (
-              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xl">📷</span>
+              <Card className="border-2 border-green-300 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-green-900">✨ AI Smart Scan (Easiest!)</h3>
+                      <p className="text-xs text-green-800">Take 1-3 photos - we'll identify everything</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-purple-900 mb-1">Quick Scan Model/Serial Plate</h3>
-                    <p className="text-sm text-purple-800 mb-3">
-                      {formData.system_type === "HVAC System" &&
-                        "Take a photo of the unit's data plate (usually on furnace or outdoor AC unit) and we'll extract the details automatically"
-                      }
-                      {formData.system_type === "Plumbing System" &&
-                        "Take a photo of your water heater's data plate and we'll extract brand, model, and year automatically"
-                      }
-                      {!["HVAC System", "Plumbing System"].includes(formData.system_type) &&
-                        "Take a photo of the model/serial number plate and we'll extract the details automatically"
-                      }
-                    </p>
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleBarcodeUpload}
-                        className="hidden"
-                        disabled={scanningBarcode} // Changed from scanningBarcode.current
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="gap-2 border-purple-400 text-purple-700 hover:bg-purple-100"
-                        disabled={scanningBarcode} // Changed from scanningBarcode.current
-                        asChild
-                      >
-                        <span>
-                          {scanningBarcode ? ( // Changed from scanningBarcode.current
-                            <>
-                              <span className="animate-spin">⚙️</span>
-                              Scanning...
-                            </>
-                          ) : (
-                            <>
-                              📸 Scan Data Plate
-                            </>
-                          )}
-                        </span>
-                      </Button>
-                    </label>
-                  </div>
-                </div>
-              </div>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      multiple
+                      onChange={handleBarcodeUpload}
+                      className="hidden"
+                      disabled={scanningBarcode}
+                    />
+                    <Button
+                      type="button"
+                      className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      disabled={scanningBarcode}
+                      asChild
+                      style={{ minHeight: '48px' }}
+                    >
+                      <span>
+                        {scanningBarcode ? (
+                          <>
+                            <span className="animate-spin">🔍</span>
+                            AI is analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-5 h-5" />
+                            📸 Take Photo & Auto-Fill
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
+                  <p className="text-xs text-center text-green-700 mt-2">
+                    Works with ANY photo - data plate, whole unit, or brand logo!
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {/* Nickname Field for Multi-Instance Systems */}

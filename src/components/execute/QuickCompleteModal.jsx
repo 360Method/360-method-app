@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Upload, Loader2, Zap } from "lucide-react";
 import CompletionCelebration from "./CompletionCelebration";
+import { notifyTaskCompleted } from "@/api/triggerNotification";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function QuickCompleteModal({ task, open, onClose, onComplete }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [actualCost, setActualCost] = useState('');
   const [completionPhoto, setCompletionPhoto] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -43,7 +46,7 @@ export default function QuickCompleteModal({ task, open, onClose, onComplete }) 
   
   const handleComplete = async () => {
     const actualCostValue = parseFloat(actualCost) || 0;
-    
+
     await completeTaskMutation.mutateAsync({
       status: 'Completed',
       completion_date: new Date().toISOString(),
@@ -51,11 +54,22 @@ export default function QuickCompleteModal({ task, open, onClose, onComplete }) 
       actual_hours: 0.25,
       completion_photos: completionPhoto ? [completionPhoto] : []
     });
-    
+
+    // Trigger notification
+    if (user?.id) {
+      notifyTaskCompleted({
+        taskId: task.id,
+        taskTitle: task.title,
+        propertyId: task.property_id,
+        userId: user.id,
+        completedBy: 'diy'
+      });
+    }
+
     // Calculate savings
     const estimatedCost = task.contractor_cost || task.operator_cost || 0;
     const savings = estimatedCost - actualCostValue;
-    
+
     setCompletionSavings(savings);
     setShowCelebration(true);
   };

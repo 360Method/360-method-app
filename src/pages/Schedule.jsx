@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Property, MaintenanceTask } from "@/api/supabaseClient";
+import PrerequisitePopup from "../components/shared/PrerequisitePopup";
+import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
+import { notifyTaskScheduled } from "@/api/triggerNotification";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +55,7 @@ export default function SchedulePage() {
   const urlParams = new URLSearchParams(location.search);
   const propertyIdFromUrl = urlParams.get('property');
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
+  const { user } = useAuth();
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -71,7 +76,7 @@ export default function SchedulePage() {
   const [taskForDetail, setTaskForDetail] = React.useState(null);
   const [showFilters, setShowFilters] = React.useState(false);
   
-  const [filters, setFilters] = React.useState({
+  const [filters, setFilters] = useState({
     priority: 'all',
     executionMethod: 'all',
     system: 'all',
@@ -80,20 +85,22 @@ export default function SchedulePage() {
     riskLevel: 'all',
     sortBy: 'priority'
   });
+  const [showPrereqPopup, setShowPrereqPopup] = useState(false);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', demoMode],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
       if (demoMode) {
         return isInvestor ? (demoData?.properties || []) : (demoData?.property ? [demoData.property] : []);
       }
-      const allProps = await Property.list('-created_date');
+      // Filter by user_id for security (Clerk auth with permissive RLS)
+      const allProps = await Property.list('-created_date', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: true // Always enabled, queryFn handles demo mode check
+    enabled: demoMode || !!user?.id
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (propertyIdFromUrl && properties.length > 0) {
       const foundProperty = properties.find(p => p.id === propertyIdFromUrl);
       if (foundProperty) {
@@ -103,6 +110,18 @@ export default function SchedulePage() {
       setSelectedProperty(properties[0].id);
     }
   }, [propertyIdFromUrl, properties, selectedProperty]);
+
+  // Show prerequisite popup if needed
+  const currentPropertyObj = selectedProperty !== 'all'
+    ? properties.find(p => p.id === selectedProperty)
+    : properties[0];
+  const prereqInfo = getPrerequisiteInfo('schedule', currentPropertyObj);
+
+  useEffect(() => {
+    if (!demoMode && prereqInfo.needsPrerequisite && !sessionStorage.getItem('dismissed_schedule_prereq')) {
+      setShowPrereqPopup(true);
+    }
+  }, [demoMode, prereqInfo.needsPrerequisite]);
 
   const { data: realTasks = [] } = useQuery({
     queryKey: ['maintenanceTasks', selectedProperty],
@@ -241,13 +260,24 @@ export default function SchedulePage() {
     const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
+      data: {
         scheduled_date: formattedDate,
         status: 'Scheduled',
         time_range: timeRange,
         last_reminded_date: new Date().toISOString()
       }
     });
+
+    // Trigger notification for task scheduled
+    if (user?.id) {
+      notifyTaskScheduled({
+        taskId: task.id,
+        taskTitle: task.title,
+        propertyId: task.property_id,
+        userId: user.id,
+        scheduledDate: formattedDate
+      });
+    }
   };
 
   const handleSendBackToPrioritize = (task) => {
@@ -962,6 +992,19 @@ export default function SchedulePage() {
         )}
 
         <DemoCTA />
+
+        {/* Prerequisite Popup */}
+        <PrerequisitePopup
+          isOpen={showPrereqPopup}
+          onClose={() => {
+            setShowPrereqPopup(false);
+            sessionStorage.setItem('dismissed_schedule_prereq', 'true');
+          }}
+          message={prereqInfo.message}
+          requiredStep={prereqInfo.requiredStep}
+          progress={prereqInfo.currentProgress}
+          threshold={prereqInfo.threshold}
+        />
       </div>
     </div>
   );

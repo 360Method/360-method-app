@@ -1,6 +1,7 @@
 import './App.css'
 import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from 'sonner';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
@@ -11,9 +12,15 @@ import PageNotFound from './lib/PageNotFound';
 import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { GamificationProvider } from '@/lib/GamificationContext';
+import { NotificationProvider } from '@/lib/NotificationContext';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { DemoProvider } from '@/components/shared/DemoContext';
 import XPCelebration from '@/components/gamification/XPCelebration';
+import ErrorBoundary from '@/components/shared/ErrorBoundary';
+import { initClarity, identifyUser } from '@/lib/clarity';
+
+// Initialize analytics
+initClarity();
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -165,29 +172,34 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <ClerkProvider
-      publishableKey={CLERK_PUBLISHABLE_KEY}
-      afterSignInUrl="/Properties"
-      afterSignUpUrl="/Onboarding"
-    >
-      <AuthProvider>
-        <GamificationProvider>
-          <QueryClientProvider client={queryClientInstance}>
-            <Router>
-              <ScrollToTop />
-              <DemoProvider>
-                <NavigationTracker />
-                <AuthenticatedApp />
-                {/* XP celebration overlay - renders globally */}
-                <XPCelebration />
-              </DemoProvider>
-            </Router>
-            <Toaster />
-            <VisualEditAgent />
-          </QueryClientProvider>
-        </GamificationProvider>
-      </AuthProvider>
-    </ClerkProvider>
+    <ErrorBoundary>
+      <ClerkProvider
+        publishableKey={CLERK_PUBLISHABLE_KEY}
+        afterSignInUrl="/Properties"
+        afterSignUpUrl="/Onboarding"
+      >
+        <AuthProvider>
+          <NotificationProvider>
+            <GamificationProvider>
+              <QueryClientProvider client={queryClientInstance}>
+                <Router>
+                  <ScrollToTop />
+                  <DemoProvider>
+                    <NavigationTracker />
+                    <AuthenticatedApp />
+                    {/* XP celebration overlay - renders globally */}
+                    <XPCelebration />
+                  </DemoProvider>
+                </Router>
+                <Toaster />
+                <SonnerToaster position="top-right" richColors closeButton />
+                <VisualEditAgent />
+              </QueryClientProvider>
+            </GamificationProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ClerkProvider>
+    </ErrorBoundary>
   )
 }
 

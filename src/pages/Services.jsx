@@ -1,6 +1,7 @@
 import React from "react";
 import { Property, auth } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +10,17 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function Services() {
+  const { user: authUser } = useAuth();
+
   const { data: user } = useQuery({
     queryKey: ['current-user'],
     queryFn: () => auth.me(),
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => Property.list(),
+    queryKey: ['properties', authUser?.id],
+    queryFn: () => Property.list('-created_at', authUser?.id),
+    enabled: !!authUser?.id
   });
 
   const currentTier = user?.subscription_tier || 'free';

@@ -53,17 +53,17 @@ export default function HQUsers() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserDetail, setShowUserDetail] = useState(false);
 
-  // Fetch users
+  // Fetch users from 'users' table (synced from Clerk)
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ['hq-users', roleFilter, statusFilter],
     queryFn: async () => {
       let query = supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (roleFilter !== 'all') {
-        query = query.eq('role', roleFilter);
+        query = query.eq('active_role', roleFilter);
       }
 
       const { data, error } = await query;
@@ -97,21 +97,39 @@ export default function HQUsers() {
     return matchesSearch;
   });
 
-  // Update user role mutation
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }) => {
+  // Update user tier mutation
+  const updateTierMutation = useMutation({
+    mutationFn: async ({ userId, tier }) => {
       const { error } = await supabase
-        .from('profiles')
-        .update({ role })
+        .from('users')
+        .update({ tier })
         .eq('id', userId);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('User role updated');
+      toast.success('User tier updated');
       queryClient.invalidateQueries({ queryKey: ['hq-users'] });
     },
     onError: (error) => {
-      toast.error('Failed to update role: ' + error.message);
+      toast.error('Failed to update tier: ' + error.message);
+    }
+  });
+
+  // Update user admin status mutation
+  const updateAdminMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ is_admin: isAdmin })
+        .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Admin status updated');
+      queryClient.invalidateQueries({ queryKey: ['hq-users'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to update admin status: ' + error.message);
     }
   });
 
@@ -137,11 +155,13 @@ export default function HQUsers() {
 
   const exportUsers = () => {
     const csv = [
-      ['Name', 'Email', 'Role', 'Properties', 'Joined'],
+      ['Name', 'Email', 'Role', 'Tier', 'Admin', 'Properties', 'Joined'],
       ...filteredUsers.map(u => [
         u.full_name || '',
         u.email || '',
-        u.role || 'homeowner',
+        u.active_role || 'owner',
+        u.tier || 'free',
+        u.is_admin ? 'Yes' : 'No',
         userPropertyCounts[u.id] || 0,
         formatDate(u.created_at)
       ])
@@ -197,7 +217,7 @@ export default function HQUsers() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === 'homeowner' || !u.role).length}
+                  {users.filter(u => u.active_role === 'owner' || !u.active_role).length}
                 </div>
                 <div className="text-xs text-gray-600">Homeowners</div>
               </div>
@@ -210,7 +230,7 @@ export default function HQUsers() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === 'operator').length}
+                  {users.filter(u => u.active_role === 'operator').length}
                 </div>
                 <div className="text-xs text-gray-600">Operators</div>
               </div>
@@ -223,7 +243,7 @@ export default function HQUsers() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === 'admin').length}
+                  {users.filter(u => u.is_admin === true).length}
                 </div>
                 <div className="text-xs text-gray-600">Admins</div>
               </div>

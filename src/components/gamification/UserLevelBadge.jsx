@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useGamification } from '@/lib/GamificationContext';
-import { ChevronUp, Sparkles, Trophy, TrendingUp, DollarSign } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { createPageUrl } from '@/utils';
 
 /**
  * UserLevelBadge - Compact badge for header display
  *
  * Shows current level badge with XP progress.
- * Expands on click to show full gamification stats.
+ * Clicking navigates to Achievements page.
  */
 export default function UserLevelBadge({ variant = 'compact' }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const {
     totalXp,
     currentLevelData,
@@ -31,15 +32,14 @@ export default function UserLevelBadge({ variant = 'compact' }) {
     );
   }
 
-  // Compact variant for header
+  // Compact variant for header - links directly to Achievements
   if (variant === 'compact') {
     return (
-      <div className="relative">
-        <motion.button
+      <Link to={createPageUrl('Achievements')}>
+        <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 border border-slate-200 rounded-full px-3 py-1.5 transition-colors"
+          className="flex items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 border border-slate-200 rounded-full px-3 py-1.5 transition-colors cursor-pointer"
         >
           {/* Level badge emoji */}
           <span className="text-lg">{currentLevelData.badge}</span>
@@ -63,151 +63,8 @@ export default function UserLevelBadge({ variant = 'compact' }) {
               transition={{ duration: 0.5 }}
             />
           </div>
-        </motion.button>
-
-        {/* Expanded panel */}
-        <AnimatePresence>
-          {isExpanded && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40"
-                onClick={() => setIsExpanded(false)}
-              />
-
-              {/* Panel */}
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
-              >
-                {/* Header */}
-                <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl">{currentLevelData.badge}</span>
-                    <div>
-                      <div className="font-bold text-lg">{currentLevelData.title}</div>
-                      <div className="text-sm text-slate-300">
-                        Level {currentLevelData.level}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* XP Progress */}
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-300">{totalXp.toLocaleString()} XP</span>
-                      {nextLevel && (
-                        <span className="text-slate-400">
-                          {xpToNext.toLocaleString()} to Level {nextLevel.level}
-                        </span>
-                      )}
-                    </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.5 }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="p-4 space-y-3">
-                  {/* Disasters Prevented */}
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">
-                        Disasters Prevented
-                      </span>
-                    </div>
-                    <span className="font-bold text-green-600">
-                      ${disastersPreventedTotal.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* Streak */}
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-orange-600" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">
-                        Current Streak
-                      </span>
-                    </div>
-                    <span className="font-bold text-orange-600">
-                      {streakCurrent} days
-                    </span>
-                  </div>
-
-                  {/* Achievements */}
-                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                        <Trophy className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">
-                        Achievements
-                      </span>
-                    </div>
-                    <span className="font-bold text-purple-600">
-                      {achievements.length}/{ACHIEVEMENTS.length}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Recent Achievements */}
-                {achievements.length > 0 && (
-                  <div className="px-4 pb-4">
-                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
-                      Recent Achievements
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {achievements.slice(-5).map((achId) => {
-                        const ach = ACHIEVEMENTS.find(a => a.id === achId);
-                        if (!ach) return null;
-                        return (
-                          <div
-                            key={achId}
-                            className="flex items-center gap-1 bg-slate-100 rounded-full px-2 py-1 text-xs"
-                            title={ach.title}
-                          >
-                            <span>{ach.icon}</span>
-                            <span className="font-medium text-slate-700">{ach.title}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Next Level Preview */}
-                {nextLevel && (
-                  <div className="border-t border-slate-100 p-4 bg-slate-50">
-                    <div className="flex items-center gap-2 text-sm">
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
-                      <span className="text-slate-500">Next:</span>
-                      <span className="text-lg">{nextLevel.badge}</span>
-                      <span className="font-medium text-slate-700">{nextLevel.title}</span>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+        </motion.div>
+      </Link>
     );
   }
 
