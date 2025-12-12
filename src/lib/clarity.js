@@ -28,6 +28,12 @@ export async function initClarity() {
     return;
   }
 
+  // Don't initialize in development - Clarity doesn't work on localhost
+  if (import.meta.env.DEV || window.location.hostname === 'localhost') {
+    console.log('📊 Clarity: Skipping in development mode');
+    return;
+  }
+
   try {
     const clarityModule = await import('clarity-js');
     clarity = clarityModule.clarity;
