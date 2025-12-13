@@ -16,7 +16,6 @@ import FindOperator from './pages/FindOperator';
 import PropertyCare from './pages/PropertyCare';
 import Checkout from './pages/Checkout';
 import Welcome from './pages/Welcome';
-import Waitlist from './pages/Waitlist';
 import Pricing from './pages/Pricing';
 import ExploreTemplates from './pages/ExploreTemplates';
 import TemplateDetail from './pages/TemplateDetail';
@@ -149,6 +148,11 @@ import HQSettings from './pages/HQSettings';
 import HQActivity from './pages/HQActivity';
 import HQReports from './pages/HQReports';
 import HQAlerts from './pages/HQAlerts';
+import HQMailchimp from './pages/HQMailchimp';
+import HQSMSCampaigns from './pages/HQSMSCampaigns';
+import HQLegal from './pages/HQLegal';
+import HQLeads from './pages/HQLeads';
+import HQCampaigns from './pages/HQCampaigns';
 // Public Quote/Intake Pages
 import ViewQuote from './pages/ViewQuote';
 import LeadIntakeForm from './pages/LeadIntakeForm';
@@ -176,7 +180,6 @@ export const PAGES = {
     "PropertyCare": PropertyCare,
     "Checkout": Checkout,
     "Welcome": Welcome,
-    "Waitlist": Waitlist,
     "Pricing": Pricing,
     "ExploreTemplates": ExploreTemplates,
     "TemplateDetail": TemplateDetail,
@@ -309,6 +312,11 @@ export const PAGES = {
     "HQActivity": HQActivity,
     "HQReports": HQReports,
     "HQAlerts": HQAlerts,
+    "HQMailchimp": HQMailchimp,
+    "HQSMSCampaigns": HQSMSCampaigns,
+    "HQLegal": HQLegal,
+    "HQLeads": HQLeads,
+    "HQCampaigns": HQCampaigns,
     // Public Quote/Intake Pages (dynamic routes handled in App.jsx)
     "ViewQuote": ViewQuote,
     "LeadIntakeForm": LeadIntakeForm,
@@ -337,46 +345,8 @@ export const PUBLIC_NO_LAYOUT_PAGES = [
     'LeadIntakeForm',
     'EmbedLeadForm',
     'ClientInvitation',
-    // Operator Portal (has its own OperatorLayout)
-    'OperatorDashboard',
-    'OperatorClients',
-    'OperatorClientDetail',
-    'OperatorLeads',
-    'OperatorMessages',
-    'OperatorCalendar',
-    'OperatorAddClient',
-    'OperatorInspection',
-    'OperatorWorkOrders',
-    'OperatorReportBuilder',
-    'OperatorInvoices',
-    'OperatorInvoiceCreate',
-    'OperatorContractors',
-    'OperatorEarnings',
-    'OperatorMarketplaceProfile',
-    'OperatorSettings',
-    // HQ Admin Portal (has its own HQLayout)
-    'HQDashboard',
-    'HQUsers',
-    'HQOperators',
-    'HQContractors',
-    'HQProperties',
-    'HQRevenue',
-    'HQSupport',
-    'HQSettings',
-    'HQActivity',
-    'HQReports',
-    'HQAlerts',
-    // Contractor Portal (has its own ContractorLayout)
-    'ContractorDashboard',
-    'ContractorJobDetail',
-    'ContractorJobActive',
-    'ContractorJobComplete',
-    'ContractorJobs',
-    'ContractorSchedule',
-    'ContractorEarnings',
-    'ContractorMessages',
-    'ContractorProfile',
-    'ContractorOnboarding',
+    // NOTE: Operator/Contractor/HQ Admin portal pages are NOT listed here
+    // They require authentication and are wrapped in RouteGuard by App.jsx
 ];
 
 // Pages that don't require authentication BUT need Layout (demo app pages, resources)
