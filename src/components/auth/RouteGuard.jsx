@@ -1,8 +1,8 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES, ROLE_CONFIG } from '@/lib/AuthContext';
-import { useUser } from '@clerk/clerk-react';
 import { Loader2 } from 'lucide-react';
+import { redirectToLogin } from '@/lib/domain';
 
 /**
  * RouteGuard - Protects routes with authentication and role-based access
@@ -26,6 +26,7 @@ export default function RouteGuard({
     user,
     isAuthenticated,
     isLoadingAuth,
+    isClerkAvailable,
     activeRole,
     roles,
     hasRole,
@@ -33,7 +34,6 @@ export default function RouteGuard({
     getDefaultRoute,
     getActiveRoleProfile
   } = useAuth();
-  const { user: clerkUser } = useUser();
 
   // Check if we're in demo mode - only allow on demo routes
   // SECURITY: Demo mode should ONLY work on /Demo* routes to prevent bypass
@@ -59,13 +59,18 @@ export default function RouteGuard({
   }
 
   if (!isAuthenticated) {
-    // Redirect to login with return URL
+    // On marketing domain (no Clerk), redirect to app domain with full page navigation
+    if (!isClerkAvailable) {
+      redirectToLogin(location.pathname);
+      return null; // Component unmounts during redirect
+    }
+    // On app domain (Clerk available), use React Router navigation
     return <Navigate to={`/Login?redirect_url=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Get user metadata for backward compatibility checks
   const userMeta = user?.user_metadata || {};
-  const clerkMeta = clerkUser?.publicMetadata || {};
+  const clerkMeta = user?.publicMetadata || {};
 
   // Determine if the current route matches the user's portal
   const isCorrectPortal = !portalType || portalType === activeRole;
