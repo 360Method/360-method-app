@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { isMarketingSite, redirectToLogin, redirectToSignup } from '@/lib/domain';
 
 export default function LandingHeader() {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ export default function LandingHeader() {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/Login')}
+              onClick={() => isMarketingSite() ? redirectToLogin() : navigate('/Login')}
               className={`hidden md:block text-sm font-medium transition-opacity hover:opacity-80 ${
                 scrolled ? 'text-slate-600' : 'text-white/80'
               }`}
@@ -110,7 +111,7 @@ export default function LandingHeader() {
               Log In
             </button>
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
               className="hidden md:block bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-lg"
             >
               Sign Up
@@ -161,13 +162,13 @@ export default function LandingHeader() {
                 Resources
               </Link>
               <button
-                onClick={() => navigate('/Login')}
+                onClick={() => isMarketingSite() ? redirectToLogin() : navigate('/Login')}
                 className="text-left text-slate-700 hover:text-slate-900 font-medium py-2 border-t pt-4"
               >
                 Log In
               </button>
               <button
-                onClick={() => navigate('/Signup')}
+                onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-lg font-medium text-sm transition-colors text-center"
               >
                 Sign Up

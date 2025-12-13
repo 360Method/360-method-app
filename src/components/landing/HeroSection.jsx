@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { isMarketingSite, redirectToSignup } from '@/lib/domain';
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function HeroSection() {
         {/* CTAs */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
-            onClick={() => navigate('/Login')}
+            onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
             className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             style={{ minHeight: '56px' }}
           >

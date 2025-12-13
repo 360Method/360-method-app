@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Linkedin, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { isMarketingSite, redirectToSignup, getAppUrl } from '@/lib/domain';
 
 export default function LandingFooter() {
   return (
@@ -50,12 +51,12 @@ export default function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => navigate('/Login')}
+                <a 
+                  href={isMarketingSite() ? getAppUrl('/Signup') : '/Signup'}
                   className="hover:text-white transition-colors"
                 >
                   Sign Up Free
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -70,7 +71,7 @@ export default function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link to={createPageUrl('Waitlist')} className="hover:text-white transition-colors">
+                <Link to={createPageUrl('FindOperator')} className="hover:text-white transition-colors">
                   Services
                 </Link>
               </li>
