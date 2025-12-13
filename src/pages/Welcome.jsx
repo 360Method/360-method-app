@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight, CheckCircle, X, Star, ChevronDown, ChevronUp, HelpCircle, Heart, Users, Target, Shield, Brain, Check, Compass, Home, Flag, Crown, TrendingUp, Zap, BarChart3 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { isMarketingSite, getAppUrl, redirectToLogin, redirectToSignup } from '@/lib/domain';
 import {
   calculateHomeownerPlusPricing,
   calculateGoodPricing,
@@ -106,9 +107,11 @@ const FAQ_ITEMS = [
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoadingAuth } = useAuth();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, isAuthenticated, isLoadingAuth, isClerkAvailable } = useAuth();
   const [openFaq, setOpenFaq] = useState(null);
+
+  // On marketing site, we skip auth check entirely (no Clerk)
+  const onMarketingSite = isMarketingSite();
 
   // Load Elfsight script for Google Reviews widget
   useEffect(() => {
@@ -126,25 +129,26 @@ export default function Welcome() {
     };
   }, []);
 
+  // Only redirect authenticated users when on app domain (where Clerk is available)
   useEffect(() => {
-    if (!isLoadingAuth) {
-      if (isAuthenticated && user) {
-        const userMeta = user.user_metadata || {};
-        if (!userMeta.onboarding_completed) {
-          navigate(createPageUrl('Onboarding'), { replace: true });
-          return;
-        }
-        const userType = determineUserType(userMeta);
-        const dashboard = getDashboardRoute(userType);
-        navigate(dashboard, { replace: true });
+    // Skip auth redirect on marketing site - no Clerk, no auth to check
+    if (onMarketingSite || !isClerkAvailable) return;
+
+    if (!isLoadingAuth && isAuthenticated && user) {
+      const userMeta = user.user_metadata || {};
+      if (!userMeta.onboarding_completed) {
+        navigate(createPageUrl('Onboarding'), { replace: true });
         return;
       }
-      setIsCheckingAuth(false);
+      const userType = determineUserType(userMeta);
+      const dashboard = getDashboardRoute(userType);
+      navigate(dashboard, { replace: true });
     }
-  }, [isLoadingAuth, isAuthenticated, user, navigate]);
+  }, [isLoadingAuth, isAuthenticated, user, navigate, onMarketingSite, isClerkAvailable]);
 
-  // Show loading spinner while checking auth OR if user is authenticated (will redirect)
-  if (isCheckingAuth || isLoadingAuth || isAuthenticated) {
+  // Show loading spinner only on app domain while checking auth
+  // On marketing site, render immediately (no auth to wait for)
+  if (!onMarketingSite && isClerkAvailable && (isLoadingAuth || isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
@@ -182,13 +186,13 @@ export default function Welcome() {
               For Operators
             </button>
             <button
-              onClick={() => navigate('/Login')}
+              onClick={() => onMarketingSite ? redirectToLogin() : navigate('/Login')}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
             >
               Log In
             </button>
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => onMarketingSite ? redirectToSignup() : navigate('/Signup')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
             >
               Sign Up Free
@@ -233,7 +237,7 @@ export default function Welcome() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => onMarketingSite ? redirectToSignup() : navigate('/Signup')}
               className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
             >
               Start Free Today
@@ -370,7 +374,7 @@ export default function Welcome() {
 
           <div className="text-center mt-8">
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => onMarketingSite ? redirectToSignup() : navigate('/Signup')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg transition-all shadow-lg"
             >
               Start Your Transformation
@@ -455,7 +459,7 @@ export default function Welcome() {
               Every property owner above started exactly where you are now. Make the choice to go from reactive to proactive.
             </p>
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => onMarketingSite ? redirectToSignup() : navigate('/Signup')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
             >
               Start Your Transformation
@@ -591,7 +595,7 @@ export default function Welcome() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
             <button
-              onClick={() => navigate('/Signup')}
+              onClick={() => onMarketingSite ? redirectToSignup() : navigate('/Signup')}
               className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105"
             >
               Create Free Account
@@ -627,7 +631,7 @@ export default function Welcome() {
               <a href="#about" className="hover:text-slate-700">About Us</a>
               <button onClick={() => navigate('/BecomeOperator')} className="hover:text-slate-700">For Operators</button>
               <button onClick={() => navigate(createPageUrl('DemoEntry'))} className="hover:text-slate-700">Try Demo</button>
-              <button onClick={() => navigate('/Login')} className="hover:text-slate-700">Log In</button>
+              <button onClick={() => onMarketingSite ? redirectToLogin() : navigate('/Login')} className="hover:text-slate-700">Log In</button>
             </div>
             <p className="text-sm text-slate-500">
               © 2024 360° Method. All rights reserved.
@@ -835,7 +839,7 @@ function PricingSection({ navigate }) {
                 {/* CTA Button */}
                 {tier.id === 'free' ? (
                   <button
-                    onClick={() => navigate('/Signup')}
+                    onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
                     className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all text-white"
                     style={{ backgroundColor: tier.color }}
                   >
@@ -843,7 +847,7 @@ function PricingSection({ navigate }) {
                   </button>
                 ) : (
                   <button
-                    onClick={() => navigate('/Signup')}
+                    onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
                     className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all border-2 hover:bg-slate-50"
                     style={{ borderColor: tier.color, color: tier.color }}
                   >
@@ -1006,7 +1010,7 @@ function PricingSection({ navigate }) {
         {/* Bottom CTA */}
         <div className="text-center mt-8">
           <button
-            onClick={() => navigate('/Signup')}
+            onClick={() => isMarketingSite() ? redirectToSignup() : navigate('/Signup')}
             className="inline-flex items-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-orange-600 transition-all shadow-lg"
           >
             Start Free Today

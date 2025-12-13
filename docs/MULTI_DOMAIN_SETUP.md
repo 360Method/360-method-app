@@ -333,273 +333,138 @@ Since marketing and operators sites don't have Clerk:
 
 ### Step 4.1: Create Domain Detection Utility
 
-Create a new file `src/lib/domain.js`:
+The file `src/lib/domain.js` already exists with comprehensive domain detection utilities.
+
+**Key Functions Available:**
 
 ```javascript
-/**
- * Domain detection and routing utilities
- */
+// Domain detection
+import {
+  getCurrentDomainType,    // Returns: 'marketing', 'app', 'operators', 'help'
+  isMarketingSite,         // true if on 360degreemethod.com
+  isAppSite,               // true if on app.360degreemethod.com
+  isOperatorsSite,         // true if on operators.360degreemethod.com
+  shouldInitializeClerk,   // true only for app domain (FREE tier)
+  isDevelopment,           // true if localhost
+} from '@/lib/domain';
 
-// Domain configuration
-export const DOMAINS = {
-  MARKETING: '360degreemethod.com',
-  APP: 'app.360degreemethod.com',
-  OPERATORS: 'operators.360degreemethod.com',
-  HELP: 'help.360degreemethod.com',
-};
+// Cross-domain navigation
+import {
+  redirectToLogin,         // Redirects to app.360degreemethod.com/Login
+  redirectToSignup,        // Redirects to app.360degreemethod.com/Signup
+  getAppUrl,               // Get full URL for app domain path
+  getMarketingUrl,         // Get full URL for marketing domain path
+  navigateToDomain,        // Navigate to any domain with path
+  createCrossDomainUrl,    // Build URL for specific domain
+} from '@/lib/domain';
 
-// Get current domain type
-export function getCurrentDomainType() {
-  const hostname = window.location.hostname;
-
-  if (hostname === DOMAINS.APP || hostname === 'localhost') {
-    return 'app';
-  }
-  if (hostname === DOMAINS.OPERATORS) {
-    return 'operators';
-  }
-  if (hostname === DOMAINS.HELP) {
-    return 'help';
-  }
-  if (hostname === DOMAINS.MARKETING || hostname.includes('360degreemethod')) {
-    return 'marketing';
-  }
-
-  // Default to app for development
-  return 'app';
-}
-
-// Check if we're on the marketing site
-export function isMarketingSite() {
-  return getCurrentDomainType() === 'marketing';
-}
-
-// Check if we're on the app
-export function isAppSite() {
-  return getCurrentDomainType() === 'app';
-}
-
-// Check if we're on the operators site
-export function isOperatorsSite() {
-  return getCurrentDomainType() === 'operators';
-}
-
-// Get URL for a specific domain
-export function getDomainUrl(domain) {
-  const isDev = window.location.hostname === 'localhost';
-
-  if (isDev) {
-    // In development, everything runs on localhost
-    return '';
-  }
-
-  switch (domain) {
-    case 'marketing':
-      return import.meta.env.VITE_MARKETING_DOMAIN || 'https://360degreemethod.com';
-    case 'app':
-      return import.meta.env.VITE_APP_DOMAIN || 'https://app.360degreemethod.com';
-    case 'operators':
-      return import.meta.env.VITE_OPERATORS_DOMAIN || 'https://operators.360degreemethod.com';
-    default:
-      return '';
-  }
-}
-
-// Create a cross-domain link
-export function createCrossDomainUrl(domain, path) {
-  const baseUrl = getDomainUrl(domain);
-  return `${baseUrl}${path}`;
-}
-
-// Redirect to login on app domain
-export function redirectToLogin() {
-  const appDomain = getDomainUrl('app');
-  window.location.href = `${appDomain}/Login`;
-}
-
-// Redirect to signup on app domain
-export function redirectToSignup() {
-  const appDomain = getDomainUrl('app');
-  window.location.href = `${appDomain}/Signup`;
-}
+// Page classification
+import {
+  MARKETING_PAGES,         // Array of pages that belong on marketing site
+  OPERATOR_LANDING_PAGES,  // Array of pages for operator landing
+  isMarketingPage,         // Check if page belongs on marketing site
+  isOperatorLandingPage,   // Check if page belongs on operator landing
+} from '@/lib/domain';
 ```
 
-### Step 4.2: Create Domain Router Component
-
-Create `src/components/routing/DomainRouter.jsx`:
+**Usage Examples:**
 
 ```javascript
-import React from 'react';
-import { getCurrentDomainType } from '@/lib/domain';
+// In a component - redirect to login on marketing site
+import { isMarketingSite, redirectToLogin } from '@/lib/domain';
 
-// Marketing site pages (shown on 360degreemethod.com)
-const MARKETING_PAGES = [
-  'Welcome',
-  'Pricing',
-  'Resources',
-  'DemoEntry',
-  'WelcomeDemo',
-  'BecomeOperator',
-  // Demo pages
-  'DemoImproving',
-  'DemoOverwhelmed',
-  'DemoExcellent',
-  'DemoPortfolio',
-];
-
-// Operator landing pages (shown on operators.360degreemethod.com)
-const OPERATOR_LANDING_PAGES = [
-  'BecomeOperator',
-  'OperatorApplication',
-];
-
-// Check if a page should be shown on current domain
-export function shouldShowOnCurrentDomain(pageName) {
-  const domainType = getCurrentDomainType();
-
-  switch (domainType) {
-    case 'marketing':
-      // Marketing site shows marketing pages + demo pages
-      return MARKETING_PAGES.includes(pageName) || pageName.startsWith('Demo');
-
-    case 'operators':
-      // Operator landing shows operator-specific pages
-      return OPERATOR_LANDING_PAGES.includes(pageName);
-
-    case 'app':
-    default:
-      // App shows everything
-      return true;
-  }
-}
-
-// Get the default page for current domain
-export function getDefaultPageForDomain() {
-  const domainType = getCurrentDomainType();
-
-  switch (domainType) {
-    case 'marketing':
-      return 'Welcome';
-    case 'operators':
-      return 'BecomeOperator';
-    case 'app':
-    default:
-      return 'Welcome'; // Will redirect to dashboard if authenticated
-  }
-}
-
-// Higher-order component to restrict pages by domain
-export function withDomainRestriction(WrappedComponent, allowedDomains = ['app']) {
-  return function DomainRestrictedComponent(props) {
-    const currentDomain = getCurrentDomainType();
-
-    if (!allowedDomains.includes(currentDomain)) {
-      // Redirect to appropriate domain
-      return <DomainRedirect targetDomain="app" />;
-    }
-
-    return <WrappedComponent {...props} />;
-  };
-}
-
-// Redirect component for cross-domain navigation
-export function DomainRedirect({ targetDomain, path = '/' }) {
-  React.useEffect(() => {
-    const getDomainUrl = (domain) => {
-      switch (domain) {
-        case 'marketing':
-          return import.meta.env.VITE_MARKETING_DOMAIN || 'https://360degreemethod.com';
-        case 'app':
-          return import.meta.env.VITE_APP_DOMAIN || 'https://app.360degreemethod.com';
-        case 'operators':
-          return import.meta.env.VITE_OPERATORS_DOMAIN || 'https://operators.360degreemethod.com';
-        default:
-          return '';
-      }
-    };
-
-    window.location.href = `${getDomainUrl(targetDomain)}${path}`;
-  }, [targetDomain, path]);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-    </div>
-  );
-}
-```
-
-### Step 4.3: Update Welcome.jsx for Marketing Domain
-
-Update the navigation in `Welcome.jsx` to use cross-domain URLs:
-
-```javascript
-// Add this import at the top
-import { redirectToLogin, redirectToSignup, isMarketingSite } from '@/lib/domain';
-
-// Update the login/signup buttons in the header:
-<button
-  onClick={() => {
+function LoginButton() {
+  const navigate = useNavigate();
+  
+  const handleClick = () => {
     if (isMarketingSite()) {
-      redirectToLogin();
+      redirectToLogin();  // Full page redirect to app subdomain
     } else {
-      navigate('/Login');
+      navigate('/Login'); // React Router navigation (same domain)
     }
-  }}
-  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
->
-  Log In
-</button>
-<button
-  onClick={() => {
-    if (isMarketingSite()) {
-      redirectToSignup();
-    } else {
-      navigate('/Signup');
-    }
-  }}
-  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
->
-  Sign Up Free
-</button>
-```
-
-### Step 4.4: Update App.jsx for Domain-Based Routing
-
-Update the ClerkProvider configuration:
-
-```javascript
-// In App.jsx, update ClerkProvider:
-import { getCurrentDomainType, getDomainUrl } from '@/lib/domain';
-
-// ...
-
-const getClerkRedirectUrls = () => {
-  const appDomain = getDomainUrl('app');
-  const isDev = window.location.hostname === 'localhost';
-
-  return {
-    afterSignInUrl: isDev ? '/Properties' : `${appDomain}/Properties`,
-    afterSignUpUrl: isDev ? '/Onboarding' : `${appDomain}/Onboarding`,
   };
-};
+  
+  return <button onClick={handleClick}>Log In</button>;
+}
 
-function App() {
-  const { afterSignInUrl, afterSignUpUrl } = getClerkRedirectUrls();
+// Check if Clerk should be initialized (for conditional ClerkProvider)
+import { shouldInitializeClerk } from '@/lib/domain';
 
-  return (
-    <ErrorBoundary>
-      <ClerkProvider
-        publishableKey={CLERK_PUBLISHABLE_KEY}
-        afterSignInUrl={afterSignInUrl}
-        afterSignUpUrl={afterSignUpUrl}
-      >
-        {/* ... rest of the app */}
-      </ClerkProvider>
-    </ErrorBoundary>
-  );
+if (shouldInitializeClerk()) {
+  // Wrap app in ClerkProvider
 }
 ```
+
+**Development Testing:**
+
+You can simulate different domains in development by adding `?_domain=marketing` to the URL:
+- `http://localhost:5173/?_domain=marketing` - Simulates marketing site
+- `http://localhost:5173/?_domain=operators` - Simulates operator landing
+
+### Step 4.2: Page Classification (Already in domain.js)
+
+The `src/lib/domain.js` file already includes page classification utilities:
+
+```javascript
+import {
+  MARKETING_PAGES,         // Array of all marketing site pages
+  OPERATOR_LANDING_PAGES,  // Array of operator landing pages
+  isMarketingPage,         // Check if page belongs on marketing site
+  isOperatorLandingPage,   // Check if page belongs on operator landing
+} from '@/lib/domain';
+
+// Example usage:
+isMarketingPage('Welcome')        // true
+isMarketingPage('Dashboard')      // false
+isOperatorLandingPage('BecomeOperator')  // true
+```
+
+**Marketing Pages Include:**
+- Welcome, Pricing, Resources, DemoEntry
+- All Demo pages (DemoImproving, DemoOverwhelmed, etc.)
+
+**Operator Landing Pages Include:**
+- BecomeOperator, OperatorApplication
+
+**Note:** A separate `DomainRouter.jsx` component is NOT needed. The domain detection and page classification is handled by `domain.js`, and the routing is handled by the existing `App.jsx` and `vercel.json` redirects.
+
+#### Step 4.3: Landing Components (✅ ALREADY UPDATED)
+
+The following landing components have been updated to use cross-domain redirects:
+
+| Component | Status | Change |
+|-----------|--------|--------|
+| `LandingHeader.jsx` | ✅ Done | Login/Signup buttons use `redirectToLogin()`/`redirectToSignup()` |
+| `HeroSection.jsx` | ✅ Done | "Start Free Today" uses `redirectToSignup()` |
+| `LandingFooter.jsx` | ✅ Done | Sign Up link uses `getAppUrl()` |
+| `FinalCTA.jsx` | ✅ Done | CTA button uses `redirectToSignup()` |
+
+**Pattern used:**
+```javascript
+import { isMarketingSite, redirectToLogin, redirectToSignup } from '@/lib/domain';
+
+// In button onClick:
+onClick={() => isMarketingSite() ? redirectToLogin() : navigate('/Login')}
+```
+
+### Step 4.4: App.jsx Clerk Configuration
+
+The current `App.jsx` uses relative paths for Clerk redirects:
+
+```javascript
+<ClerkProvider
+  publishableKey={CLERK_PUBLISHABLE_KEY}
+  afterSignInUrl="/Properties"
+  afterSignUpUrl="/Onboarding"
+>
+```
+
+**This works fine** because:
+- Clerk only runs on `app.360degreemethod.com` (single domain, FREE tier)
+- Users are already on the app domain when they sign in/up
+- Relative paths resolve correctly on the app domain
+
+**No changes needed** unless you upgrade to Clerk Pro with satellite domains.
 
 ---
 

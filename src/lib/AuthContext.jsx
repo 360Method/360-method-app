@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useUser, useAuth as useClerkAuth, useClerk } from '@clerk/clerk-react';
 import { syncCurrentUser } from '@/api/supabaseClient';
 import { identifyUser, claritySetTag } from '@/lib/clarity';
+import { shouldInitializeClerk, redirectToLogin, redirectToSignup } from '@/lib/domain';
 
 const AuthContext = createContext();
 
@@ -62,11 +63,68 @@ export const AuthProvider = ({ children }) => {
 };
 
 /**
+ * Create a guest auth state for use on non-Clerk domains (marketing, operators)
+ * This allows pages to call useAuth() without errors when Clerk isn't available
+ */
+function createGuestAuthState() {
+  return {
+    user: null,
+    clerkUser: null,
+    session: null,
+    isAuthenticated: false,
+    isLoadingAuth: false,
+    isLoadingPublicSettings: false,
+    authError: null,
+    appPublicSettings: null,
+    // Auth actions redirect to app domain
+    login: () => redirectToLogin(),
+    signup: () => redirectToSignup(),
+    logout: async () => {},
+    navigateToLogin: () => redirectToLogin(),
+    getSupabaseToken: async () => null,
+    // Clerk-specific (null when not available)
+    userId: null,
+    openSignIn: () => redirectToLogin(),
+    openSignUp: () => redirectToSignup(),
+    // Multi-role support (guest has no roles)
+    roles: [],
+    activeRole: null,
+    switchRole: async () => false,
+    hasRole: () => false,
+    isOnboardingComplete: () => false,
+    getDefaultRoute: () => '/Login',
+    getActiveRoleProfile: () => ({}),
+    ROLES,
+    ROLE_CONFIG,
+    // Database user
+    dbUser: null,
+    // Tier management
+    updateUserMetadata: async () => { throw new Error('Not authenticated'); },
+    // Flag to indicate Clerk availability
+    isClerkAvailable: false,
+  };
+}
+
+/**
  * Custom hook that provides auth state from Clerk
  * Maintains backwards compatibility with existing code
  * Now includes multi-role support
+ *
+ * On non-Clerk domains (marketing, operators), returns guest state
+ * without attempting to use Clerk hooks.
  */
 export const useAuth = () => {
+  // Check if Clerk should be initialized on this domain
+  // This check is stable (depends only on hostname) so the conditional is safe
+  const isClerkAvailable = shouldInitializeClerk();
+
+  // If Clerk isn't available (marketing/operators domain), return guest state
+  // This avoids calling Clerk hooks when ClerkProvider isn't in the tree
+  if (!isClerkAvailable) {
+    return createGuestAuthState();
+  }
+
+  // Clerk is available - use normal Clerk hooks
   const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
   const { isLoaded: isAuthLoaded, userId, getToken } = useClerkAuth();
   const { signOut, openSignIn, openSignUp } = useClerk();
@@ -317,6 +375,8 @@ export const useAuth = () => {
     dbUser,
     // Tier management
     updateUserMetadata,
+    // Flag to indicate Clerk availability
+    isClerkAvailable: true,
   };
 };
 

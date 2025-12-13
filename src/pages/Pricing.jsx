@@ -11,6 +11,7 @@ import { calculateTotalDoors, getTierConfig, calculateHomeownerPlusPricing, calc
 import TierChangeDialog from "../components/pricing/TierChangeDialog";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
+import { isMarketingSite, getAppUrl } from "@/lib/domain";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -21,7 +22,30 @@ export default function Pricing() {
   const [showAllPlans, setShowAllPlans] = React.useState(false);
 
   // Get user from Clerk auth context
-  const { user, updateUserMetadata } = useAuth();
+  const { user, updateUserMetadata, isClerkAvailable } = useAuth();
+
+  // On marketing site without Clerk, redirect to Welcome page which has public pricing
+  // This page is designed for authenticated users to manage their subscription
+  const onMarketingSite = isMarketingSite();
+
+  React.useEffect(() => {
+    if (onMarketingSite || !isClerkAvailable) {
+      // Redirect to Welcome page with pricing section
+      navigate('/Welcome#pricing', { replace: true });
+    }
+  }, [onMarketingSite, isClerkAvailable, navigate]);
+
+  // Show loading while redirecting on marketing site
+  if (onMarketingSite || !isClerkAvailable) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto" />
+          <p className="text-sm text-slate-500 mt-2">Redirecting to pricing...</p>
+        </div>
+      </div>
+    );
+  }
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],

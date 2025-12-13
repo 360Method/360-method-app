@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/AuthContext';
+import { isOperatorsSite } from '@/lib/domain';
 import {
   Building,
   ArrowRight,
@@ -13,13 +14,20 @@ import {
 
 export default function BecomeOperator() {
   const navigate = useNavigate();
-  const { isAuthenticated, hasRole } = useAuth();
+  const { isAuthenticated, hasRole, isClerkAvailable } = useAuth();
 
-  // If already an operator, redirect
-  if (isAuthenticated && hasRole && hasRole('operator')) {
-    navigate('/OperatorDashboard');
-    return null;
-  }
+  // On operators site, we skip auth check entirely (no Clerk)
+  const onOperatorsSite = isOperatorsSite();
+
+  // Only redirect to OperatorDashboard when on app domain (where Clerk is available)
+  useEffect(() => {
+    if (onOperatorsSite || !isClerkAvailable) return;
+
+    // If already an operator on app domain, redirect to dashboard
+    if (isAuthenticated && hasRole && hasRole('operator')) {
+      navigate('/OperatorDashboard');
+    }
+  }, [isAuthenticated, hasRole, navigate, onOperatorsSite, isClerkAvailable]);
 
   return (
     <div className="min-h-screen bg-gray-50">

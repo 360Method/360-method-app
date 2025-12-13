@@ -18,6 +18,7 @@ import { DemoProvider } from '@/components/shared/DemoContext';
 import XPCelebration from '@/components/gamification/XPCelebration';
 import ErrorBoundary from '@/components/shared/ErrorBoundary';
 import { initClarity, identifyUser } from '@/lib/clarity';
+import { shouldInitializeClerk } from '@/lib/domain';
 
 // Initialize analytics
 initClarity();
@@ -170,7 +171,46 @@ const AuthenticatedApp = () => {
 };
 
 
+/**
+ * App component with conditional Clerk initialization
+ *
+ * On app.360degreemethod.com (and localhost): Full Clerk auth stack
+ * On marketing/operators domains: No Clerk, just static pages with links to app domain
+ */
 function App() {
+  const isClerkAvailable = shouldInitializeClerk();
+
+  // Core app content - shared between Clerk and non-Clerk versions
+  const coreApp = (
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <ScrollToTop />
+        <DemoProvider>
+          <NavigationTracker />
+          <AuthenticatedApp />
+          {/* XP celebration overlay - only when Clerk is available */}
+          {isClerkAvailable && <XPCelebration />}
+        </DemoProvider>
+      </Router>
+      <Toaster />
+      <SonnerToaster position="top-right" richColors closeButton />
+      <VisualEditAgent />
+    </QueryClientProvider>
+  );
+
+  // Marketing/Operators domain - no Clerk, minimal providers
+  // useAuth() will return guest state automatically
+  if (!isClerkAvailable) {
+    return (
+      <ErrorBoundary>
+        <AuthProvider>
+          {coreApp}
+        </AuthProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  // App domain - full Clerk auth stack with all providers
   return (
     <ErrorBoundary>
       <ClerkProvider
@@ -181,26 +221,13 @@ function App() {
         <AuthProvider>
           <NotificationProvider>
             <GamificationProvider>
-              <QueryClientProvider client={queryClientInstance}>
-                <Router>
-                  <ScrollToTop />
-                  <DemoProvider>
-                    <NavigationTracker />
-                    <AuthenticatedApp />
-                    {/* XP celebration overlay - renders globally */}
-                    <XPCelebration />
-                  </DemoProvider>
-                </Router>
-                <Toaster />
-                <SonnerToaster position="top-right" richColors closeButton />
-                <VisualEditAgent />
-              </QueryClientProvider>
+              {coreApp}
             </GamificationProvider>
           </NotificationProvider>
         </AuthProvider>
       </ClerkProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
 export default App
