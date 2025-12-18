@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-// Google Maps API Key
-const GOOGLE_MAPS_API_KEY = "AIzaSyBQaKy7wOT8z0Rw_96AS5-GoMe1z2GzTa0";
+// Google Maps API Key - from environment variable
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 // Load Google Maps script ONCE at module level
 let scriptLoaded = false;

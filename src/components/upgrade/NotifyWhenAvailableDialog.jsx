@@ -4,9 +4,9 @@ import { Waitlist } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, Loader2, MapPin } from 'lucide-react';
+import { CheckCircle2, Loader2, MapPin, Bell } from 'lucide-react';
 
-export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
+export default function NotifyWhenAvailableDialog({ zipCode, isOpen, onClose }) {
   const queryClient = useQueryClient();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -14,7 +14,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
   const [phone, setPhone] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const waitlistMutation = useMutation({
+  const notifyMutation = useMutation({
     mutationFn: async () => {
       await Waitlist.create({
         first_name: firstName,
@@ -25,14 +25,14 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
         property_type: 'homecare',
         service_tier: 'undecided',
         status: 'pending',
-        source: 'upgrade_project'
+        source: 'area_notification'
       });
-      
-      console.log('✅ Added to waitlist:', email, 'for zip', zipCode);
+
+      console.log('Notification request saved:', email, 'for zip', zipCode);
     },
     onSuccess: () => {
       setSuccess(true);
-      
+
       setTimeout(() => {
         onClose();
         setSuccess(false);
@@ -43,8 +43,8 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
       }, 2000);
     },
     onError: (error) => {
-      console.error('❌ Error joining waitlist:', error);
-      alert('Failed to join waitlist. Please try again.');
+      console.error('Error saving notification request:', error);
+      alert('Failed to save your request. Please try again.');
     }
   });
 
@@ -58,7 +58,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
       return;
     }
 
-    waitlistMutation.mutate();
+    notifyMutation.mutate();
   };
 
   if (success) {
@@ -68,7 +68,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
           <div className="text-center py-8">
             <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              You're on the Waitlist!
+              You're All Set!
             </h3>
             <p className="text-gray-600">
               We'll notify you as soon as 360° Operator service becomes available in your area.
@@ -83,7 +83,10 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Join Waitlist for Your Area</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-amber-600" />
+            Notify Me When Available
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
@@ -96,7 +99,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
               </p>
             </div>
             <p className="text-sm text-blue-800">
-              Professional 360° Operator service isn't available in your area yet, 
+              Professional 360° Operator service isn't available in your area yet,
               but we're actively expanding to new markets.
             </p>
           </div>
@@ -166,18 +169,18 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
               When We Expand to Your Area:
             </p>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>✓ Professional 360° Method implementation</li>
-              <li>✓ Member discount pricing (5-15% off)</li>
-              <li>✓ Priority scheduling</li>
-              <li>✓ Proactive maintenance service</li>
-              <li>✓ Local certified operator</li>
+              <li>Professional 360° Method implementation</li>
+              <li>Member discount pricing (5-15% off)</li>
+              <li>Priority scheduling</li>
+              <li>Proactive maintenance service</li>
+              <li>Local certified operator</li>
             </ul>
           </div>
 
           {/* Meanwhile */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <p className="text-sm text-amber-900">
-              <strong>💡 Meanwhile:</strong> You can still use this app to track 
+              <strong>Meanwhile:</strong> You can still use this app to track
               maintenance DIY-style and share projects with local contractors.
             </p>
           </div>
@@ -188,7 +191,7 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
               onClick={onClose}
               variant="outline"
               className="flex-1"
-              disabled={waitlistMutation.isPending}
+              disabled={notifyMutation.isPending}
               style={{ minHeight: '48px' }}
             >
               Cancel
@@ -196,16 +199,19 @@ export default function JoinWaitlistDialog({ zipCode, isOpen, onClose }) {
             <Button
               onClick={handleSubmit}
               className="flex-1"
-              disabled={waitlistMutation.isPending || !email.trim() || !firstName.trim() || !lastName.trim()}
-              style={{ minHeight: '48px', backgroundColor: 'var(--primary)' }}
+              disabled={notifyMutation.isPending || !email.trim() || !firstName.trim() || !lastName.trim()}
+              style={{ minHeight: '48px', backgroundColor: '#FF6B35' }}
             >
-              {waitlistMutation.isPending ? (
+              {notifyMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Joining...
+                  Saving...
                 </>
               ) : (
-                'Join Waitlist'
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  Notify Me
+                </>
               )}
             </Button>
           </div>

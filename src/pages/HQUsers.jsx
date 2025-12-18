@@ -133,6 +133,24 @@ export default function HQUsers() {
     }
   });
 
+  // Update user role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ role, active_role: role })
+        .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('User role updated');
+      queryClient.invalidateQueries({ queryKey: ['hq-users'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to update role: ' + error.message);
+    }
+  });
+
   const getRoleBadge = (role) => {
     const colors = {
       admin: 'bg-red-100 text-red-700',

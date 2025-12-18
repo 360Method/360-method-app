@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/api/supabaseClient';
 import HQLayout from '@/components/hq/HQLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,45 +34,119 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 
 export default function HQSettings() {
   const [activeTab, setActiveTab] = useState('general');
+  const queryClient = useQueryClient();
 
-  // General settings
-  const [generalSettings, setGeneralSettings] = useState({
+  // Default values
+  const defaultGeneral = {
     platformName: '360° Method',
     supportEmail: 'support@360method.com',
     maintenanceMode: false,
     allowSignups: true,
     requireEmailVerification: true,
     defaultUserRole: 'homeowner'
-  });
+  };
 
-  // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
+  const defaultNotifications = {
     sendWelcomeEmail: true,
     sendInvoiceEmails: true,
     sendReminderEmails: true,
     adminAlertEmail: 'admin@360method.com',
     slackWebhook: ''
-  });
+  };
 
-  // Feature flags
-  const [featureFlags, setFeatureFlags] = useState({
+  const defaultFeatures = {
     enableOperatorPortal: true,
     enableContractorPortal: true,
     enableMarketplace: true,
     enableAIFeatures: true,
     enablePayments: true,
     enableDemoMode: true
+  };
+
+  // Local state
+  const [generalSettings, setGeneralSettings] = useState(defaultGeneral);
+  const [notificationSettings, setNotificationSettings] = useState(defaultNotifications);
+  const [featureFlags, setFeatureFlags] = useState(defaultFeatures);
+  const [saving, setSaving] = useState(null);
+
+  // Load settings from database
+  const { data: dbSettings, isLoading } = useQuery({
+    queryKey: ['platform-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const handleSaveSettings = (section) => {
-    toast.success(`${section} settings saved successfully`);
+  // Update local state when db settings load
+  useEffect(() => {
+    if (dbSettings) {
+      const general = dbSettings.find(s => s.setting_key === 'general');
+      const notifications = dbSettings.find(s => s.setting_key === 'notifications');
+      const features = dbSettings.find(s => s.setting_key === 'features');
+
+      if (general?.setting_value) setGeneralSettings({ ...defaultGeneral, ...general.setting_value });
+      if (notifications?.setting_value) setNotificationSettings({ ...defaultNotifications, ...notifications.setting_value });
+      if (features?.setting_value) setFeatureFlags({ ...defaultFeatures, ...features.setting_value });
+    }
+  }, [dbSettings]);
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async ({ key, value }) => {
+      const { error } = await supabase
+        .from('platform_settings')
+        .upsert({
+          setting_key: key,
+          setting_value: value,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'setting_key' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
+    }
+  });
+
+  const handleSaveSettings = async (section) => {
+    setSaving(section);
+    try {
+      let key, value;
+      switch (section) {
+        case 'General':
+          key = 'general';
+          value = generalSettings;
+          break;
+        case 'Notification':
+          key = 'notifications';
+          value = notificationSettings;
+          break;
+        case 'Feature':
+          key = 'features';
+          value = featureFlags;
+          break;
+        default:
+          return;
+      }
+      await saveMutation.mutateAsync({ key, value });
+      toast.success(`${section} settings saved successfully`);
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error(`Failed to save ${section.toLowerCase()} settings`);
+    } finally {
+      setSaving(null);
+    }
   };
 
   return (
@@ -181,8 +256,8 @@ export default function HQSettings() {
                   </div>
                 </div>
 
-                <Button onClick={() => handleSaveSettings('General')} className="gap-2">
-                  <Save className="w-4 h-4" />
+                <Button onClick={() => handleSaveSettings('General')} className="gap-2" disabled={saving === 'General'}>
+                  {saving === 'General' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save General Settings
                 </Button>
               </div>
@@ -248,8 +323,8 @@ export default function HQSettings() {
                   </div>
                 </div>
 
-                <Button onClick={() => handleSaveSettings('Notification')} className="gap-2">
-                  <Save className="w-4 h-4" />
+                <Button onClick={() => handleSaveSettings('Notification')} className="gap-2" disabled={saving === 'Notification'}>
+                  {saving === 'Notification' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Notification Settings
                 </Button>
               </div>
@@ -328,8 +403,8 @@ export default function HQSettings() {
                   />
                 </div>
 
-                <Button onClick={() => handleSaveSettings('Feature')} className="gap-2">
-                  <Save className="w-4 h-4" />
+                <Button onClick={() => handleSaveSettings('Feature')} className="gap-2" disabled={saving === 'Feature'}>
+                  {saving === 'Feature' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Feature Flags
                 </Button>
               </div>

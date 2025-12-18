@@ -4,6 +4,17 @@
 -- ============================================
 
 -- ============================================
+-- DROP DUPLICATE TABLES FROM 015_payments.sql
+-- These tables were created with UUID user_id (auth.users)
+-- but we need TEXT user_id for Clerk authentication
+-- ============================================
+DROP TABLE IF EXISTS platform_settings CASCADE;
+DROP TABLE IF EXISTS webhook_events CASCADE;
+DROP TABLE IF EXISTS payment_methods CASCADE;
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS user_subscriptions CASCADE;
+
+-- ============================================
 -- 1. USERS TABLE (for Clerk sync)
 -- ============================================
 CREATE TABLE IF NOT EXISTS users (

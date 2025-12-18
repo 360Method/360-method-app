@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase, Operator } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import OperatorLayout from '@/components/operator/OperatorLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +15,12 @@ import {
   CheckCircle,
   AlertCircle,
   DollarSign,
-  User
+  User,
+  Loader2
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
+  'pending': { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   'pending_approval': { label: 'Pending Approval', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   'assigned': { label: 'Assigned', color: 'bg-blue-100 text-blue-700', icon: User },
   'in_progress': { label: 'In Progress', color: 'bg-purple-100 text-purple-700', icon: Wrench },
@@ -23,52 +29,56 @@ const STATUS_CONFIG = {
 };
 
 export default function OperatorWorkOrders() {
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState('kanban');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock work orders
-  const workOrders = [
-    {
-      id: '1',
-      property_address: '123 Oak St',
-      client_name: 'Sarah Johnson',
-      description: 'Replace HVAC filter and check thermostat',
-      trade: 'HVAC',
-      priority: 'Medium',
-      status: 'assigned',
-      contractor_name: 'ABC HVAC Services',
-      estimated_cost: 150,
-      days_in_status: 2,
-      created_date: new Date().toISOString()
+  // Fetch operator profile
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator', user?.id],
+    queryFn: async () => {
+      const operators = await Operator.filter({ user_id: user?.id });
+      return operators[0] || null;
     },
-    {
-      id: '2',
-      property_address: '456 Elm Ave',
-      client_name: 'Mike Peterson',
-      description: 'Fix leaking kitchen faucet',
-      trade: 'Plumbing',
-      priority: 'High',
-      status: 'in_progress',
-      contractor_name: 'QuickFix Plumbing',
-      estimated_cost: 250,
-      days_in_status: 1,
-      created_date: new Date(Date.now() - 86400000).toISOString()
+    enabled: !!user?.id
+  });
+
+  // Fetch work orders from database
+  const { data: workOrders = [], isLoading } = useQuery({
+    queryKey: ['operator-work-orders', myOperator?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select(`
+          *,
+          operator_clients!work_orders_client_id_fkey(contact_name, property_address),
+          contractors(business_name)
+        `)
+        .eq('operator_id', myOperator.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform data to match expected format
+      return (data || []).map(wo => ({
+        id: wo.id,
+        property_address: wo.operator_clients?.property_address || wo.property_address || 'N/A',
+        client_name: wo.operator_clients?.contact_name || wo.client_name || 'Unknown',
+        description: wo.description || wo.title || 'Work order',
+        trade: wo.trade || wo.category || 'General',
+        priority: wo.priority || 'Medium',
+        status: wo.status || 'pending',
+        contractor_name: wo.contractors?.business_name || wo.contractor_name || null,
+        estimated_cost: wo.estimated_cost || wo.amount || 0,
+        days_in_status: wo.status_updated_at
+          ? Math.floor((Date.now() - new Date(wo.status_updated_at)) / (1000 * 60 * 60 * 24))
+          : Math.floor((Date.now() - new Date(wo.created_at)) / (1000 * 60 * 60 * 24)),
+        created_date: wo.created_at
+      }));
     },
-    {
-      id: '3',
-      property_address: '789 Pine Rd',
-      client_name: 'Lisa Chen',
-      description: 'Roof inspection and minor repair',
-      trade: 'Roofing',
-      priority: 'Medium',
-      status: 'pending_approval',
-      contractor_name: null,
-      estimated_cost: 500,
-      days_in_status: 3,
-      created_date: new Date(Date.now() - 259200000).toISOString()
-    }
-  ];
+    enabled: !!myOperator?.id
+  });
 
   const groupedByStatus = workOrders.reduce((acc, wo) => {
     if (!acc[wo.status]) acc[wo.status] = [];
@@ -85,14 +95,25 @@ export default function OperatorWorkOrders() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <OperatorLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </OperatorLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
+    <OperatorLayout>
+      <div className="p-4 md:p-6 lg:p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Work Orders</h1>
-            <p className="text-gray-600">{workOrders.length} active work orders</p>
+            <p className="text-gray-600">{workOrders.length} work orders</p>
           </div>
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
@@ -236,7 +257,20 @@ export default function OperatorWorkOrders() {
             })}
           </div>
         )}
+
+        {/* Empty state */}
+        {workOrders.length === 0 && (
+          <Card className="p-12 text-center">
+            <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No work orders yet</h3>
+            <p className="text-gray-500 mb-4">Create your first work order to get started</p>
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create Work Order
+            </Button>
+          </Card>
+        )}
       </div>
-    </div>
+    </OperatorLayout>
   );
 }

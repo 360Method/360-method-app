@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { auth } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Building2, MapPin, Wrench } from 'lucide-react';
+import { CheckCircle, Building2, MapPin, Wrench, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 
@@ -23,12 +24,18 @@ const TRADE_OPTIONS = [
 ];
 
 export default function ContractorOnboarding() {
+  const { user, clerkUser } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
     company_name: '',
-    contact_name: '',
+    contact_name: user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : '',
+    email: user?.email || '',
     phone: '',
+    trade_types: [],
     trade_specialties: [],
+    zip_code: '',
     service_areas: []
   });
   const [zipInput, setZipInput] = useState('');
@@ -36,22 +43,67 @@ export default function ContractorOnboarding() {
   const queryClient = useQueryClient();
 
   const completeOnboardingMutation = useMutation({
-    mutationFn: (data) => auth.updateMe({
-      ...data,
-      contractor_onboarding_completed: true
-    }),
+    mutationFn: async (data) => {
+      // Parse name from contact_name if first/last not provided
+      const nameParts = (data.contact_name || '').split(' ');
+      const firstName = data.first_name || nameParts[0] || '';
+      const lastName = data.last_name || nameParts.slice(1).join(' ') || '';
+
+      // Create contractor record in database
+      const contractorData = {
+        user_id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email: data.email,
+        phone: data.phone,
+        trade_types: data.trade_specialties,
+        service_areas: data.service_areas,
+        status: 'active',
+        available: true
+      };
+
+      const contractor = await Contractor.create(contractorData);
+
+      // Update Clerk metadata
+      const currentMetadata = clerkUser?.publicMetadata || {};
+      const currentRoles = currentMetadata.roles || ['owner'];
+
+      await clerkUser?.update({
+        publicMetadata: {
+          ...currentMetadata,
+          roles: currentRoles.includes('contractor')
+            ? currentRoles
+            : [...currentRoles, 'contractor'],
+          active_role: 'contractor',
+          contractor_profile: {
+            contractor_id: contractor.id,
+            onboarding_completed: true,
+            onboarding_date: new Date().toISOString()
+          }
+        }
+      });
+
+      return contractor;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['contractor-profile'] });
+      toast.success('Welcome! Your contractor profile is set up.');
       window.location.href = createPageUrl('ContractorDashboard');
+    },
+    onError: (error) => {
+      console.error('Onboarding failed:', error);
+      toast.error('Failed to complete setup. Please try again.');
     }
   });
 
   const handleToggleTrade = (trade) => {
+    const updatedTrades = formData.trade_specialties.includes(trade)
+      ? formData.trade_specialties.filter(t => t !== trade)
+      : [...formData.trade_specialties, trade];
     setFormData({
       ...formData,
-      trade_specialties: formData.trade_specialties.includes(trade)
-        ? formData.trade_specialties.filter(t => t !== trade)
-        : [...formData.trade_specialties, trade]
+      trade_types: updatedTrades,
+      trade_specialties: updatedTrades
     });
   };
 
@@ -66,7 +118,7 @@ export default function ContractorOnboarding() {
   };
 
   const handleComplete = () => {
-    if (!formData.company_name || !formData.contact_name || 
+    if (!formData.company_name || !formData.contact_name ||
         formData.trade_specialties.length === 0 || formData.service_areas.length === 0) {
       toast.error('Please complete all required fields');
       return;

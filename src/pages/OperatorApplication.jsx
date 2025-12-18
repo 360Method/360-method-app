@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
+import { Operator, OperatorServiceArea } from '@/api/supabaseClient';
 import {
   Building,
   ArrowRight,
@@ -27,6 +29,7 @@ import {
 export default function OperatorApplication() {
   const navigate = useNavigate();
   const { user, isAuthenticated, clerkUser } = useAuth();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,34 +102,71 @@ export default function OperatorApplication() {
     setIsSubmitting(true);
 
     try {
-      // Here we would:
-      // 1. Create operator record in Supabase
-      // 2. Update Clerk metadata to add operator role
-      // 3. Redirect to payment
+      // 1. Create operator record in database
+      const operatorData = {
+        user_id: user.id,
+        company_name: formData.company_name,
+        business_type: formData.business_type,
+        years_in_business: formData.years_in_business,
+        business_phone: formData.phone,
+        website: formData.website || '',
+        service_radius_miles: parseInt(formData.service_radius) || 25,
+        service_types: formData.service_types || [],
+        application_status: 'submitted',
+        application_submitted_at: new Date().toISOString(),
+        certified: false,
+        stripe_account_status: 'pending',
+        contact_email: formData.email,
+        contact_name: `${formData.first_name} ${formData.last_name}`,
+        employees_count: formData.employees_count || null,
+        description: formData.description || ''
+      };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const operatorRecord = await Operator.create(operatorData);
 
-      // Update user metadata to add operator role (in real implementation)
-      // await clerkUser?.update({
-      //   publicMetadata: {
-      //     ...clerkUser.publicMetadata,
-      //     roles: [...(clerkUser.publicMetadata.roles || ['owner']), 'operator'],
-      //     operator_profile: {
-      //       company_name: formData.company_name,
-      //       certified: false,
-      //       training_completed: false,
-      //       application_submitted: true,
-      //       application_date: new Date().toISOString()
-      //     }
-      //   }
-      // });
+      // 2. Create service area records if any zip codes provided
+      if (formData.service_areas?.length > 0) {
+        for (const zipCode of formData.service_areas) {
+          await OperatorServiceArea.create({
+            operator_id: operatorRecord.id,
+            zip_code: zipCode,
+            active: true
+          });
+        }
+      }
 
-      // For now, redirect to pending page
+      // 3. Update Clerk metadata with operator role
+      const currentMetadata = clerkUser?.publicMetadata || {};
+      const currentRoles = currentMetadata.roles || ['owner'];
+
+      await clerkUser?.update({
+        publicMetadata: {
+          ...currentMetadata,
+          roles: currentRoles.includes('operator')
+            ? currentRoles
+            : [...currentRoles, 'operator'],
+          active_role: 'operator',
+          operator_profile: {
+            operator_id: operatorRecord.id,
+            company_name: formData.company_name,
+            certified: false,
+            training_completed: false,
+            application_submitted: true,
+            application_date: new Date().toISOString()
+          }
+        }
+      });
+
+      // 4. Navigate to pending page
       navigate('/OperatorPending');
 
     } catch (error) {
       console.error('Application submission failed:', error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Please try again later",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }

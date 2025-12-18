@@ -1,6 +1,7 @@
 import React from "react";
-import { MaintenanceTask } from "@/api/supabaseClient";
+import { MaintenanceTask, supabase } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,17 +89,19 @@ function checkOperatorAvailability(property) {
   return CLARK_COUNTY_ZIPS.includes(property.zip_code);
 }
 
-export default function PriorityTaskCard({ 
-  task, 
-  onSendToSchedule, 
-  onMarkComplete, 
+export default function PriorityTaskCard({
+  task,
+  onSendToSchedule,
+  onMarkComplete,
   onDelete,
   property,
   compact = false,
-  canEdit = true
+  canEdit = true,
+  regionalCostMultipliers = null
 }) {
   const queryClient = useQueryClient();
   const { demoMode } = useDemo();
+  const { user } = useAuth();
   const [expanded, setExpanded] = React.useState(false);
   const [showAddToCart, setShowAddToCart] = React.useState(false);
   const [showEditForm, setShowEditForm] = React.useState(false);
@@ -126,8 +129,17 @@ export default function PriorityTaskCard({
 
   const cascadeRiskScore = task.cascade_risk_score || 0;
   const hasCascadeAlert = cascadeRiskScore >= 7;
-  const currentCost = task.current_fix_cost || 0;
-  const delayedCost = task.delayed_fix_cost || 0;
+
+  // Apply regional cost multipliers if available
+  const hasRegionalData = regionalCostMultipliers?.hasData;
+  const multiplier = hasRegionalData ? (regionalCostMultipliers.overall || 1.0) : 1.0;
+
+  const baseCost = task.current_fix_cost || 0;
+  const baseDelayedCost = task.delayed_fix_cost || 0;
+
+  // Adjust costs based on region
+  const currentCost = hasRegionalData ? Math.round(baseCost * multiplier) : baseCost;
+  const delayedCost = hasRegionalData ? Math.round(baseDelayedCost * multiplier) : baseDelayedCost;
   const potentialSavings = delayedCost - currentCost;
   
   const flowType = getPropertyFlowType(property);
@@ -217,15 +229,40 @@ export default function PriorityTaskCard({
     setContractorForm({ name: '', phone: '', email: '', cost: '', date: '' });
   };
 
-  const handleOperatorRequest = () => {
-    updateTaskMutation.mutate({
-      taskId: task.id,
-      data: {
-        status: 'Scheduled',
-        execution_method: '360_Operator'
+  const handleOperatorRequest = async () => {
+    try {
+      // Create service request for 360 Operator
+      if (!demoMode && user?.id) {
+        const { error: serviceRequestError } = await supabase
+          .from('service_requests')
+          .insert({
+            user_id: user.id,
+            property_id: task.property_id,
+            task_id: task.id,
+            service_type: task.system_type || 'General',
+            description: `${task.title}: ${task.description || 'No additional details'}`,
+            urgency: task.priority === 'High' ? 'High' : task.priority === 'Emergency' ? 'Emergency' : 'Medium',
+            status: 'Submitted'
+          });
+
+        if (serviceRequestError) {
+          console.error('Error creating service request:', serviceRequestError);
+        }
       }
-    });
-    setShowOperatorModal(false);
+
+      // Update task status
+      updateTaskMutation.mutate({
+        taskId: task.id,
+        data: {
+          status: 'Scheduled',
+          execution_method: '360_Operator'
+        }
+      });
+      setShowOperatorModal(false);
+    } catch (error) {
+      console.error('Error in handleOperatorRequest:', error);
+      setShowOperatorModal(false);
+    }
   };
 
   if (compact) {
@@ -392,6 +429,21 @@ export default function PriorityTaskCard({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Regional Cost Adjustment Indicator */}
+          {hasRegionalData && (currentCost > 0 || delayedCost > 0) && multiplier !== 1.0 && (
+            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>
+                Costs adjusted for <strong>{regionalCostMultipliers.region || regionalCostMultipliers.state || 'your region'}</strong>
+                {multiplier > 1 ? ` (+${Math.round((multiplier - 1) * 100)}% vs national avg)` :
+                 multiplier < 1 ? ` (${Math.round((multiplier - 1) * 100)}% vs national avg)` : ''}
+              </span>
             </div>
           )}
 
@@ -1037,7 +1089,7 @@ export default function PriorityTaskCard({
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   style={{ minHeight: '48px' }}
                 >
-                  Join Waitlist
+                  Notify Me When Available
                 </Button>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
+import PropertyDetail from './pages/PropertyDetail';
 import Baseline from './pages/Baseline';
 import Inspect from './pages/Inspect';
 import Track from './pages/Track';
@@ -164,6 +165,7 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "Dashboard": Dashboard,
     "Properties": Properties,
+    "PropertyDetail": PropertyDetail,
     "Baseline": Baseline,
     "Inspect": Inspect,
     "Track": Track,

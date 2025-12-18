@@ -19,7 +19,11 @@ import {
   Clock,
   Activity,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Mail,
+  MessageSquare,
+  Target,
+  Send
 } from 'lucide-react';
 
 export default function HQDashboard() {
@@ -143,6 +147,54 @@ export default function HQDashboard() {
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 10);
     }
+  });
+
+  // Fetch marketing metrics
+  const { data: marketingStats = {} } = useQuery({
+    queryKey: ['hq-marketing-stats'],
+    queryFn: async () => {
+      // Get Mailchimp contact stats
+      const { data: mailchimpContacts } = await supabase
+        .from('mailchimp_contacts')
+        .select('status');
+
+      const mailchimp = mailchimpContacts || [];
+      const subscribedCount = mailchimp.filter(c => c.status === 'subscribed').length;
+      const pendingSyncCount = mailchimp.filter(c => c.status === 'pending').length;
+
+      // Get SMS campaign stats
+      const { data: smsCampaigns } = await supabase
+        .from('sms_campaigns')
+        .select('status, total_sent, total_delivered');
+
+      const sms = smsCampaigns || [];
+      const activeSMSCampaigns = sms.filter(c => c.status === 'sending').length;
+      const totalSMSSent = sms.reduce((sum, c) => sum + (c.total_sent || 0), 0);
+      const totalSMSDelivered = sms.reduce((sum, c) => sum + (c.total_delivered || 0), 0);
+
+      // Get lead pipeline stats
+      const { data: leads } = await supabase
+        .from('operator_leads')
+        .select('stage');
+
+      const leadData = leads || [];
+      const newLeads = leadData.filter(l => l.stage === 'new').length;
+      const quotedLeads = leadData.filter(l => l.stage === 'quoted').length;
+      const wonLeads = leadData.filter(l => l.stage === 'won').length;
+
+      return {
+        emailSubscribers: subscribedCount,
+        pendingSync: pendingSyncCount,
+        activeSMSCampaigns,
+        totalSMSSent,
+        totalSMSDelivered,
+        newLeads,
+        quotedLeads,
+        wonLeads,
+        totalLeads: leadData.length
+      };
+    },
+    refetchInterval: 60000
   });
 
   const formatTimeAgo = (timestamp) => {
@@ -333,6 +385,97 @@ export default function HQDashboard() {
             Generate Reports
           </Button>
         </div>
+
+        {/* Marketing Metrics */}
+        <Card className="p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Marketing & Sales</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-blue-600"
+              onClick={() => window.location.href = createPageUrl('HQCampaigns')}
+            >
+              View All Campaigns
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Email Subscribers */}
+            <div
+              className="p-4 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+              onClick={() => window.location.href = createPageUrl('HQMailchimp')}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Email Subscribers</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-900">
+                {marketingStats.emailSubscribers || 0}
+              </div>
+              {marketingStats.pendingSync > 0 && (
+                <div className="text-xs text-blue-600 mt-1">
+                  {marketingStats.pendingSync} pending sync
+                </div>
+              )}
+            </div>
+
+            {/* SMS Campaigns */}
+            <div
+              className="p-4 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+              onClick={() => window.location.href = createPageUrl('HQSMSCampaigns')}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-green-800">SMS Sent</span>
+              </div>
+              <div className="text-2xl font-bold text-green-900">
+                {marketingStats.totalSMSSent || 0}
+              </div>
+              {marketingStats.activeSMSCampaigns > 0 && (
+                <div className="text-xs text-green-600 mt-1">
+                  {marketingStats.activeSMSCampaigns} active campaigns
+                </div>
+              )}
+            </div>
+
+            {/* Lead Pipeline */}
+            <div
+              className="p-4 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors"
+              onClick={() => window.location.href = createPageUrl('HQLeads')}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-5 h-5 text-purple-600" />
+                <span className="text-sm font-medium text-purple-800">Active Leads</span>
+              </div>
+              <div className="text-2xl font-bold text-purple-900">
+                {marketingStats.totalLeads || 0}
+              </div>
+              <div className="text-xs text-purple-600 mt-1">
+                {marketingStats.newLeads || 0} new, {marketingStats.quotedLeads || 0} quoted
+              </div>
+            </div>
+
+            {/* Conversion */}
+            <div
+              className="p-4 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
+              onClick={() => window.location.href = createPageUrl('HQLeads')}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-orange-600" />
+                <span className="text-sm font-medium text-orange-800">Won Leads</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-900">
+                {marketingStats.wonLeads || 0}
+              </div>
+              <div className="text-xs text-orange-600 mt-1">
+                {marketingStats.totalLeads > 0
+                  ? `${Math.round((marketingStats.wonLeads / marketingStats.totalLeads) * 100)}% conversion`
+                  : '0% conversion'}
+              </div>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Recent Activity */}

@@ -414,11 +414,11 @@ export default function ScaleSingleProperty({ property, systems = [], demoMode =
           </div>
 
           <Button
-            onClick={() => navigate(createPageUrl('Waitlist') + '?source=scale-upgrade')}
+            onClick={() => navigate('/Signup?source=scale-upgrade')}
             className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white py-6 text-lg font-bold"
           >
             <Plus className="w-6 h-6 mr-2" />
-            Join Waitlist - I Want Portfolio Features
+            Upgrade for Portfolio Features
           </Button>
 
           {demoMode && (

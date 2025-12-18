@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Property, MaintenanceTask, MaintenanceTemplate, auth } from "@/api/supabaseClient";
+import { Property, MaintenanceTask, MaintenanceTemplate, auth, RegionalCosts } from "@/api/supabaseClient";
 import PrerequisitePopup from "../components/shared/PrerequisitePopup";
 import { getPrerequisiteInfo } from "../components/shared/navigationConfig";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -208,6 +208,39 @@ export default function PrioritizePage() {
       }
       return MaintenanceTemplate.list();
     }
+  });
+
+  // Fetch regional costs for the selected property
+  const { data: regionalCostData } = useQuery({
+    queryKey: ['regionalCosts', selectedProperty],
+    queryFn: async () => {
+      if (demoMode) {
+        // Demo mode: return example multipliers for demo property
+        return {
+          hasData: true,
+          overall: 1.12, // 12% above national average (Pacific Northwest)
+          labor: 1.15,
+          materials: 1.08,
+          region: 'Pacific Northwest',
+          state: 'WA'
+        };
+      }
+
+      const property = selectedProperty !== 'all'
+        ? properties.find(p => p.id === selectedProperty)
+        : properties[0];
+
+      if (!property?.zip_code) return { hasData: false, overall: 1.0 };
+
+      const costs = await RegionalCosts.getWithFallback(
+        property.zip_code,
+        property.city,
+        property.state
+      );
+
+      return RegionalCosts.getCostMultipliers(costs);
+    },
+    enabled: demoMode || (properties.length > 0 && !!selectedProperty)
   });
 
   // Use demo tasks OR real tasks
@@ -434,10 +467,52 @@ export default function PrioritizePage() {
     );
   };
 
+  // Helper function to calculate cascade risk score
+  const calculateCascadeRisk = (systemType, priority = 'Medium') => {
+    // Base risk by system type
+    const baseRiskBySystem = {
+      'Foundation & Structure': 9,
+      'Roof System': 8,
+      'Plumbing System': 7,
+      'Water & Sewer/Septic': 7,
+      'Electrical System': 6,
+      'HVAC System': 5,
+      'Appliances': 3,
+      'Interior': 2,
+      'Exterior': 4,
+      'General': 5
+    };
+
+    // Priority multiplier
+    const priorityMultiplier = {
+      'High': 1.5,
+      'Emergency': 2.0,
+      'Medium': 1.0,
+      'Low': 0.5,
+      'Routine': 0.3
+    };
+
+    const baseRisk = baseRiskBySystem[systemType] || 5;
+    const mult = priorityMultiplier[priority] || 1.0;
+    const score = Math.min(10, Math.round(baseRisk * mult));
+
+    // Generate reason based on score
+    const reason = score >= 7
+      ? `${systemType} issues with ${priority?.toLowerCase() || 'moderate'} priority have high risk of triggering additional failures if left unaddressed.`
+      : score >= 4
+      ? `${systemType} issues could affect 1-2 other systems over time if not addressed.`
+      : `Lower risk, but should still be addressed to prevent potential escalation.`;
+
+    return { score, reason };
+  };
+
   // Helper to create a single task from template data - UPDATED
   const createTaskFromTemplate = async (template, propertyId, unitTag = undefined, scope = 'property_wide', appliesToUnitCount = undefined, batchId = undefined) => {
     if (!canEdit) return;
     try {
+      // Calculate cascade risk for this task
+      const cascadeRisk = calculateCascadeRisk(template.system_type, template.priority || 'Routine');
+
       const taskData = {
         property_id: propertyId,
         title: template.title,
@@ -451,7 +526,11 @@ export default function PrioritizePage() {
         unit_tag: unitTag, // Add unit_tag here
         scope: scope, // NEW
         applies_to_unit_count: appliesToUnitCount, // NEW
-        batch_id: batchId // NEW
+        batch_id: batchId, // NEW
+        // Cascade risk fields
+        cascade_risk_score: cascadeRisk.score,
+        cascade_risk_reason: cascadeRisk.reason,
+        has_cascade_alert: cascadeRisk.score >= 7
       };
 
       const newTask = await MaintenanceTask.create(taskData);
@@ -1172,6 +1251,7 @@ export default function PrioritizePage() {
                     selectedTasks={selectedTasks}
                     onToggleTask={toggleTaskSelection}
                     canEdit={canEdit}
+                    regionalCostMultipliers={regionalCostData}
                   />
                 ))}
               </>
@@ -1189,6 +1269,7 @@ export default function PrioritizePage() {
                     selectedTasks={selectedTasks}
                     onToggleTask={toggleTaskSelection}
                     canEdit={canEdit}
+                    regionalCostMultipliers={regionalCostData}
                   />
                 ))}
               </>

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   Briefcase,
@@ -24,128 +28,118 @@ import {
 } from 'lucide-react';
 
 export default function ContractorJobs() {
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filters = [
-    { id: 'all', label: 'All Jobs', count: 12 },
-    { id: 'today', label: 'Today', count: 2 },
-    { id: 'upcoming', label: 'Upcoming', count: 4 },
-    { id: 'in_progress', label: 'In Progress', count: 1 },
-    { id: 'completed', label: 'Completed', count: 5 }
-  ];
+  // Fetch contractor profile
+  const { data: contractor } = useQuery({
+    queryKey: ['contractor-profile', user?.id],
+    queryFn: async () => {
+      const contractors = await Contractor.filter({ user_id: user?.id });
+      return contractors?.[0] || null;
+    },
+    enabled: !!user?.id
+  });
 
-  const jobs = [
-    {
-      id: '1',
-      title: 'Gutter Repair & Cleaning',
-      property_address: '123 Oak Street',
-      city: 'Portland',
-      state: 'OR',
-      scheduled_date: 'Today',
-      scheduled_time: '9:00 AM',
-      priority: 'high',
-      status: 'ready',
-      estimated_budget: 350,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Sarah Johnson',
-      description: 'Clean gutters and repair damaged section near garage'
+  // Fetch all contractor jobs with work order details
+  const { data: jobsData, isLoading } = useQuery({
+    queryKey: ['contractor-jobs-all', contractor?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            description,
+            priority,
+            scheduled_date,
+            scheduled_time,
+            estimated_cost,
+            property:properties (
+              street_address,
+              city,
+              state,
+              zip_code,
+              user_id
+            ),
+            operator:operators (
+              company_name
+            )
+          )
+        `)
+        .eq('contractor_id', contractor?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     },
-    {
-      id: '2',
-      title: 'Kitchen Faucet Replacement',
-      property_address: '456 Elm Avenue',
-      city: 'Portland',
-      state: 'OR',
-      scheduled_date: 'Today',
-      scheduled_time: '2:00 PM',
-      priority: 'medium',
-      status: 'ready',
-      estimated_budget: 180,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Mike Chen',
-      description: 'Replace kitchen faucet with new Moen fixture'
-    },
-    {
-      id: '3',
-      title: 'HVAC Filter Service',
-      property_address: '789 Pine Road',
-      city: 'Beaverton',
-      state: 'OR',
-      scheduled_date: 'Tomorrow',
-      scheduled_time: '9:00 AM',
-      priority: 'low',
-      status: 'scheduled',
-      estimated_budget: 120,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Lisa Park',
-      description: 'Replace HVAC filters and inspect system'
-    },
-    {
-      id: '4',
-      title: 'Exterior Caulking',
-      property_address: '321 Maple Drive',
-      city: 'Lake Oswego',
-      state: 'OR',
-      scheduled_date: 'Wed, Dec 4',
-      scheduled_time: '10:00 AM',
-      priority: 'medium',
-      status: 'scheduled',
-      estimated_budget: 200,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Tom Williams',
-      description: 'Re-caulk windows and door frames'
-    },
-    {
-      id: 'active',
-      title: 'Water Heater Inspection',
-      property_address: '999 Cedar Lane',
-      city: 'Portland',
-      state: 'OR',
-      scheduled_date: 'Today',
-      scheduled_time: '11:00 AM',
-      priority: 'high',
-      status: 'in_progress',
-      estimated_budget: 150,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Amy Davis',
-      description: 'Annual water heater inspection and flush',
-      elapsed_time: '01:23:45'
-    },
-    {
-      id: '5',
-      title: 'Exterior Paint Touch-up',
-      property_address: '555 Cedar Lane',
-      city: 'Portland',
-      state: 'OR',
-      scheduled_date: 'Yesterday',
-      scheduled_time: '10:00 AM',
-      priority: 'low',
-      status: 'completed',
-      estimated_budget: 450,
-      actual_earned: 450,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'James Wilson',
-      description: 'Touch up exterior paint on trim and fascia',
-      rating: 5
-    },
-    {
-      id: '6',
-      title: 'Toilet Repair',
-      property_address: '777 Birch Blvd',
-      city: 'Tigard',
-      state: 'OR',
-      scheduled_date: '2 days ago',
-      scheduled_time: '1:00 PM',
-      priority: 'high',
-      status: 'completed',
-      estimated_budget: 150,
-      actual_earned: 150,
-      operator_name: 'Handy Pioneers',
-      owner_name: 'Karen Brown',
-      description: 'Fix running toilet and replace flapper',
-      rating: 5
-    }
+    enabled: !!contractor?.id
+  });
+
+  // Helper to format date for display
+  const formatJobDate = (dateStr) => {
+    if (!dateStr) return 'TBD';
+    const date = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+    const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+    if (diffDays > 0 && diffDays < 7) return `${diffDays} days ago`;
+
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  // Transform jobs data
+  const jobs = jobsData?.map(job => ({
+    id: job.id,
+    title: job.work_order?.title || 'Untitled Job',
+    property_address: job.work_order?.property?.street_address || 'Address not set',
+    city: job.work_order?.property?.city || '',
+    state: job.work_order?.property?.state || '',
+    scheduled_date: formatJobDate(job.work_order?.scheduled_date),
+    raw_date: job.work_order?.scheduled_date,
+    scheduled_time: job.work_order?.scheduled_time || 'TBD',
+    priority: job.work_order?.priority || 'medium',
+    status: job.status === 'accepted' ? 'ready' : job.status,
+    estimated_budget: job.work_order?.estimated_cost || 0,
+    actual_earned: (job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 50),
+    operator_name: job.work_order?.operator?.company_name || 'Unknown Operator',
+    owner_name: 'Property Owner', // Would need user lookup
+    description: job.work_order?.description || '',
+    elapsed_time: job.started_at && job.status === 'in_progress'
+      ? formatElapsedTime(new Date(job.started_at))
+      : null,
+    rating: 5, // TODO: Fetch from reviews
+    completed_at: job.completed_at
+  })) || [];
+
+  // Helper to calculate elapsed time
+  function formatElapsedTime(startTime) {
+    const elapsed = Date.now() - startTime.getTime();
+    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Calculate filter counts
+  const today = new Date().toISOString().split('T')[0];
+  const filters = [
+    { id: 'all', label: 'All Jobs', count: jobs.length },
+    { id: 'today', label: 'Today', count: jobs.filter(j => j.raw_date === today && j.status !== 'completed').length },
+    { id: 'upcoming', label: 'Upcoming', count: jobs.filter(j => j.raw_date && j.raw_date > today && j.status !== 'completed').length },
+    { id: 'in_progress', label: 'In Progress', count: jobs.filter(j => j.status === 'in_progress').length },
+    { id: 'completed', label: 'Completed', count: jobs.filter(j => j.status === 'completed').length }
   ];
 
   const getStatusBadge = (status) => {
@@ -180,8 +174,8 @@ export default function ContractorJobs() {
 
   const filteredJobs = jobs.filter(job => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'today') return job.scheduled_date === 'Today';
-    if (activeFilter === 'upcoming') return ['Tomorrow', 'Wed, Dec 4', 'Thu, Dec 5'].includes(job.scheduled_date);
+    if (activeFilter === 'today') return job.raw_date === today && job.status !== 'completed';
+    if (activeFilter === 'upcoming') return job.raw_date && job.raw_date > today && job.status !== 'completed';
     if (activeFilter === 'in_progress') return job.status === 'in_progress';
     if (activeFilter === 'completed') return job.status === 'completed';
     return true;
@@ -194,6 +188,19 @@ export default function ContractorJobs() {
       job.owner_name.toLowerCase().includes(query)
     );
   });
+
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="p-4 md:p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading jobs...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   return (
     <ContractorLayout>

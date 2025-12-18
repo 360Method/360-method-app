@@ -125,10 +125,10 @@ export default function PortalMarketplace() {
               No Operators Available
             </div>
             <div className="text-sm text-gray-600 mb-4">
-              We don't have operators in {zipCode} yet. Join our waitlist to be notified when service becomes available.
+              We don't have operators in {zipCode} yet. Sign up to be notified when service becomes available.
             </div>
             <Button>
-              Join Waitlist
+              Notify Me When Available
             </Button>
           </Card>
         ) : (

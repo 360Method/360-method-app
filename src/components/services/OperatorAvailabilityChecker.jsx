@@ -173,8 +173,8 @@ export default function OperatorAvailabilityChecker({ zipCode, propertyAddress }
                   className="flex-1 gap-2"
                   style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
                 >
-                  <Link to={createPageUrl("Waitlist") + `?area=${availability.areaId}&zip=${zipCode}`}>
-                    Join Waitlist
+                  <Link to={createPageUrl("FindOperator") + `?area=${availability.areaId}&zip=${zipCode}`}>
+                    Notify Me When Available
                   </Link>
                 </Button>
               )}
@@ -230,8 +230,8 @@ export default function OperatorAvailabilityChecker({ zipCode, propertyAddress }
             className="gap-2"
             style={{ backgroundColor: '#1B365D', minHeight: '48px' }}
           >
-            <Link to={createPageUrl("Waitlist") + `?zip=${zipCode}`}>
-              Join Waitlist
+            <Link to={createPageUrl("FindOperator") + `?zip=${zipCode}`}>
+              Notify Me When Available
             </Link>
           </Button>
           <Button

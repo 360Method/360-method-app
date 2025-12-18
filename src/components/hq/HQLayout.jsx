@@ -19,7 +19,11 @@ import {
   FileText,
   AlertTriangle,
   Menu,
-  X
+  X,
+  Mail,
+  Target,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +57,16 @@ const HQ_NAVIGATION = [
     items: [
       { id: 'support', label: 'Support Tickets', icon: TicketCheck, url: createPageUrl('HQSupport'), subtitle: 'Customer issues' },
       { id: 'alerts', label: 'System Alerts', icon: AlertTriangle, url: createPageUrl('HQAlerts'), subtitle: 'Platform health' },
+    ]
+  },
+  {
+    section: 'Marketing',
+    items: [
+      { id: 'leads', label: 'Leads', icon: Target, url: createPageUrl('HQLeads'), subtitle: 'Lead pipeline' },
+      { id: 'campaigns', label: 'Campaigns', icon: Send, url: createPageUrl('HQCampaigns'), subtitle: 'All campaigns' },
+      { id: 'mailchimp', label: 'Email Sync', icon: Mail, url: createPageUrl('HQMailchimp'), subtitle: 'Mailchimp' },
+      { id: 'sms', label: 'SMS Campaigns', icon: MessageSquare, url: createPageUrl('HQSMSCampaigns'), subtitle: 'Twilio' },
+      { id: 'legal', label: 'Legal Docs', icon: FileText, url: createPageUrl('HQLegal'), subtitle: 'TOS & Policies' },
     ]
   },
   {

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/AuthContext';
+import { ContractorInvitation, Contractor } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import { SignUp, SignIn } from '@clerk/clerk-react';
 import {
   Wrench,
@@ -35,7 +38,7 @@ export default function ContractorAcceptInvitation() {
   // Get invitation token from URL
   const token = searchParams.get('token');
 
-  // Mock invitation data - in real app, fetch from API
+  // Fetch invitation from database
   useEffect(() => {
     const validateInvitation = async () => {
       if (!token) {
@@ -43,22 +46,68 @@ export default function ContractorAcceptInvitation() {
         return;
       }
 
-      // Simulate API call to validate invitation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        // Fetch invitation by token
+        const { data: invData, error } = await supabase
+          .from('contractor_invitations')
+          .select(`
+            *,
+            operator:operators (
+              id,
+              company_name,
+              logo_url
+            )
+          `)
+          .eq('token', token)
+          .single();
 
-      // Mock valid invitation
-      setInvitation({
-        id: 'inv_123',
-        operator_name: 'Handy Pioneers Property Services',
-        operator_logo: null,
-        inviter_name: 'John Smith',
-        email: 'contractor@example.com',
-        trade_type: 'General Maintenance',
-        message: 'We\'d love to have you join our contractor network! We service properties across the Portland metro area.',
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      });
-      setInvitationStatus('valid');
+        if (error || !invData) {
+          setInvitationStatus('invalid');
+          return;
+        }
+
+        // Check if expired
+        if (invData.expires_at && new Date(invData.expires_at) < new Date()) {
+          setInvitationStatus('expired');
+          return;
+        }
+
+        // Check if already accepted
+        if (invData.status === 'accepted') {
+          setInvitation({
+            id: invData.id,
+            operator_name: invData.operator?.company_name || 'Unknown Operator',
+            operator_logo: invData.operator?.logo_url,
+            inviter_name: invData.invited_by_name || 'Operator Admin',
+            email: invData.email,
+            trade_type: invData.trade_types?.[0] || 'General Maintenance',
+            message: invData.message || '',
+            created_at: invData.created_at,
+            expires_at: invData.expires_at,
+            operator_id: invData.operator_id
+          });
+          setInvitationStatus('accepted');
+          return;
+        }
+
+        // Valid invitation
+        setInvitation({
+          id: invData.id,
+          operator_name: invData.operator?.company_name || 'Unknown Operator',
+          operator_logo: invData.operator?.logo_url,
+          inviter_name: invData.invited_by_name || 'Operator Admin',
+          email: invData.email,
+          trade_type: invData.trade_types?.[0] || 'General Maintenance',
+          message: invData.message || 'We\'d love to have you join our contractor network!',
+          created_at: invData.created_at,
+          expires_at: invData.expires_at || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          operator_id: invData.operator_id
+        });
+        setInvitationStatus('valid');
+      } catch (err) {
+        console.error('Error validating invitation:', err);
+        setInvitationStatus('invalid');
+      }
     };
 
     validateInvitation();
@@ -73,19 +122,67 @@ export default function ContractorAcceptInvitation() {
     setIsAccepting(true);
 
     try {
-      // Simulate accepting invitation
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Check if contractor profile already exists for this user
+      const existingContractors = await Contractor.filter({ user_id: user.id });
+      let contractorId;
 
-      // In real app:
-      // 1. Update user metadata to add contractor role
-      // 2. Create contractor record linked to operator
-      // 3. Mark invitation as accepted
+      if (existingContractors && existingContractors.length > 0) {
+        // Use existing contractor profile
+        contractorId = existingContractors[0].id;
+      } else {
+        // Create new contractor profile
+        const newContractor = await Contractor.create({
+          user_id: user.id,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email,
+          phone: '',
+          trade_types: [invitation.trade_type],
+          status: 'active',
+          available: true
+        });
+        contractorId = newContractor.id;
+      }
+
+      // Link contractor to operator
+      const { error: linkError } = await supabase
+        .from('operator_contractors')
+        .upsert({
+          operator_id: invitation.operator_id,
+          contractor_id: contractorId,
+          status: 'active',
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'operator_id,contractor_id'
+        });
+
+      if (linkError) {
+        console.error('Error linking contractor to operator:', linkError);
+      }
+
+      // Mark invitation as accepted
+      const { error: invError } = await supabase
+        .from('contractor_invitations')
+        .update({
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+          contractor_id: contractorId
+        })
+        .eq('id', invitation.id);
+
+      if (invError) {
+        console.error('Error updating invitation:', invError);
+      }
 
       setInvitationStatus('accepted');
 
-      // Redirect to contractor onboarding after short delay
+      // Redirect to contractor dashboard or onboarding after short delay
       setTimeout(() => {
-        navigate('/ContractorOnboarding');
+        if (existingContractors && existingContractors.length > 0) {
+          navigate('/ContractorDashboard');
+        } else {
+          navigate('/ContractorOnboarding');
+        }
       }, 2000);
 
     } catch (error) {

@@ -15,7 +15,18 @@
       "Bash(claude mcp list)",
       "Bash(claude mcp remove:*)",
       "Bash(grep:*)",
-      "Bash(npx web-push:*)"
+      "Bash(npx web-push:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(del \"C:\\Users\\marci\\OneDrive\\Documents\\App_Build\\360°-Method-App\\src\\pages\\Waitlist.jsx\")",
+      "Bash(curl:*)",
+      "Bash(for route in DemoOverwhelmedBaseline DemoOverwhelmedInspect DemoOverwhelmedTrack DemoOverwhelmedPrioritize DemoOverwhelmedSchedule DemoOverwhelmedExecute DemoOverwhelmedPreserve DemoOverwhelmedUpgrade DemoOverwhelmedScale DemoOverwhelmedScore)",
+      "Bash(do echo -n \"$route: \")",
+      "Bash(done)",
+      "Bash(for route in DemoImprovingBaseline DemoImprovingInspect DemoImprovingTrack DemoImprovingPrioritize DemoImprovingSchedule DemoImprovingExecute DemoImprovingPreserve DemoImprovingUpgrade DemoImprovingScale DemoImprovingScore)",
+      "Bash(for route in DemoExcellentBaseline DemoExcellentInspect DemoExcellentTrack DemoExcellentPrioritize DemoExcellentSchedule DemoExcellentExecute DemoExcellentPreserve DemoExcellentUpgrade DemoExcellentScale DemoExcellentScore)",
+      "Bash(for route in DemoPortfolioProperties DemoPortfolioBaseline DemoPortfolioInspect DemoPortfolioTrack DemoPortfolioPrioritize DemoPortfolioSchedule DemoPortfolioExecute DemoPortfolioPreserve DemoPortfolioUpgrade DemoPortfolioScale DemoPortfolioScore)",
+      "Bash(del \"C:\\\\Users\\\\marci\\\\OneDrive\\\\Documents\\\\App_Build\\\\360°-Method-App\\\\src\\\\contexts\\\\DemoContext.jsx\")"
     ],
     "deny": [],
     "ask": []

@@ -346,8 +346,8 @@ export default function ZipCodeDetector({ onComplete, initialZip = "" }) {
                   className="font-bold"
                   style={{ backgroundColor: '#8B5CF6', minHeight: '48px' }}
                 >
-                  <Link to={createPageUrl("Waitlist") + `?zip=${zipCode}&area=${result.area}`}>
-                    Join Waitlist for {result.area}
+                  <Link to={createPageUrl("FindOperator") + `?zip=${zipCode}&area=${result.area}`}>
+                    Notify Me for {result.area}
                   </Link>
                 </Button>
               </CardContent>

@@ -159,6 +159,63 @@ async function handleCheckoutSessionCompleted(supabase: any, session: any) {
   const userId = session.metadata?.user_id;
   const tier = session.metadata?.tier;
   const billingCycle = session.metadata?.billing_cycle || 'monthly';
+  const paymentType = session.metadata?.type;
+  const packageId = session.metadata?.package_id;
+
+  // Handle service package payment (one-time)
+  if (session.mode === 'payment' && paymentType === 'service_package' && packageId) {
+    console.log('Service package payment completed:', packageId);
+
+    // Update service package status
+    const { error: updateError } = await supabase
+      .from('service_packages')
+      .update({
+        status: 'submitted',
+        payment_status: 'paid',
+        stripe_payment_intent_id: session.payment_intent,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', packageId);
+
+    if (updateError) {
+      console.error('Error updating service package:', updateError);
+    } else {
+      console.log(`Service package ${packageId} marked as paid`);
+    }
+
+    // Update associated cart items
+    await supabase
+      .from('cart_items')
+      .update({
+        status: 'submitted'
+      })
+      .eq('package_id', packageId);
+
+    // Create transaction record
+    try {
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          stripe_payment_intent_id: session.payment_intent,
+          amount_total: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          status: 'succeeded',
+          type: 'service_package',
+          description: `Service package payment`,
+          metadata: {
+            checkout_session_id: session.id,
+            package_id: packageId,
+            property_id: session.metadata?.property_id
+          },
+          created_at: new Date().toISOString()
+        });
+    } catch (txError) {
+      console.warn('Failed to create transaction record:', txError);
+    }
+
+    return;
+  }
 
   // Handle subscription checkout
   if (session.mode === 'subscription' && session.subscription) {

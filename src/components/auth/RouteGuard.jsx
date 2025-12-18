@@ -98,6 +98,21 @@ export default function RouteGuard({
 
   // Check onboarding completion for the active role
   if (!allowIncompleteOnboarding) {
+    // DEBUG: Log role info
+    console.log('🔒 RouteGuard Debug:', {
+      path: location.pathname,
+      roles,
+      activeRole,
+      hasAdminRole: hasRole(ROLES.ADMIN),
+      userMeta,
+    });
+
+    // Admins always bypass onboarding, regardless of activeRole state
+    if (hasRole(ROLES.ADMIN)) {
+      console.log('✅ Admin detected, bypassing onboarding');
+      return children;
+    }
+
     const roleConfig = ROLE_CONFIG[activeRole];
 
     // Special handling for different roles

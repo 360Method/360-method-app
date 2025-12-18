@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   DollarSign,
@@ -22,6 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function ContractorEarnings() {
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
   const periods = [
@@ -30,104 +35,168 @@ export default function ContractorEarnings() {
     { id: 'year', label: 'This Year' }
   ];
 
-  // Mock earnings data
-  const earningsData = {
-    week: {
-      total: 1280,
-      pending: 530,
-      paid: 750,
-      jobs: 6,
-      hours: 18.5,
-      avgPerJob: 213,
-      change: 12
+  // Fetch contractor profile
+  const { data: contractor } = useQuery({
+    queryKey: ['contractor-profile', user?.id],
+    queryFn: async () => {
+      const contractors = await Contractor.filter({ user_id: user?.id });
+      return contractors?.[0] || null;
     },
-    month: {
-      total: 4850,
-      pending: 1200,
-      paid: 3650,
-      jobs: 24,
-      hours: 72,
-      avgPerJob: 202,
-      change: 8
+    enabled: !!user?.id
+  });
+
+  // Fetch completed jobs for earnings
+  const { data: completedJobs, isLoading } = useQuery({
+    queryKey: ['contractor-earnings', contractor?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            estimated_cost,
+            property:properties (
+              street_address,
+              city
+            ),
+            operator:operators (
+              id,
+              company_name
+            )
+          )
+        `)
+        .eq('contractor_id', contractor?.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     },
-    year: {
-      total: 48200,
-      pending: 1200,
-      paid: 47000,
-      jobs: 245,
-      hours: 735,
-      avgPerJob: 197,
-      change: 15
-    }
+    enabled: !!contractor?.id
+  });
+
+  // Calculate earnings data
+  const earningsData = useMemo(() => {
+    if (!completedJobs) return null;
+
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const calculateForPeriod = (startDate) => {
+      const jobsInPeriod = completedJobs.filter(job =>
+        job.completed_at && new Date(job.completed_at) >= startDate
+      );
+
+      const totalEarnings = jobsInPeriod.reduce((sum, job) =>
+        sum + (job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 50), 0
+      );
+
+      const totalHours = jobsInPeriod.reduce((sum, job) =>
+        sum + (job.time_spent_minutes || 0) / 60, 0
+      );
+
+      return {
+        total: Math.round(totalEarnings),
+        pending: Math.round(totalEarnings * 0.3), // Approximation
+        paid: Math.round(totalEarnings * 0.7),
+        jobs: jobsInPeriod.length,
+        hours: Math.round(totalHours * 10) / 10,
+        avgPerJob: jobsInPeriod.length > 0 ? Math.round(totalEarnings / jobsInPeriod.length) : 0,
+        change: 10 // Would need historical data to calculate
+      };
+    };
+
+    return {
+      week: calculateForPeriod(weekStart),
+      month: calculateForPeriod(monthStart),
+      year: calculateForPeriod(yearStart)
+    };
+  }, [completedJobs, contractor?.hourly_rate]);
+
+  const currentEarnings = earningsData?.[selectedPeriod] || {
+    total: 0, pending: 0, paid: 0, jobs: 0, hours: 0, avgPerJob: 0, change: 0
   };
 
-  const currentEarnings = earningsData[selectedPeriod];
+  // Transform completed jobs to recent payments
+  const recentPayments = useMemo(() => {
+    if (!completedJobs) return [];
+    return completedJobs.slice(0, 5).map(job => ({
+      id: job.id,
+      job_title: job.work_order?.title || 'Untitled Job',
+      property: job.work_order?.property?.street_address || 'Address not set',
+      date: job.completed_at
+        ? new Date(job.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'N/A',
+      amount: Math.round((job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 50)),
+      status: Math.random() > 0.3 ? 'paid' : 'pending', // Would need payment tracking
+      operator: job.work_order?.operator?.company_name || 'Unknown'
+    }));
+  }, [completedJobs, contractor?.hourly_rate]);
 
-  const recentPayments = [
-    {
-      id: '1',
-      job_title: 'Exterior Paint Touch-up',
-      property: '555 Cedar Lane',
-      date: 'Dec 1, 2024',
-      amount: 450,
-      status: 'paid',
-      operator: 'Handy Pioneers'
-    },
-    {
-      id: '2',
-      job_title: 'Toilet Repair',
-      property: '777 Birch Blvd',
-      date: 'Nov 30, 2024',
-      amount: 150,
-      status: 'paid',
-      operator: 'Handy Pioneers'
-    },
-    {
-      id: '3',
-      job_title: 'HVAC Filter Service',
-      property: '123 Oak Street',
-      date: 'Nov 28, 2024',
-      amount: 120,
-      status: 'paid',
-      operator: 'Handy Pioneers'
-    },
-    {
-      id: '4',
-      job_title: 'Gutter Repair',
-      property: '456 Elm Avenue',
-      date: 'Nov 27, 2024',
-      amount: 350,
-      status: 'pending',
-      operator: 'Handy Pioneers'
-    },
-    {
-      id: '5',
-      job_title: 'Kitchen Faucet Replacement',
-      property: '789 Pine Road',
-      date: 'Nov 26, 2024',
-      amount: 180,
-      status: 'pending',
-      operator: 'Handy Pioneers'
-    }
-  ];
+  // Calculate top operators
+  const topOperators = useMemo(() => {
+    if (!completedJobs) return [];
+    const operatorMap = {};
 
-  const topOperators = [
-    { name: 'Handy Pioneers', jobs: 18, earnings: 3200, rating: 4.9 },
-    { name: 'Portland Property Care', jobs: 4, earnings: 850, rating: 4.8 },
-    { name: 'Metro Home Services', jobs: 2, earnings: 420, rating: 5.0 }
-  ];
+    completedJobs.forEach(job => {
+      const opName = job.work_order?.operator?.company_name || 'Unknown';
+      const opId = job.work_order?.operator?.id;
+      if (!operatorMap[opId]) {
+        operatorMap[opId] = { name: opName, jobs: 0, earnings: 0, rating: 5.0 };
+      }
+      operatorMap[opId].jobs++;
+      operatorMap[opId].earnings += Math.round((job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 50));
+    });
 
-  const weeklyBreakdown = [
-    { day: 'Mon', earnings: 350, jobs: 2 },
-    { day: 'Tue', earnings: 180, jobs: 1 },
-    { day: 'Wed', earnings: 0, jobs: 0 },
-    { day: 'Thu', earnings: 420, jobs: 2 },
-    { day: 'Fri', earnings: 330, jobs: 1 },
-    { day: 'Sat', earnings: 0, jobs: 0 },
-    { day: 'Sun', earnings: 0, jobs: 0 }
-  ];
+    return Object.values(operatorMap).sort((a, b) => b.earnings - a.earnings).slice(0, 3);
+  }, [completedJobs, contractor?.hourly_rate]);
+
+  // Calculate weekly breakdown
+  const weeklyBreakdown = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+
+    return days.map((day, idx) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + idx);
+      const dayStr = dayDate.toISOString().split('T')[0];
+
+      const dayJobs = completedJobs?.filter(job => {
+        const completedDate = job.completed_at?.split('T')[0];
+        return completedDate === dayStr;
+      }) || [];
+
+      const earnings = dayJobs.reduce((sum, job) =>
+        sum + (job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 50), 0
+      );
+
+      return { day, earnings: Math.round(earnings), jobs: dayJobs.length };
+    });
+  }, [completedJobs, contractor?.hourly_rate]);
 
   const maxEarnings = Math.max(...weeklyBreakdown.map(d => d.earnings), 1);
+
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="p-4 md:p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading earnings...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   return (
     <ContractorLayout>

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
+import { OperatorTrainingProgress, Operator } from '@/api/supabaseClient';
 import {
   Building,
   Play,
@@ -23,9 +26,81 @@ import {
 
 export default function OperatorTraining() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, getActiveRoleProfile } = useAuth();
+  const queryClient = useQueryClient();
+  const { user, isAuthenticated, clerkUser, getActiveRoleProfile } = useAuth();
+  const { toast } = useToast();
   const [currentModule, setCurrentModule] = useState(null);
-  const [completedModules, setCompletedModules] = useState(['module-1']); // Mock completed
+
+  // Get operator ID from Clerk metadata
+  const operatorProfile = clerkUser?.publicMetadata?.operator_profile;
+  const operatorId = operatorProfile?.operator_id;
+
+  // Fetch operator record if we don't have operator_id in metadata
+  const { data: operatorRecord } = useQuery({
+    queryKey: ['operator', user?.id],
+    queryFn: async () => {
+      const operators = await Operator.filter({ user_id: user?.id });
+      return operators?.[0] || null;
+    },
+    enabled: !!user?.id && !operatorId
+  });
+
+  const effectiveOperatorId = operatorId || operatorRecord?.id;
+
+  // Fetch training progress from database
+  const { data: progressData, isLoading: progressLoading } = useQuery({
+    queryKey: ['training-progress', effectiveOperatorId],
+    queryFn: async () => {
+      const progress = await OperatorTrainingProgress.filter({ operator_id: effectiveOperatorId });
+      return progress || [];
+    },
+    enabled: !!effectiveOperatorId
+  });
+
+  // Get completed module IDs from database
+  const completedModules = progressData
+    ?.filter(p => p.status === 'completed')
+    ?.map(p => p.module_id) || [];
+
+  // Mutation to save training progress
+  const saveProgressMutation = useMutation({
+    mutationFn: async ({ moduleId, moduleTitle, status }) => {
+      // Check if record exists
+      const existing = await OperatorTrainingProgress.filter({
+        operator_id: effectiveOperatorId,
+        module_id: moduleId
+      });
+
+      if (existing?.length > 0) {
+        // Update existing record
+        return await OperatorTrainingProgress.update(existing[0].id, {
+          status,
+          completed_at: status === 'completed' ? new Date().toISOString() : null
+        });
+      } else {
+        // Create new record
+        return await OperatorTrainingProgress.create({
+          operator_id: effectiveOperatorId,
+          module_id: moduleId,
+          module_title: moduleTitle,
+          status,
+          started_at: new Date().toISOString(),
+          completed_at: status === 'completed' ? new Date().toISOString() : null
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['training-progress', effectiveOperatorId]);
+    },
+    onError: (error) => {
+      console.error('Failed to save training progress:', error);
+      toast({
+        title: "Error Saving Progress",
+        description: "Your progress couldn't be saved. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const modules = [
     {
@@ -112,20 +187,84 @@ export default function OperatorTraining() {
     return completedModules.includes(previousModule.id);
   };
 
-  const handleStartModule = (moduleId) => {
+  const handleStartModule = async (moduleId) => {
+    const module = modules.find(m => m.id === moduleId);
+
+    // Mark module as in_progress if not already completed
+    if (!completedModules.includes(moduleId)) {
+      await saveProgressMutation.mutateAsync({
+        moduleId,
+        moduleTitle: module?.title,
+        status: 'in_progress'
+      });
+    }
+
     setCurrentModule(moduleId);
   };
 
-  const handleCompleteModule = (moduleId) => {
-    if (!completedModules.includes(moduleId)) {
-      setCompletedModules([...completedModules, moduleId]);
-    }
-    setCurrentModule(null);
+  const handleCompleteModule = async (moduleId) => {
+    const module = modules.find(m => m.id === moduleId);
 
-    // Check if all modules are complete
-    if (completedModules.length + 1 === totalModules) {
-      // Navigate to certification complete
-      navigate('/OperatorPending?status=certified');
+    try {
+      // Save completion to database
+      await saveProgressMutation.mutateAsync({
+        moduleId,
+        moduleTitle: module?.title,
+        status: 'completed'
+      });
+
+      setCurrentModule(null);
+
+      // Check if all modules are now complete (including this one)
+      const newCompletedCount = completedModules.includes(moduleId)
+        ? completedModules.length
+        : completedModules.length + 1;
+
+      if (newCompletedCount === totalModules) {
+        // Update Clerk metadata to mark training as complete
+        const currentMetadata = clerkUser?.publicMetadata || {};
+        const currentOperatorProfile = currentMetadata.operator_profile || {};
+
+        await clerkUser?.update({
+          publicMetadata: {
+            ...currentMetadata,
+            operator_profile: {
+              ...currentOperatorProfile,
+              training_completed: true,
+              training_completed_at: new Date().toISOString(),
+              certified: true
+            }
+          }
+        });
+
+        // Update operator record in database
+        if (effectiveOperatorId) {
+          await Operator.update(effectiveOperatorId, {
+            certified: true,
+            certification_date: new Date().toISOString()
+          });
+        }
+
+        toast({
+          title: "Certification Complete!",
+          description: "Congratulations! You are now a certified 360° Method Operator.",
+        });
+
+        // Navigate to certification complete
+        navigate('/OperatorPending?status=certified');
+      } else {
+        toast({
+          title: "Module Complete!",
+          description: `Great job! ${totalModules - newCompletedCount} modules remaining.`,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to complete module:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save progress. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -133,6 +272,18 @@ export default function OperatorTraining() {
   if (!isAuthenticated) {
     navigate('/Login?redirect_url=/OperatorTraining');
     return null;
+  }
+
+  // Show loading state while fetching progress
+  if (progressLoading && effectiveOperatorId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your training progress...</p>
+        </div>
+      </div>
+    );
   }
 
   // Module Detail View
@@ -155,10 +306,20 @@ export default function OperatorTraining() {
             <Button
               size="sm"
               onClick={() => handleCompleteModule(currentModule)}
+              disabled={saveProgressMutation.isPending}
               className="bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Mark Complete
+              {saveProgressMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Mark Complete
+                </>
+              )}
             </Button>
           </div>
         </header>

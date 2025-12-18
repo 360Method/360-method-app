@@ -615,7 +615,7 @@ export default function Inspect() {
                     Reach out to your local 360° Operator for professional inspection services.
                   </p>
                   <Button
-                    onClick={() => window.location.href = createPageUrl('Waitlist')}
+                    onClick={() => window.location.href = createPageUrl('FindOperator')}
                     variant="outline"
                     className="border-blue-600 text-blue-600 hover:bg-blue-50"
                   >

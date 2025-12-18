@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { ContractorJob } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   MapPin,
@@ -57,7 +61,9 @@ const TABS = [
 export default function ContractorJobDetail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const jobId = searchParams.get('id') || '1';
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const jobId = searchParams.get('id');
 
   const [activeTab, setActiveTab] = useState('scope');
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
@@ -68,88 +74,177 @@ export default function ContractorJobDetail() {
   const [newNote, setNewNote] = useState('');
   const [resourceSearch, setResourceSearch] = useState('');
 
-  // Mock job data
-  const [job, setJob] = useState({
-    id: jobId,
-    title: 'Gutter Repair',
-    property_address: '123 Oak Street',
-    city: 'Portland',
-    state: 'OR',
-    zip: '97201',
-    operator_name: 'Handy Pioneers',
-    operator_phone: '(503) 555-0100',
-    owner_name: 'Sarah Johnson',
-    owner_phone: '(503) 555-0123',
-    priority: 'high',
-    status: 'accepted',
-    due_date: '2025-11-30',
-    due_time: '2:00 PM',
-    estimated_budget: 350,
-    estimated_duration: '2-3 hours',
-    description: 'Repair sagging gutters on north side of house. Multiple sections need reattachment. Some downspout brackets also loose.',
-    operator_notes: 'Owner will be home after 2pm. Park in driveway. Ladder available in garage if needed.',
-    access_instructions: 'Key in lockbox (code 1234)',
-    inspection_photos: [
-      'https://via.placeholder.com/400x300/e0e0e0/666?text=Gutter+Photo+1',
-      'https://via.placeholder.com/400x300/e0e0e0/666?text=Gutter+Photo+2'
-    ],
-    // AI-generated scope
+  // Fetch job data from database
+  const { data: jobData, isLoading } = useQuery({
+    queryKey: ['contractor-job-detail', jobId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            description,
+            priority,
+            scheduled_date,
+            scheduled_time,
+            estimated_cost,
+            estimated_hours,
+            notes,
+            checklist,
+            property:properties (
+              street_address,
+              city,
+              state,
+              zip_code,
+              user_id
+            ),
+            operator:operators (
+              company_name,
+              business_phone
+            )
+          )
+        `)
+        .eq('id', jobId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!jobId
+  });
+
+  // Update job mutation
+  const updateJobMutation = useMutation({
+    mutationFn: async (updates) => {
+      return await ContractorJob.update(jobId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contractor-job-detail', jobId]);
+    }
+  });
+
+  // Transform database data to component format
+  const job = jobData ? {
+    id: jobData.id,
+    title: jobData.work_order?.title || 'Untitled Job',
+    property_address: jobData.work_order?.property?.street_address || 'Address not set',
+    city: jobData.work_order?.property?.city || '',
+    state: jobData.work_order?.property?.state || '',
+    zip: jobData.work_order?.property?.zip_code || '',
+    operator_name: jobData.work_order?.operator?.company_name || 'Unknown Operator',
+    operator_phone: jobData.work_order?.operator?.business_phone || '',
+    owner_name: 'Property Owner',
+    owner_phone: '',
+    priority: jobData.work_order?.priority || 'medium',
+    status: jobData.status,
+    due_date: jobData.work_order?.scheduled_date || '',
+    due_time: jobData.work_order?.scheduled_time || 'TBD',
+    estimated_budget: jobData.work_order?.estimated_cost || 0,
+    estimated_duration: jobData.work_order?.estimated_hours ? `${jobData.work_order.estimated_hours} hours` : '2-3 hours',
+    description: jobData.work_order?.description || '',
+    operator_notes: jobData.work_order?.notes || '',
+    access_instructions: '',
+    inspection_photos: [],
     scope: {
-      problem_description: 'Sagging gutters on the north side of the house with 3 sections showing visible detachment from the fascia board. Two downspout brackets are loose causing water to miss the drainage system.',
-      work_plan: [
-        'Inspect all gutters and identify all problem areas',
-        'Remove debris from gutters to assess full damage',
-        'Reattach loose gutter sections using new brackets',
-        'Replace damaged gutter hangers (estimate 6)',
-        'Secure loose downspout brackets',
-        'Seal any gaps with gutter sealant',
-        'Test water flow with garden hose',
+      problem_description: jobData.work_order?.description || 'No description provided',
+      work_plan: jobData.checklist?.map(item => item.item || item) || [
+        'Review job requirements',
+        'Assess the situation on-site',
+        'Complete the assigned work',
+        'Document with photos',
         'Clean up work area'
       ],
-      ai_generated: true,
-      approved: false
+      ai_generated: false,
+      approved: jobData.status !== 'assigned'
     },
-    // Materials list
-    materials: [
-      { id: 1, name: 'Gutter Hanger Brackets', quantity: 6, unit_cost: 4.00, purchased: false },
-      { id: 2, name: 'Gutter Sealant', quantity: 1, unit_cost: 8.00, purchased: false },
-      { id: 3, name: 'Stainless Steel Screws 2"', quantity: 1, unit_cost: 6.00, purchased: true },
-      { id: 4, name: 'Downspout Brackets', quantity: 2, unit_cost: 5.00, purchased: false },
-    ],
-    // Photos taken
+    materials: jobData.materials_used || [],
     photos: {
       before: [],
       during: [],
       after: []
     },
-    // Notes
-    notes: [
-      { id: 1, text: 'Confirmed appointment with owner for 2pm', timestamp: '2025-11-28T09:00:00', type: 'general' }
-    ],
-    // Resources
+    notes: jobData.notes
+      ? jobData.notes.split('\n\n').map((note, idx) => {
+          const match = note.match(/^\[(.+?)\] (.+)$/s);
+          return {
+            id: idx + 1,
+            text: match ? match[2] : note,
+            timestamp: match ? match[1] : jobData.created_at,
+            type: 'general'
+          };
+        })
+      : [],
     saved_resources: []
-  });
+  } : null;
 
-  const totalMaterialsCost = job.materials.reduce((sum, m) => sum + (m.quantity * m.unit_cost), 0);
+  const totalMaterialsCost = job?.materials?.reduce((sum, m) => sum + ((m.quantity || 0) * (m.unit_cost || 0)), 0) || 0;
 
-  const handleAccept = () => {
-    setJob({ ...job, status: 'accepted' });
-    toast.success('Job accepted!');
+  const handleAccept = async () => {
+    try {
+      await updateJobMutation.mutateAsync({
+        status: 'accepted',
+        accepted_at: new Date().toISOString()
+      });
+      toast.success('Job accepted!');
+    } catch (error) {
+      toast.error('Failed to accept job');
+    }
   };
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     if (!declineReason.trim()) {
       toast.error('Please provide a reason');
       return;
     }
-    toast.info('Job declined. Operator has been notified.');
-    setShowDeclineDialog(false);
-    navigate(createPageUrl('ContractorDashboard'));
+    try {
+      await updateJobMutation.mutateAsync({
+        status: 'declined',
+        declined_at: new Date().toISOString(),
+        decline_reason: declineReason
+      });
+      toast.info('Job declined. Operator has been notified.');
+      setShowDeclineDialog(false);
+      navigate(createPageUrl('ContractorDashboard'));
+    } catch (error) {
+      toast.error('Failed to decline job');
+    }
   };
 
   const handleStartJob = () => {
-    navigate(`${createPageUrl('ContractorJobActive')}?id=${job.id}`);
+    navigate(`${createPageUrl('ContractorJobActive')}?id=${job?.id}`);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading job details...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
+
+  // Not found state
+  if (!job) {
+    return (
+      <ContractorLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Job not found</p>
+            <Button className="mt-4" onClick={() => navigate(createPageUrl('ContractorDashboard'))}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   const generateAIScope = async () => {
     setIsGeneratingScope(true);
@@ -166,39 +261,51 @@ export default function ContractorJobDetail() {
     toast.success('Material list updated!');
   };
 
-  const approveScope = () => {
-    setJob({
-      ...job,
-      scope: { ...job.scope, approved: true }
-    });
-    toast.success('Scope approved!');
+  const approveScope = async () => {
+    try {
+      await updateJobMutation.mutateAsync({
+        checklist: job.scope.work_plan.map((item, idx) => ({
+          id: idx + 1,
+          item: item,
+          completed: false
+        }))
+      });
+      toast.success('Scope approved!');
+    } catch (error) {
+      toast.error('Failed to approve scope');
+    }
   };
 
-  const toggleMaterialPurchased = (materialId) => {
-    setJob({
-      ...job,
-      materials: job.materials.map(m =>
-        m.id === materialId ? { ...m, purchased: !m.purchased } : m
-      )
-    });
+  const toggleMaterialPurchased = async (materialId) => {
+    const updatedMaterials = job.materials.map(m =>
+      m.id === materialId ? { ...m, purchased: !m.purchased } : m
+    );
+    try {
+      await updateJobMutation.mutateAsync({
+        materials_used: updatedMaterials
+      });
+    } catch (error) {
+      toast.error('Failed to update material');
+    }
   };
 
-  const addNote = () => {
+  const addNote = async () => {
     if (!newNote.trim()) return;
-    setJob({
-      ...job,
-      notes: [
-        ...job.notes,
-        {
-          id: Date.now(),
-          text: newNote,
-          timestamp: new Date().toISOString(),
-          type: 'general'
-        }
-      ]
-    });
-    setNewNote('');
-    toast.success('Note added');
+    const existingNotes = jobData?.notes || '';
+    const timestamp = new Date().toLocaleString();
+    const updatedNotes = existingNotes
+      ? `${existingNotes}\n\n[${timestamp}] ${newNote}`
+      : `[${timestamp}] ${newNote}`;
+
+    try {
+      await updateJobMutation.mutateAsync({
+        notes: updatedNotes
+      });
+      setNewNote('');
+      toast.success('Note added');
+    } catch (error) {
+      toast.error('Failed to add note');
+    }
   };
 
   const openNavigation = () => {

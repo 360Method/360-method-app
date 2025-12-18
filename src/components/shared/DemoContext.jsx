@@ -170,6 +170,20 @@ export function DemoProvider({ children }) {
       isInvestor
     }}>
       {children}
+
+      {/* Demo Wizards - render when showWizard is true */}
+      {showWizard && isHomeowner && (
+        <DemoWizard
+          onComplete={handleWizardComplete}
+          onSkip={handleWizardSkip}
+        />
+      )}
+      {showWizard && isInvestor && (
+        <InvestorDemoWizard
+          onComplete={handleWizardComplete}
+          onSkip={handleWizardSkip}
+        />
+      )}
     </DemoContext.Provider>
   );
 }

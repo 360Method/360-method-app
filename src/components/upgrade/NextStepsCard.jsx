@@ -9,13 +9,13 @@ import { isServiceAvailable, extractZipFromAddress } from '../shared/serviceArea
 import RequestOperatorQuoteDialog from './RequestOperatorQuoteDialog';
 import ShareProjectDialog from './ShareProjectDialog';
 import ExportProjectDialog from './ExportProjectDialog';
-import JoinWaitlistDialog from './JoinWaitlistDialog';
+import NotifyWhenAvailableDialog from './NotifyWhenAvailableDialog';
 
 export default function NextStepsCard({ project, property, onNavigateToMilestones, onUpdate }) {
   const [showOperatorDialog, setShowOperatorDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [showWaitlistDialog, setShowWaitlistDialog] = useState(false);
+  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
   const [isGeneratingRecommendation, setIsGeneratingRecommendation] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
 
@@ -300,11 +300,11 @@ Be practical and consider: permit requirements, safety concerns, specialized ski
                   )}
                   <Button
                     size="sm"
-                    onClick={() => setShowWaitlistDialog(true)}
+                    onClick={() => setShowNotifyDialog(true)}
                     className="bg-amber-600 hover:bg-amber-700 text-white mb-2"
                     style={{ minHeight: '40px' }}
                   >
-                    Join Waitlist for Your Area
+                    Notify Me When Available
                   </Button>
                   <p className="text-xs text-amber-700">
                     💡 Meanwhile, you can share with local contractors below
@@ -391,10 +391,10 @@ Be practical and consider: permit requirements, safety concerns, specialized ski
         />
       )}
 
-      <JoinWaitlistDialog
+      <NotifyWhenAvailableDialog
         zipCode={propertyZip}
-        isOpen={showWaitlistDialog}
-        onClose={() => setShowWaitlistDialog(false)}
+        isOpen={showNotifyDialog}
+        onClose={() => setShowNotifyDialog(false)}
       />
 
       <ShareProjectDialog

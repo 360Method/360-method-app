@@ -119,7 +119,6 @@ const PORTALS = {
     name: 'DEMO',
     pages: [
       { name: 'Welcome', url: 'Welcome' },
-      { name: 'Waitlist', url: 'Waitlist' },
       { name: 'DemoEntry', url: 'DemoEntry' },
       { name: 'DemoOverwhelmed', url: 'DemoOverwhelmed' },
       { name: 'DemoImproving', url: 'DemoImproving' },
@@ -179,9 +178,8 @@ export default function PortalSwitcher() {
     const path = createPageUrl(pageUrl);
     
     // Check if destination is a demo page
-    const isDemoPage = 
+    const isDemoPage =
       pageUrl === 'Welcome' ||
-      pageUrl === 'Waitlist' ||
       pageUrl === 'DemoEntry' ||
       pageUrl === 'DemoOverwhelmed' ||
       pageUrl === 'DemoImproving' ||

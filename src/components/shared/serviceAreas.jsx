@@ -147,9 +147,9 @@ export function getServiceMessage(zipCode) {
   return {
     type: "unavailable",
     title: "Service Coming Soon",
-    message: "Professional 360° Operator service isn't available in your area yet. Join the waitlist to be notified when we expand to your market.",
-    cta: "Join Waitlist",
-    ctaLink: "Waitlist",
+    message: "Professional 360° Operator service isn't available in your area yet. Sign up to be notified when we expand to your market.",
+    cta: "Notify Me When Available",
+    ctaLink: "FindOperator",
     showMemberPricing: false,
     operator: null,
     phone: null,

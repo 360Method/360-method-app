@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/api/supabaseClient';
+import { supabase, OperatorClient } from '@/api/supabaseClient';
 import OperatorLayout from '@/components/operator/OperatorLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,8 @@ import {
   Droplets,
   Zap,
   Shield,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,71 +51,187 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
+// System type to icon mapping
+const SYSTEM_ICONS = {
+  hvac: Thermometer,
+  roof: Home,
+  plumbing: Droplets,
+  electrical: Zap,
+  foundation: Shield,
+  default: Home
+};
+
 export default function OperatorClientDetail() {
-  const { clientId } = useParams();
+  const [searchParams] = useSearchParams();
+  const clientId = searchParams.get('id');
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Mock client data - replace with real query
-  const client = {
-    id: clientId || '1',
+  // Fetch client data from operator_clients table
+  const { data: client, isLoading: clientLoading } = useQuery({
+    queryKey: ['operator-client', clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+      const data = await OperatorClient.get(clientId);
+      return data;
+    },
+    enabled: !!clientId
+  });
+
+  // Fetch property data if client has a linked property
+  const { data: property } = useQuery({
+    queryKey: ['client-property', client?.property_id],
+    queryFn: async () => {
+      if (!client?.property_id) return null;
+      const { data } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', client.property_id)
+        .single();
+      return data;
+    },
+    enabled: !!client?.property_id
+  });
+
+  // Fetch systems baseline for the property
+  const { data: systems = [] } = useQuery({
+    queryKey: ['client-systems', client?.property_id],
+    queryFn: async () => {
+      if (!client?.property_id) return [];
+      const { data } = await supabase
+        .from('system_baselines')
+        .select('*')
+        .eq('property_id', client.property_id)
+        .order('system_type');
+      return data || [];
+    },
+    enabled: !!client?.property_id
+  });
+
+  // Fetch work orders for this client
+  const { data: workOrders = [] } = useQuery({
+    queryKey: ['client-work-orders', clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('work_orders')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    enabled: !!clientId
+  });
+
+  // Fetch invoices for this client
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['client-invoices', clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    enabled: !!clientId
+  });
+
+  // Build tasks from work orders
+  const tasks = workOrders.map(wo => ({
+    id: wo.id,
+    title: wo.title || wo.description,
+    priority: wo.priority || 'Medium',
+    dueDate: wo.scheduled_date || wo.due_date,
+    status: wo.status,
+    category: wo.category || 'Service'
+  }));
+
+  // Build activity from work orders and invoices
+  const activity = [
+    ...workOrders.slice(0, 3).map(wo => ({
+      id: `wo-${wo.id}`,
+      type: 'workorder',
+      message: `Work order: ${wo.title || wo.description}`,
+      date: wo.created_at,
+      icon: Wrench
+    })),
+    ...invoices.slice(0, 3).map(inv => ({
+      id: `inv-${inv.id}`,
+      type: 'payment',
+      message: `Invoice ${inv.invoice_number || inv.id.slice(0,8)} - $${inv.amount || inv.total || 0}`,
+      date: inv.created_at,
+      icon: DollarSign
+    }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+  // Loading state
+  if (clientLoading) {
+    return (
+      <OperatorLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </OperatorLayout>
+    );
+  }
+
+  // Not found state
+  if (!client) {
+    return (
+      <OperatorLayout>
+        <div className="p-8 text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Client Not Found</h2>
+          <p className="text-gray-600 mb-4">The client you're looking for doesn't exist.</p>
+          <Button onClick={() => window.location.href = createPageUrl('OperatorClients')}>
+            Back to Clients
+          </Button>
+        </div>
+      </OperatorLayout>
+    );
+  }
+
+  // Build display data from real client record
+  const displayClient = {
+    id: client.id,
     owner: {
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '(555) 123-4567',
-      since: '2024-03-15',
+      name: client.contact_name || 'Unknown',
+      email: client.contact_email || '',
+      phone: client.contact_phone || '',
+      since: client.created_at,
       avatar: null
     },
     property: {
-      address: '123 Oak Street',
-      city: 'Long Beach',
-      state: 'CA',
-      zip: '90804',
-      type: 'Single Family',
-      yearBuilt: 1985,
-      sqft: 2400,
-      bedrooms: 4,
-      bathrooms: 2.5
+      address: client.property_address || property?.street_address || '',
+      city: client.property_city || property?.city || '',
+      state: client.property_state || property?.state || '',
+      zip: client.property_zip || property?.zip_code || '',
+      type: property?.property_type || 'Single Family',
+      yearBuilt: property?.year_built || null,
+      sqft: property?.square_footage || null,
+      bedrooms: property?.bedrooms || null,
+      bathrooms: property?.bathrooms || null
     },
-    healthScore: 72,
-    previousScore: 65,
-    baselineCompletion: 85,
-    servicePlan: 'Premium Care',
-    nextService: '2024-12-15',
-    lastInspection: '2024-11-01',
-    status: 'active'
+    healthScore: property?.health_score || 75,
+    previousScore: 70,
+    baselineCompletion: systems.length > 0 ? Math.min(100, systems.length * 20) : 0,
+    servicePlan: client.service_tier || 'On Demand',
+    nextService: client.next_service_date,
+    lastInspection: client.last_inspection_date,
+    status: client.status || 'active'
   };
 
-  // Mock systems data - the 360° Method baseline
-  const systems = [
-    { id: 1, name: 'HVAC', condition: 'Good', age: 8, lifespan: 15, score: 75, lastServiced: '2024-06-15', icon: Thermometer },
-    { id: 2, name: 'Roof', condition: 'Fair', age: 22, lifespan: 25, score: 55, lastServiced: '2024-01-10', icon: Home },
-    { id: 3, name: 'Plumbing', condition: 'Good', age: 12, lifespan: 50, score: 82, lastServiced: '2024-08-20', icon: Droplets },
-    { id: 4, name: 'Electrical', condition: 'Excellent', age: 5, lifespan: 40, score: 95, lastServiced: '2024-04-05', icon: Zap },
-    { id: 5, name: 'Foundation', condition: 'Good', age: 39, lifespan: 100, score: 78, lastServiced: '2024-02-28', icon: Shield },
-  ];
-
-  // Mock tasks
-  const tasks = [
-    { id: 1, title: 'Replace HVAC filter', priority: 'Medium', dueDate: '2024-12-10', status: 'pending', category: 'Preventive' },
-    { id: 2, title: 'Inspect roof for storm damage', priority: 'High', dueDate: '2024-12-05', status: 'pending', category: 'Safety' },
-    { id: 3, title: 'Clean gutters', priority: 'Medium', dueDate: '2024-12-20', status: 'scheduled', category: 'Seasonal' },
-    { id: 4, title: 'Water heater flush', priority: 'Low', dueDate: '2025-01-15', status: 'pending', category: 'Preventive' },
-  ];
-
-  // Mock invoices
-  const invoices = [
-    { id: 'INV-001', date: '2024-11-01', amount: 450, status: 'paid', description: 'Quarterly Inspection' },
-    { id: 'INV-002', date: '2024-08-01', amount: 1250, status: 'paid', description: 'HVAC Maintenance + Filter' },
-    { id: 'INV-003', date: '2024-05-15', amount: 350, status: 'paid', description: 'Quarterly Inspection' },
-  ];
-
-  // Mock activity
-  const activity = [
-    { id: 1, type: 'inspection', message: 'Quarterly inspection completed', date: '2024-11-01', icon: ClipboardList },
-    { id: 2, type: 'payment', message: 'Invoice INV-001 paid', date: '2024-11-03', icon: DollarSign },
-    { id: 3, type: 'message', message: 'Client messaged about roof concerns', date: '2024-10-28', icon: MessageSquare },
-    { id: 4, type: 'workorder', message: 'HVAC filter replacement scheduled', date: '2024-10-15', icon: Wrench },
-  ];
+  // Map systems to display format
+  const displaySystems = systems.map(sys => ({
+    id: sys.id,
+    name: sys.system_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown',
+    condition: sys.condition || 'Good',
+    age: sys.age_years || (sys.install_date ? Math.floor((Date.now() - new Date(sys.install_date)) / (365.25 * 24 * 60 * 60 * 1000)) : null),
+    lifespan: sys.expected_lifespan || 20,
+    score: sys.condition_score || 75,
+    lastServiced: sys.last_serviced_date || sys.updated_at,
+    icon: SYSTEM_ICONS[sys.system_type?.toLowerCase()] || SYSTEM_ICONS.default
+  }));
 
   const getConditionColor = (condition) => {
     const colors = {
@@ -164,11 +281,11 @@ export default function OperatorClientDetail() {
                 <Home className="w-8 h-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{client.property.address}</h1>
-                <p className="text-gray-600">{client.property.city}, {client.property.state} {client.property.zip}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{displayClient.property.address}</h1>
+                <p className="text-gray-600">{displayClient.property.city}, {displayClient.property.state} {displayClient.property.zip}</p>
                 <div className="flex items-center gap-3 mt-2">
                   <Badge className="bg-green-100 text-green-700">Active Client</Badge>
-                  <Badge variant="outline">{client.servicePlan}</Badge>
+                  <Badge variant="outline">{displayClient.servicePlan}</Badge>
                 </div>
               </div>
             </div>
@@ -219,12 +336,12 @@ export default function OperatorClientDetail() {
               <div>
                 <p className="text-sm text-gray-600">Health Score</p>
                 <div className="flex items-center gap-2">
-                  <span className={`text-2xl font-bold ${getScoreColor(client.healthScore)}`}>
-                    {client.healthScore}
+                  <span className={`text-2xl font-bold ${getScoreColor(displayClient.healthScore)}`}>
+                    {displayClient.healthScore}
                   </span>
                   <div className="flex items-center text-green-600 text-xs">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    +{client.healthScore - client.previousScore}
+                    +{displayClient.healthScore - displayClient.previousScore}
                   </div>
                 </div>
               </div>
@@ -233,10 +350,10 @@ export default function OperatorClientDetail() {
                   <circle cx="24" cy="24" r="20" stroke="#E5E7EB" strokeWidth="4" fill="none" />
                   <circle
                     cx="24" cy="24" r="20"
-                    stroke={client.healthScore >= 70 ? '#22C55E' : client.healthScore >= 50 ? '#EAB308' : '#EF4444'}
+                    stroke={displayClient.healthScore >= 70 ? '#22C55E' : displayClient.healthScore >= 50 ? '#EAB308' : '#EF4444'}
                     strokeWidth="4"
                     fill="none"
-                    strokeDasharray={`${client.healthScore * 1.26} 126`}
+                    strokeDasharray={`${displayClient.healthScore * 1.26} 126`}
                     strokeLinecap="round"
                   />
                 </svg>
@@ -247,9 +364,9 @@ export default function OperatorClientDetail() {
           <Card className="p-4">
             <p className="text-sm text-gray-600">Baseline Complete</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-2xl font-bold text-gray-900">{client.baselineCompletion}%</span>
+              <span className="text-2xl font-bold text-gray-900">{displayClient.baselineCompletion}%</span>
             </div>
-            <Progress value={client.baselineCompletion} className="mt-2 h-2" />
+            <Progress value={displayClient.baselineCompletion} className="mt-2 h-2" />
           </Card>
 
           <Card className="p-4">
@@ -257,7 +374,7 @@ export default function OperatorClientDetail() {
             <div className="flex items-center gap-2 mt-1">
               <Calendar className="w-4 h-4 text-gray-400" />
               <span className="text-lg font-bold text-gray-900">
-                {new Date(client.nextService).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {displayClient.nextService ? new Date(displayClient.nextService).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Not scheduled'}
               </span>
             </div>
           </Card>
@@ -277,28 +394,32 @@ export default function OperatorClientDetail() {
 
         {/* Owner Info Card */}
         <Card className="p-4 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                 <User className="w-6 h-6 text-gray-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{client.owner.name}</h3>
+                <h3 className="font-semibold text-gray-900">{displayClient.owner.name}</h3>
                 <p className="text-sm text-gray-600">Property Owner</p>
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Mail className="w-4 h-4" />
-                {client.owner.email}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone className="w-4 h-4" />
-                {client.owner.phone}
-              </div>
+            <div className="flex flex-wrap items-center gap-4 md:gap-6">
+              {displayClient.owner.email && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Mail className="w-4 h-4" />
+                  {displayClient.owner.email}
+                </div>
+              )}
+              {displayClient.owner.phone && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Phone className="w-4 h-4" />
+                  {displayClient.owner.phone}
+                </div>
+              )}
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="w-4 h-4" />
-                Client since {new Date(client.owner.since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                Client since {new Date(displayClient.owner.since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </div>
             </div>
           </div>
@@ -326,7 +447,7 @@ export default function OperatorClientDetail() {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {systems.slice(0, 4).map((system) => {
+                  {displaySystems.length > 0 ? displaySystems.slice(0, 4).map((system) => {
                     const Icon = system.icon;
                     return (
                       <div key={system.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
@@ -339,13 +460,15 @@ export default function OperatorClientDetail() {
                             <Badge className={getConditionColor(system.condition)}>{system.condition}</Badge>
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-gray-500">Age: {system.age} yrs / {system.lifespan} yr lifespan</span>
+                            <span className="text-xs text-gray-500">Age: {system.age || 'N/A'} yrs / {system.lifespan} yr lifespan</span>
                             <span className={`text-sm font-medium ${getScoreColor(system.score)}`}>{system.score}</span>
                           </div>
                         </div>
                       </div>
                     );
-                  })}
+                  }) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No systems documented yet</p>
+                  )}
                 </div>
               </Card>
 
@@ -406,19 +529,19 @@ export default function OperatorClientDetail() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500">Property Type</p>
-                    <p className="font-medium text-gray-900">{client.property.type}</p>
+                    <p className="font-medium text-gray-900">{displayClient.property.type || 'N/A'}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500">Year Built</p>
-                    <p className="font-medium text-gray-900">{client.property.yearBuilt}</p>
+                    <p className="font-medium text-gray-900">{displayClient.property.yearBuilt || 'N/A'}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500">Square Footage</p>
-                    <p className="font-medium text-gray-900">{client.property.sqft.toLocaleString()} sqft</p>
+                    <p className="font-medium text-gray-900">{displayClient.property.sqft ? `${displayClient.property.sqft.toLocaleString()} sqft` : 'N/A'}</p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500">Bed / Bath</p>
-                    <p className="font-medium text-gray-900">{client.property.bedrooms} bd / {client.property.bathrooms} ba</p>
+                    <p className="font-medium text-gray-900">{displayClient.property.bedrooms || '-'} bd / {displayClient.property.bathrooms || '-'} ba</p>
                   </div>
                 </div>
               </Card>
@@ -436,9 +559,9 @@ export default function OperatorClientDetail() {
                 </Button>
               </div>
               <div className="space-y-4">
-                {systems.map((system) => {
+                {displaySystems.length > 0 ? displaySystems.map((system) => {
                   const Icon = system.icon;
-                  const lifeRemaining = ((system.lifespan - system.age) / system.lifespan) * 100;
+                  const lifeRemaining = system.age ? ((system.lifespan - system.age) / system.lifespan) * 100 : 50;
                   return (
                     <div key={system.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-4">
@@ -456,7 +579,7 @@ export default function OperatorClientDetail() {
                           <div className="grid grid-cols-4 gap-4 text-sm">
                             <div>
                               <p className="text-gray-500">Age</p>
-                              <p className="font-medium">{system.age} years</p>
+                              <p className="font-medium">{system.age || 'N/A'} years</p>
                             </div>
                             <div>
                               <p className="text-gray-500">Expected Lifespan</p>
@@ -464,11 +587,11 @@ export default function OperatorClientDetail() {
                             </div>
                             <div>
                               <p className="text-gray-500">Life Remaining</p>
-                              <p className="font-medium">{Math.max(0, system.lifespan - system.age)} years</p>
+                              <p className="font-medium">{system.age ? Math.max(0, system.lifespan - system.age) : 'N/A'} years</p>
                             </div>
                             <div>
                               <p className="text-gray-500">Last Serviced</p>
-                              <p className="font-medium">{new Date(system.lastServiced).toLocaleDateString()}</p>
+                              <p className="font-medium">{system.lastServiced ? new Date(system.lastServiced).toLocaleDateString() : 'N/A'}</p>
                             </div>
                           </div>
                           <div className="mt-3">
@@ -491,7 +614,12 @@ export default function OperatorClientDetail() {
                       </div>
                     </div>
                   );
-                })}
+                }) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Home className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>No systems have been documented for this property yet.</p>
+                  </div>
+                )}
               </div>
             </Card>
           </TabsContent>

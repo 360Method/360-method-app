@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Property, integrations } from "@/api/supabaseClient";
+import { Property, integrations, getStandardizedAddressId } from "@/api/supabaseClient";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,14 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       // Build clean data with ONLY valid database columns
+      // Generate standardized address ID for deduplication
+      const standardizedAddressId = getStandardizedAddressId({
+        streetAddress: data.street_address,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zip_code
+      });
+
       const cleanData = {
         // User ID - REQUIRED for RLS filtering
         user_id: user?.id,
@@ -55,6 +63,7 @@ export default function PropertyWizardSimplified({ onComplete, onCancel, existin
         city: data.city,
         state: data.state,
         zip_code: data.zip_code,
+        standardized_address_id: standardizedAddressId,
 
         // Property classification
         property_type: data.property_type,

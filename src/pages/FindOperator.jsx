@@ -102,9 +102,9 @@ export default function FindOperator() {
                 <Button
                   className="font-bold"
                   style={{ backgroundColor: '#FF6B35', minHeight: '48px' }}
-                  onClick={() => alert('Coming soon: Join waitlist functionality')}
+                  onClick={() => alert('Coming soon: Notification functionality')}
                 >
-                  Join Waitlist for Your Area
+                  Notify Me When Available
                 </Button>
                 <Button
                   variant="outline"

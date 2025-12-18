@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   Calendar,
@@ -19,8 +23,51 @@ import {
 } from 'lucide-react';
 
 export default function ContractorSchedule() {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState('week'); // week or month
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Fetch contractor profile
+  const { data: contractor } = useQuery({
+    queryKey: ['contractor-profile', user?.id],
+    queryFn: async () => {
+      const contractors = await Contractor.filter({ user_id: user?.id });
+      return contractors?.[0] || null;
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch scheduled jobs
+  const { data: jobsData, isLoading } = useQuery({
+    queryKey: ['contractor-schedule', contractor?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            priority,
+            scheduled_date,
+            scheduled_time,
+            estimated_cost,
+            estimated_hours,
+            property:properties (
+              street_address,
+              city
+            )
+          )
+        `)
+        .eq('contractor_id', contractor?.id)
+        .in('status', ['accepted', 'assigned', 'in_progress'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contractor?.id
+  });
 
   // Get week dates
   const getWeekDates = () => {
@@ -68,59 +115,27 @@ export default function ContractorSchedule() {
   const weekDates = getWeekDates();
   const monthDates = getMonthDates();
 
-  // Mock scheduled jobs
-  const scheduledJobs = [
-    {
-      id: '1',
-      title: 'Gutter Repair',
-      date: new Date().toDateString(),
-      time: '9:00 AM',
-      duration: '2 hrs',
-      address: '123 Oak St',
-      priority: 'high',
-      budget: 350
-    },
-    {
-      id: '2',
-      title: 'Faucet Replace',
-      date: new Date().toDateString(),
-      time: '2:00 PM',
-      duration: '1 hr',
-      address: '456 Elm Ave',
-      priority: 'medium',
-      budget: 180
-    },
-    {
-      id: '3',
-      title: 'HVAC Service',
-      date: new Date(Date.now() + 86400000).toDateString(),
-      time: '9:00 AM',
-      duration: '1.5 hrs',
-      address: '789 Pine Rd',
-      priority: 'low',
-      budget: 120
-    },
-    {
-      id: '4',
-      title: 'Exterior Caulking',
-      date: new Date(Date.now() + 86400000 * 3).toDateString(),
-      time: '10:00 AM',
-      duration: '3 hrs',
-      address: '321 Maple Dr',
-      priority: 'medium',
-      budget: 200
-    },
-    {
-      id: '5',
-      title: 'Deck Inspection',
-      date: new Date(Date.now() + 86400000 * 5).toDateString(),
-      time: '11:00 AM',
-      duration: '1 hr',
-      address: '555 Oak Blvd',
-      priority: 'low',
-      budget: 100
-    }
-  ];
+  // Transform jobs data for calendar
+  const scheduledJobs = useMemo(() => {
+    if (!jobsData) return [];
+    return jobsData.map(job => {
+      const scheduledDate = job.work_order?.scheduled_date
+        ? new Date(job.work_order.scheduled_date)
+        : new Date();
+      return {
+        id: job.id,
+        title: job.work_order?.title || 'Untitled Job',
+        date: scheduledDate.toDateString(),
+        time: job.work_order?.scheduled_time || 'TBD',
+        duration: job.work_order?.estimated_hours
+          ? `${job.work_order.estimated_hours} hr${job.work_order.estimated_hours > 1 ? 's' : ''}`
+          : '2 hrs',
+        address: job.work_order?.property?.street_address || 'Address TBD',
+        priority: job.work_order?.priority || 'medium',
+        budget: job.work_order?.estimated_cost || 0
+      };
+    });
+  }, [jobsData]);
 
   const getJobsForDate = (date) => {
     return scheduledJobs.filter(job => job.date === date.toDateString());
@@ -177,6 +192,19 @@ export default function ContractorSchedule() {
       }, 0);
     }, 0)
   };
+
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="p-4 md:p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading schedule...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   return (
     <ContractorLayout>

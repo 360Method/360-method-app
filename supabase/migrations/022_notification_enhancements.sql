@@ -17,6 +17,17 @@ CREATE TABLE IF NOT EXISTS user_notification_settings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure push_subscriptions table exists (may have been skipped in migration 005)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Add missing columns to push_subscriptions table
 ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
 ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS keys_p256dh TEXT;

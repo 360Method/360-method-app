@@ -212,18 +212,17 @@ const DemoWizard = ({ onComplete, onSkip }) => {
           <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
             <h4 className="font-bold text-yellow-900 mb-2">💡 Impressed?</h4>
             <p className="text-yellow-800 mb-4">
-              Join our waitlist to be notified when you can track your own property. 
-              We'll send you exclusive content about the 360° Method while you wait.
+              Sign up now to start tracking your own property with the 360° Method!
             </p>
             <button
               onClick={() => {
                 onComplete();
-                navigate(createPageUrl('Waitlist'));
+                navigate('/Signup');
               }}
               className="px-6 py-3 bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 font-bold shadow-md"
               style={{ minHeight: '48px' }}
             >
-              Join Waitlist
+              Create Free Account
             </button>
           </div>
         </div>

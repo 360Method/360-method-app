@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor, ContractorJob, WorkOrder, Property } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   Wrench,
@@ -24,83 +28,130 @@ import {
 } from 'lucide-react';
 
 export default function ContractorDashboard() {
+  const { user } = useAuth();
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
 
-  // Mock data
-  const contractorName = 'John';
-  const activeJob = null; // Set to job object if there's an active timer
-
-  const todaysJobs = [
-    {
-      id: '1',
-      title: 'Gutter Repair',
-      property_address: '123 Oak Street',
-      city: 'Portland',
-      due_time: '9:00 AM',
-      priority: 'high',
-      estimated_budget: 350,
-      status: 'ready',
-      operator_name: 'Handy Pioneers'
+  // Fetch contractor profile
+  const { data: contractor, isLoading: contractorLoading } = useQuery({
+    queryKey: ['contractor-profile', user?.id],
+    queryFn: async () => {
+      const contractors = await Contractor.filter({ user_id: user?.id });
+      return contractors?.[0] || null;
     },
-    {
-      id: '2',
-      title: 'Kitchen Faucet Replacement',
-      property_address: '456 Elm Avenue',
-      city: 'Portland',
-      due_time: '2:00 PM',
-      priority: 'medium',
-      estimated_budget: 180,
-      status: 'ready',
-      operator_name: 'Handy Pioneers'
-    }
-  ];
+    enabled: !!user?.id
+  });
 
-  const upcomingJobs = [
-    {
-      id: '3',
-      title: 'HVAC Filter Service',
-      property_address: '789 Pine Road',
-      date: 'Tomorrow',
-      time: '9:00 AM',
-      estimated_budget: 120
-    },
-    {
-      id: '4',
-      title: 'Exterior Caulking',
-      property_address: '321 Maple Drive',
-      date: 'Wed, Dec 4',
-      time: '10:00 AM',
-      estimated_budget: 200
-    }
-  ];
+  // Fetch all contractor jobs with work order details
+  const { data: jobsData, isLoading: jobsLoading } = useQuery({
+    queryKey: ['contractor-jobs', contractor?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            description,
+            priority,
+            scheduled_date,
+            scheduled_time,
+            estimated_cost,
+            property:properties (
+              street_address,
+              city,
+              state,
+              zip_code
+            ),
+            operator:operators (
+              company_name
+            )
+          )
+        `)
+        .eq('contractor_id', contractor?.id)
+        .order('created_at', { ascending: false });
 
-  const recentlyCompleted = [
-    {
-      id: '5',
-      title: 'Exterior Paint Touch-up',
-      property_address: '555 Cedar Lane',
-      completed_date: 'Yesterday',
-      earned: 450,
-      rating: 5
+      if (error) throw error;
+      return data || [];
     },
-    {
-      id: '6',
-      title: 'Toilet Repair',
-      property_address: '777 Birch Blvd',
-      completed_date: '2 days ago',
-      earned: 150,
-      rating: 5
-    }
-  ];
+    enabled: !!contractor?.id
+  });
+
+  // Process jobs data
+  const today = new Date().toISOString().split('T')[0];
+  const todaysJobs = jobsData?.filter(job => {
+    const jobDate = job.work_order?.scheduled_date;
+    return jobDate === today && !['completed', 'cancelled'].includes(job.status);
+  }).map(job => ({
+    id: job.id,
+    title: job.work_order?.title || 'Untitled Job',
+    property_address: job.work_order?.property?.street_address || 'Address not set',
+    city: job.work_order?.property?.city || '',
+    due_time: job.work_order?.scheduled_time || 'TBD',
+    priority: job.work_order?.priority || 'medium',
+    estimated_budget: job.work_order?.estimated_cost || 0,
+    status: job.status === 'accepted' ? 'ready' : job.status,
+    operator_name: job.work_order?.operator?.company_name || 'Unknown Operator'
+  })) || [];
+
+  // Get active job (in_progress status)
+  const activeJob = jobsData?.find(job => job.status === 'in_progress') || null;
+
+  // Upcoming jobs (not today, not completed)
+  const upcomingJobs = jobsData?.filter(job => {
+    const jobDate = job.work_order?.scheduled_date;
+    return jobDate && jobDate > today && !['completed', 'cancelled'].includes(job.status);
+  }).slice(0, 4).map(job => {
+    const jobDate = new Date(job.work_order?.scheduled_date);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomarrow = jobDate.toDateString() === tomorrow.toDateString();
+
+    return {
+      id: job.id,
+      title: job.work_order?.title || 'Untitled Job',
+      property_address: job.work_order?.property?.street_address || 'Address not set',
+      date: isTomarrow ? 'Tomorrow' : jobDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      time: job.work_order?.scheduled_time || 'TBD',
+      estimated_budget: job.work_order?.estimated_cost || 0
+    };
+  }) || [];
+
+  // Recently completed jobs
+  const recentlyCompleted = jobsData?.filter(job => job.status === 'completed')
+    .slice(0, 3).map(job => {
+      const completedDate = job.completed_at ? new Date(job.completed_at) : null;
+      const daysAgo = completedDate ? Math.floor((Date.now() - completedDate) / (1000 * 60 * 60 * 24)) : 0;
+
+      return {
+        id: job.id,
+        title: job.work_order?.title || 'Untitled Job',
+        property_address: job.work_order?.property?.street_address || 'Address not set',
+        completed_date: daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`,
+        earned: (job.time_spent_minutes || 0) / 60 * (contractor?.hourly_rate || 0),
+        rating: 5 // TODO: Fetch from contractor_reviews
+      };
+    }) || [];
+
+  // Calculate stats from contractor record and jobs
+  const completedJobs = jobsData?.filter(j => j.status === 'completed') || [];
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+  const completedThisWeek = completedJobs.filter(j =>
+    j.completed_at && new Date(j.completed_at) >= weekStart
+  ).length;
 
   const stats = {
     todayEarnings: 0,
-    weekEarnings: 600,
-    monthEarnings: 3200,
-    completedThisWeek: 4,
-    averageRating: 4.9
+    weekEarnings: contractor?.total_earnings ? Math.round(contractor.total_earnings / 4) : 0, // Approximate weekly
+    monthEarnings: contractor?.total_earnings || 0,
+    completedThisWeek,
+    averageRating: contractor?.rating || 0
   };
+
+  const contractorName = contractor?.first_name || user?.first_name || 'Contractor';
+  const isLoading = contractorLoading || jobsLoading;
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -110,6 +161,19 @@ export default function ContractorDashboard() {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
+
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="p-4 md:p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   return (
     <ContractorLayout activeJob={activeJob}>

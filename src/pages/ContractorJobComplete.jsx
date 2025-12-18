@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { ContractorJob } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   CheckCircle,
@@ -37,13 +41,69 @@ import { toast } from 'sonner';
 export default function ContractorJobComplete() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const jobId = searchParams.get('id') || '1';
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const jobId = searchParams.get('id');
   const elapsedTime = parseInt(searchParams.get('time') || '0');
 
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch job data from database
+  const { data: jobData, isLoading } = useQuery({
+    queryKey: ['contractor-job-complete', jobId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            description,
+            estimated_cost,
+            property:properties (
+              street_address,
+              city,
+              state
+            )
+          )
+        `)
+        .eq('id', jobId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!jobId
+  });
+
+  // Update job mutation
+  const updateJobMutation = useMutation({
+    mutationFn: async (updates) => {
+      return await ContractorJob.update(jobId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contractor-job-complete', jobId]);
+    }
+  });
+
+  // Transform job data
+  const job = jobData ? {
+    id: jobData.id,
+    title: jobData.work_order?.title || 'Untitled Job',
+    property_address: `${jobData.work_order?.property?.street_address || ''}, ${jobData.work_order?.property?.city || ''}`,
+    owner_name: 'Property Owner',
+    estimated_budget: jobData.work_order?.estimated_cost || 0
+  } : {
+    id: jobId,
+    title: 'Loading...',
+    property_address: '',
+    owner_name: '',
+    estimated_budget: 0
+  };
 
   // Format time
   const formatTime = (seconds) => {
@@ -85,14 +145,6 @@ export default function ContractorJobComplete() {
     ai_summary_generated: true
   });
 
-  const job = {
-    id: jobId,
-    title: 'Gutter Repair',
-    property_address: '123 Oak Street, Portland',
-    owner_name: 'Sarah Johnson',
-    estimated_budget: 350
-  };
-
   const totalMaterialsCost = completionData.materials_used.reduce((sum, m) => sum + m.cost, 0);
 
   const generateAISummary = async () => {
@@ -125,14 +177,55 @@ export default function ContractorJobComplete() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    setShowSubmitDialog(false);
-    toast.success('Job completed! Submitted for operator review.');
-    navigate(createPageUrl('ContractorDashboard'));
+
+    try {
+      // Update contractor job with completion data
+      await updateJobMutation.mutateAsync({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        time_spent_minutes: Math.floor(elapsedTime / 60),
+        completion_summary: completionData.summary,
+        materials_used: completionData.materials_used,
+        recommendations: completionData.recommendations,
+        notes: completionData.additional_notes
+      });
+
+      // Update work order status if exists
+      if (jobData?.work_order_id) {
+        await supabase
+          .from('work_orders')
+          .update({
+            status: 'pending_review',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', jobData.work_order_id);
+      }
+
+      setShowSubmitDialog(false);
+      toast.success('Job completed! Submitted for operator review.');
+      navigate(createPageUrl('ContractorDashboard'));
+    } catch (error) {
+      console.error('Failed to submit job:', error);
+      toast.error('Failed to submit job. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canSubmit = completionData.summary.trim() && completionData.photos.after.length > 0;
+
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading job completion...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   return (
     <ContractorLayout>

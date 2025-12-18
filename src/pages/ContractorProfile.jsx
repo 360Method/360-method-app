@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { auth } from '@/api/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
+import { Contractor, OperatorContractor } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,37 +35,102 @@ const TRADE_OPTIONS = [
 ];
 
 export default function ContractorProfile() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
-  const [profileData, setProfileData] = useState({
-    company_name: 'Quick Fix Services',
-    contact_name: 'John Smith',
-    email: 'john@quickfix.com',
-    phone: '(555) 123-4567',
-    trade_specialties: ['Plumbing', 'General Handyman'],
-    service_areas: ['97201', '97202', '97203'],
-    license_number: 'LIC-12345',
-    insurance_verified: true
-  });
-
   const [newZipCode, setNewZipCode] = useState('');
 
-  const queryClient = useQueryClient();
+  // Fetch contractor profile
+  const { data: contractor, isLoading } = useQuery({
+    queryKey: ['contractor-profile', user?.id],
+    queryFn: async () => {
+      const contractors = await Contractor.filter({ user_id: user?.id });
+      return contractors?.[0] || null;
+    },
+    enabled: !!user?.id
+  });
 
+  // Fetch operator connections
+  const { data: operatorConnections } = useQuery({
+    queryKey: ['contractor-operators', contractor?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('operator_contractors')
+        .select(`
+          *,
+          operator:operators (
+            id,
+            company_name
+          )
+        `)
+        .eq('contractor_id', contractor?.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!contractor?.id
+  });
+
+  // Local state for editing
+  const [profileData, setProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    company_name: '',
+    contact_name: '',
+    email: '',
+    phone: '',
+    trade_types: [],
+    trade_specialties: [],
+    service_areas: [],
+    hourly_rate: 0,
+    license_number: '',
+    insurance_verified: false
+  });
+
+  // Sync profile data when contractor loads
+  useEffect(() => {
+    if (contractor) {
+      setProfileData({
+        first_name: contractor.first_name || '',
+        last_name: contractor.last_name || '',
+        company_name: contractor.company_name || `${contractor.first_name || ''} ${contractor.last_name || ''}`.trim(),
+        contact_name: `${contractor.first_name || ''} ${contractor.last_name || ''}`.trim(),
+        email: contractor.email || '',
+        phone: contractor.phone || '',
+        trade_types: contractor.trade_types || [],
+        trade_specialties: contractor.trade_types || [], // Use trade_types as specialties
+        service_areas: contractor.service_areas || [],
+        hourly_rate: contractor.hourly_rate || 0,
+        license_number: contractor.license_number || '',
+        insurance_verified: contractor.insurance_verified || false
+      });
+    }
+  }, [contractor]);
+
+  // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data) => auth.updateMe(data),
+    mutationFn: async (data) => {
+      return await Contractor.update(contractor.id, data);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries(['contractor-profile', user?.id]);
       toast.success('Profile updated');
       setEditMode(false);
+    },
+    onError: () => {
+      toast.error('Failed to update profile');
     }
   });
 
   const handleToggleTrade = (trade) => {
+    const updatedTrades = profileData.trade_specialties.includes(trade)
+      ? profileData.trade_specialties.filter(t => t !== trade)
+      : [...profileData.trade_specialties, trade];
     setProfileData({
       ...profileData,
-      trade_specialties: profileData.trade_specialties.includes(trade)
-        ? profileData.trade_specialties.filter(t => t !== trade)
-        : [...profileData.trade_specialties, trade]
+      trade_types: updatedTrades,
+      trade_specialties: updatedTrades
     });
   };
 
@@ -85,14 +152,37 @@ export default function ContractorProfile() {
   };
 
   const handleSave = () => {
-    updateProfileMutation.mutate(profileData);
+    // Convert to database format
+    const saveData = {
+      first_name: profileData.first_name,
+      last_name: profileData.last_name,
+      email: profileData.email,
+      phone: profileData.phone,
+      trade_types: profileData.trade_specialties,
+      service_areas: profileData.service_areas,
+      hourly_rate: profileData.hourly_rate
+    };
+    updateProfileMutation.mutate(saveData);
   };
 
-  // Mock operator connections
-  const operators = [
-    { id: '1', name: 'Handy Pioneers', status: 'active', jobs_completed: 24 },
-    { id: '2', name: 'Property Care Pro', status: 'active', jobs_completed: 18 }
-  ];
+  // Transform operator connections
+  const operators = operatorConnections?.map(conn => ({
+    id: conn.operator?.id,
+    name: conn.operator?.company_name || 'Unknown',
+    status: conn.status,
+    jobs_completed: conn.jobs_completed || 0
+  })) || [];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">

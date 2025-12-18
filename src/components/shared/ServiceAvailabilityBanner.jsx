@@ -60,7 +60,7 @@ export default function ServiceAvailabilityBanner({ user, property, className = 
               className="bg-amber-700 hover:bg-amber-800 text-white shadow-md font-semibold"
               style={{ minHeight: '44px', fontSize: '15px' }}
             >
-              <Link to={createPageUrl('Waitlist')}>
+              <Link to={createPageUrl('FindOperator')}>
                 <MapPin className="w-4 h-4 mr-2" />
                 {message.cta}
               </Link>

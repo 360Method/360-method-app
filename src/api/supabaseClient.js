@@ -777,6 +777,48 @@ export const RegionalCosts = {
     }
 
     return null;
+  },
+
+  /**
+   * Calculate regional cost multiplier from regional cost data
+   * @param {Object} regionalCosts - Regional costs object from getWithFallback
+   * @returns {Object} Multipliers for labor, materials, and overall
+   */
+  getCostMultipliers(regionalCosts) {
+    if (!regionalCosts) {
+      return { labor: 1.0, materials: 1.0, overall: 1.0, hasData: false };
+    }
+
+    // Cost indices are stored as values where 100 = national average
+    const laborMultiplier = (regionalCosts.labor_cost_index || 100) / 100;
+    const materialsMultiplier = (regionalCosts.materials_cost_index || 100) / 100;
+    const constructionMultiplier = (regionalCosts.construction_cost_index || 100) / 100;
+
+    // Overall multiplier is weighted average (60% labor, 40% materials for typical maintenance)
+    const overallMultiplier = (laborMultiplier * 0.6) + (materialsMultiplier * 0.4);
+
+    return {
+      labor: laborMultiplier,
+      materials: materialsMultiplier,
+      construction: constructionMultiplier,
+      overall: overallMultiplier,
+      hasData: true,
+      region: regionalCosts.region,
+      city: regionalCosts.city,
+      state: regionalCosts.state
+    };
+  },
+
+  /**
+   * Apply regional multiplier to a base cost
+   * @param {number} baseCost - Base cost in dollars
+   * @param {Object} multipliers - Multipliers from getCostMultipliers
+   * @param {string} type - Type of cost ('labor', 'materials', 'overall')
+   * @returns {number} Adjusted cost
+   */
+  applyMultiplier(baseCost, multipliers, type = 'overall') {
+    if (!baseCost || !multipliers || !multipliers.hasData) return baseCost;
+    return Math.round(baseCost * (multipliers[type] || multipliers.overall || 1.0));
   }
 };
 

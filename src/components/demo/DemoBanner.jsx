@@ -48,8 +48,7 @@ export function DemoBanner({ onAddProperty }) {
   // 2. NOT on landing/welcome pages (those have their own flows)
   const isLandingPage = location.pathname === '/' ||
                         location.pathname === '/welcome' ||
-                        location.pathname === createPageUrl('Welcome') ||
-                        location.pathname === createPageUrl('Waitlist');
+                        location.pathname === createPageUrl('Welcome');
 
   // Hide banner if not in demo mode OR on landing pages
   if (!demoMode || isLandingPage) return null;

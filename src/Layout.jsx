@@ -66,9 +66,8 @@ function LayoutContent({ children }) {
 
   // Determine if we should show the app UI (sidebar, header, etc.)
   const isLandingPage = location.pathname === '/' || location.pathname === '/welcome' || location.pathname === createPageUrl('Welcome') || location.pathname === createPageUrl('LandingPage');
-  const isWaitlistPage = location.pathname === createPageUrl('Waitlist');
   const isDemoEntryPage = location.pathname === createPageUrl('DemoEntry');
-  const showAppUI = !isLandingPage && !isWaitlistPage && !isDemoEntryPage;
+  const showAppUI = !isLandingPage && !isDemoEntryPage;
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', user?.id],
@@ -213,11 +212,11 @@ function LayoutContent({ children }) {
         )}
         {demoMode ? (
           <>
-            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Waitlist")}>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("FindOperator")}>
               <Wrench className="w-4 h-4 mr-2" />
               Professional Services
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Waitlist")}>
+            <DropdownMenuItem onClick={() => window.location.href = createPageUrl("Pricing")}>
               <Sparkles className="w-4 h-4 mr-2" />
               Plans & Pricing
             </DropdownMenuItem>
@@ -268,7 +267,7 @@ function LayoutContent({ children }) {
           />
         )}
 
-        {/* Desktop Sidebar - Only show if not landing/waitlist */}
+        {/* Desktop Sidebar - Only show if not landing/demo entry */}
         {showAppUI && (
           <aside className={`hidden md:flex border-r border-gray-200 bg-white flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-300 ${
             sidebarCollapsed ? 'md:w-16' : 'md:w-64'
@@ -458,7 +457,7 @@ function LayoutContent({ children }) {
             </aside>
             )}
 
-        {/* Mobile Menu - Only show if not landing/waitlist */}
+        {/* Mobile Menu - Only show if not landing/demo entry */}
         {showAppUI && (
           <>
             {mobileMenuOpen && (
@@ -585,7 +584,7 @@ function LayoutContent({ children }) {
         )}
 
         <main className={`flex-1 flex flex-col overflow-x-hidden transition-all duration-300 ${showAppUI ? (sidebarCollapsed ? 'md:ml-16' : 'md:ml-64') : 'w-full'}`}>
-          {/* Mobile Header - Only show if not landing/waitlist */}
+          {/* Mobile Header - Only show if not landing/demo entry */}
           {showAppUI && (
             <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[50]" style={{ height: '56px' }}>
               <div className="flex items-center justify-between h-full px-4">

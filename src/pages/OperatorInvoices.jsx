@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase, Operator } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import OperatorLayout from '@/components/operator/OperatorLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +16,14 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  Download
+  Download,
+  Loader2,
+  FileText
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
   'draft': { label: 'Draft', color: 'bg-gray-100 text-gray-700', icon: Clock },
+  'pending': { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   'sent': { label: 'Sent', color: 'bg-blue-100 text-blue-700', icon: Eye },
   'viewed': { label: 'Viewed', color: 'bg-purple-100 text-purple-700', icon: Eye },
   'paid': { label: 'Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
@@ -24,43 +31,48 @@ const STATUS_CONFIG = {
 };
 
 export default function OperatorInvoices() {
+  const { user } = useAuth();
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const invoices = [
-    {
-      id: 'INV-001',
-      client_name: 'Sarah Johnson',
-      amount: 450,
-      date_sent: '2025-11-15',
-      status: 'paid',
-      payment_date: '2025-11-20'
+  // Fetch operator profile
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator', user?.id],
+    queryFn: async () => {
+      const operators = await Operator.filter({ user_id: user?.id });
+      return operators[0] || null;
     },
-    {
-      id: 'INV-002',
-      client_name: 'Mike Peterson',
-      amount: 320,
-      date_sent: '2025-11-18',
-      status: 'viewed',
-      payment_date: null
+    enabled: !!user?.id
+  });
+
+  // Fetch invoices from database
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: ['operator-invoices', myOperator?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          operator_clients(contact_name)
+        `)
+        .eq('operator_id', myOperator.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform data to match expected format
+      return (data || []).map(inv => ({
+        id: inv.invoice_number || `INV-${inv.id.slice(0, 8).toUpperCase()}`,
+        raw_id: inv.id,
+        client_name: inv.operator_clients?.contact_name || inv.client_name || 'Unknown Client',
+        amount: inv.amount || inv.total || 0,
+        date_sent: inv.sent_at || inv.created_at,
+        status: inv.status || 'draft',
+        payment_date: inv.paid_at || null
+      }));
     },
-    {
-      id: 'INV-003',
-      client_name: 'Lisa Chen',
-      amount: 680,
-      date_sent: '2025-11-10',
-      status: 'overdue',
-      payment_date: null
-    },
-    {
-      id: 'INV-004',
-      client_name: 'Robert Wilson',
-      amount: 250,
-      date_sent: null,
-      status: 'draft',
-      payment_date: null
-    }
-  ];
+    enabled: !!myOperator?.id
+  });
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesStatus = filterStatus === 'all' || inv.status === filterStatus;
@@ -73,9 +85,20 @@ export default function OperatorInvoices() {
     .filter(inv => inv.status !== 'paid' && inv.status !== 'draft')
     .reduce((sum, inv) => sum + inv.amount, 0);
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <OperatorLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </OperatorLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
+    <OperatorLayout>
+      <div className="p-4 md:p-6 lg:p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -84,7 +107,7 @@ export default function OperatorInvoices() {
               ${totalUnpaid.toLocaleString()} unpaid
             </p>
           </div>
-          <Button 
+          <Button
             className="gap-2"
             onClick={() => window.location.href = createPageUrl('OperatorInvoiceCreate')}>
             <Plus className="w-4 h-4" />
@@ -172,7 +195,23 @@ export default function OperatorInvoices() {
             );
           })}
         </div>
+
+        {/* Empty state */}
+        {invoices.length === 0 && (
+          <Card className="p-12 text-center">
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices yet</h3>
+            <p className="text-gray-500 mb-4">Create your first invoice to start billing clients</p>
+            <Button
+              className="gap-2"
+              onClick={() => window.location.href = createPageUrl('OperatorInvoiceCreate')}
+            >
+              <Plus className="w-4 h-4" />
+              Create Invoice
+            </Button>
+          </Card>
+        )}
       </div>
-    </div>
+    </OperatorLayout>
   );
 }

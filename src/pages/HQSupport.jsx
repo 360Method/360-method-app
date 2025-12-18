@@ -46,68 +46,83 @@ export default function HQSupport() {
   const [showTicketDetail, setShowTicketDetail] = useState(false);
   const [replyText, setReplyText] = useState('');
 
-  // Fetch support tickets (placeholder - would need a support_tickets table)
+  // Fetch support tickets from database
   const { data: tickets = [], isLoading, refetch } = useQuery({
     queryKey: ['hq-support-tickets', statusFilter, priorityFilter],
     queryFn: async () => {
-      // Placeholder data - in production, this would come from a support_tickets table
-      return [
-        {
-          id: '1',
-          subject: 'Unable to add property',
-          description: 'I tried to add a new property but it keeps showing an error message.',
-          user_email: 'john@example.com',
-          user_name: 'John Smith',
-          status: 'open',
-          priority: 'high',
-          category: 'bug',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          updated_at: new Date(Date.now() - 1800000).toISOString(),
-          messages: [
-            { id: 1, from: 'user', text: 'I tried to add a new property but it keeps showing an error message.', timestamp: new Date(Date.now() - 3600000).toISOString() },
-            { id: 2, from: 'support', text: 'Hi John, can you please share a screenshot of the error?', timestamp: new Date(Date.now() - 1800000).toISOString() },
-          ]
-        },
-        {
-          id: '2',
-          subject: 'How do I invite my property manager?',
-          description: 'I want to give my property manager access to view my property.',
-          user_email: 'sarah@example.com',
-          user_name: 'Sarah Johnson',
-          status: 'pending',
-          priority: 'medium',
-          category: 'question',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          messages: []
-        },
-        {
-          id: '3',
-          subject: 'Subscription billing question',
-          description: 'When will my next payment be processed?',
-          user_email: 'mike@example.com',
-          user_name: 'Mike Peterson',
-          status: 'resolved',
-          priority: 'low',
-          category: 'billing',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          messages: []
-        },
-        {
-          id: '4',
-          subject: 'Feature request: Dark mode',
-          description: 'Would love to have a dark mode option for the app.',
-          user_email: 'lisa@example.com',
-          user_name: 'Lisa Chen',
-          status: 'open',
-          priority: 'low',
-          category: 'feature',
-          created_at: new Date(Date.now() - 259200000).toISOString(),
-          updated_at: new Date(Date.now() - 259200000).toISOString(),
-          messages: []
-        }
-      ];
+      let query = supabase
+        .from('support_tickets')
+        .select(`
+          *,
+          messages:support_ticket_messages(
+            id,
+            sender_type,
+            content,
+            created_at
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+      if (priorityFilter !== 'all') {
+        query = query.eq('priority', priorityFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        return [];
+      }
+
+      // Transform messages to expected format
+      return (data || []).map(ticket => ({
+        ...ticket,
+        messages: (ticket.messages || []).map(m => ({
+          id: m.id,
+          from: m.sender_type,
+          text: m.content,
+          timestamp: m.created_at
+        }))
+      }));
+    }
+  });
+
+  // Mutation to update ticket status
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ ticketId, newStatus }) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hq-support-tickets'] });
+    }
+  });
+
+  // Mutation to send reply
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ ticketId, content }) => {
+      const { error } = await supabase
+        .from('support_ticket_messages')
+        .insert({
+          ticket_id: ticketId,
+          sender_type: 'support',
+          content: content
+        });
+      if (error) throw error;
+
+      // Update ticket's updated_at
+      await supabase
+        .from('support_tickets')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hq-support-tickets'] });
     }
   });
 
@@ -164,14 +179,39 @@ export default function HQSupport() {
     return `${diffDays}d ago`;
   };
 
-  const handleSendReply = () => {
-    if (!replyText.trim()) return;
-    toast.success('Reply sent successfully');
-    setReplyText('');
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !selectedTicket) return;
+    try {
+      await sendReplyMutation.mutateAsync({
+        ticketId: selectedTicket.id,
+        content: replyText.trim()
+      });
+      toast.success('Reply sent successfully');
+      setReplyText('');
+      // Update local selected ticket with new message
+      setSelectedTicket(prev => ({
+        ...prev,
+        messages: [...(prev.messages || []), {
+          id: Date.now(),
+          from: 'support',
+          text: replyText.trim(),
+          timestamp: new Date().toISOString()
+        }]
+      }));
+    } catch (error) {
+      toast.error('Failed to send reply');
+    }
   };
 
-  const updateTicketStatus = (ticketId, newStatus) => {
-    toast.success(`Ticket marked as ${newStatus}`);
+  const updateTicketStatus = async (ticketId, newStatus) => {
+    try {
+      await updateStatusMutation.mutateAsync({ ticketId, newStatus });
+      toast.success(`Ticket marked as ${newStatus}`);
+      // Update local selected ticket
+      setSelectedTicket(prev => prev ? { ...prev, status: newStatus } : null);
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
   };
 
   const stats = {

@@ -1,5 +1,5 @@
 import React from "react";
-import { CartItem, Property, ServicePackage, auth, storage } from "@/api/supabaseClient";
+import { CartItem, Property, ServicePackage, auth, storage, supabase } from "@/api/supabaseClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -553,63 +553,87 @@ www.360method.com
     try {
       const property = properties.find(p => p.id === cartItems[0].property_id);
 
-      const packageData = {
-        property_id: cartItems[0].property_id,
-        package_name: packageName,
-        item_count: cartItems.length,
-        total_estimated_hours: totalHours,
-        total_estimated_cost_min: totalCostMin,
-        total_estimated_cost_max: totalCostMax,
-        member_discount_percent: memberDiscountPercent,
-        member_discount_amount: memberDiscountAmount,
-        hours_from_bucket: hoursFromBucket,
-        final_cost_min: finalCostMin,
-        final_cost_max: finalCostMax,
-        customer_notes: customerNotes,
-        preferred_start_date: preferredStartDate,
-        status: 'submitted',
-        operator_id: user?.assigned_operator_id
-      };
+      // Build line items for the checkout
+      const lineItems = cartItems.map(item => ({
+        id: item.id,
+        title: item.task_title || item.title,
+        description: item.description,
+        hours: item.estimated_hours || 1,
+        cost: item.estimated_cost || 0
+      }));
 
-      const servicePackage = await ServicePackage.create(packageData);
-
-      const updatePromises = cartItems.map(item =>
-        CartItem.update(item.id, {
-          status: 'submitted',
-          package_id: servicePackage.id
-        })
-      );
-      await Promise.all(updatePromises);
-
-      if (isMember && hoursFromBucket > 0) {
-        await auth.updateMe({
-          hour_bucket: {
-            ...hourBucket,
-            used: (hourBucket.used || 0) + hoursFromBucket,
-            remaining: (hourBucket.remaining || 0) - hoursFromBucket
+      // Call the Stripe checkout edge function
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        'createServicePaymentCheckout',
+        {
+          body: {
+            user_id: authUser?.id,
+            user_email: authUser?.email || user?.email,
+            user_name: user?.full_name || authUser?.firstName,
+            property_id: cartItems[0].property_id,
+            package_name: packageName,
+            line_items: lineItems,
+            total_amount: finalCostMin, // Use the discounted price
+            total_hours: totalHours,
+            customer_notes: customerNotes,
+            preferred_start_date: preferredStartDate,
+            success_url: `${window.location.origin}${createPageUrl('Dashboard')}?payment=success`,
+            cancel_url: `${window.location.origin}${createPageUrl('CartReview')}?payment=cancelled`
           }
-        });
+        }
+      );
+
+      if (checkoutError) {
+        throw new Error(checkoutError.message || 'Failed to create checkout session');
       }
 
-      await storage.sendEmail({
-        to: operatorInfo.contact?.email || 'operator@example.com',
-        subject: `New Service Package Request - ${packageName}`,
-        body: `Service package #${servicePackage.id} submitted by ${user.full_name}`
-      });
+      if (!checkoutData?.success || !checkoutData?.checkout_url) {
+        throw new Error(checkoutData?.error || 'Failed to create checkout session');
+      }
 
-      queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-      
-      alert('✅ Service package submitted successfully! Your operator will contact you soon.');
-      window.location.href = createPageUrl('Dashboard');
+      // Update cart items with the package ID
+      if (checkoutData.package_id) {
+        const updatePromises = cartItems.map(item =>
+          CartItem.update(item.id, {
+            status: 'pending_payment',
+            package_id: checkoutData.package_id
+          })
+        );
+        await Promise.all(updatePromises);
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutData.checkout_url;
 
     } catch (error) {
       console.error('Submission failed:', error);
-      alert('Failed to submit package. Please try again.');
+      alert('Failed to proceed to payment. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Handle payment success/cancel from URL params
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const packageId = urlParams.get('package_id');
+
+    if (paymentStatus === 'success') {
+      // Clear cart and show success message
+      queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      alert('Payment successful! Your service package has been submitted.');
+      // Clean URL
+      window.history.replaceState({}, '', createPageUrl('CartReview'));
+    } else if (paymentStatus === 'cancelled' && packageId) {
+      // Optionally handle cancelled payment - mark package as cancelled
+      console.log('Payment cancelled for package:', packageId);
+      alert('Payment was cancelled. Your cart items are still saved.');
+      // Clean URL
+      window.history.replaceState({}, '', createPageUrl('CartReview'));
+    }
+  }, []);
 
   if (cartItems.length === 0) {
     return (
@@ -797,11 +821,11 @@ www.360method.com
                         No 360° Operator in {property?.city || 'Your Area'} Yet
                       </h3>
                       <p className="text-sm text-gray-700 mb-3">
-                        Download your estimate below to use with any contractor. Want 360° Method service? Join the waitlist!
+                        Download your estimate below to use with any contractor. Want 360° Method service? Get notified when we're in your area!
                       </p>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="outline" className="flex-1">
-                          <a href={createPageUrl('FindOperator')}>Join Waitlist</a>
+                          <a href={createPageUrl('FindOperator')}>Notify Me</a>
                         </Button>
                         <Button asChild size="sm" variant="outline" className="flex-1">
                           <a href="https://360method.com/operators" target="_blank">Become an Operator</a>

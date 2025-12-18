@@ -19,6 +19,7 @@ import PreservationRecommendationCard from "../components/preserve/PreservationR
 import DecisionCalculator from "../components/preserve/DecisionCalculator";
 import InvestmentMatrix from "../components/preserve/InvestmentMatrix";
 import PreservationROIChart from "../components/preserve/PreservationROIChart";
+import ExpenseForecast from "../components/preserve/ExpenseForecast";
 import { useDemo } from "../components/shared/DemoContext";
 import StepEducationCard from "../components/shared/StepEducationCard";
 import { STEP_EDUCATION } from "../components/shared/stepEducationContent";
@@ -184,6 +185,32 @@ export default function Preserve() {
 
   // Calculate total capital at risk
   const totalCapitalAtRisk = systems.reduce((sum, s) => sum + (s.replacement_cost_estimate || 0), 0);
+
+  // Calculate expense forecast for 12, 24, 36 months
+  const expenseForecast = React.useMemo(() => {
+    const months12 = systems.reduce((sum, s) => {
+      if (!s.installation_year || !s.estimated_lifespan_years) return sum;
+      const yearsRemaining = s.estimated_lifespan_years - (currentYear - s.installation_year);
+      if (yearsRemaining <= 1) return sum + (s.replacement_cost_estimate || 0);
+      return sum;
+    }, 0);
+
+    const months24 = systems.reduce((sum, s) => {
+      if (!s.installation_year || !s.estimated_lifespan_years) return sum;
+      const yearsRemaining = s.estimated_lifespan_years - (currentYear - s.installation_year);
+      if (yearsRemaining <= 2) return sum + (s.replacement_cost_estimate || 0);
+      return sum;
+    }, 0);
+
+    const months36 = systems.reduce((sum, s) => {
+      if (!s.installation_year || !s.estimated_lifespan_years) return sum;
+      const yearsRemaining = s.estimated_lifespan_years - (currentYear - s.installation_year);
+      if (yearsRemaining <= 3) return sum + (s.replacement_cost_estimate || 0);
+      return sum;
+    }, 0);
+
+    return { months12, months24, months36 };
+  }, [systems, currentYear]);
 
   // Get demo interventions if in demo mode
   const demoInterventions = (demoMode && preserveSchedules[0]?.interventions) || [];
@@ -483,6 +510,14 @@ export default function Preserve() {
 
             {/* Tab 1: Replacement Forecast */}
             <TabsContent value="forecast" className="mt-6 space-y-6">
+              {/* Major Expense Forecast Summary */}
+              <ExpenseForecast
+                next12Months={expenseForecast.months12}
+                next24Months={expenseForecast.months24}
+                next36Months={expenseForecast.months36}
+              />
+
+              {/* Detailed Timeline */}
               <ReplacementForecastTimeline
                 systems={systems}
                 property={properties.find(p => p.id === selectedProperty)}

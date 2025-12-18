@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, AlertCircle } from "lucide-react";
-import { Property, auth } from "@/api/supabaseClient";
+import { Property, auth, getStandardizedAddressId } from "@/api/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AddressAutocomplete from "./AddressAutocomplete";
@@ -80,9 +80,18 @@ export default function QuickPropertyAdd({ open, onClose, onSuccess }) {
       toast.warning('Address not verified - you can update it later if needed');
     }
 
+    // Generate standardized address ID for deduplication
+    const standardizedAddressId = getStandardizedAddressId({
+      streetAddress: formData.street_address,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zip_code
+    });
+
     const submitData = {
       ...formData,
       address_verified: addressVerified,
+      standardized_address_id: standardizedAddressId,
       // Only include optional fields if provided
       ...(formData.year_built && { year_built: parseInt(formData.year_built) }),
       ...(formData.square_footage && { square_footage: parseInt(formData.square_footage) })

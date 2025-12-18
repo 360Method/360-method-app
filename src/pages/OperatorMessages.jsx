@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase, Operator } from '@/api/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +24,9 @@ import {
   Check,
   Image,
   File,
-  Smile
+  Smile,
+  Loader2,
+  MessageSquare
 } from 'lucide-react';
 import OperatorLayout from '@/components/operator/OperatorLayout';
 import {
@@ -33,93 +38,126 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function OperatorMessages() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const messagesEndRef = useRef(null);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [filter, setFilter] = useState('all');
 
-  // Mock conversations
-  const conversations = [
-    {
-      id: '1',
-      client_name: 'Sarah Johnson',
-      property_address: '123 Oak Street, Portland',
-      avatar: 'SJ',
-      last_message: 'Thanks for the inspection report! Everything looks great.',
-      last_message_time: '2025-11-28T10:30:00',
-      unread: 0,
-      starred: true,
-      online: true,
-      messages: [
-        { id: 1, sender: 'client', text: 'Hi, I wanted to check on the status of my HVAC maintenance.', time: '2025-11-28T09:15:00' },
-        { id: 2, sender: 'operator', text: 'Hi Sarah! The technician completed the HVAC maintenance yesterday. Everything is running smoothly. I\'ll send over the detailed report shortly.', time: '2025-11-28T09:45:00' },
-        { id: 3, sender: 'client', text: 'That\'s great to hear! When can I expect the report?', time: '2025-11-28T10:00:00' },
-        { id: 4, sender: 'operator', text: 'I just emailed it to you. Please let me know if you have any questions!', time: '2025-11-28T10:15:00' },
-        { id: 5, sender: 'client', text: 'Thanks for the inspection report! Everything looks great.', time: '2025-11-28T10:30:00' },
-      ]
+  // Fetch operator profile
+  const { data: myOperator } = useQuery({
+    queryKey: ['myOperator', user?.id],
+    queryFn: async () => {
+      const operators = await Operator.filter({ user_id: user?.id });
+      return operators[0] || null;
     },
-    {
-      id: '2',
-      client_name: 'Mike Peterson',
-      property_address: '456 Elm Avenue, Portland',
-      avatar: 'MP',
-      last_message: 'When can the plumber come by? The leak is getting worse.',
-      last_message_time: '2025-11-28T09:15:00',
-      unread: 2,
-      starred: false,
-      online: false,
-      messages: [
-        { id: 1, sender: 'client', text: 'I noticed a leak under my kitchen sink.', time: '2025-11-27T14:00:00' },
-        { id: 2, sender: 'operator', text: 'Thanks for letting us know, Mike. I\'ll schedule a plumber for you. Is tomorrow morning okay?', time: '2025-11-27T14:30:00' },
-        { id: 3, sender: 'client', text: 'Tomorrow works. What time?', time: '2025-11-27T15:00:00' },
-        { id: 4, sender: 'client', text: 'When can the plumber come by? The leak is getting worse.', time: '2025-11-28T09:15:00' },
-      ]
+    enabled: !!user?.id
+  });
+
+  // Fetch conversations (threads with clients)
+  const { data: conversations = [], isLoading } = useQuery({
+    queryKey: ['operator-conversations', myOperator?.id],
+    queryFn: async () => {
+      // Fetch message threads grouped by client
+      const { data: threads, error } = await supabase
+        .from('message_threads')
+        .select(`
+          *,
+          operator_clients(id, contact_name, property_address),
+          messages(id, content, sender_type, created_at, read_at)
+        `)
+        .eq('operator_id', myOperator.id)
+        .order('last_message_at', { ascending: false });
+
+      if (error) {
+        // If message_threads table doesn't exist, return empty array
+        console.log('Message threads query error (table may not exist):', error.message);
+        return [];
+      }
+
+      // Transform to expected format
+      return (threads || []).map(thread => {
+        const client = thread.operator_clients || {};
+        const messages = thread.messages || [];
+        const lastMessage = messages[messages.length - 1];
+        const unreadCount = messages.filter(m => m.sender_type === 'client' && !m.read_at).length;
+        const clientName = client.contact_name || 'Unknown Client';
+
+        return {
+          id: thread.id,
+          client_id: thread.client_id,
+          client_name: clientName,
+          property_address: client.property_address || 'No address',
+          avatar: clientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+          last_message: lastMessage?.content || 'No messages yet',
+          last_message_time: thread.last_message_at || thread.created_at,
+          unread: unreadCount,
+          starred: thread.starred || false,
+          online: false, // Would need real-time presence tracking
+          messages: messages.map(m => ({
+            id: m.id,
+            sender: m.sender_type === 'operator' ? 'operator' : 'client',
+            text: m.content,
+            time: m.created_at
+          }))
+        };
+      });
     },
-    {
-      id: '3',
-      client_name: 'Lisa Chen',
-      property_address: '789 Pine Road, Portland',
-      avatar: 'LC',
-      last_message: 'The new water heater is working perfectly!',
-      last_message_time: '2025-11-27T16:45:00',
-      unread: 0,
-      starred: false,
-      online: true,
-      messages: [
-        { id: 1, sender: 'operator', text: 'Hi Lisa, just following up on the water heater installation. How\'s everything working?', time: '2025-11-27T14:00:00' },
-        { id: 2, sender: 'client', text: 'The new water heater is working perfectly!', time: '2025-11-27T16:45:00' },
-      ]
+    enabled: !!myOperator?.id
+  });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ threadId, content }) => {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          thread_id: threadId,
+          sender_type: 'operator',
+          sender_id: myOperator.id,
+          content: content
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update thread's last_message_at
+      await supabase
+        .from('message_threads')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', threadId);
+
+      return data;
     },
-    {
-      id: '4',
-      client_name: 'David Williams',
-      property_address: '321 Cedar Lane, Portland',
-      avatar: 'DW',
-      last_message: 'Can we schedule the annual roof inspection?',
-      last_message_time: '2025-11-26T11:20:00',
-      unread: 1,
-      starred: true,
-      online: false,
-      messages: [
-        { id: 1, sender: 'client', text: 'Can we schedule the annual roof inspection?', time: '2025-11-26T11:20:00' },
-      ]
-    },
-    {
-      id: '5',
-      client_name: 'Emily Rodriguez',
-      property_address: '654 Maple Drive, Portland',
-      avatar: 'ER',
-      last_message: 'Perfect, see you Thursday!',
-      last_message_time: '2025-11-25T09:30:00',
-      unread: 0,
-      starred: false,
-      online: false,
-      messages: [
-        { id: 1, sender: 'operator', text: 'Hi Emily, your quarterly inspection is coming up. Does Thursday at 10am work?', time: '2025-11-25T09:00:00' },
-        { id: 2, sender: 'client', text: 'Perfect, see you Thursday!', time: '2025-11-25T09:30:00' },
-      ]
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operator-conversations'] });
     }
-  ];
+  });
+
+  // Toggle starred mutation
+  const toggleStarredMutation = useMutation({
+    mutationFn: async ({ threadId, starred }) => {
+      const { error } = await supabase
+        .from('message_threads')
+        .update({ starred })
+        .eq('id', threadId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operator-conversations'] });
+    }
+  });
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedConversation?.messages]);
 
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
@@ -156,11 +194,35 @@ export default function OperatorMessages() {
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    // In real app, would send to backend
-    console.log('Sending:', newMessage);
+    if (!newMessage.trim() || !selectedConversation) return;
+
+    sendMessageMutation.mutate({
+      threadId: selectedConversation.id,
+      content: newMessage.trim()
+    });
     setNewMessage('');
   };
+
+  const handleToggleStar = () => {
+    if (!selectedConversation) return;
+    toggleStarredMutation.mutate({
+      threadId: selectedConversation.id,
+      starred: !selectedConversation.starred
+    });
+    // Update local state
+    setSelectedConversation(prev => prev ? { ...prev, starred: !prev.starred } : null);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <OperatorLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </OperatorLayout>
+    );
+  }
 
   return (
     <OperatorLayout>
@@ -297,8 +359,8 @@ export default function OperatorMessages() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Star className="w-4 h-4 mr-2" />
+                    <DropdownMenuItem onClick={handleToggleStar}>
+                      <Star className={`w-4 h-4 mr-2 ${selectedConversation.starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
                       {selectedConversation.starred ? 'Unstar' : 'Star'} conversation
                     </DropdownMenuItem>
                     <DropdownMenuItem>
@@ -351,6 +413,7 @@ export default function OperatorMessages() {
                   </React.Fragment>
                 );
               })}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
@@ -384,10 +447,14 @@ export default function OperatorMessages() {
                 </div>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim()}
+                  disabled={!newMessage.trim() || sendMessageMutation.isPending}
                   className="rounded-full w-11 h-11 p-0 bg-blue-600 hover:bg-blue-700"
                 >
-                  <Send className="w-5 h-5" />
+                  {sendMessageMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
                 </Button>
               </div>
             </div>

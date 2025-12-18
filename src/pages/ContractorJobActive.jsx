@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { ContractorJob } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import ContractorLayout from '@/components/contractor/ContractorLayout';
 import {
   Clock,
@@ -38,7 +42,9 @@ import { toast } from 'sonner';
 export default function ContractorJobActive() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const jobId = searchParams.get('id') || '1';
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const jobId = searchParams.get('id');
 
   // Timer state
   const [isRunning, setIsRunning] = useState(true);
@@ -49,35 +55,100 @@ export default function ContractorJobActive() {
   const [newNote, setNewNote] = useState('');
   const [resourceSearch, setResourceSearch] = useState('');
 
-  // Job data
-  const [job, setJob] = useState({
-    id: jobId,
-    title: 'Gutter Repair',
-    property_address: '123 Oak Street, Portland',
+  // Fetch job data from database
+  const { data: jobData, isLoading } = useQuery({
+    queryKey: ['contractor-job-active', jobId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractor_jobs')
+        .select(`
+          *,
+          work_order:work_orders (
+            id,
+            title,
+            description,
+            checklist,
+            property:properties (
+              street_address,
+              city,
+              state
+            )
+          )
+        `)
+        .eq('id', jobId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!jobId
+  });
+
+  // Update job mutation
+  const updateJobMutation = useMutation({
+    mutationFn: async (updates) => {
+      return await ContractorJob.update(jobId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contractor-job-active', jobId]);
+    }
+  });
+
+  // Initialize elapsed time from database
+  useEffect(() => {
+    if (jobData?.started_at) {
+      const startTime = new Date(jobData.started_at).getTime();
+      const pausedTime = (jobData.break_minutes || 0) * 60 * 1000;
+      const currentElapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+      setElapsedSeconds(Math.max(0, currentElapsed));
+    }
+    if (jobData?.status === 'paused') {
+      setIsRunning(false);
+    }
+  }, [jobData]);
+
+  // Start job if not started yet
+  useEffect(() => {
+    if (jobData && !jobData.started_at && jobData.status === 'accepted') {
+      updateJobMutation.mutate({
+        status: 'in_progress',
+        started_at: new Date().toISOString()
+      });
+    }
+  }, [jobData]);
+
+  // Transform database data to component format
+  const job = jobData ? {
+    id: jobData.id,
+    title: jobData.work_order?.title || 'Untitled Job',
+    property_address: `${jobData.work_order?.property?.street_address || ''}, ${jobData.work_order?.property?.city || ''}`,
     scope: {
-      work_plan: [
-        { step: 'Inspect all gutters and identify all problem areas', completed: true },
-        { step: 'Remove debris from gutters to assess full damage', completed: true },
-        { step: 'Reattach loose gutter sections using new brackets', completed: false },
-        { step: 'Replace damaged gutter hangers (estimate 6)', completed: false },
-        { step: 'Secure loose downspout brackets', completed: false },
-        { step: 'Seal any gaps with gutter sealant', completed: false },
-        { step: 'Test water flow with garden hose', completed: false },
+      work_plan: jobData.checklist?.map(item => ({
+        step: item.item || item,
+        completed: item.completed || false
+      })) || [
+        { step: 'Review job requirements', completed: false },
+        { step: 'Complete the assigned work', completed: false },
+        { step: 'Document with photos', completed: false },
         { step: 'Clean up work area', completed: false }
       ]
     },
     photos: {
-      before: [
-        { id: 1, url: 'https://via.placeholder.com/100x100/e0e0e0/666?text=Before+1', label: 'Before - Front' }
-      ],
+      before: [],
       during: [],
       after: []
     },
-    work_log: [
-      { id: 1, text: 'Started job, assessed damage', timestamp: new Date(Date.now() - 3600000).toISOString() },
-      { id: 2, text: 'Removed old brackets, cleared debris', timestamp: new Date(Date.now() - 1800000).toISOString() },
-    ]
-  });
+    work_log: jobData.notes
+      ? jobData.notes.split('\n').filter(l => l.trim()).map((line, idx) => {
+          const match = line.match(/^\[(.+?)\] (.+)$/);
+          return {
+            id: idx + 1,
+            text: match ? match[2] : line,
+            timestamp: match ? match[1] : new Date().toISOString()
+          };
+        })
+      : []
+  } : null;
 
   // Timer effect
   useEffect(() => {
@@ -98,13 +169,16 @@ export default function ContractorJobActive() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Photo checklist
-  const photoChecklist = [
-    { id: 'before', label: 'Before photos', completed: job.photos.before.length > 0, count: job.photos.before.length },
-    { id: 'during', label: 'Work in progress', completed: job.photos.during.length > 0, count: job.photos.during.length },
-    { id: 'problem', label: 'Problem close-up', completed: false, count: 0 },
-    { id: 'after', label: 'After photos', completed: job.photos.after.length > 0, count: job.photos.after.length },
-  ];
+  // Photo checklist (defined after null checks in render)
+  const getPhotoChecklist = () => {
+    if (!job) return [];
+    return [
+      { id: 'before', label: 'Before photos', completed: job.photos.before.length > 0, count: job.photos.before.length },
+      { id: 'during', label: 'Work in progress', completed: job.photos.during.length > 0, count: job.photos.during.length },
+      { id: 'problem', label: 'Problem close-up', completed: false, count: 0 },
+      { id: 'after', label: 'After photos', completed: job.photos.after.length > 0, count: job.photos.after.length },
+    ];
+  };
 
   // Suggested resources
   const suggestedResources = [
@@ -113,60 +187,111 @@ export default function ContractorJobActive() {
     { id: 3, title: 'Sealing Gutter Joints', type: 'video', duration: '5:20' },
   ];
 
-  const toggleStep = (index) => {
-    const newWorkPlan = [...job.scope.work_plan];
-    newWorkPlan[index].completed = !newWorkPlan[index].completed;
-    setJob({ ...job, scope: { ...job.scope, work_plan: newWorkPlan } });
+  const toggleStep = async (index) => {
+    const currentChecklist = jobData?.checklist || job.scope.work_plan.map((s, i) => ({
+      id: i + 1,
+      item: s.step,
+      completed: s.completed
+    }));
+    const newChecklist = currentChecklist.map((item, i) =>
+      i === index ? { ...item, completed: !item.completed } : item
+    );
+    try {
+      await updateJobMutation.mutateAsync({
+        checklist: newChecklist
+      });
+    } catch (error) {
+      toast.error('Failed to update checklist');
+    }
   };
 
-  const handlePause = () => {
+  const appendToNotes = async (text) => {
+    const existingNotes = jobData?.notes || '';
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const updatedNotes = existingNotes
+      ? `${existingNotes}\n[${timestamp}] ${text}`
+      : `[${timestamp}] ${text}`;
+    await updateJobMutation.mutateAsync({ notes: updatedNotes });
+  };
+
+  const handlePause = async () => {
     if (!pauseReason.trim()) {
       toast.error('Please provide a reason for pausing');
       return;
     }
-    setIsRunning(false);
-    setShowPauseDialog(false);
-    toast.info('Timer paused');
-    // Add to work log
-    setJob({
-      ...job,
-      work_log: [
-        ...job.work_log,
-        { id: Date.now(), text: `Paused: ${pauseReason}`, timestamp: new Date().toISOString() }
-      ]
-    });
-    setPauseReason('');
+    try {
+      await updateJobMutation.mutateAsync({
+        status: 'paused',
+        break_minutes: (jobData?.break_minutes || 0) // Will be updated when resumed
+      });
+      await appendToNotes(`Paused: ${pauseReason}`);
+      setIsRunning(false);
+      setShowPauseDialog(false);
+      toast.info('Timer paused');
+      setPauseReason('');
+    } catch (error) {
+      toast.error('Failed to pause job');
+    }
   };
 
-  const handleResume = () => {
-    setIsRunning(true);
-    toast.success('Timer resumed');
-    setJob({
-      ...job,
-      work_log: [
-        ...job.work_log,
-        { id: Date.now(), text: 'Resumed work', timestamp: new Date().toISOString() }
-      ]
-    });
+  const handleResume = async () => {
+    try {
+      await updateJobMutation.mutateAsync({
+        status: 'in_progress'
+      });
+      await appendToNotes('Resumed work');
+      setIsRunning(true);
+      toast.success('Timer resumed');
+    } catch (error) {
+      toast.error('Failed to resume job');
+    }
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.trim()) return;
-    setJob({
-      ...job,
-      work_log: [
-        ...job.work_log,
-        { id: Date.now(), text: newNote, timestamp: new Date().toISOString() }
-      ]
-    });
-    setNewNote('');
-    setShowAddNoteDialog(false);
-    toast.success('Note added');
+    try {
+      await appendToNotes(newNote);
+      setNewNote('');
+      setShowAddNoteDialog(false);
+      toast.success('Note added');
+    } catch (error) {
+      toast.error('Failed to add note');
+    }
   };
 
   const handleCompleteJob = () => {
-    navigate(`${createPageUrl('ContractorJobComplete')}?id=${job.id}&time=${elapsedSeconds}`);
+    navigate(`${createPageUrl('ContractorJobComplete')}?id=${job?.id}&time=${elapsedSeconds}`);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <ContractorLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading job...</p>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
+
+  // Not found state
+  if (!job) {
+    return (
+      <ContractorLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Job not found</p>
+            <Button className="mt-4" onClick={() => navigate(createPageUrl('ContractorDashboard'))}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </ContractorLayout>
+    );
+  }
 
   const completedSteps = job.scope.work_plan.filter(s => s.completed).length;
   const totalSteps = job.scope.work_plan.length;
@@ -279,7 +404,7 @@ export default function ContractorJobActive() {
             </div>
 
             <div className="space-y-2">
-              {photoChecklist.map(item => (
+              {getPhotoChecklist().map(item => (
                 <div
                   key={item.id}
                   className={`flex items-center justify-between p-3 rounded-lg ${

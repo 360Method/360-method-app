@@ -21,9 +21,11 @@ import {
   BarChart3,
   PieChart,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/api/supabaseClient';
 
 const REPORT_TYPES = [
   {
@@ -99,16 +101,152 @@ export default function HQReports() {
   const [dateRange, setDateRange] = useState('30d');
   const [generating, setGenerating] = useState(null);
 
+  // Helper to convert data to CSV
+  const convertToCSV = (data, columns) => {
+    if (!data || data.length === 0) return '';
+    const headers = columns.map(c => c.label).join(',');
+    const rows = data.map(row =>
+      columns.map(c => {
+        const value = c.accessor(row);
+        // Escape quotes and wrap in quotes if contains comma
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value ?? '';
+      }).join(',')
+    );
+    return [headers, ...rows].join('\n');
+  };
+
+  // Helper to download file
+  const downloadFile = (content, filename, mimeType = 'text/csv') => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Get date filter
+  const getDateFilter = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case '7d': return new Date(now.setDate(now.getDate() - 7)).toISOString();
+      case '30d': return new Date(now.setDate(now.getDate() - 30)).toISOString();
+      case '90d': return new Date(now.setDate(now.getDate() - 90)).toISOString();
+      case '1y': return new Date(now.setFullYear(now.getFullYear() - 1)).toISOString();
+      default: return null; // all time
+    }
+  };
+
   const generateReport = async (reportId, format) => {
     setGenerating(reportId);
 
-    // Simulate report generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      let data = [];
+      let columns = [];
+      const dateFilter = getDateFilter();
 
-    toast.success(`${REPORT_TYPES.find(r => r.id === reportId)?.title} generated!`);
-    setGenerating(null);
+      switch (reportId) {
+        case 'users': {
+          let query = supabase.from('users').select('*').order('created_at', { ascending: false });
+          if (dateFilter) query = query.gte('created_at', dateFilter);
+          const { data: users, error } = await query;
+          if (error) throw error;
+          data = users || [];
+          columns = [
+            { label: 'ID', accessor: r => r.id },
+            { label: 'Email', accessor: r => r.email },
+            { label: 'Full Name', accessor: r => r.full_name },
+            { label: 'Role', accessor: r => r.role },
+            { label: 'Tier', accessor: r => r.subscription_tier },
+            { label: 'Created At', accessor: r => r.created_at }
+          ];
+          break;
+        }
+        case 'properties': {
+          let query = supabase.from('properties').select('*, users(email, full_name)').order('created_at', { ascending: false });
+          if (dateFilter) query = query.gte('created_at', dateFilter);
+          const { data: properties, error } = await query;
+          if (error) throw error;
+          data = properties || [];
+          columns = [
+            { label: 'ID', accessor: r => r.id },
+            { label: 'Address', accessor: r => r.address },
+            { label: 'City', accessor: r => r.city },
+            { label: 'State', accessor: r => r.state },
+            { label: 'ZIP', accessor: r => r.zip_code },
+            { label: 'Type', accessor: r => r.property_type },
+            { label: 'Health Score', accessor: r => r.health_score },
+            { label: 'Owner Email', accessor: r => r.users?.email },
+            { label: 'Created At', accessor: r => r.created_at }
+          ];
+          break;
+        }
+        case 'operators': {
+          let query = supabase.from('operators').select('*, users(email, full_name)').order('created_at', { ascending: false });
+          if (dateFilter) query = query.gte('created_at', dateFilter);
+          const { data: operators, error } = await query;
+          if (error) throw error;
+          data = operators || [];
+          columns = [
+            { label: 'ID', accessor: r => r.id },
+            { label: 'Company Name', accessor: r => r.company_name },
+            { label: 'Contact Email', accessor: r => r.contact_email },
+            { label: 'Status', accessor: r => r.verification_status },
+            { label: 'Service Areas', accessor: r => (r.service_areas || []).join('; ') },
+            { label: 'Owner', accessor: r => r.users?.full_name },
+            { label: 'Created At', accessor: r => r.created_at }
+          ];
+          break;
+        }
+        case 'revenue': {
+          let query = supabase.from('subscription_payments').select('*').order('created_at', { ascending: false });
+          if (dateFilter) query = query.gte('created_at', dateFilter);
+          const { data: payments, error } = await query;
+          if (error) throw error;
+          data = payments || [];
+          columns = [
+            { label: 'ID', accessor: r => r.id },
+            { label: 'User ID', accessor: r => r.user_id },
+            { label: 'Amount', accessor: r => r.amount },
+            { label: 'Currency', accessor: r => r.currency },
+            { label: 'Status', accessor: r => r.status },
+            { label: 'Created At', accessor: r => r.created_at }
+          ];
+          break;
+        }
+        default:
+          toast.error('Report type not implemented yet');
+          setGenerating(null);
+          return;
+      }
 
-    // In production, this would trigger a download
+      if (data.length === 0) {
+        toast.info('No data found for this report');
+        setGenerating(null);
+        return;
+      }
+
+      if (format === 'csv') {
+        const csv = convertToCSV(data, columns);
+        const filename = `${reportId}_report_${new Date().toISOString().split('T')[0]}.csv`;
+        downloadFile(csv, filename, 'text/csv');
+        toast.success(`Downloaded ${data.length} records as CSV`);
+      } else {
+        toast.info(`${format.toUpperCase()} export requires additional setup. CSV is recommended.`);
+      }
+
+    } catch (error) {
+      console.error('Report generation error:', error);
+      toast.error(`Failed to generate report: ${error.message}`);
+    } finally {
+      setGenerating(null);
+    }
   };
 
   const getColorClasses = (color) => {

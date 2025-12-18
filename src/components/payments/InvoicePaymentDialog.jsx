@@ -84,7 +84,7 @@ export default function InvoicePaymentDialog({ invoice, open, onClose }) {
                     <CreditCard className="w-6 h-6 text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900 capitalize">
-                        {defaultMethod.card_brand} •••• {defaultMethod.card_last_four}
+                        {defaultMethod.card_brand} •••• {defaultMethod.card_last4}
                       </div>
                       <div className="text-xs text-gray-500">
                         Expires {defaultMethod.card_exp_month}/{defaultMethod.card_exp_year}
