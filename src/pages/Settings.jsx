@@ -330,10 +330,17 @@ export default function Settings() {
 
   const handlePortalSwitch = async (newRole) => {
     if (newRole === activeRole) return;
+
+    toast.info(`Switching to ${getPortalRoleLabel(newRole)}...`);
+
     const success = await switchRole(newRole);
     if (success) {
       const config = ROLE_CONFIG[newRole];
-      navigate(config?.defaultRoute || '/Dashboard');
+      const targetRoute = config?.defaultRoute || '/Dashboard';
+      toast.success(`Switched to ${getPortalRoleLabel(newRole)}`);
+      navigate(targetRoute);
+    } else {
+      toast.error(`Failed to switch to ${getPortalRoleLabel(newRole)}. You may not have access to this portal.`);
     }
   };
 

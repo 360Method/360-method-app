@@ -207,17 +207,28 @@ export const useAuth = () => {
 
   // Function to switch active role
   const switchRole = useCallback(async (newRole) => {
-    if (!roles.includes(newRole)) {
-      console.error(`User does not have role: ${newRole}`);
+    // Normalize role to lowercase for comparison
+    const normalizedNewRole = newRole?.toLowerCase();
+    const normalizedRoles = roles.map(r => r?.toLowerCase());
+
+    console.log('[switchRole] Attempting to switch to:', newRole);
+    console.log('[switchRole] Available roles:', roles);
+    console.log('[switchRole] Normalized roles:', normalizedRoles);
+
+    if (!normalizedRoles.includes(normalizedNewRole)) {
+      console.error(`[switchRole] User does not have role: ${newRole}. Available: ${roles.join(', ')}`);
       return false;
     }
 
+    // Find the actual role string (preserving original casing from roles array)
+    const actualRole = roles.find(r => r?.toLowerCase() === normalizedNewRole) || newRole;
+
     // Update local state immediately
-    setActiveRoleState(newRole);
+    setActiveRoleState(actualRole);
 
     // Persist to localStorage
     if (user?.id) {
-      localStorage.setItem(`active_role_${user.id}`, newRole);
+      localStorage.setItem(`active_role_${user.id}`, actualRole);
     }
 
     // Update Clerk metadata (async, non-blocking)
@@ -225,11 +236,12 @@ export const useAuth = () => {
       await user?.update({
         publicMetadata: {
           ...publicMetadata,
-          active_role: newRole
+          active_role: actualRole
         }
       });
+      console.log('[switchRole] Successfully switched to:', actualRole);
     } catch (e) {
-      console.warn('Failed to persist active role to Clerk:', e);
+      console.warn('[switchRole] Failed to persist active role to Clerk:', e);
       // Local state is already updated, so user experience isn't affected
     }
 
