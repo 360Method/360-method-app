@@ -204,7 +204,9 @@ function App() {
     return (
       <ErrorBoundary>
         <AuthProvider>
-          {coreApp}
+          <GamificationProvider>
+            {coreApp}
+          </GamificationProvider>
         </AuthProvider>
       </ErrorBoundary>
     );
