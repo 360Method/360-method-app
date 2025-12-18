@@ -132,11 +132,25 @@ export const useAuth = () => {
   const isLoadingAuth = !isUserLoaded || !isAuthLoaded;
   const isAuthenticated = isSignedIn === true;
 
+  // Track if we've synced this user to avoid duplicate syncs
+  const syncedUserRef = useRef(null);
+  const [dbUser, setDbUser] = useState(null);
+
   // Get metadata
   const publicMetadata = user?.publicMetadata || {};
 
-  // Extract roles array (default to ['owner'] for backward compatibility)
-  const roles = publicMetadata.roles || determineRolesFromLegacyMetadata(publicMetadata);
+  // Extract roles from multiple sources and merge them
+  // Priority: Clerk metadata + Database + Legacy fallback
+  const clerkRoles = publicMetadata.roles || [];
+  const legacyRoles = determineRolesFromLegacyMetadata(publicMetadata);
+
+  // Note: dbUser.roles comes from Supabase users table (database source of truth)
+  // dbUser is populated via syncCurrentUser() after initial render
+  const dbRoles = dbUser?.roles || [];
+
+  // Combine and deduplicate roles from all sources
+  const allRoles = [...new Set([...clerkRoles, ...dbRoles, ...legacyRoles])];
+  const roles = allRoles.length > 0 ? allRoles : ['owner'];
 
   // Get active role from metadata or localStorage (for persistence across refreshes)
   const storedActiveRole = typeof window !== 'undefined'
@@ -146,10 +160,6 @@ export const useAuth = () => {
   const [activeRole, setActiveRoleState] = useState(
     publicMetadata.active_role || storedActiveRole || roles[0] || ROLES.OWNER
   );
-
-  // Track if we've synced this user to avoid duplicate syncs
-  const syncedUserRef = useRef(null);
-  const [dbUser, setDbUser] = useState(null);
 
   // Sync user to database when they sign in
   useEffect(() => {
