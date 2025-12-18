@@ -9,10 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   User,
+  Users,
   Mail,
   Phone,
   MapPin,
   Building2,
+  Home,
+  Wrench,
+  Shield,
   Save,
   RefreshCw,
   CheckCircle2,
@@ -39,7 +43,7 @@ import { createPageUrl } from "@/utils";
 import { calculateTotalDoors, getTierConfig, calculateGoodPricing, calculateBetterPricing, calculateBestPricing } from "../components/shared/TierCalculator";
 import TierChangeDialog from "../components/pricing/TierChangeDialog";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth, ROLE_CONFIG } from "@/lib/AuthContext";
 
 const Label = ({ children, className = "", ...props }) => (
   <label className={`text-sm font-medium text-gray-700 ${className}`} {...props}>
@@ -51,7 +55,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, clerkUser } = useAuth();
+  const { user, clerkUser, roles, activeRole, switchRole } = useAuth();
   const [formData, setFormData] = React.useState({
     full_name: "",
     email: "",
@@ -300,6 +304,36 @@ export default function Settings() {
       case 'better': return <Star className="w-5 h-5 text-purple-600" />;
       case 'best': return <Crown className="w-5 h-5 text-orange-600" />;
       default: return <Compass className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  // Portal switching helpers
+  const getPortalRoleLabel = (role) => {
+    const labels = {
+      owner: 'Property Owner',
+      operator: 'Service Operator',
+      contractor: 'Contractor',
+      admin: 'HQ Admin'
+    };
+    return labels[role] || role;
+  };
+
+  const getPortalRoleIcon = (role) => {
+    const icons = {
+      owner: <Home className="h-4 w-4" />,
+      operator: <Building2 className="h-4 w-4" />,
+      contractor: <Wrench className="h-4 w-4" />,
+      admin: <Shield className="h-4 w-4" />
+    };
+    return icons[role] || null;
+  };
+
+  const handlePortalSwitch = async (newRole) => {
+    if (newRole === activeRole) return;
+    const success = await switchRole(newRole);
+    if (success) {
+      const config = ROLE_CONFIG[newRole];
+      navigate(config?.defaultRoute || '/Dashboard');
     }
   };
 
@@ -859,6 +893,49 @@ export default function Settings() {
                     {user.user_profile_type === 'homeowner' ? '🏠 Homeowner' : '🏢 Property Investor'}
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Portal Access - Only show if user has multiple roles */}
+        {roles && roles.length > 1 && (
+          <Card className="mb-6 border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-indigo-600" />
+                Portal Access
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                You have access to multiple portals
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Active Portal</label>
+                <Select value={activeRole} onValueChange={handlePortalSwitch}>
+                  <SelectTrigger className="w-full" style={{ minHeight: '48px' }}>
+                    <SelectValue>
+                      <span className="flex items-center gap-2">
+                        {getPortalRoleIcon(activeRole)}
+                        {getPortalRoleLabel(activeRole)}
+                      </span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map(role => (
+                      <SelectItem key={role} value={role}>
+                        <span className="flex items-center gap-2">
+                          {getPortalRoleIcon(role)}
+                          {getPortalRoleLabel(role)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Switch portals to access different features and dashboards.
+                </p>
               </div>
             </CardContent>
           </Card>
