@@ -38,12 +38,6 @@
       "has": [{ "type": "host", "value": "operators.360degreemethod.com" }],
       "destination": "https://app.360degreemethod.com/Signup",
       "permanent": false
-    },
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "www.360degreemethod.com" }],
-      "destination": "https://360degreemethod.com/",
-      "permanent": true
     }
   ],
   "headers": [
