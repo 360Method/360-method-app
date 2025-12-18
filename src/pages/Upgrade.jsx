@@ -85,7 +85,7 @@ export default function Upgrade() {
       // Filter by user_id for security (Clerk auth with permissive RLS)
       return Property.list('-created_at', authUser?.id);
     },
-    enabled: demoMode || !!authUser?.id
+    enabled: !!demoMode || !!authUser?.id
   });
 
   const { data: user } = useQuery({
@@ -113,7 +113,7 @@ export default function Upgrade() {
       if (!selectedProperty) return [];
       return SystemBaseline.filter({ property_id: selectedProperty });
     },
-    enabled: demoMode || !!selectedProperty
+    enabled: !!demoMode || !!selectedProperty
   });
 
   // Fetch regional costs for the selected property's ZIP code

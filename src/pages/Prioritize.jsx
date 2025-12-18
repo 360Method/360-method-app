@@ -146,7 +146,7 @@ export default function PrioritizePage() {
       // Filter by user_id for security (Clerk auth with permissive RLS)
       return Property.list('-created_date', user?.id);
     },
-    enabled: demoMode || !!user?.id
+    enabled: !!demoMode || !!user?.id
   });
 
   // Set initial selected property
@@ -240,7 +240,7 @@ export default function PrioritizePage() {
 
       return RegionalCosts.getCostMultipliers(costs);
     },
-    enabled: demoMode || (properties.length > 0 && !!selectedProperty)
+    enabled: !!demoMode || (properties.length > 0 && !!selectedProperty)
   });
 
   // Use demo tasks OR real tasks

@@ -77,7 +77,7 @@ export default function Inspect() {
       const allProps = await Property.list('-created_at', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: demoMode || !!user?.id
+    enabled: !!demoMode || !!user?.id
   });
 
   const { data: realInspections = [] } = useQuery({

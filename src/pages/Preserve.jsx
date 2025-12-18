@@ -67,7 +67,7 @@ export default function Preserve() {
       console.log('🔵 PRESERVE: Real properties:', realProps);
       return realProps;
     },
-    enabled: demoMode || !!authUser?.id,
+    enabled: !!demoMode || !!authUser?.id,
     staleTime: 0 // Force fresh data
   });
 

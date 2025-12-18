@@ -97,7 +97,7 @@ export default function SchedulePage() {
       const allProps = await Property.list('-created_date', user?.id);
       return allProps.filter(p => !p.is_draft);
     },
-    enabled: demoMode || !!user?.id
+    enabled: !!demoMode || !!user?.id
   });
 
   useEffect(() => {

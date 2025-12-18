@@ -57,7 +57,7 @@ export default function TrackPage() {
       // Filter by user_id for security (Clerk auth with permissive RLS)
       return await Property.list('-created_date', user?.id);
     },
-    enabled: demoMode || !!user?.id
+    enabled: !!demoMode || !!user?.id
   });
 
   // Auto-select first property

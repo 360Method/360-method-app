@@ -66,7 +66,7 @@ export default function Scale() {
       console.log('🔵 SCALE: Real properties:', realProps);
       return realProps;
     },
-    enabled: demoMode || !!authUser?.id,
+    enabled: !!demoMode || !!authUser?.id,
     staleTime: 0
   });
 

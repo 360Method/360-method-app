@@ -268,7 +268,7 @@ export default function Baseline() {
       // Filter by user_id for security (Clerk auth with permissive RLS)
       return Property.list('-created_at', user?.id);
     },
-    enabled: demoMode || !!user?.id,
+    enabled: !!demoMode || !!user?.id,
     initialData: () => {
       // Provide initial data immediately for demo mode
       if (demoMode && demoData) {
