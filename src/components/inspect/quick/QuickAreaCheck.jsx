@@ -47,6 +47,9 @@ export default function QuickAreaCheck({
   };
 
   const handleComplete = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickAreaCheck.jsx:49',message:'handleComplete ENTRY',data:{areaIndex,totalAreas,allAnswered,answeredCount,checkpointsLength:checkpoints.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
     // Build results
     const checkpointResults = checkpoints.map(cp => ({
       id: cp.id,
@@ -70,6 +73,9 @@ export default function QuickAreaCheck({
         severity: cp.severity
       }));
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickAreaCheck.jsx:73',message:'Calling onComplete',data:{checkpointsCount:checkpointResults.length,issuesCount:issues.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     onComplete({
       checkpoints: checkpointResults,
       issues
