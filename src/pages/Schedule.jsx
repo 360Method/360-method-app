@@ -174,6 +174,10 @@ export default function SchedulePage() {
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['seasonal-reminders'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: (error) => {
+      console.error('Task update failed:', error);
+      alert(`Failed to update task: ${error.message}`);
     }
   });
 
@@ -236,21 +240,20 @@ export default function SchedulePage() {
     const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
+      data: {
         scheduled_date: formattedDate,
-        status: 'Scheduled',
-        last_reminded_date: new Date().toISOString()
+        status: 'Scheduled'
       }
     });
   };
 
   const handleTimeRangeChange = (task, timeRange) => {
     if (demoMode) return;
+    // Note: time_range column not yet in database - storing in notes for now
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
-        time_range: timeRange,
-        last_reminded_date: new Date().toISOString()
+      data: {
+        notes: `Preferred time: ${timeRange}`
       }
     });
   };
@@ -262,9 +265,7 @@ export default function SchedulePage() {
       taskId: task.id,
       data: {
         scheduled_date: formattedDate,
-        status: 'Scheduled',
-        time_range: timeRange,
-        last_reminded_date: new Date().toISOString()
+        status: 'Scheduled'
       }
     });
 
@@ -284,12 +285,10 @@ export default function SchedulePage() {
     if (demoMode) return;
     updateTaskMutation.mutate({
       taskId: task.id,
-      data: { 
+      data: {
         status: 'Identified',
         scheduled_date: null,
-        execution_method: null,
-        time_range: null,
-        last_reminded_date: new Date().toISOString()
+        execution_method: null
       }
     });
   };
@@ -320,8 +319,7 @@ export default function SchedulePage() {
         taskId,
         data: {
           scheduled_date: dateStr,
-          status: 'Scheduled',
-          last_reminded_date: new Date().toISOString()
+          status: 'Scheduled'
         }
       });
     });
