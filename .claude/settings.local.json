@@ -26,7 +26,8 @@
       "Bash(for route in DemoImprovingBaseline DemoImprovingInspect DemoImprovingTrack DemoImprovingPrioritize DemoImprovingSchedule DemoImprovingExecute DemoImprovingPreserve DemoImprovingUpgrade DemoImprovingScale DemoImprovingScore)",
       "Bash(for route in DemoExcellentBaseline DemoExcellentInspect DemoExcellentTrack DemoExcellentPrioritize DemoExcellentSchedule DemoExcellentExecute DemoExcellentPreserve DemoExcellentUpgrade DemoExcellentScale DemoExcellentScore)",
       "Bash(for route in DemoPortfolioProperties DemoPortfolioBaseline DemoPortfolioInspect DemoPortfolioTrack DemoPortfolioPrioritize DemoPortfolioSchedule DemoPortfolioExecute DemoPortfolioPreserve DemoPortfolioUpgrade DemoPortfolioScale DemoPortfolioScore)",
-      "Bash(del \"C:\\\\Users\\\\marci\\\\OneDrive\\\\Documents\\\\App_Build\\\\360°-Method-App\\\\src\\\\contexts\\\\DemoContext.jsx\")"
+      "Bash(del \"C:\\\\Users\\\\marci\\\\OneDrive\\\\Documents\\\\App_Build\\\\360°-Method-App\\\\src\\\\contexts\\\\DemoContext.jsx\")",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

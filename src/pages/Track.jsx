@@ -91,11 +91,6 @@ export default function TrackPage() {
 
   const completedTasks = realCompletedTasks;
 
-  console.log('=== TRACK STATE ===');
-  console.log('Demo mode:', demoMode);
-  console.log('Completed tasks:', completedTasks);
-  console.log('History count:', completedTasks?.length);
-
   // Fetch system baselines
   const { data: realSystems = [] } = useQuery({
     queryKey: ['systemBaselines', selectedProperty],
@@ -143,6 +138,13 @@ export default function TrackPage() {
   const upgrades = demoMode
     ? (demoData?.upgrades || []).filter(u => u.status === 'Completed')
     : realUpgrades;
+
+  console.log('=== TRACK STATE ===');
+  console.log('Demo mode:', demoMode);
+  console.log('Selected property:', selectedProperty);
+  console.log('Completed tasks:', completedTasks?.length);
+  console.log('Inspections:', inspections);
+  console.log('Inspections count:', inspections?.length);
 
   const canEdit = !demoMode;
 

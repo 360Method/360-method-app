@@ -6,19 +6,27 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   setting_key TEXT NOT NULL UNIQUE,
   setting_value JSONB NOT NULL DEFAULT '{}',
-  category TEXT DEFAULT 'general' CHECK (category IN ('general', 'notifications', 'features', 'integrations')),
   description TEXT,
   updated_by TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create index
+-- Add category column if not exists
+ALTER TABLE platform_settings
+ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'general';
+
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_platform_settings_category ON platform_settings(category);
 CREATE INDEX IF NOT EXISTS idx_platform_settings_key ON platform_settings(setting_key);
 
 -- Enable RLS
 ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Admins can view settings" ON platform_settings;
+DROP POLICY IF EXISTS "Admins can update settings" ON platform_settings;
+DROP POLICY IF EXISTS "Admins can insert settings" ON platform_settings;
 
 -- Only admins can view settings
 CREATE POLICY "Admins can view settings" ON platform_settings
@@ -26,7 +34,7 @@ CREATE POLICY "Admins can view settings" ON platform_settings
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 
@@ -36,7 +44,7 @@ CREATE POLICY "Admins can update settings" ON platform_settings
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 
@@ -46,7 +54,7 @@ CREATE POLICY "Admins can insert settings" ON platform_settings
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 

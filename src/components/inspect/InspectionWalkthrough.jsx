@@ -294,7 +294,8 @@ export default function InspectionWalkthrough({ inspection, property, onComplete
         const areaName = INSPECTION_AREAS.find(a => a.id === areaId)?.name || areaId;
         await awardXP('complete_room', {
           entityType: 'inspection_area',
-          entityId: `${inspection.id}-${areaId}`,
+          entityId: inspection.id,
+          areaId: areaId,
           areaName
         });
       }

@@ -184,49 +184,120 @@ Search the web and find 2-3 high-quality YouTube tutorial videos. Return the vid
 
     const updateData = { ai_enrichment_completed: true };
 
+    // Helper to parse numbers from AI response (handles "$50", "50", 50, etc.)
+    const parseNumber = (val) => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        const cleaned = val.replace(/[$,]/g, '').trim();
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      }
+      return null;
+    };
+
+    // Helper to parse integers
+    const parseInt10 = (val) => {
+      const num = parseNumber(val);
+      return num !== null ? Math.round(num) : null;
+    };
+
     if (cascadeAnalysis) {
-      if (cascadeAnalysis.diy_cost) updateData.diy_cost = cascadeAnalysis.diy_cost;
-      if (cascadeAnalysis.diy_difficulty) updateData.diy_difficulty = cascadeAnalysis.diy_difficulty;
-      if (cascadeAnalysis.diy_time_hours) updateData.diy_time_hours = cascadeAnalysis.diy_time_hours;
-      if (cascadeAnalysis.contractor_cost) updateData.contractor_cost = cascadeAnalysis.contractor_cost;
-      if (cascadeAnalysis.service_call_minimum) updateData.service_call_minimum = cascadeAnalysis.service_call_minimum;
-      if (cascadeAnalysis.operator_cost) updateData.operator_cost = cascadeAnalysis.operator_cost;
-      if (cascadeAnalysis.current_fix_cost) updateData.current_fix_cost = cascadeAnalysis.current_fix_cost;
-      if (cascadeAnalysis.cascade_risk_score) updateData.cascade_risk_score = cascadeAnalysis.cascade_risk_score;
-      if (cascadeAnalysis.cascade_risk_reason) updateData.cascade_risk_reason = cascadeAnalysis.cascade_risk_reason;
-      if (cascadeAnalysis.delayed_fix_cost) updateData.delayed_fix_cost = cascadeAnalysis.delayed_fix_cost;
-      if (cascadeAnalysis.cost_impact_reason) updateData.cost_impact_reason = cascadeAnalysis.cost_impact_reason;
-      if (cascadeAnalysis.urgency_timeline) updateData.urgency_timeline = cascadeAnalysis.urgency_timeline;
-      if (cascadeAnalysis.key_warning) updateData.key_warning = cascadeAnalysis.key_warning;
-      
-      if (cascadeAnalysis.estimated_hours && typeof cascadeAnalysis.estimated_hours === 'number') {
-        updateData.estimated_hours = cascadeAnalysis.estimated_hours;
-      } else if (cascadeAnalysis.diy_time_hours && typeof cascadeAnalysis.diy_time_hours === 'number') {
-        updateData.estimated_hours = cascadeAnalysis.diy_time_hours;
+      // Numeric cost fields
+      const diyCost = parseNumber(cascadeAnalysis.diy_cost);
+      if (diyCost !== null) updateData.diy_cost = diyCost;
+
+      const contractorCost = parseNumber(cascadeAnalysis.contractor_cost);
+      if (contractorCost !== null) updateData.contractor_cost = contractorCost;
+
+      const serviceCallMin = parseNumber(cascadeAnalysis.service_call_minimum);
+      if (serviceCallMin !== null) updateData.service_call_minimum = serviceCallMin;
+
+      const operatorCost = parseNumber(cascadeAnalysis.operator_cost);
+      if (operatorCost !== null) updateData.operator_cost = operatorCost;
+
+      const currentFixCost = parseNumber(cascadeAnalysis.current_fix_cost);
+      if (currentFixCost !== null) updateData.current_fix_cost = currentFixCost;
+
+      const delayedFixCost = parseNumber(cascadeAnalysis.delayed_fix_cost);
+      if (delayedFixCost !== null) updateData.delayed_fix_cost = delayedFixCost;
+
+      const diyTimeHours = parseNumber(cascadeAnalysis.diy_time_hours);
+      if (diyTimeHours !== null) updateData.diy_time_hours = diyTimeHours;
+
+      const estimatedHours = parseNumber(cascadeAnalysis.estimated_hours) || diyTimeHours;
+      if (estimatedHours !== null) updateData.estimated_hours = estimatedHours;
+
+      // Integer cascade risk score (must be 0-10)
+      const cascadeScore = parseInt10(cascadeAnalysis.cascade_risk_score);
+      if (cascadeScore !== null && cascadeScore >= 0 && cascadeScore <= 10) {
+        updateData.cascade_risk_score = cascadeScore;
+        if (cascadeScore >= 7) updateData.has_cascade_alert = true;
       }
-      
-      if (cascadeAnalysis.cascade_risk_score >= 7) {
-        updateData.has_cascade_alert = true;
+
+      // Normalize diy_difficulty to match database constraint (Easy, Medium, Hard)
+      if (cascadeAnalysis.diy_difficulty) {
+        const difficultyMap = { 'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard' };
+        const normalized = difficultyMap[String(cascadeAnalysis.diy_difficulty).toLowerCase()];
+        if (normalized) updateData.diy_difficulty = normalized;
       }
+
+      // Text fields
+      if (cascadeAnalysis.cascade_risk_reason) updateData.cascade_risk_reason = String(cascadeAnalysis.cascade_risk_reason);
+      if (cascadeAnalysis.cost_impact_reason) updateData.cost_impact_reason = String(cascadeAnalysis.cost_impact_reason);
+      if (cascadeAnalysis.urgency_timeline) updateData.urgency_timeline = String(cascadeAnalysis.urgency_timeline);
+      if (cascadeAnalysis.key_warning) updateData.key_warning = String(cascadeAnalysis.key_warning);
     }
 
-    if (sowResult?.sow) updateData.ai_sow = sowResult.sow;
+    if (sowResult?.sow) updateData.ai_sow = String(sowResult.sow);
+
+    // Ensure JSONB arrays contain only simple string values
     if (toolsAndMaterials?.tools && Array.isArray(toolsAndMaterials.tools)) {
-      updateData.ai_tools_needed = toolsAndMaterials.tools;
+      updateData.ai_tools_needed = toolsAndMaterials.tools.map(t => typeof t === 'string' ? t : String(t.name || t));
     }
     if (toolsAndMaterials?.materials && Array.isArray(toolsAndMaterials.materials)) {
-      updateData.ai_materials_needed = toolsAndMaterials.materials;
+      updateData.ai_materials_needed = toolsAndMaterials.materials.map(m => typeof m === 'string' ? m : String(m.name || m));
     }
     if (videoResults?.videos && Array.isArray(videoResults.videos)) {
-      updateData.ai_video_tutorials = videoResults.videos.filter(v => v.title && v.url);
+      updateData.ai_video_tutorials = videoResults.videos
+        .filter(v => v && v.title && v.url)
+        .map(v => ({ title: String(v.title), url: String(v.url) }));
     }
 
-    await MaintenanceTask.update(taskId, updateData);
-    console.log(`Task ${taskId} successfully enriched with AI insights`);
-    
+    console.log('Attempting to update task with AI data:', JSON.stringify(updateData, null, 2));
+    try {
+      await MaintenanceTask.update(taskId, updateData);
+      console.log(`Task ${taskId} successfully enriched with AI insights`);
+    } catch (updateErr) {
+      console.error('DETAILED UPDATE ERROR:', {
+        message: updateErr.message,
+        code: updateErr.code,
+        details: updateErr.details,
+        hint: updateErr.hint,
+        updateData: updateData
+      });
+
+      // Try a minimal update as fallback
+      console.log('Trying minimal update...');
+      try {
+        await MaintenanceTask.update(taskId, {
+          ai_enrichment_completed: true,
+          cascade_risk_score: updateData.cascade_risk_score || null,
+          cascade_risk_reason: updateData.cascade_risk_reason || null,
+          diy_cost: updateData.diy_cost || null,
+          contractor_cost: updateData.contractor_cost || null
+        });
+        console.log('Minimal update succeeded');
+      } catch (minErr) {
+        console.error('Minimal update also failed:', minErr);
+      }
+      throw updateErr;
+    }
+
     return cascadeAnalysis;
   } catch (error) {
     console.error('Error enriching task with AI:', error);
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     await MaintenanceTask.update(taskId, {
       ai_enrichment_completed: true
     }).catch(err => console.error('Failed to mark enrichment status:', err));
@@ -264,19 +335,29 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
   const queryClient = useQueryClient();
   const { awardXP } = useGamification();
   const [step, setStep] = React.useState(1);
-  const [formData, setFormData] = React.useState(editingTask || {
-    title: "",
-    description: "",
-    system_type: "General",
-    priority: "Medium",
-    status: "Identified",
-    scheduled_date: prefilledDate || null,
-    execution_type: "Not Decided",
-    current_fix_cost: "",
-    urgency_timeline: "",
-    cascade_risk_score: "",
-    cascade_risk_reason: "",
-    delayed_fix_cost: ""
+  const [formData, setFormData] = React.useState(() => {
+    const defaults = {
+      title: "",
+      description: "",
+      system_type: "General",
+      priority: "Medium",
+      status: "Identified",
+      scheduled_date: prefilledDate || null,
+      execution_type: "Not Decided",
+      current_fix_cost: "",
+      urgency_timeline: "",
+      cascade_risk_score: "",
+      cascade_risk_reason: "",
+      delayed_fix_cost: ""
+    };
+    if (editingTask) {
+      // Merge editingTask with defaults, converting null values to empty strings for form inputs
+      return Object.keys(defaults).reduce((acc, key) => {
+        acc[key] = editingTask[key] ?? defaults[key];
+        return acc;
+      }, { ...editingTask });
+    }
+    return defaults;
   });
   const [selectedUnits, setSelectedUnits] = React.useState(
     editingTask?.unit_tag ? [editingTask.unit_tag] : []
@@ -304,6 +385,10 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
 
   const createTaskMutation = useMutation({
     mutationFn: async (tasksData) => {
+      console.log('=== TASK SAVE DEBUG ===');
+      console.log('isEditing:', isEditing);
+      console.log('tasksData:', JSON.stringify(tasksData, null, 2));
+
       if (isEditing) {
         return await MaintenanceTask.update(editingTask.id, tasksData[0]);
       } else {
@@ -316,6 +401,13 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
           return await Promise.all(createPromises);
         }
       }
+    },
+    onError: (error) => {
+      console.error('=== TASK SAVE ERROR ===');
+      console.error('Error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
     },
     onSuccess: async (savedTasks) => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
@@ -352,6 +444,10 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       setAiEnriching(true);
       const cascadeResult = await enrichTaskWithAI(firstTask.id, firstTask, photos);
       setAiEnriching(false);
+
+      // Invalidate queries AFTER AI enrichment to refresh UI with new data
+      queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
 
       if (cascadeResult) {
         setAiAnalysis(cascadeResult);
@@ -404,7 +500,15 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Map execution_type form values to execution_method database values
+    const executionMethodMap = {
+      'DIY': 'DIY',
+      'Professional': 'Contractor',
+      'Not Decided': null
+    };
+    const executionMethod = executionMethodMap[formData.execution_type] ?? null;
+
     const baseTaskData = {
       property_id: propertyId,
       title: formData.title,
@@ -412,7 +516,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       system_type: formData.system_type,
       priority: formData.priority,
       status: formData.status,
-      execution_type: formData.execution_type,
+      execution_method: executionMethod, // Use correct column name
       photo_urls: photos,
       current_fix_cost: formData.current_fix_cost ? parseFloat(formData.current_fix_cost) : undefined,
       urgency_timeline: formData.urgency_timeline || undefined,
@@ -420,7 +524,7 @@ export default function ManualTaskForm({ propertyId, property, onComplete, onCan
       cascade_risk_score: formData.cascade_risk_score ? parseInt(formData.cascade_risk_score) : undefined,
       cascade_risk_reason: formData.cascade_risk_reason || undefined,
       delayed_fix_cost: formData.delayed_fix_cost ? parseFloat(formData.delayed_fix_cost) : undefined,
-      has_cascade_alert: formData.cascade_risk_score && parseInt(formData.cascade_risk_score) >= 7
+      has_cascade_alert: formData.cascade_risk_score ? parseInt(formData.cascade_risk_score) >= 7 : false
     };
 
     let tasksToCreate = [];

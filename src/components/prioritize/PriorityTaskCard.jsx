@@ -124,6 +124,10 @@ export default function PriorityTaskCard({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
       queryClient.invalidateQueries({ queryKey: ['allMaintenanceTasks'] });
+    },
+    onError: (error) => {
+      console.error('Task update failed:', error);
+      alert(`Failed to update task: ${error.message}`);
     }
   });
 
@@ -187,46 +191,66 @@ export default function PriorityTaskCard({
 
   const handleScheduleDateSubmit = () => {
     if (scheduleDate) {
-      updateTaskMutation.mutate({
-        taskId: task.id,
-        data: {
-          status: 'Scheduled',
-          scheduled_date: scheduleDate,
-          execution_method: 'DIY'
+      updateTaskMutation.mutate(
+        {
+          taskId: task.id,
+          data: {
+            status: 'Scheduled',
+            scheduled_date: scheduleDate,
+            execution_method: 'DIY'
+          }
+        },
+        {
+          onSuccess: () => {
+            setShowScheduleDateModal(false);
+            setScheduleDate('');
+          }
         }
-      });
-      setShowScheduleDateModal(false);
-      setScheduleDate('');
+      );
     }
   };
 
   const handleDIYSendToSchedule = () => {
-    updateTaskMutation.mutate({
-      taskId: task.id,
-      data: {
-        status: 'Scheduled',
-        execution_method: 'DIY'
+    updateTaskMutation.mutate(
+      {
+        taskId: task.id,
+        data: {
+          status: 'Scheduled',
+          execution_method: 'DIY'
+        }
+      },
+      {
+        onSuccess: () => setShowDIYModal(false),
+        onError: (error) => {
+          console.error('Failed to send to schedule:', error);
+          // Error already shown by mutation's onError handler
+        }
       }
-    });
-    setShowDIYModal(false);
+    );
   };
 
   const handleContractorSubmit = (e) => {
     e.preventDefault();
-    updateTaskMutation.mutate({
-      taskId: task.id,
-      data: {
-        contractor_name: contractorForm.name,
-        contractor_phone: contractorForm.phone,
-        contractor_email: contractorForm.email,
-        current_fix_cost: contractorForm.cost ? parseFloat(contractorForm.cost) : task.contractor_cost,
-        scheduled_date: contractorForm.date,
-        status: 'Scheduled',
-        execution_method: 'Contractor'
+    updateTaskMutation.mutate(
+      {
+        taskId: task.id,
+        data: {
+          contractor_name: contractorForm.name,
+          contractor_phone: contractorForm.phone,
+          contractor_email: contractorForm.email,
+          current_fix_cost: contractorForm.cost ? parseFloat(contractorForm.cost) : task.contractor_cost,
+          scheduled_date: contractorForm.date,
+          status: 'Scheduled',
+          execution_method: 'Contractor'
+        }
+      },
+      {
+        onSuccess: () => {
+          setShowContractorModal(false);
+          setContractorForm({ name: '', phone: '', email: '', cost: '', date: '' });
+        }
       }
-    });
-    setShowContractorModal(false);
-    setContractorForm({ name: '', phone: '', email: '', cost: '', date: '' });
+    );
   };
 
   const handleOperatorRequest = async () => {
@@ -247,21 +271,27 @@ export default function PriorityTaskCard({
 
         if (serviceRequestError) {
           console.error('Error creating service request:', serviceRequestError);
+          alert(`Failed to create service request: ${serviceRequestError.message}`);
+          return;
         }
       }
 
       // Update task status
-      updateTaskMutation.mutate({
-        taskId: task.id,
-        data: {
-          status: 'Scheduled',
-          execution_method: '360_Operator'
+      updateTaskMutation.mutate(
+        {
+          taskId: task.id,
+          data: {
+            status: 'Scheduled',
+            execution_method: '360_Operator'
+          }
+        },
+        {
+          onSuccess: () => setShowOperatorModal(false)
         }
-      });
-      setShowOperatorModal(false);
+      );
     } catch (error) {
       console.error('Error in handleOperatorRequest:', error);
-      setShowOperatorModal(false);
+      alert(`Failed to request operator: ${error.message}`);
     }
   };
 

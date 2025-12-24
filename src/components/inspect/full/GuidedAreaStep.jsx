@@ -21,7 +21,11 @@ export default function GuidedAreaStep({
   audioEnabled,
   onComplete,
   onBack,
-  onSkipArea
+  onSkipArea,
+  onSaveAndExit,
+  isSaving,
+  onJumpToArea,
+  orderedAreas
 }) {
   // Get checkpoints for this area
   const checkpoints = getCheckpointsForArea(area.id, 'full');
@@ -43,7 +47,27 @@ export default function GuidedAreaStep({
   // Show intro state
   const [showIntro, setShowIntro] = useState(true);
 
-  const currentCheckpoint = checkpoints[currentCheckpointIndex];
+  // Reset state when area changes
+  useEffect(() => {
+    setCurrentCheckpointIndex(0);
+    setShowIntro(true);
+    if (!existingResults?.checkpoints) {
+      setAnswers({});
+    }
+  }, [area.id]);
+
+  // Guard against empty checkpoints
+  if (!checkpoints.length) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">No checkpoints available for this area.</p>
+      </div>
+    );
+  }
+
+  // Clamp index to valid range
+  const safeIndex = Math.min(currentCheckpointIndex, checkpoints.length - 1);
+  const currentCheckpoint = checkpoints[safeIndex];
   const currentAnswer = answers[currentCheckpoint?.id];
 
   // Audio text for current checkpoint
@@ -52,6 +76,7 @@ export default function GuidedAreaStep({
     : getCheckpointAudio(area.id, currentCheckpoint?.id);
 
   const handleAnswer = (answer) => {
+    if (!currentCheckpoint?.id) return;
     setAnswers(prev => ({
       ...prev,
       [currentCheckpoint.id]: { ...prev[currentCheckpoint.id], answer }
@@ -59,6 +84,7 @@ export default function GuidedAreaStep({
   };
 
   const handleIssueDetails = (details) => {
+    if (!currentCheckpoint?.id) return;
     setAnswers(prev => ({
       ...prev,
       [currentCheckpoint.id]: { ...prev[currentCheckpoint.id], ...details }
@@ -115,7 +141,7 @@ export default function GuidedAreaStep({
   const canProceed = showIntro || currentAnswer?.answer;
 
   // Progress within this area
-  const areaProgress = ((currentCheckpointIndex + (showIntro ? 0 : 1)) / checkpoints.length) * 100;
+  const areaProgress = ((safeIndex + (showIntro ? 0 : 1)) / checkpoints.length) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -128,6 +154,8 @@ export default function GuidedAreaStep({
             totalAreas={totalAreas}
             currentArea={area}
             completedAreas={completedAreas}
+            onJumpToArea={onJumpToArea}
+            orderedAreas={orderedAreas}
           />
         </div>
       </div>
@@ -187,7 +215,7 @@ export default function GuidedAreaStep({
                 <div>
                   <h2 className="font-semibold text-gray-900">{area.name}</h2>
                   <p className="text-sm text-gray-500">
-                    Check {currentCheckpointIndex + 1} of {checkpoints.length}
+                    Check {safeIndex + 1} of {checkpoints.length}
                   </p>
                 </div>
               </div>
@@ -204,7 +232,7 @@ export default function GuidedAreaStep({
               </div>
 
               {/* Audio guidance for this checkpoint */}
-              {audioText && (
+              {audioText && currentCheckpoint && (
                 <AudioGuidance
                   text={audioText}
                   enabled={audioEnabled}
@@ -214,7 +242,7 @@ export default function GuidedAreaStep({
               )}
 
               {/* Photo comparison (if available) */}
-              {currentCheckpoint.photoExample && (
+              {currentCheckpoint?.photoExample && (
                 <PhotoComparison
                   checkpoint={currentCheckpoint}
                   onSelectGood={() => handleAnswer('good')}
@@ -224,12 +252,14 @@ export default function GuidedAreaStep({
               )}
 
               {/* Question */}
-              <CheckpointQuestion
-                checkpoint={currentCheckpoint}
-                answer={currentAnswer?.answer}
-                onAnswer={handleAnswer}
-                onIssueDetails={handleIssueDetails}
-              />
+              {currentCheckpoint && (
+                <CheckpointQuestion
+                  checkpoint={currentCheckpoint}
+                  answer={currentAnswer?.answer}
+                  onAnswer={handleAnswer}
+                  onIssueDetails={handleIssueDetails}
+                />
+              )}
             </div>
           )}
         </div>
@@ -279,14 +309,25 @@ export default function GuidedAreaStep({
             </Button>
           </div>
 
-          {/* Skip option */}
+          {/* Skip and Save options */}
           {!showIntro && (
-            <button
-              onClick={onSkipArea}
-              className="w-full mt-2 text-sm text-gray-500 hover:text-gray-700 py-2"
-            >
-              Skip this area
-            </button>
+            <div className="flex gap-4 mt-2">
+              <button
+                onClick={onSkipArea}
+                className="flex-1 text-sm text-gray-500 hover:text-gray-700 py-2"
+              >
+                Skip this area
+              </button>
+              {onSaveAndExit && (
+                <button
+                  onClick={onSaveAndExit}
+                  disabled={isSaving}
+                  className="flex-1 text-sm text-blue-600 hover:text-blue-700 py-2"
+                >
+                  {isSaving ? 'Saving...' : 'Save & exit'}
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

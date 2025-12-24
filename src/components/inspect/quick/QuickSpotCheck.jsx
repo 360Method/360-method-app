@@ -87,9 +87,6 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
   };
 
   const handleAreaComplete = async (areaId, areaResults) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:89',message:'handleAreaComplete ENTRY',data:{areaId,currentAreaIndex,selectedAreasLength:selectedAreas.length,inspectionId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,D'})}).catch(()=>{});
-    // #endregion
     // Store results
     const updatedResults = {
       ...results,
@@ -107,13 +104,8 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
           completion_percent: Math.round(((currentAreaIndex + 1) / selectedAreas.length) * 100)
         }
       });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:105',message:'Mutation SUCCESS',data:{inspectionId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:108',message:'Mutation FAILED',data:{error:err?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
+      console.error('Failed to update inspection:', err);
       throw err;
     }
 
@@ -121,14 +113,12 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
     const area = INSPECTION_AREAS.find(a => a.id === areaId);
     awardXP('complete_room', {
       entityType: 'inspection_area',
-      entityId: `${inspectionId}-${areaId}`,
+      entityId: inspectionId,
+      areaId: areaId,
       areaName: area?.name
     }).catch(console.error);
 
     // Move to next area or complete
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:118',message:'Checking next step',data:{currentAreaIndex,selectedAreasLength:selectedAreas.length,isLastArea:currentAreaIndex>=selectedAreas.length-1},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     if (currentAreaIndex < selectedAreas.length - 1) {
       setCurrentAreaIndex(currentAreaIndex + 1);
     } else {
@@ -137,9 +127,6 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
   };
 
   const finishInspection = async (finalResults) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:123',message:'finishInspection ENTRY',data:{finalResultsKeys:Object.keys(finalResults)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
-    // #endregion
     try {
       // Collect all issues
       const allIssues = Object.entries(finalResults).flatMap(([areaId, data]) =>
@@ -149,50 +136,47 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
           areaName: INSPECTION_AREAS.find(a => a.id === areaId)?.name
         }))
       );
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:F1',message:'Issues collected',data:{issuesCount:allIssues.length,propertyId:property?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
 
-      // Create tasks for issues
+      console.log('finishInspection: Issues to create tickets for:', allIssues.length, allIssues);
+
+      // Create tickets for issues
       for (const issue of allIssues) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:F2',message:'Creating task for issue',data:{checkpointId:issue.checkpointId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
-        // Note: photo_urls column doesn't exist in maintenance_tasks table
-        // Photos from inspection are mentioned in the description instead
-        const photoNote = issue.photos?.length ? `\n\nPhotos attached: ${issue.photos.length}` : '';
-        await createTaskMutation.mutateAsync({
-          property_id: property.id,
-          title: issue.checkpointQuestion || 'Issue found during spot check',
-          description: `Quick spot check issue in ${issue.areaName}.\n\n${issue.note || ''}${photoNote}`,
-          system_type: 'General',
-          priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
-          status: 'Identified',
-          source: 'INSPECTION'
-        });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:F3',message:'Task created OK',data:{checkpointId:issue.checkpointId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
+        try {
+          const photoNote = issue.photos?.length ? `\n\nPhotos attached: ${issue.photos.length}` : '';
+          const ticketData = {
+            property_id: property.id,
+            title: issue.checkpointQuestion || 'Issue found during spot check',
+            description: `Quick spot check issue in ${issue.areaName}.\n\n${issue.note || ''}${photoNote}`,
+            system_type: 'General',
+            priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
+            status: 'Identified',
+            source: 'INSPECTION'
+          };
+          console.log('Creating ticket:', ticketData);
+          await createTaskMutation.mutateAsync(ticketData);
+          console.log('Ticket created successfully');
+        } catch (err) {
+          console.error('Failed to create ticket for issue:', issue, err);
+        }
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:F4',message:'All tasks created, updating inspection',data:{inspectionId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
-
       // Mark inspection complete
+      const now = new Date();
+      const seasons = ['Winter', 'Spring', 'Summer', 'Fall'];
+      const currentSeason = seasons[Math.floor(now.getMonth() / 3)];
+
       await updateInspectionMutation.mutateAsync({
         id: inspectionId,
         data: {
           status: 'Completed',
           completion_percent: 100,
           issues_count: allIssues.length,
-          completion_date: new Date().toISOString()
+          inspection_date: now.toISOString(),
+          completion_date: now.toISOString(),
+          season: currentSeason,
+          year: now.getFullYear()
         }
       });
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:F5',message:'Inspection marked complete',data:{inspectionId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
 
       // Award completion XP
       awardXP('complete_inspection', {
@@ -205,14 +189,9 @@ export default function QuickSpotCheck({ property, onComplete, onCancel }) {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['maintenanceTasks'] });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:168',message:'About to setStep(complete)',data:{currentStep:step},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       setStep('complete');
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d865394b-2ba6-4b67-867b-f08363cc5450',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'QuickSpotCheck.jsx:ERR',message:'finishInspection FAILED',data:{error:err?.message,stack:err?.stack?.slice(0,500)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
+      console.error('finishInspection failed:', err);
       throw err;
     }
   };

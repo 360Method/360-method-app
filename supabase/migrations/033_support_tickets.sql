@@ -53,7 +53,7 @@ CREATE POLICY "Admins can view all tickets" ON support_tickets
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 
@@ -63,7 +63,7 @@ CREATE POLICY "Admins can update tickets" ON support_tickets
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 
@@ -84,7 +84,7 @@ CREATE POLICY "Admins can view all messages" ON support_ticket_messages
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 
@@ -103,7 +103,7 @@ CREATE POLICY "Admins can add messages to any ticket" ON support_ticket_messages
     EXISTS (
       SELECT 1 FROM users
       WHERE id = current_setting('request.jwt.claims', true)::json->>'sub'
-      AND role IN ('admin', 'hq_admin')
+      AND (roles && ARRAY['admin', 'hq_admin'])
     )
   );
 

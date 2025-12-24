@@ -57,6 +57,7 @@ export default function Inspect() {
   const [showWizard, setShowWizard] = React.useState(false);
   const [confirmingInspection, setConfirmingInspection] = React.useState(null); // 'quick' | 'full' | null
   const [startingInspection, setStartingInspection] = React.useState(false);
+  const [existingInspection, setExistingInspection] = React.useState(null); // For resuming Full walkthroughs
 
   const queryClient = useQueryClient();
   const { demoMode, demoData, isInvestor, markStepVisited } = useDemo();
@@ -172,8 +173,15 @@ export default function Inspect() {
   };
 
   const handleContinueInspection = (inspection) => {
-    setCurrentInspection(inspection);
-    setInspectionView('walkthrough');
+    // Route Full walkthroughs to the new FullWalkthrough component
+    if (inspection.route_mode === 'physical' && inspection.inspection_type === 'Full') {
+      setExistingInspection(inspection);
+      setInspectionView('full');
+    } else {
+      // Legacy flow for other inspection types
+      setCurrentInspection(inspection);
+      setInspectionView('walkthrough');
+    }
   };
 
   const handleInspectionComplete = (inspection) => {
@@ -295,15 +303,21 @@ export default function Inspect() {
     return (
       <FullWalkthrough
         property={selectedProperty}
+        existingInspection={existingInspection}
         onComplete={() => {
+          setExistingInspection(null);
           handleBackToMain();
         }}
-        onCancel={handleBackToMain}
+        onCancel={() => {
+          setExistingInspection(null);
+          handleBackToMain();
+        }}
         onViewReport={(inspectionId) => {
           // Load inspection and view report
           Inspection.get(inspectionId).then(inspection => {
             if (inspection) {
               setCurrentInspection(inspection);
+              setExistingInspection(null);
               setInspectionView('report');
             }
           });

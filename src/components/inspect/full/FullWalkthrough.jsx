@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Inspection, MaintenanceTask, SystemBaseline } from '@/api/supabaseClient';
 import { ArrowLeft, Volume2, VolumeX, Home } from 'lucide-react';
@@ -19,7 +19,7 @@ import { notifyInspectionCompleted } from '@/api/triggerNotification';
  * Flow: Ready Screen → Guided Area Steps (1 at a time) → Complete → Report
  * Features voice guidance, photo examples, generates formal report
  */
-export default function FullWalkthrough({ property, onComplete, onCancel, onViewReport }) {
+export default function FullWalkthrough({ property, onComplete, onCancel, onViewReport, existingInspection }) {
   // Flow state: 'ready' | 'walkthrough' | 'complete'
   const [step, setStep] = useState('ready');
   const [currentAreaIndex, setCurrentAreaIndex] = useState(0);
@@ -27,12 +27,36 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
   const [completedAreas, setCompletedAreas] = useState([]);
   const [inspectionId, setInspectionId] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Audio preference
   const { audioEnabled, toggleAudio } = useAudioPreference();
 
   // Get ordered areas
   const orderedAreas = getOrderedAreasForWalkthrough();
+
+  // Resume from existing inspection if provided
+  useEffect(() => {
+    if (existingInspection?.status === 'In Progress') {
+      setInspectionId(existingInspection.id);
+      setCurrentAreaIndex(existingInspection.current_area_index || 0);
+      setCompletedAreas(existingInspection.areas_completed || []);
+
+      // Restore results from checklist_items
+      const restored = {};
+      existingInspection.checklist_items?.forEach(item => {
+        if (!restored[item.area_id]) {
+          restored[item.area_id] = { checkpoints: [], issues: [] };
+        }
+        restored[item.area_id].checkpoints.push(item);
+        if (item.is_issue) {
+          restored[item.area_id].issues.push(item);
+        }
+      });
+      setResults(restored);
+      setStep('walkthrough');
+    }
+  }, [existingInspection]);
 
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -117,7 +141,9 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
       data: {
         checklist_items: allCheckpoints,
         issues_count: allIssues.length,
-        completion_percent: Math.round((newCompletedAreas.length / orderedAreas.length) * 100)
+        completion_percent: Math.round((newCompletedAreas.length / orderedAreas.length) * 100),
+        current_area_index: currentAreaIndex + 1,
+        areas_completed: newCompletedAreas
       }
     });
 
@@ -125,7 +151,8 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
     const area = orderedAreas.find(a => a.id === areaId);
     awardXP('complete_room', {
       entityType: 'inspection_area',
-      entityId: `${inspectionId}-${areaId}`,
+      entityId: inspectionId,
+      areaId: areaId,
       areaName: area?.name
     }).catch(console.error);
 
@@ -158,23 +185,36 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
     const allCheckpoints = Object.values(finalResults).flatMap(r => r.checkpoints || []);
     const allIssues = Object.values(finalResults).flatMap(r => r.issues || []);
 
-    // Create tasks for issues that aren't quick fixes
-    for (const issue of allIssues) {
-      const area = orderedAreas.find(a => a.id === issue.area_id);
+    console.log('finishInspection: Issues to create tickets for:', allIssues.length, allIssues);
 
-      await createTaskMutation.mutateAsync({
-        property_id: property.id,
-        title: issue.item_name || issue.description?.substring(0, 50) || 'Issue from inspection',
-        description: `Found during full walkthrough inspection in ${area?.name || 'unknown area'}.\n\n${issue.description || issue.note || ''}`,
-        system_type: area?.systemTypes?.[0] || 'General',
-        priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
-        status: 'Identified',
-        photo_urls: issue.photo_urls || issue.photos || [],
-        has_cascade_alert: issue.severity === 'Urgent'
-      });
+    // Create tickets for issues found during inspection
+    for (const issue of allIssues) {
+      try {
+        const area = orderedAreas.find(a => a.id === issue.area_id);
+        const ticketData = {
+          property_id: property.id,
+          title: issue.item_name || issue.description?.substring(0, 50) || 'Issue from inspection',
+          description: `Found during full walkthrough inspection in ${area?.name || 'unknown area'}.\n\n${issue.description || issue.note || ''}`,
+          system_type: area?.systemTypes?.[0] || 'General',
+          priority: issue.severity === 'Urgent' ? 'High' : issue.severity === 'Flag' ? 'Medium' : 'Low',
+          status: 'Identified',
+          source: 'INSPECTION',
+          photo_urls: issue.photo_urls || issue.photos || [],
+          has_cascade_alert: issue.severity === 'Urgent'
+        };
+        console.log('Creating ticket:', ticketData);
+        await createTaskMutation.mutateAsync(ticketData);
+        console.log('Ticket created successfully');
+      } catch (err) {
+        console.error('Failed to create ticket for issue:', issue, err);
+      }
     }
 
     // Mark inspection complete
+    const now = new Date();
+    const seasons = ['Winter', 'Spring', 'Summer', 'Fall'];
+    const currentSeason = seasons[Math.floor(now.getMonth() / 3)];
+
     await updateInspectionMutation.mutateAsync({
       id: inspectionId,
       data: {
@@ -182,7 +222,10 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
         completion_percent: 100,
         issues_count: allIssues.length,
         checklist_items: allCheckpoints,
-        completion_date: new Date().toISOString()
+        inspection_date: now.toISOString(),
+        completion_date: now.toISOString(),
+        season: currentSeason,
+        year: now.getFullYear()
       }
     });
 
@@ -230,8 +273,49 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
     } else {
       // Confirm exit - would lose progress
       if (confirm('Are you sure? Your progress will be saved.')) {
-        onCancel();
+        handleSaveAndExit();
       }
+    }
+  };
+
+  const handleSaveAndExit = async () => {
+    if (!inspectionId) {
+      onCancel();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Save current progress to DB
+      const allCheckpoints = Object.values(results).flatMap(r => r.checkpoints || []);
+      const allIssues = Object.values(results).flatMap(r => r.issues || []);
+
+      await updateInspectionMutation.mutateAsync({
+        id: inspectionId,
+        data: {
+          checklist_items: allCheckpoints,
+          issues_count: allIssues.length,
+          current_area_index: currentAreaIndex,
+          areas_completed: completedAreas,
+          completion_percent: Math.round((completedAreas.length / orderedAreas.length) * 100),
+          status: 'In Progress'
+        }
+      });
+
+      // Exit back to Inspect page
+      onCancel();
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+      // Still exit even if save fails - data is partially saved after each area
+      onCancel();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleJumpToArea = (areaIndex) => {
+    if (areaIndex >= 0 && areaIndex < orderedAreas.length) {
+      setCurrentAreaIndex(areaIndex);
     }
   };
 
@@ -393,6 +477,10 @@ export default function FullWalkthrough({ property, onComplete, onCancel, onView
         onComplete={(areaResults) => handleAreaComplete(currentArea.id, areaResults)}
         onBack={handleBack}
         onSkipArea={handleSkipArea}
+        onSaveAndExit={handleSaveAndExit}
+        isSaving={isSaving}
+        onJumpToArea={handleJumpToArea}
+        orderedAreas={orderedAreas}
       />
     );
   }

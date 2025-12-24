@@ -1,19 +1,30 @@
 -- Migration 032: Add payment tracking to service_packages
 -- Supports Stripe checkout flow for service package payments
 
+-- First ensure status column exists
+ALTER TABLE service_packages
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'submitted';
+
 -- Add payment-related columns to service_packages
 ALTER TABLE service_packages
 ADD COLUMN IF NOT EXISTS stripe_checkout_session_id TEXT,
 ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT,
-ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'pending', 'paid', 'failed', 'refunded'));
+ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid';
 
--- Update status check to include pending_payment
+-- Drop old constraint if exists and add new one
 ALTER TABLE service_packages
 DROP CONSTRAINT IF EXISTS service_packages_status_check;
 
 ALTER TABLE service_packages
+DROP CONSTRAINT IF EXISTS service_packages_payment_status_check;
+
+ALTER TABLE service_packages
 ADD CONSTRAINT service_packages_status_check
 CHECK (status IN ('submitted', 'pending_payment', 'reviewing', 'quoted', 'accepted', 'scheduled', 'in_progress', 'completed', 'cancelled'));
+
+ALTER TABLE service_packages
+ADD CONSTRAINT service_packages_payment_status_check
+CHECK (payment_status IN ('unpaid', 'pending', 'paid', 'failed', 'refunded'));
 
 -- Create index for payment lookups
 CREATE INDEX IF NOT EXISTS idx_service_packages_checkout_session

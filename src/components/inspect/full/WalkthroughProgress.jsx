@@ -5,13 +5,15 @@ import { INSPECTION_ZONES, getAreasInZone } from '../shared/inspectionAreas';
 
 /**
  * WalkthroughProgress - Progress indicator for full walkthrough
- * Shows current position in the inspection journey
+ * Shows current position in the inspection journey with clickable area dots
  */
 export default function WalkthroughProgress({
   currentAreaIndex,
   totalAreas,
   currentArea,
   completedAreas = [],
+  onJumpToArea,
+  orderedAreas = [],
   className
 }) {
   const progressPercent = (completedAreas.length / totalAreas) * 100;
@@ -27,6 +29,42 @@ export default function WalkthroughProgress({
           {Math.round(progressPercent)}% complete
         </span>
       </div>
+
+      {/* Clickable area icons */}
+      {orderedAreas.length > 0 && onJumpToArea && (
+        <div className="flex items-center gap-1 flex-wrap py-1">
+          {orderedAreas.map((area, idx) => {
+            const isCompleted = completedAreas.includes(area.id);
+            const isCurrent = idx === currentAreaIndex;
+
+            return (
+              <button
+                key={area.id}
+                onClick={() => onJumpToArea(idx)}
+                className={cn(
+                  'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                  'hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 hover:scale-110',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500',
+                  isCompleted
+                    ? 'bg-green-100 ring-1 ring-green-400'
+                    : isCurrent
+                      ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
+                      : 'bg-gray-100 hover:bg-gray-200'
+                )}
+                title={area.name}
+                aria-label={`Jump to ${area.name}${isCompleted ? ' (completed)' : isCurrent ? ' (current)' : ''}`}
+              >
+                <span className={cn(
+                  'text-sm',
+                  isCompleted ? 'opacity-100' : isCurrent ? 'opacity-100' : 'opacity-60'
+                )}>
+                  {area.icon}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
