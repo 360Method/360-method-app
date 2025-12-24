@@ -155,31 +155,20 @@ Provide two separate arrays: Tools (equipment) and Materials (consumables). Be s
         }
       }).catch(err => ({ tools: [], materials: [] })),
 
-      integrations.InvokeLLM({
-        prompt: `Find helpful YouTube video tutorials for this maintenance task:
-
-Title: "${title}"
-Description: "${description}"
-System Type: "${system_type}"
-
-Search the web and find 2-3 high-quality YouTube tutorial videos. Return the video title and URL for each.`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            videos: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  url: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      }).catch(err => ({ videos: [] }))
+      // Generate YouTube search queries instead of fake video URLs
+      (async () => {
+        const searchQueries = [
+          `${title} DIY tutorial`,
+          `How to ${title.toLowerCase()} ${system_type}`,
+          `${system_type} ${title} repair guide`
+        ];
+        return {
+          videos: searchQueries.slice(0, 3).map(query => ({
+            title: query,
+            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+          }))
+        };
+      })()
     ]);
 
     const updateData = { ai_enrichment_completed: true };
